@@ -1,3 +1,4 @@
+
 import sbt.Keys._
 import sbt.Tests.{SubProcess, Group}
 import sbt._
@@ -22,6 +23,17 @@ trait MicroService {
   lazy val appDependencies : Seq[ModuleID] = ???
   lazy val plugins : Seq[Plugins] = Seq.empty
   lazy val playSettings : Seq[Setting[_]] = Seq.empty
+
+  lazy val scoverageSettings = {
+    // Semicolon-separated list of regexs matching classes to exclude
+    import scoverage.ScoverageKeys
+    Seq(
+      ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;model.*;config.*;.*(AuthService|BuildInfo|Routes).*",
+      ScoverageKeys.coverageMinimum := 80,
+      ScoverageKeys.coverageFailOnMinimum := false,
+      ScoverageKeys.coverageHighlighting := true
+    )
+  }
 
 
   lazy val microservice = Project(appName, file("."))
