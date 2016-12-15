@@ -18,12 +18,8 @@ package repositories
 
 import auth.{AuthorisationResource, Crypto}
 import models._
-import play.api.libs.functional.syntax.unlift
-import play.api.libs.json.Reads.maxLength
-import play.api.libs.json.{__, Json, JsObject, JsValue}
 import reactivemongo.api.DB
 import reactivemongo.bson.BSONDocument
-import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -35,16 +31,18 @@ import scala.util.control.NoStackTrace
 
 object RegistrationMongo {
   implicit val formatContactDetails = ContactDetails.format
+  implicit val format = PAYERegistration.format
 }
 
-trait RegistrationRepository extends Repository[ContactDetails, BSONObjectID]{
-  def retrieveContactDetails(registrationID: String): Future[Option[ContactDetails]]
+trait RegistrationRepository extends Repository[PAYERegistration, BSONObjectID]{
+  def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
+  def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
 }
 
 private[repositories] class MissingRegDocument(regId: String) extends NoStackTrace
 
-class CorporationTaxRegistrationMongoRepository(implicit mongo: () => DB)
-  extends ReactiveRepository[ContactDetails, BSONObjectID]("registration-information", mongo, ContactDetails.format, ReactiveMongoFormats.objectIdFormats)
+class RegistrationMongoRepository(implicit mongo: () => DB)
+  extends ReactiveRepository[PAYERegistration, BSONObjectID]("registration-information", mongo, PAYERegistration.format, ReactiveMongoFormats.objectIdFormats)
     with RegistrationRepository
     with AuthorisationResource[String] {
 
@@ -57,22 +55,23 @@ class CorporationTaxRegistrationMongoRepository(implicit mongo: () => DB)
     )
   )
 
-
   private[repositories] def registrationIDSelector(registrationID: String): BSONDocument = BSONDocument(
     "registrationID" -> BSONString(registrationID)
   )
 
-  override def retrieveRegistration(registrationID: String): Future[Option[CorporationTaxRegistration]] = {
+  override def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
     val selector = registrationIDSelector(registrationID)
-    collection.find(selector).one[CorporationTaxRegistration]
+    collection.find(selector).one[PAYERegistration]
   }
 
-  override def retrieveContactDetails(registrationID: String): Future[Option[ContactDetails]] = {
+  override def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]] = {
     retrieveRegistration(registrationID) map {
-      case Some(registration) => registration.contactDetails
+      case Some(registration) => registration.companyDetails
       case None => None
     }
   }
+
+  override def getInternalId(id: String): Future[Option[(String, String)]] = ???
 
   def dropCollection = {
     collection.drop()
