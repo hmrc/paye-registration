@@ -16,8 +16,6 @@
 
 package repositories
 
-import java.util.UUID
-
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -31,6 +29,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class RegistrationMongoRepositoryISpec
   extends UnitSpec with MongoSpecSupport with BeforeAndAfterEach with ScalaFutures with Eventually with WithFakeApplication {
 
+  private val details: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"))
+  private val reg = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(details))
+
   class Setup {
     val repository = new RegistrationMongoRepository()
     await(repository.drop)
@@ -41,19 +42,30 @@ class RegistrationMongoRepositoryISpec
     repo.insert(registration)
   }
 
-  "quick test" should {
-    "xxx" in new Setup {
+  "Registration repository" should {
+    "retrieve a registration object" in new Setup {
 
-      private val details: CompanyDetails = CompanyDetails(None, "xxx", "yyy")
-      val reg = PAYERegistration(
-        "12345",
-        "xxx",
-        Some(details)
-      )
+      await(setupCollection(repository, reg))
 
-      setupCollection(repository, reg)
+      val actual = await(repository.retrieveRegistration("AC123456"))
 
-      val actual = await(repository.retrieveCompanyDetails("12345"))
+      actual shouldBe Some(reg)
+    }
+
+    "return empty option when there is no corresponding registration object" in new Setup {
+
+      await(setupCollection(repository, reg))
+
+      val actual = await(repository.retrieveCompanyDetails("AC654321"))
+
+      actual shouldBe None
+    }
+
+    "retrieve company details" in new Setup {
+
+      await(setupCollection(repository, reg))
+
+      val actual = await(repository.retrieveCompanyDetails("AC123456"))
 
       actual shouldBe Some(details)
     }

@@ -22,7 +22,7 @@ import play.api.libs.json.__
 case class CompanyDetails(
                          crn: Option[String],
                          companyName: String,
-                         tradingName: String
+                         tradingName: Option[String]
                            )
 
 object CompanyDetails extends CompanyDetailsValidator {
@@ -30,7 +30,7 @@ object CompanyDetails extends CompanyDetailsValidator {
   implicit val format =
     ((__ \ "crn").formatNullable[String](crnValidator) and
      (__ \ "companyName").format[String](companyNameValidator) and
-     (__ \ "tradingName").format[String](companyNameValidator)
+     (__ \ "tradingName").formatNullable[String](companyNameValidator)
       )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 
 }

@@ -33,7 +33,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |}
         """.stripMargin)
 
-      val tstCompanyDetails = CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = "Test Trading Name")
+      val tstCompanyDetails = CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
     }
@@ -47,7 +47,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val tstCompanyDetails = CompanyDetails(crn = None, companyName = "Test Company", tradingName = "Test Trading Name")
+      val tstCompanyDetails = CompanyDetails(crn = None, companyName = "Test Company", tradingName = Some("Test Trading Name"))
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
     }

@@ -42,7 +42,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         formCreationTimestamp = "2016-05-31",
         companyDetails = Some(
-          CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = "Test Trading Name")
+          CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
         )
       )
 

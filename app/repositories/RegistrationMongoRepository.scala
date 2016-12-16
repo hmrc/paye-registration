@@ -30,8 +30,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NoStackTrace
 
 object RegistrationMongo {
+  //$COVERAGE-OFF$
   implicit val formatContactDetails = ContactDetails.format
   implicit val format = PAYERegistration.format
+  //$COVERAGE-ON$
 }
 
 trait RegistrationRepository extends Repository[PAYERegistration, BSONObjectID]{
@@ -73,7 +75,7 @@ class RegistrationMongoRepository(implicit mongo: () => DB)
 
   override def getInternalId(id: String): Future[Option[(String, String)]] = ???
 
-  def dropCollection = {
+  def dropCollection: Future[Unit] = {
     collection.drop()
   }
 }
