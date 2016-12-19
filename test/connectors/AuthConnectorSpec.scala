@@ -18,13 +18,11 @@ package connectors
 
 import java.util.UUID
 
+import helpers.PAYERegSpec
 import org.mockito.Matchers
 import org.mockito.Mockito._
-import org.scalatest.{WordSpecLike, BeforeAndAfter, ShouldMatchers}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Json
-import play.api.test.FakeApplication
-import play.api.test.Helpers._
 import uk.gov.hmrc.play.http.{HttpResponse, HeaderCarrier, _}
 import uk.gov.hmrc.play.http.logging.SessionId
 
@@ -33,7 +31,7 @@ import scala.concurrent.Future
 /**
   * Created by crispy on 03/08/16.
   */
-class AuthConnectorSpec extends FakeApplication with WordSpecLike with ShouldMatchers with MockitoSugar with BeforeAndAfter {
+class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
   implicit val hc = HeaderCarrier()
 
