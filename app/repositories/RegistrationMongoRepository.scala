@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package repositories
 
 import auth.{AuthorisationResource, Crypto}
 import models._
+import play.api.Logger
 import reactivemongo.api.DB
+import reactivemongo.api.commands.UpdateWriteResult
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson._
@@ -71,6 +73,19 @@ class RegistrationMongoRepository(implicit mongo: () => DB)
       case Some(registration) => registration.companyDetails
       case None => None
     }
+  }
+
+  def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
+
+    retrieveRegistration(registrationID) flatMap {
+      case Some(registration) => collection.update(registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) map {
+        res =>
+          if(res.hasErrors) Logger.error(s"Unable to update Company Details for reg ID $registrationID, Error: ${res.errmsg.getOrElse("No Error message")}")
+          details
+      }
+      case None => throw new MissingRegDocument(registrationID)
+    }
+
   }
 
   override def getInternalId(id: String): Future[Option[(String, String)]] = ???
