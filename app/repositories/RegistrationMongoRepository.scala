@@ -16,40 +16,44 @@
 
 package repositories
 
-import auth.{AuthorisationResource, Crypto}
+import auth.AuthorisationResource
 import models._
 import play.api.Logger
-import reactivemongo.api.DB
-import reactivemongo.api.commands.UpdateWriteResult
+import play.api.libs.json.{Format, Json}
+import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson._
+import reactivemongo.api.DB
+import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.mongo.{ReactiveRepository, Repository}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NoStackTrace
 
-object RegistrationMongo {
-  //$COVERAGE-OFF$
-  implicit val formatContactDetails = ContactDetails.format
-  implicit val format = PAYERegistration.format
-  //$COVERAGE-ON$
+
+object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
+  val registrationFormat: Format[PAYERegistration] = ReactiveMongoFormats.mongoEntity(Json.format[PAYERegistration])
+  val store = new RegistrationMongoRepository(db, registrationFormat)
 }
 
-trait RegistrationRepository extends Repository[PAYERegistration, BSONObjectID]{
+trait RegistrationRepository {
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
+  def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
+  def dropCollection: Future[Unit]
 }
 
 private[repositories] class MissingRegDocument(regId: String) extends NoStackTrace
 
-class RegistrationMongoRepository(implicit mongo: () => DB)
-  extends ReactiveRepository[PAYERegistration, BSONObjectID]("registration-information", mongo, PAYERegistration.format, ReactiveMongoFormats.objectIdFormats)
-    with RegistrationRepository
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration]) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+  collectionName = "registration-information",
+  mongo = mongo,
+  domainFormat = format
+  ) with RegistrationRepository
     with AuthorisationResource[String] {
-
   override def indexes: Seq[Index] = Seq(
     Index(
       key = Seq("registrationID" -> IndexType.Ascending),
@@ -75,7 +79,7 @@ class RegistrationMongoRepository(implicit mongo: () => DB)
     }
   }
 
-  def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
+  override def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
 
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) => collection.update(registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) map {
@@ -90,7 +94,7 @@ class RegistrationMongoRepository(implicit mongo: () => DB)
 
   override def getInternalId(id: String): Future[Option[(String, String)]] = ???
 
-  def dropCollection: Future[Unit] = {
+  override def dropCollection: Future[Unit] = {
     collection.drop()
   }
 }

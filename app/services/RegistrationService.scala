@@ -17,7 +17,7 @@
 package services
 
 import models.{CompanyDetails, PAYERegistration}
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -29,7 +29,7 @@ case class  DBErrorResponse(err: Throwable)         extends DBResponse
 
 object RegistrationService extends RegistrationService {
   //$COVERAGE-OFF$
-  override val registrationRepository = RegistrationMongo
+  override val registrationRepository = repositories.RegistrationMongo.store
   //$COVERAGE-ON$
 }
 

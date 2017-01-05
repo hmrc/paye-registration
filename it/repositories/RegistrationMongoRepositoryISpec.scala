@@ -33,7 +33,7 @@ class RegistrationMongoRepositoryISpec
   private val reg = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(details))
 
   class Setup {
-    val repository = new RegistrationMongoRepository()
+    val repository = RegistrationMongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }
