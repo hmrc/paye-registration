@@ -35,7 +35,7 @@ import scala.util.control.NoStackTrace
 
 
 object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
-  val registrationFormat: Format[PAYERegistration] = ReactiveMongoFormats.mongoEntity(Json.format[PAYERegistration])
+  val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   val store = new RegistrationMongoRepository(db, registrationFormat)
 }
 
