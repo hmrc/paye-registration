@@ -32,6 +32,11 @@ class RegistrationMongoRepositoryISpec
   private val details: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"))
   private val reg = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(details))
 
+  // Company Details
+  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = None)
+  private val details2: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany2", tradingName = Some("tstTradingName2"))
+  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(details2))
+
   class Setup {
     val repository = RegistrationMongo.store
     await(repository.drop)
@@ -68,6 +73,39 @@ class RegistrationMongoRepositoryISpec
       val actual = await(repository.retrieveCompanyDetails("AC123456"))
 
       actual shouldBe Some(details)
+    }
+
+    "upsert company details when there is no existing Company Details object" in new Setup {
+
+      await(setupCollection(repository, regNoCompanyDetails))
+
+      val actual = await(repository.upsertCompanyDetails("AC123456", details2))
+      actual shouldBe details2
+
+      val updated = await(repository.retrieveRegistration("AC123456"))
+      updated shouldBe Some(regUpdatedCompanyDetails)
+
+    }
+
+    "upsert company details when the Registration already contains a Company Details object" in new Setup {
+
+      await(setupCollection(repository, reg))
+
+      val actual = await(repository.upsertCompanyDetails("AC123456", details2))
+      actual shouldBe details2
+
+      val updated = await(repository.retrieveRegistration("AC123456"))
+      updated shouldBe Some(regUpdatedCompanyDetails)
+
+    }
+
+    "drop the collection" in new Setup {
+
+      await(setupCollection(repository, reg))
+      await(repository.dropCollection)
+
+      val actual = await(repository.retrieveCompanyDetails("AC123456"))
+      actual shouldBe None
     }
   }
 
