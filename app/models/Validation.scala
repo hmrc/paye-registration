@@ -48,12 +48,3 @@ trait CompanyDetailsValidator {
   val crnValidator = readToFmt(pattern("^(\\d{1,8}|([AaFfIiOoRrSsZz][Cc]|[Cc][Uu]|[Ss][AaEeFfIiRrZz]|[Ee][Ss])\\d{1,6}|([IiSs][Pp]|[Nn][AaFfIiOoPpRrVvZz]|[Rr][Oo])[\\da-zA-Z]{1,6})$".r))
   val companyNameValidator = readToFmt(pattern("^[A-Za-z 0-9\\-,.()/'&amp;&quot;!%*_+:@&lt;&gt;?=;]{1,160}$".r))
 }
-
-trait ContactDetailsValidator {
-
-  import Validation._
-
-  val nameValidator = readToFmt(length(100) keepAnd pattern("^[A-Za-z 0-9'\\\\-]{1,100}$".r))
-  val phoneValidator = readToFmt(length(20) keepAnd pattern("^[0-9 ]{1,20}$".r))
-  val emailValidator = readToFmt(length(70) keepAnd pattern("^[A-Za-z0-9\\\\-_.@]{1,70}$".r))
-}
