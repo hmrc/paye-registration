@@ -18,6 +18,7 @@ package controllers
 
 import connectors.AuthConnector
 import models.{PAYERegistration, CompanyDetails}
+import common.exceptions.InternalExceptions.IncorrectDBSuccessResponseException
 import play.api.mvc._
 import services.{DBSuccessResponse, DBErrorResponse, DBNotFoundResponse, RegistrationService}
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -43,6 +44,7 @@ trait RegistrationController extends BaseController with Authenticated {
           case DBNotFoundResponse => NotFound
           case DBErrorResponse(e) => InternalServerError(e.getMessage)
           case DBSuccessResponse(registration: PAYERegistration) => Ok(Json.toJson(registration).as[JsObject])
+          case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = PAYERegistration, actual = resp)
         }
       }
   }
