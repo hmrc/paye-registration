@@ -31,16 +31,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object RegistrationController extends RegistrationController {
   //$COVERAGE-OFF$
   override val auth = AuthConnector
+  override val registrationService = RegistrationService
   //$COVERAGE-ON$
 }
 
 trait RegistrationController extends BaseController with Authenticated {
 
+  val registrationService: RegistrationService
+
   def getPAYERegistration(regID: String) = Action.async {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
-        case LoggedIn(context) => RegistrationService.fetchPAYERegistration(regID) map {
+        case LoggedIn(context) => registrationService.fetchPAYERegistration(regID) map {
           case DBNotFoundResponse => NotFound
           case DBErrorResponse(e) => InternalServerError(e.getMessage)
           case DBSuccessResponse(registration: PAYERegistration) => Ok(Json.toJson(registration).as[JsObject])
@@ -56,7 +59,7 @@ trait RegistrationController extends BaseController with Authenticated {
         case LoggedIn(context) =>
           withJsonBody[CompanyDetails] {
             companyDetails =>
-              RegistrationService.upsertCompanyDetails(regID, companyDetails) map {
+              registrationService.upsertCompanyDetails(regID, companyDetails) map {
                 case details => Ok
               } recover {
                 case e => InternalServerError(e.getMessage)

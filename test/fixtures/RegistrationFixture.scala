@@ -14,12 +14,22 @@
  * limitations under the License.
  */
 
-package helpers
+package fixtures
 
-import Mocks.PAYEMocks
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
+import models.{CompanyDetails, PAYERegistration}
 
-trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks {
+trait RegistrationFixture {
+
+  val validCompanyDetails = CompanyDetails(
+    crn = None,
+    companyName = "Test Company Name",
+    tradingName = Some("Test Trading Name")
+  )
+
+  val validRegistration = PAYERegistration(
+    registrationID = "AC187651",
+    formCreationTimestamp = "20161021-16:00:00",
+    companyDetails = Some(validCompanyDetails)
+  )
 
 }

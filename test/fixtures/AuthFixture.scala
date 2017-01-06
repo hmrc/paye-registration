@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package helpers
+package fixtures
 
-import Mocks.PAYEMocks
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
+import connectors.{UserIds, Authority}
 
-trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks {
 
+trait AuthFixture {
+
+  lazy val validAuthority = Authority(
+    "test.uri", "testGGID", "test.userDetailsLink", UserIds("testInternalID","testExternalID")
+  )
 }
