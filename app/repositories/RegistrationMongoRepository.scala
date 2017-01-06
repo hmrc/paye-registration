@@ -17,6 +17,7 @@
 package repositories
 
 import auth.AuthorisationResource
+import common.exceptions.DBExceptions.{MissingRegDocument, UpdateFailed}
 import models._
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
@@ -31,7 +32,6 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.control.NoStackTrace
 
 
 object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
@@ -45,8 +45,6 @@ trait RegistrationRepository {
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
   def dropCollection: Future[Unit]
 }
-
-private[repositories] class MissingRegDocument(regId: String) extends NoStackTrace
 
 class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration]) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
@@ -82,12 +80,19 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   override def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
 
     retrieveRegistration(registrationID) flatMap {
-      case Some(registration) => collection.update(registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) map {
-        res =>
-          if(res.hasErrors) Logger.error(s"Unable to update Company Details for reg ID $registrationID, Error: ${res.errmsg.getOrElse("No Error message")}")
-          details
-      }
-      case None => throw new MissingRegDocument(registrationID)
+      case Some(registration) =>
+        collection.update(registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) map {
+          res =>
+            if(res.hasErrors) {
+              Logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: ${res.errmsg.getOrElse("No Error message")}")
+              throw new UpdateFailed(registrationID, "CompanyDetails")
+            } else {
+              details
+            }
+        }
+      case None =>
+        Logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        throw new MissingRegDocument(registrationID)
     }
 
   }

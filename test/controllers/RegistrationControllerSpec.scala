@@ -19,7 +19,7 @@ package controllers
 import common.exceptions.InternalExceptions.IncorrectDBSuccessResponseException
 import fixtures.{RegistrationFixture, AuthFixture}
 import helpers.PAYERegSpec
-import models.CompanyDetails
+import models.{PAYERegistration, CompanyDetails}
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import play.api.http.Status
@@ -93,18 +93,34 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.FORBIDDEN
     }
 
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBNotFoundResponse))
+
+      val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
     "return an InternalServerError response if there is a database error" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.failed(new RuntimeException("tstMessage")))
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBErrorResponse(new RuntimeException("tstMessage"))))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
 
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
 
+    "throw an IncorrectDBSuccessResponseException when the database returns the wrong data" in new Setup {
+      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBSuccessResponse(validRegistration)))
+
+      an[IncorrectDBSuccessResponseException] shouldBe thrownBy(await(controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))))
+    }
+
     "return an OK response for a valid upsert" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(validCompanyDetails))
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBSuccessResponse[CompanyDetails](validCompanyDetails)))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
 

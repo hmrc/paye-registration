@@ -60,9 +60,10 @@ trait RegistrationController extends BaseController with Authenticated {
           withJsonBody[CompanyDetails] {
             companyDetails =>
               registrationService.upsertCompanyDetails(regID, companyDetails) map {
-                case details => Ok
-              } recover {
-                case e => InternalServerError(e.getMessage)
+                case DBNotFoundResponse => NotFound
+                case DBErrorResponse(e) => InternalServerError(e.getMessage)
+                case DBSuccessResponse(registration: CompanyDetails) => Ok(Json.toJson(registration).as[JsObject])
+                case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = CompanyDetails, actual = resp)
               }
           }
       }

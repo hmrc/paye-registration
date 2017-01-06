@@ -16,6 +16,7 @@
 
 package services
 
+import common.exceptions.DBExceptions.MissingRegDocument
 import models.{CompanyDetails, PAYERegistration}
 import repositories.RegistrationMongoRepository
 
@@ -46,9 +47,12 @@ trait RegistrationService {
     }
   }
 
-  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[CompanyDetails] = {
+  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[DBResponse] = {
     registrationRepository.upsertCompanyDetails(regID, companyDetails) map {
-      case deets => deets
+      case details => DBSuccessResponse[CompanyDetails](details)
+    } recover {
+      case missing: MissingRegDocument => DBNotFoundResponse
+      case err => DBErrorResponse(err)
     }
   }
 
