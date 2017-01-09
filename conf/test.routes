@@ -1,0 +1,3 @@
+
+GET                   /registration-teardown              controllers.test.TestEndpointController.registrationTeardown
+GET                   /delete-registration/:regID         controllers.test.TestEndpointController.deleteRegistration(regID)
