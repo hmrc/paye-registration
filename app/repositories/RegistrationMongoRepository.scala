@@ -22,6 +22,7 @@ import models._
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
 import play.modules.reactivemongo.MongoDbConnection
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson._
@@ -101,5 +102,16 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def dropCollection: Future[Unit] = {
     collection.drop()
+  }
+
+  def deleteRegistration(registrationID: String): Future[WriteResult] = {
+    val selector = registrationIDSelector(registrationID)
+    collection.remove(selector).map {
+      res => if(res.hasErrors) {
+        throw new RuntimeException(res.errmsg.getOrElse("No Error Message"))
+      } else {
+        res
+      }
+    }
   }
 }
