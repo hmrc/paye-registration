@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package fixtures
+package testHelpers
 
-import reactivemongo.api.commands.DefaultWriteResult
+import Mocks.PAYEMocks
+import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
 
-trait MongoFixture {
-
-  val successfulWriteResult = DefaultWriteResult(
-    ok = true,
-    n = 1,
-    writeErrors = Seq.empty,
-    writeConcernError = None,
-    code = None,
-    errmsg = None
-  )
+trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks {
 
 }

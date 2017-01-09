@@ -16,6 +16,7 @@
 
 package repositories
 
+import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -31,6 +32,7 @@ class RegistrationMongoRepositoryISpec
 
   private val details: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"))
   private val reg = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(details))
+  private val reg2 = PAYERegistration(registrationID = "AC234567", formCreationTimestamp = "timestamp", companyDetails = Some(details))
 
   // Company Details
   private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = None)
@@ -47,7 +49,25 @@ class RegistrationMongoRepositoryISpec
     repo.insert(registration)
   }
 
-  "Registration repository" should {
+  "Calling createNewRegistration" should {
+
+    "create a new, blank PAYERegistration with the correct ID" in new Setup {
+
+      val actual = await(repository.createNewRegistration("AC234321"))
+      actual.registrationID shouldBe "AC234321"
+
+    }
+
+    "throw an Insert Failed exception when creating a new PAYE reg when one already exists" in new Setup {
+      await(setupCollection(repository, reg))
+
+      an[InsertFailed] shouldBe thrownBy(await(repository.createNewRegistration(reg.registrationID)))
+
+    }
+  }
+
+  "Calling retrieveRegistration" should {
+
     "retrieve a registration object" in new Setup {
 
       await(setupCollection(repository, reg))
@@ -65,6 +85,9 @@ class RegistrationMongoRepositoryISpec
 
       actual shouldBe None
     }
+  }
+
+  "Calling retrieveCompanyDetails" should {
 
     "retrieve company details" in new Setup {
 
@@ -74,6 +97,16 @@ class RegistrationMongoRepositoryISpec
 
       actual shouldBe Some(details)
     }
+
+    "return an empty option when there is no corresponding PAYE Registration in the database" in new Setup {
+
+      val actual = await(repository.retrieveCompanyDetails("AC123456"))
+
+      actual shouldBe None
+    }
+  }
+
+  "Calling upsertCompanyDetails" should {
 
     "upsert company details when there is no existing Company Details object" in new Setup {
 
@@ -99,6 +132,15 @@ class RegistrationMongoRepositoryISpec
 
     }
 
+    "throw a Missing Reg Document exception when updating company details for a nonexistent registration" in new Setup {
+
+      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertCompanyDetails("AC123456", details)))
+
+    }
+  }
+
+  "Test setup functions" should {
+
     "drop the collection" in new Setup {
 
       await(setupCollection(repository, reg))
@@ -106,6 +148,31 @@ class RegistrationMongoRepositoryISpec
 
       val actual = await(repository.retrieveCompanyDetails("AC123456"))
       actual shouldBe None
+    }
+
+    "delete a specific registration" in new Setup {
+      await(setupCollection(repository, reg))
+      await(setupCollection(repository, reg2))
+
+      val actual = await(repository.deleteRegistration("AC123456"))
+      actual shouldBe true
+
+      val deletedFind = await(repository.retrieveRegistration("AC123456"))
+      deletedFind shouldBe None
+
+      val remaining = await(repository.retrieveRegistration("AC234567"))
+      remaining shouldBe Some(reg2)
+    }
+
+    "insert a Registration" in new Setup {
+      val actual = await(repository.addRegistration(reg))
+      actual shouldBe reg
+    }
+
+    "throw the correct error when inserting a registration that already exists" in new Setup {
+      await(setupCollection(repository, reg))
+
+      an[InsertFailed] shouldBe thrownBy(await(repository.addRegistration(reg)))
     }
   }
 

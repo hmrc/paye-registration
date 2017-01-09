@@ -21,6 +21,9 @@ import scala.util.control.NoStackTrace
 object DBExceptions extends DBExceptions
 
 trait DBExceptions {
+  class PreExistingRegDocument(regId: String) extends NoStackTrace
   class MissingRegDocument(regId: String) extends NoStackTrace
   class UpdateFailed(regId: String, attemptedModel: String) extends NoStackTrace
+  class InsertFailed(regId: String, attemptedModel: String) extends NoStackTrace
+  class DeleteFailed(regId: String, msg: String) extends NoStackTrace
 }

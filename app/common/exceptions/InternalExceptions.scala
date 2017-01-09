@@ -16,12 +16,18 @@
 
 package common.exceptions
 
+import services.DBResponse
+
 object InternalExceptions extends InternalExceptions
 
 trait InternalExceptions {
 
   class IncorrectDBSuccessResponseException(expected: Any, actual: Any) extends Exception (
     s"Success Response of type [${actual.getClass.toString}] did not match expected type [${expected.getClass.toString}]"
+  )
+
+  class UnexpextedDBResponseException(action: String, resp: DBResponse) extends Exception (
+    s"Unexpected DB Response of type [${resp.getClass.toString}] returned in action $action"
   )
 
 }
