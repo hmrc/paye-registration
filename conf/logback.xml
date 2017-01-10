@@ -59,6 +59,8 @@
 
     <logger name="application" level="DEBUG"/>
 
+    <logger name="org.asynchttpclient.netty.channel.DefaultChannelPool" level="INFO"/>
+
     <logger name="connector" level="TRACE">
         <appender-ref ref="STDOUT"/>
     </logger>
