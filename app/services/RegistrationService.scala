@@ -16,9 +16,10 @@
 
 package services
 
-import common.exceptions.DBExceptions.MissingRegDocument
+import common.exceptions.DBExceptions.{MissingRegDocument, PreExistingRegDocument}
 import models.{CompanyDetails, PAYERegistration}
 import repositories.RegistrationMongoRepository
+import play.api.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,6 +27,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 sealed trait DBResponse
 case class  DBSuccessResponse[T](responseObject: T) extends DBResponse
 case object DBNotFoundResponse                      extends DBResponse
+case object DBDuplicateResponse                     extends DBResponse
 case class  DBErrorResponse(err: Throwable)         extends DBResponse
 
 object RegistrationService extends RegistrationService {
@@ -37,6 +39,19 @@ object RegistrationService extends RegistrationService {
 trait RegistrationService {
 
   val registrationRepository: RegistrationMongoRepository
+
+  def createNewPAYERegistration(regID: String): Future[DBResponse] = {
+    registrationRepository.retrieveRegistration(regID) flatMap {
+      case Some(registration) =>
+        Logger.warn(s"Cannot create new registration for reg ID '$regID' as registration already exists")
+        Future.successful(DBDuplicateResponse)
+      case None => registrationRepository.createNewRegistration(regID) map {
+        reg => DBSuccessResponse[PAYERegistration](reg)
+      }
+    } recover {
+      case e => DBErrorResponse(e)
+    }
+  }
 
   def fetchPAYERegistration(regID: String): Future[DBResponse] = {
     registrationRepository.retrieveRegistration(regID) map {

@@ -16,10 +16,17 @@
 
 package helpers
 
-import Mocks.PAYEMocks
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks {
+object DateHelper extends DateHelper
+
+trait DateHelper {
+
+  def formatTimestamp(timeStamp: LocalDateTime) : String = {
+    val timeStampFormat = "yyyy-MM-dd'T'HH:mm:ss"
+    val format: DateTimeFormatter = DateTimeFormatter.ofPattern(timeStampFormat)
+    format.format(timeStamp)
+  }
 
 }

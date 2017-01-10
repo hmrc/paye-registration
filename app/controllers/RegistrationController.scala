@@ -18,9 +18,9 @@ package controllers
 
 import connectors.AuthConnector
 import models.{PAYERegistration, CompanyDetails}
-import common.exceptions.InternalExceptions.IncorrectDBSuccessResponseException
+import common.exceptions.InternalExceptions._
 import play.api.mvc._
-import services.{DBSuccessResponse, DBErrorResponse, DBNotFoundResponse, RegistrationService}
+import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import play.api.libs.json.{JsObject, Json}
@@ -39,6 +39,20 @@ trait RegistrationController extends BaseController with Authenticated {
 
   val registrationService: RegistrationService
 
+  def newPAYERegistration(regID: String) = Action.async {
+    implicit request =>
+      authenticated {
+        case NotLoggedIn => Future.successful(Forbidden)
+        case LoggedIn(context) => registrationService.createNewPAYERegistration(regID) map {
+          case DBDuplicateResponse => BadRequest(s"PAYE Registration already exists for registration ID $regID")
+          case DBErrorResponse(e) => InternalServerError(e.getMessage)
+          case DBSuccessResponse(registration: PAYERegistration) => Ok(Json.toJson(registration).as[JsObject])
+          case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = PAYERegistration, actual = resp)
+          case otherResp => throw new UnexpextedDBResponseException("newPAYERegistration", otherResp)
+      }
+    }
+  }
+
   def getPAYERegistration(regID: String) = Action.async {
     implicit request =>
       authenticated {
@@ -48,6 +62,7 @@ trait RegistrationController extends BaseController with Authenticated {
           case DBErrorResponse(e) => InternalServerError(e.getMessage)
           case DBSuccessResponse(registration: PAYERegistration) => Ok(Json.toJson(registration).as[JsObject])
           case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = PAYERegistration, actual = resp)
+          case otherResp => throw new UnexpextedDBResponseException("getPAYERegistration", otherResp)
         }
       }
   }
@@ -64,6 +79,7 @@ trait RegistrationController extends BaseController with Authenticated {
                 case DBErrorResponse(e) => InternalServerError(e.getMessage)
                 case DBSuccessResponse(registration: CompanyDetails) => Ok(Json.toJson(registration).as[JsObject])
                 case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = CompanyDetails, actual = resp)
+                case otherResp => throw new UnexpextedDBResponseException("upsertCompanyDetails", otherResp)
               }
           }
       }

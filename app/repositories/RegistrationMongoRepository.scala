@@ -16,13 +16,15 @@
 
 package repositories
 
+import java.time.LocalDateTime
+
 import auth.AuthorisationResource
-import common.exceptions.DBExceptions.{MissingRegDocument, UpdateFailed}
+import common.exceptions.DBExceptions._
+import helpers.DateHelper
 import models._
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
 import play.modules.reactivemongo.MongoDbConnection
-import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson._
@@ -41,6 +43,7 @@ object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
 }
 
 trait RegistrationRepository {
+  def createNewRegistration(registrationID: String): Future[PAYERegistration]
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
@@ -66,6 +69,17 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     "registrationID" -> BSONString(registrationID)
   )
 
+  override def createNewRegistration(registrationID: String): Future[PAYERegistration] = {
+    val newReg = newRegistrationObject(registrationID)
+    collection.insert[PAYERegistration](newReg) map {
+      res => newReg
+    } recover {
+      case e =>
+        Logger.warn(s"Unable to insert new PAYE Registration for reg ID $registrationID, Error: ${e.getMessage}")
+        throw new InsertFailed(registrationID, "PAYERegistration")
+    }
+  }
+
   override def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
     val selector = registrationIDSelector(registrationID)
     collection.find(selector).one[PAYERegistration]
@@ -74,7 +88,9 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   override def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]] = {
     retrieveRegistration(registrationID) map {
       case Some(registration) => registration.companyDetails
-      case None => None
+      case None =>
+        Logger.warn(s"Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        None
     }
   }
 
@@ -83,13 +99,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) =>
         collection.update(registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) map {
-          res =>
-            if(res.hasErrors) {
-              Logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: ${res.errmsg.getOrElse("No Error message")}")
-              throw new UpdateFailed(registrationID, "CompanyDetails")
-            } else {
-              details
-            }
+          res => details
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: ${e.getMessage}")
+            throw new UpdateFailed(registrationID, "CompanyDetails")
         }
       case None =>
         Logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
@@ -104,14 +118,30 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     collection.drop()
   }
 
-  def deleteRegistration(registrationID: String): Future[WriteResult] = {
+  def deleteRegistration(registrationID: String): Future[Boolean] = {
     val selector = registrationIDSelector(registrationID)
-    collection.remove(selector).map {
-      res => if(res.hasErrors) {
-        throw new RuntimeException(res.errmsg.getOrElse("No Error Message"))
-      } else {
-        res
-      }
+    collection.remove(selector) map {
+      res => true
+    } recover {
+      case e => throw new DeleteFailed(registrationID, e.getMessage)
     }
+  }
+
+  def addRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
+    collection.insert[PAYERegistration](payeReg) map {
+      res => payeReg
+    } recover {
+      case e => throw new InsertFailed(payeReg.registrationID, "PAYE Registration")
+    }
+  }
+
+
+  private def newRegistrationObject(registrationID: String): PAYERegistration = {
+    val timeStamp = DateHelper.formatTimestamp(LocalDateTime.now())
+    PAYERegistration(
+      registrationID = registrationID,
+      formCreationTimestamp = timeStamp,
+      companyDetails = None
+    )
   }
 }

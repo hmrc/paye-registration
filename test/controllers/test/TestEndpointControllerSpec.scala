@@ -16,17 +16,19 @@
 
 package controllers.test
 
-import fixtures.{MongoFixture, AuthFixture}
-import helpers.PAYERegSpec
+import fixtures.{RegistrationFixture, AuthFixture}
+import models.PAYERegistration
+import play.api.libs.json.Json
 import repositories.RegistrationMongoRepository
 import play.api.test.FakeRequest
 import play.api.http.Status
 import org.mockito.Matchers
 import org.mockito.Mockito._
+import testHelpers.PAYERegSpec
 
 import scala.concurrent.Future
 
-class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with MongoFixture {
+class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with RegistrationFixture {
 
   val mockRepo = mock[RegistrationMongoRepository]
 
@@ -55,7 +57,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Mongo
 
   "Delete Registration" should {
     "return a 200 response for success" in new Setup {
-      when(mockRepo.deleteRegistration(Matchers.any())).thenReturn(Future.successful(successfulWriteResult))
+      when(mockRepo.deleteRegistration(Matchers.any())).thenReturn(Future.successful(true))
 
       val response = await(controller.deleteRegistration("AC123456")(FakeRequest()))
       status(response) shouldBe Status.OK
@@ -65,6 +67,22 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Mongo
       when(mockRepo.deleteRegistration(Matchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = await(controller.deleteRegistration("AC123456")(FakeRequest()))
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+  }
+
+  "Insert Registration" should {
+    "return a 200 response for success" in new Setup {
+      when(mockRepo.addRegistration(Matchers.any())).thenReturn(Future.successful(validRegistration))
+
+      val response = await(controller.insertRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      status(response) shouldBe Status.OK
+    }
+
+    "return a 500 response for failure" in new Setup {
+      when(mockRepo.addRegistration(Matchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
+
+      val response = await(controller.insertRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
   }

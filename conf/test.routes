@@ -1,3 +1,4 @@
 
 GET                   /registration-teardown              controllers.test.TestEndpointController.registrationTeardown
 GET                   /delete-registration/:regID         controllers.test.TestEndpointController.deleteRegistration(regID)
+POST                  /insert-registration/:regID         controllers.test.TestEndpointController.insertRegistration(regID)

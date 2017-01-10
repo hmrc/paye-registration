@@ -16,8 +16,9 @@
 
 package controllers.test
 
-import auth.{NotLoggedIn, Authenticated}
+import auth.Authenticated
 import connectors.AuthConnector
+import models.PAYERegistration
 import play.api.mvc.Action
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -36,19 +37,32 @@ trait TestEndpointController extends BaseController with Authenticated {
   val registrationRepository: RegistrationMongoRepository
 
   def registrationTeardown = Action.async {
-    registrationRepository.dropCollection map {
-      case _ => Ok
-    } recover {
-      case e => InternalServerError(e.getMessage)
-    }
+    implicit request =>
+      registrationRepository.dropCollection map {
+        case _ => Ok
+      } recover {
+        case e => InternalServerError(e.getMessage)
+      }
   }
 
   def deleteRegistration(regID: String) = Action.async {
-    registrationRepository.deleteRegistration(regID) map {
-      case _ => Ok
-    } recover {
-      case e => InternalServerError(e.getMessage)
-    }
+    implicit request =>
+      registrationRepository.deleteRegistration(regID) map {
+        case _ => Ok
+      } recover {
+        case e => InternalServerError(e.getMessage)
+      }
+  }
+
+  def insertRegistration(regID: String) = Action.async(parse.json) {
+    implicit request =>
+      withJsonBody[PAYERegistration] {
+        reg => registrationRepository.addRegistration(reg) map {
+          case _ => Ok
+        } recover {
+          case e => InternalServerError(e.getMessage)
+        }
+      }
   }
 
 }

@@ -18,10 +18,10 @@ package services
 
 import common.exceptions.DBExceptions.{UpdateFailed, MissingRegDocument}
 import fixtures.RegistrationFixture
-import helpers.PAYERegSpec
 import repositories.RegistrationMongoRepository
 import org.mockito.Matchers
 import org.mockito.Mockito._
+import testHelpers.PAYERegSpec
 
 import scala.concurrent.Future
 
@@ -32,6 +32,34 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   class Setup {
     val service = new RegistrationService {
       override val registrationRepository = mockRegistrationRepository
+    }
+  }
+
+  "Calling newPAYERegistration" should {
+
+    "return a DBDuplicate response when the database already has a PAYERegistration" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
+
+      val actual = await(service.createNewPAYERegistration("AC123456"))
+      actual shouldBe DBDuplicateResponse
+    }
+
+    "return a DBError response when the database errors" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationRepository.createNewRegistration(Matchers.contains("AC123456"))).thenReturn(Future.failed(exception))
+
+      val actual = await(service.createNewPAYERegistration("AC123456"))
+      actual shouldBe DBErrorResponse(exception)
+    }
+
+    "return a DBSuccess response when the Registration is correctly inserted into the database" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationRepository.createNewRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration))
+
+      val actual = await(service.createNewPAYERegistration("AC123456"))
+      actual shouldBe DBSuccessResponse(validRegistration)
     }
   }
 
