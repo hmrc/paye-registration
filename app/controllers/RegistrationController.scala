@@ -19,6 +19,7 @@ package controllers
 import connectors.AuthConnector
 import models.{PAYERegistration, CompanyDetails}
 import common.exceptions.InternalExceptions._
+import play.api.Logger
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
