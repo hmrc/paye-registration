@@ -19,6 +19,7 @@ package controllers.test
 import auth.Authenticated
 import connectors.AuthConnector
 import models.PAYERegistration
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.Action
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -58,7 +59,7 @@ trait TestEndpointController extends BaseController with Authenticated {
     implicit request =>
       withJsonBody[PAYERegistration] {
         reg => registrationRepository.addRegistration(reg) map {
-          case _ => Ok
+          case _ => Ok(Json.toJson(reg).as[JsObject])
         } recover {
           case e => InternalServerError(e.getMessage)
         }
