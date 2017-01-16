@@ -112,6 +112,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   }
 
+  // TODO - rename the test repo methods
+  // Test endpoints
   override def getInternalId(id: String): Future[Option[(String, String)]] = ???
 
   override def dropCollection: Future[Unit] = {

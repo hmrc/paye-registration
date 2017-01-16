@@ -16,19 +16,13 @@
 
 package services
 
-import common.exceptions.DBExceptions.{MissingRegDocument, PreExistingRegDocument}
 import models.{CompanyDetails, PAYERegistration}
 import repositories.RegistrationMongoRepository
 import play.api.Logger
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-
-sealed trait DBResponse
-case class  DBSuccessResponse[T](responseObject: T) extends DBResponse
-case object DBNotFoundResponse                      extends DBResponse
-case object DBDuplicateResponse                     extends DBResponse
-case class  DBErrorResponse(err: Throwable)         extends DBResponse
 
 object RegistrationService extends RegistrationService {
   //$COVERAGE-OFF$
@@ -40,35 +34,28 @@ trait RegistrationService {
 
   val registrationRepository: RegistrationMongoRepository
 
-  def createNewPAYERegistration(regID: String): Future[DBResponse] = {
+  def createNewPAYERegistration(regID: String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
+      case None => registrationRepository.createNewRegistration(regID)
       case Some(registration) =>
-        Logger.warn(s"Cannot create new registration for reg ID '$regID' as registration already exists")
-        Future.successful(DBDuplicateResponse)
-      case None => registrationRepository.createNewRegistration(regID) map {
-        reg => DBSuccessResponse[PAYERegistration](reg)
-      }
-    } recover {
-      case e => DBErrorResponse(e)
+        Logger.info(s"Cannot create new registration for reg ID '$regID' as registration already exists")
+        Future.successful(registration)
     }
   }
 
-  def fetchPAYERegistration(regID: String): Future[DBResponse] = {
-    registrationRepository.retrieveRegistration(regID) map {
-      case Some(registration) => DBSuccessResponse[PAYERegistration](registration)
-      case None => DBNotFoundResponse
-    } recover {
-      case e => DBErrorResponse(e)
+  def fetchPAYERegistration(regID: String): Future[Option[PAYERegistration]] = {
+    registrationRepository.retrieveRegistration(regID)
+  }
+
+  def getCompanyDetails(regID: String): Future[Option[CompanyDetails]] = {
+    fetchPAYERegistration(regID) map {
+      registration =>
+        registration flatMap (_.companyDetails)
     }
   }
 
-  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[DBResponse] = {
-    registrationRepository.upsertCompanyDetails(regID, companyDetails) map {
-      case details => DBSuccessResponse[CompanyDetails](details)
-    } recover {
-      case missing: MissingRegDocument => DBNotFoundResponse
-      case err => DBErrorResponse(err)
-    }
+  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[CompanyDetails] = {
+    registrationRepository.upsertCompanyDetails(regID, companyDetails)
   }
 
 }
