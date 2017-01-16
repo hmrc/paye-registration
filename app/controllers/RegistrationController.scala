@@ -68,6 +68,23 @@ trait RegistrationController extends BaseController with Authenticated {
       }
   }
 
+  def getCompanyDetails(regID: String) = Action.async {
+    implicit request =>
+      authenticated {
+        case NotLoggedIn => Future.successful(Forbidden)
+        case LoggedIn(context) => registrationService.fetchPAYERegistration(regID) map {
+          case DBNotFoundResponse => InternalServerError("attempted to fetch Company Details when no PAYE Registration exists")
+          case DBErrorResponse(e) => InternalServerError(e.getMessage)
+          case DBSuccessResponse(registration: PAYERegistration) => registration.companyDetails match {
+            case Some(details) => Ok(Json.toJson(details).as[JsObject])
+            case _ => NotFound
+          }
+          case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = PAYERegistration, actual = resp)
+          case otherResp => throw new UnexpextedDBResponseException("getPAYERegistration", otherResp)
+        }
+      }
+  }
+
   def upsertCompanyDetails(regID: String) = Action.async(parse.json) {
     implicit request =>
       authenticated {

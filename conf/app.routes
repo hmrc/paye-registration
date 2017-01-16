@@ -4,4 +4,5 @@ GET        /:regID                            controllers.RegistrationController
 
 PATCH      /:regID/new                        controllers.RegistrationController.newPAYERegistration(regID)
 
+GET        /:regID/company-details            controllers.RegistrationController.getCompanyDetails(regID)
 PATCH      /:regID/company-details            controllers.RegistrationController.upsertCompanyDetails(regID)
