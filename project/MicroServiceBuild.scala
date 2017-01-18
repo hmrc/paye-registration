@@ -23,7 +23,9 @@ private object AppDependencies {
   private val playConfigVersion = "3.0.0"
   private val domainVersion = "4.0.0"
   private val hmrcTestVersion = "2.2.0"
-  private val scalaTestVersion = "3.0.0"
+  private val scalaTestVersion_test = "3.0.1"
+  private val scalaTestVersion_it = "2.2.6"
+  private val scalaTestPlusVersion = "1.5.1"
   private val pegdownVersion = "1.6.0"
   private val cryptoVersion = "3.1.0"
 
@@ -53,8 +55,8 @@ private object AppDependencies {
     def apply() = new TestDependencies {
       override lazy val test = Seq(
         "uk.gov.hmrc" %% "hmrctest" % hmrcTestVersion % scope,
-        "org.scalatest" %% "scalatest" % scalaTestVersion % scope,
-        "org.scalatestplus" %% "play" % "1.2.0" % scope,
+        "org.scalatest" %% "scalatest" % scalaTestVersion_test % scope,
+        "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
         "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope,
@@ -70,10 +72,12 @@ private object AppDependencies {
 
       override lazy val test = Seq(
         "uk.gov.hmrc" %% "hmrctest" % hmrcTestVersion % scope,
-        "org.scalatest" %% "scalatest" % scalaTestVersion % scope,
+        "org.scalatest" %% "scalatest" % scalaTestVersion_it % scope,
+        "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope
+        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope,
+        "com.github.tomakehurst" % "wiremock" % "2.5.0" % scope
       )
     }.test
   }

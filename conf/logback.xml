@@ -44,24 +44,20 @@
     </logger>
 
     <logger name="com.google.inject" level="INFO"/>
-
     <logger name="javax.management.mbeanserver" level="INFO"/>
-
     <logger name="javax.management.misc" level="INFO"/>
-
     <logger name="akka.event.EventStream" level="INFO"/>
-
     <logger name="play.api.libs.concurrent.ActorSystemProvider" level="INFO"/>
-
     <logger name="org.jboss.netty.channel.socket.nio.SelectorUtil" level="INFO"/>
-
     <logger name="uk.gov" level="INFO"/>
+    <logger name="org.asynchttpclient.netty" level="INFO"/>
+    <logger name="org.eclipse.jetty" level="INFO"/>
+    <logger name="io.netty" level="INFO"/>
+    <logger name="org.apache.http" level="INFO"/>
 
-    <logger name="application" level="DEBUG"/>
 
-    <logger name="org.asynchttpclient.netty.channel.DefaultChannelPool" level="INFO"/>
-
-    <logger name="connector" level="TRACE">
+    <logger name="application" level="INFO"/>
+    <logger name="connector" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
