@@ -13,21 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package itutil
 
-package common.exceptions
+import org.scalatest._
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatestplus.play.OneServerPerSuite
+import uk.gov.hmrc.play.test.UnitSpec
 
-import services.DBResponse
+trait IntegrationSpecBase extends UnitSpec
+  with OneServerPerSuite with ScalaFutures with IntegrationPatience with Matchers
+  with WiremockHelper with BeforeAndAfterEach with BeforeAndAfterAll {
 
-object InternalExceptions extends InternalExceptions
+  override def beforeEach() = {
+    resetWiremock()
+  }
 
-trait InternalExceptions {
+  override def beforeAll() = {
+    super.beforeAll()
+    startWiremock()
+  }
 
-  class IncorrectDBSuccessResponseException(expected: Any, actual: Any) extends Exception (
-    s"Success Response of type [${actual.getClass.toString}] did not match expected type [${expected.getClass.toString}]"
-  )
-
-  class UnexpextedDBResponseException(action: String, resp: DBResponse) extends Exception (
-    s"Unexpected DB Response of type [${resp.getClass.toString}] returned in action $action"
-  )
-
+  override def afterAll() = {
+    stopWiremock()
+    super.afterAll()
+  }
 }

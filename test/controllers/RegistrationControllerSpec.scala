@@ -16,10 +16,9 @@
 
 package controllers
 
-import common.exceptions.InternalExceptions.IncorrectDBSuccessResponseException
-import common.exceptions.InternalExceptions.UnexpextedDBResponseException
-import fixtures.{RegistrationFixture, AuthFixture}
-import models.{PAYERegistration, CompanyDetails}
+import common.exceptions.DBExceptions.MissingRegDocument
+import fixtures.{AuthFixture, RegistrationFixture}
+import models.CompanyDetails
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import play.api.http.Status
@@ -50,41 +49,9 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.FORBIDDEN
     }
 
-    "return a BadRequest response if there is already a PAYE Registration entry in the database" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBDuplicateResponse))
-
-      val response = controller.newPAYERegistration("AC123456")(FakeRequest())
-
-      status(response) shouldBe Status.BAD_REQUEST
-    }
-
-    "return an InternalServerError response if there is a database error" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBErrorResponse(new RuntimeException("tstMessage"))))
-
-      val response = controller.newPAYERegistration("AC123456")(FakeRequest())
-
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
-    }
-
-    "throw an IncorrectDBSuccessResponseException when the database returns the wrong data" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBSuccessResponse(validCompanyDetails)))
-
-      an[IncorrectDBSuccessResponseException] shouldBe thrownBy(await(controller.newPAYERegistration("AC123456")(FakeRequest())))
-    }
-
-    "throw an UnexpextedDBResponseException when the database returns an unexpected outcome" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBNotFoundResponse))
-
-      an[UnexpextedDBResponseException] shouldBe thrownBy(await(controller.newPAYERegistration("AC123456")(FakeRequest())))
-    }
-
     "return a PAYERegistration for a successful creation" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBSuccessResponse(validRegistration)))
+      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration))
 
       val response = controller.newPAYERegistration("AC123456")(FakeRequest())
 
@@ -103,41 +70,46 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBNotFoundResponse))
+      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
 
       status(response) shouldBe Status.NOT_FOUND
     }
 
-    "return an InternalServerError response if there is a database error" in new Setup {
+    "return a PAYERegistration for a successful query" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBErrorResponse(new RuntimeException("tstMessage"))))
+      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
 
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) shouldBe Status.OK
+    }
+  }
+
+  "Calling getCompanyDetails" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      AuthorisationMocks.mockNotLoggedInOrAuthorised
+
+      val response = controller.getCompanyDetails("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
     }
 
-    "throw an IncorrectDBSuccessResponseException when the database returns the wrong data" in new Setup {
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBSuccessResponse(validCompanyDetails)))
+      when(mockRegistrationService.getCompanyDetails(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
 
-      an[IncorrectDBSuccessResponseException] shouldBe thrownBy(await(controller.getPAYERegistration("AC123456")(FakeRequest())))
-    }
+      val response = controller.getCompanyDetails("AC123456")(FakeRequest())
 
-    "throw an UnexpextedDBResponseException when the database returns an unexpected outcome" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBDuplicateResponse))
-
-      an[UnexpextedDBResponseException] shouldBe thrownBy(await(controller.getPAYERegistration("AC123456")(FakeRequest())))
+      status(response) shouldBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(DBSuccessResponse(validRegistration)))
+      when(mockRegistrationService.getCompanyDetails(Matchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration.companyDetails))
 
-      val response = controller.getPAYERegistration("AC123456")(FakeRequest())
+      val response = controller.getCompanyDetails("AC123456")(FakeRequest())
 
       status(response) shouldBe Status.OK
     }
@@ -154,39 +126,16 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBNotFoundResponse))
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
 
       status(response) shouldBe Status.NOT_FOUND
     }
 
-    "return an InternalServerError response if there is a database error" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBErrorResponse(new RuntimeException("tstMessage"))))
-
-      val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
-
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
-    }
-
-    "throw an IncorrectDBSuccessResponseException when the database returns the wrong data" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBSuccessResponse(validRegistration)))
-
-      an[IncorrectDBSuccessResponseException] shouldBe thrownBy(await(controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))))
-    }
-
-    "throw an UnexpextedDBResponseException when the database returns an unexpected outcome" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBDuplicateResponse))
-
-      an[UnexpextedDBResponseException] shouldBe thrownBy(await(controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))))
-    }
-
     "return an OK response for a valid upsert" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(DBSuccessResponse[CompanyDetails](validCompanyDetails)))
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(validCompanyDetails))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
 

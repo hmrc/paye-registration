@@ -17,14 +17,13 @@
 package controllers
 
 import connectors.AuthConnector
-import models.{PAYERegistration, CompanyDetails}
-import common.exceptions.InternalExceptions._
-import play.api.Logger
+import models.CompanyDetails
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
-import play.api.libs.json.{JsObject, Json}
+import common.exceptions.DBExceptions.MissingRegDocument
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -44,13 +43,10 @@ trait RegistrationController extends BaseController with Authenticated {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
-        case LoggedIn(context) => registrationService.createNewPAYERegistration(regID) map {
-          case DBDuplicateResponse => BadRequest(s"PAYE Registration already exists for registration ID $regID")
-          case DBErrorResponse(e) => InternalServerError(e.getMessage)
-          case DBSuccessResponse(registration: PAYERegistration) => Ok(Json.toJson(registration).as[JsObject])
-          case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = PAYERegistration, actual = resp)
-          case otherResp => throw new UnexpextedDBResponseException("newPAYERegistration", otherResp)
-      }
+        case LoggedIn(context) =>
+          registrationService.createNewPAYERegistration(regID) map {
+            reg => Ok(Json.toJson(reg))
+          }
     }
   }
 
@@ -59,12 +55,20 @@ trait RegistrationController extends BaseController with Authenticated {
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) => registrationService.fetchPAYERegistration(regID) map {
-          case DBNotFoundResponse => NotFound
-          case DBErrorResponse(e) => InternalServerError(e.getMessage)
-          case DBSuccessResponse(registration: PAYERegistration) => Ok(Json.toJson(registration).as[JsObject])
-          case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = PAYERegistration, actual = resp)
-          case otherResp => throw new UnexpextedDBResponseException("getPAYERegistration", otherResp)
+          case Some(registration) => Ok(Json.toJson(registration))
+          case None => NotFound
         }
+      }
+  }
+
+  def getCompanyDetails(regID: String) = Action.async {
+    implicit request =>
+      authenticated {
+        case NotLoggedIn => Future.successful(Forbidden)
+        case LoggedIn(context) => registrationService.getCompanyDetails(regID) map {
+            case Some(companyDetails) => Ok(Json.toJson(companyDetails))
+            case None => NotFound
+          }
       }
   }
 
@@ -76,11 +80,10 @@ trait RegistrationController extends BaseController with Authenticated {
           withJsonBody[CompanyDetails] {
             companyDetails =>
               registrationService.upsertCompanyDetails(regID, companyDetails) map {
-                case DBNotFoundResponse => NotFound
-                case DBErrorResponse(e) => InternalServerError(e.getMessage)
-                case DBSuccessResponse(registration: CompanyDetails) => Ok(Json.toJson(registration).as[JsObject])
-                case DBSuccessResponse(resp) => throw new IncorrectDBSuccessResponseException(expected = CompanyDetails, actual = resp)
-                case otherResp => throw new UnexpextedDBResponseException("upsertCompanyDetails", otherResp)
+                registration =>
+                  Ok(Json.toJson(registration))
+              } recover {
+                case missing: MissingRegDocument => NotFound
               }
           }
       }
