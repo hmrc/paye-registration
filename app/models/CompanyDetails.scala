@@ -19,11 +19,9 @@ package models
 import play.api.libs.functional.syntax._
 import play.api.libs.json.__
 
-case class CompanyDetails(
-                         crn: Option[String],
-                         companyName: String,
-                         tradingName: Option[String]
-                           )
+case class CompanyDetails(crn: Option[String],
+                          companyName: String,
+                          tradingName: Option[String])
 
 object CompanyDetails extends CompanyDetailsValidator {
 

@@ -16,10 +16,9 @@
 
 package services
 
-import models.{CompanyDetails, PAYERegistration}
+import models.{CompanyDetails, PAYERegistration, Employment}
 import repositories.RegistrationMongoRepository
 import play.api.Logger
-import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -48,14 +47,19 @@ trait RegistrationService {
   }
 
   def getCompanyDetails(regID: String): Future[Option[CompanyDetails]] = {
-    fetchPAYERegistration(regID) map {
-      registration =>
-        registration flatMap (_.companyDetails)
-    }
+    registrationRepository.retrieveCompanyDetails(regID)
   }
 
   def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[CompanyDetails] = {
     registrationRepository.upsertCompanyDetails(regID, companyDetails)
+  }
+
+  def getEmployment(regID: String): Future[Option[Employment]] = {
+    registrationRepository.retrieveEmployment(regID)
+  }
+
+  def upsertEmployment(regID: String, employmentDetails: Employment): Future[Employment] = {
+    registrationRepository.upsertEmployment(regID, employmentDetails)
   }
 
 }

@@ -16,6 +16,8 @@
 
 package models
 
+import java.time.LocalDate
+
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -24,6 +26,9 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
   "Creating a PAYERegistration model from Json" should {
     "complete successfully from full Json" in {
+
+      val date = LocalDate.of(2016, 12, 20)
+
       val json = Json.parse(
         s"""
            |{
@@ -34,7 +39,16 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "crn":"Ac123456",
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name"
-           |    }
+           |    },
+           |  "employment": {
+           |    "first-payment":{
+           |       "payment-date": "$date",
+           |       "payment-made": true
+           |    },
+           |    "cis": true,
+           |    "employees": true,
+           |    "ocpn": true
+           |  }
            |}
         """.stripMargin)
 
@@ -43,7 +57,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         formCreationTimestamp = "2016-05-31",
         companyDetails = Some(
           CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
-        )
+        ),
+        employment = Some(Employment(employees = true, Some(true), subcontractors = true, FirstPayment(true, date)))
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -61,7 +76,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
         formCreationTimestamp = "2016-05-31",
-        companyDetails = None
+        companyDetails = None,
+        None
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.AuthConnector
-import models.CompanyDetails
+import models.{CompanyDetails, Employment}
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -80,8 +80,36 @@ trait RegistrationController extends BaseController with Authenticated {
           withJsonBody[CompanyDetails] {
             companyDetails =>
               registrationService.upsertCompanyDetails(regID, companyDetails) map {
-                registration =>
-                  Ok(Json.toJson(registration))
+                companyDetailsResponse =>
+                  Ok(Json.toJson(companyDetailsResponse))
+              } recover {
+                case missing: MissingRegDocument => NotFound
+              }
+          }
+      }
+  }
+
+  def getEmployment(regID: String) = Action.async {
+    implicit request =>
+      authenticated {
+        case NotLoggedIn => Future.successful(Forbidden)
+        case LoggedIn(context) => registrationService.getEmployment(regID) map {
+            case Some(employment) => Ok(Json.toJson(employment))
+            case None => NotFound
+          }
+      }
+  }
+
+  def upsertEmployment(regID: String) = Action.async(parse.json) {
+    implicit request =>
+      authenticated {
+        case NotLoggedIn => Future.successful(Forbidden)
+        case LoggedIn(context) =>
+          withJsonBody[Employment] {
+            employmentDetails =>
+              registrationService.upsertEmployment(regID, employmentDetails) map {
+                employmentResponse =>
+                  Ok(Json.toJson(employmentResponse))
               } recover {
                 case missing: MissingRegDocument => NotFound
               }

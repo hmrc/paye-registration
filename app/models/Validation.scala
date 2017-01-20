@@ -19,8 +19,6 @@ package models
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
 import Reads.{maxLength, minLength, pattern}
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 import play.api.libs.functional.syntax._
 
 

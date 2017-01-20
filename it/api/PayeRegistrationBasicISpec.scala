@@ -57,7 +57,7 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
 
       val regID = "12345"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, timestamp, None))
+      repository.insert(PAYERegistration(regID, timestamp, None, None))
 
       val response = client(s"/${regID}").get.futureValue
       response.status shouldBe 200
