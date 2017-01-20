@@ -47,6 +47,8 @@ trait RegistrationRepository {
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
+  def retrieveEmployment(registrationID: String): Future[Option[Employment]]
+  def upsertEmployment(registrationID: String, details: Employment): Future[Employment]
   def dropCollection: Future[Unit]
 }
 
@@ -110,6 +112,31 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         throw new MissingRegDocument(registrationID)
     }
 
+  }
+
+  override def retrieveEmployment(registrationID: String): Future[Option[Employment]] = {
+    retrieveRegistration(registrationID) map {
+      case Some(registration) => registration.employment
+      case None =>
+        Logger.warn(s"Unable to retrieve Employment for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        None
+    }
+  }
+
+  override def upsertEmployment(registrationID: String, details: Employment): Future[Employment] = {
+    retrieveRegistration(registrationID) flatMap {
+      case Some(reg) =>
+        collection.update(registrationIDSelector(registrationID), reg.copy(employment = Some(details))) map {
+          res => details
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update Employment for reg ID $registrationID, Error: ${e.getMessage}")
+            throw new UpdateFailed(registrationID, "Employment")
+        }
+      case None =>
+        Logger.warn(s"Unable to update Employment for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        throw new MissingRegDocument(registrationID)
+    }
   }
 
   // TODO - rename the test repo methods
