@@ -16,7 +16,7 @@
 
 package services
 
-import common.exceptions.DBExceptions.{UpdateFailed, MissingRegDocument}
+import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.RegistrationFixture
 import repositories.RegistrationMongoRepository
 import org.mockito.Matchers
@@ -80,7 +80,8 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getCompanyDetails" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationRepository.retrieveCompanyDetails(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(None))
 
       val actual = await(service.getCompanyDetails("AC123456"))
       actual shouldBe None
@@ -88,13 +89,15 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.failed(exception))
+      when(mockRegistrationRepository.retrieveCompanyDetails(Matchers.contains("AC123456")))
+        .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.fetchPAYERegistration("AC123456")) }
+      intercept[RuntimeException] { await(service.getCompanyDetails("AC123456")) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
+      when(mockRegistrationRepository.retrieveCompanyDetails(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(Some(validCompanyDetails)))
 
       val actual = await(service.getCompanyDetails("AC123456"))
       actual shouldBe validRegistration.companyDetails
@@ -115,6 +118,33 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
       val actual = await(service.upsertCompanyDetails("AC123456", validCompanyDetails))
       actual shouldBe validCompanyDetails
+    }
+  }
+
+  "Calling getEmployment" should {
+
+    "return a None response when there is no registration in mongo for the reg ID" in new Setup {
+      when(mockRegistrationRepository.retrieveEmployment(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(None))
+
+      val actual = await(service.getEmployment("AC123456"))
+      actual shouldBe None
+    }
+
+    "return a failed future with exception when the database errors" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveEmployment(Matchers.contains("AC123456")))
+        .thenReturn(Future.failed(exception))
+
+      intercept[RuntimeException] { await(service.getEmployment("AC123456")) }
+    }
+
+    "return a registration there is one matching the reg ID in mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveEmployment(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(Some(validEmployment)))
+
+      val actual = await(service.getEmployment("AC123456"))
+      actual shouldBe validRegistration.employment
     }
   }
 
