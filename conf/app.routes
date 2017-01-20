@@ -6,3 +6,6 @@ PATCH      /:regID/new                        controllers.RegistrationController
 
 GET        /:regID/company-details            controllers.RegistrationController.getCompanyDetails(regID)
 PATCH      /:regID/company-details            controllers.RegistrationController.upsertCompanyDetails(regID)
+
+GET        /:regID/employment                 controllers.RegistrationController.getEmployment(regID)
+PATCH      /:regID/employment                 controllers.RegistrationController.upsertEmployment(regID)

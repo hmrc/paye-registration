@@ -18,7 +18,7 @@ package controllers
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.{AuthFixture, RegistrationFixture}
-import models.CompanyDetails
+import models.{CompanyDetails, Employment}
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import play.api.http.Status
@@ -126,7 +126,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any[CompanyDetails]()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
 
@@ -135,9 +136,70 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     "return an OK response for a valid upsert" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any())).thenReturn(Future.successful(validCompanyDetails))
+      when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any[CompanyDetails]()))
+        .thenReturn(Future.successful(validCompanyDetails))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
+
+      status(response) shouldBe Status.OK
+    }
+  }
+
+  "Calling getEmployment" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      AuthorisationMocks.mockNotLoggedInOrAuthorised
+
+      val response = controller.getEmployment("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockRegistrationService.getEmployment(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.getEmployment("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return a PAYERegistration for a successful query" in new Setup {
+      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockRegistrationService.getEmployment(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(validRegistration.employment))
+
+      val response = controller.getEmployment("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.OK
+    }
+  }
+
+  "Calling upsertEmployment" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      AuthorisationMocks.mockNotLoggedInOrAuthorised
+
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockRegistrationService.upsertEmployment(Matchers.contains("AC123456"), Matchers.any[Employment]()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return an OK response for a valid upsert" in new Setup {
+      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockRegistrationService.upsertEmployment(Matchers.contains("AC123456"), Matchers.any[Employment]()))
+        .thenReturn(Future.successful(validEmployment))
+
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
 
       status(response) shouldBe Status.OK
     }
