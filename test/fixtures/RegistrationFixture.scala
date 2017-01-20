@@ -16,7 +16,8 @@
 
 package fixtures
 
-import models.{CompanyDetails, PAYERegistration}
+import models.{CompanyDetails, Employment, FirstPayment, PAYERegistration}
+import java.time.LocalDate
 
 trait RegistrationFixture {
 
@@ -26,10 +27,18 @@ trait RegistrationFixture {
     tradingName = Some("Test Trading Name")
   )
 
+  val validEmployment = Employment(
+    employees = true,
+    companyPension = Some(true),
+    subcontractors = true,
+    firstPayment = FirstPayment(paymentMade = true, LocalDate.of(2016, 12, 20))
+  )
+
   val validRegistration = PAYERegistration(
     registrationID = "AC187651",
     formCreationTimestamp = "20161021-16:00:00",
-    companyDetails = Some(validCompanyDetails)
+    companyDetails = Some(validCompanyDetails),
+    employment = Some(validEmployment)
   )
 
 }

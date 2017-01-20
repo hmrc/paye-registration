@@ -143,7 +143,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     PAYERegistration(
       registrationID = registrationID,
       formCreationTimestamp = timeStamp,
-      companyDetails = None
+      companyDetails = None,
+      employment = None
     )
   }
 }
