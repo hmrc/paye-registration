@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package testHelpers
+package models
 
-import Mocks.PAYEMocks
-import org.mockito.Mockito.reset
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import play.api.libs.json.Json
 
-trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
-  override def beforeEach() {
-    reset(mockRegistrationRepository)
-    reset(mockAuthConnector)
-  }
+case class BusinessRegistration(internalID: String,
+                                formCreationTimestamp: String,
+                                language: String,
+                                completionCapacity : Option[String])
+
+object BusinessRegistration {
+  implicit val formats = Json.format[BusinessRegistration]
 }

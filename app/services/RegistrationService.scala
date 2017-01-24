@@ -33,9 +33,9 @@ trait RegistrationService {
 
   val registrationRepository: RegistrationMongoRepository
 
-  def createNewPAYERegistration(regID: String): Future[PAYERegistration] = {
+  def createNewPAYERegistration(regID: String, internalId : String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
-      case None => registrationRepository.createNewRegistration(regID)
+      case None => registrationRepository.createNewRegistration(regID, internalId)
       case Some(registration) =>
         Logger.info(s"Cannot create new registration for reg ID '$regID' as registration already exists")
         Future.successful(registration)

@@ -24,18 +24,22 @@ import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
+import repositories.{RegistrationMongoRepository, RegistrationRepository}
 import services._
 import testHelpers.PAYERegSpec
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 
 class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with RegistrationFixture {
 
   val mockRegistrationService = mock[RegistrationService]
+  val mockRepo = mock[RegistrationMongoRepository]
 
   class Setup {
     val controller = new RegistrationController {
       override val auth = mockAuthConnector
+      val resourceConn = mockRepo
       override val registrationService = mockRegistrationService
     }
   }
@@ -51,7 +55,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     "return a PAYERegistration for a successful creation" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration))
+      when(mockRegistrationService.createNewPAYERegistration(Matchers.contains("AC123456"), Matchers.eq(validAuthority.ids.internalId)))
+        .thenReturn(Future.successful(validRegistration))
 
       val response = controller.newPAYERegistration("AC123456")(FakeRequest())
 
@@ -61,7 +66,11 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Calling getPAYERegistration" should {
     "return a Forbidden response if the user is not logged in" in new Setup {
-      AuthorisationMocks.mockNotLoggedInOrAuthorised
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
 
@@ -69,8 +78,14 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
 
@@ -78,8 +93,14 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.fetchPAYERegistration(Matchers.contains("AC123456")))
+        .thenReturn(Future.successful(Some(validRegistration)))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
 
@@ -89,7 +110,11 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Calling getCompanyDetails" should {
     "return a Forbidden response if the user is not logged in" in new Setup {
-      AuthorisationMocks.mockNotLoggedInOrAuthorised
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getCompanyDetails("AC123456")(FakeRequest())
 
@@ -97,7 +122,12 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.getCompanyDetails(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
 
       val response = controller.getCompanyDetails("AC123456")(FakeRequest())
@@ -106,7 +136,12 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.getCompanyDetails(Matchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration.companyDetails))
 
       val response = controller.getCompanyDetails("AC123456")(FakeRequest())
@@ -117,7 +152,11 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Calling upsertCompanyDetails" should {
     "return a Forbidden response if the user is not logged in" in new Setup {
-      AuthorisationMocks.mockNotLoggedInOrAuthorised
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails)))
 
@@ -125,7 +164,12 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any[CompanyDetails]()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
@@ -135,7 +179,12 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return an OK response for a valid upsert" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.upsertCompanyDetails(Matchers.contains("AC123456"), Matchers.any[CompanyDetails]()))
         .thenReturn(Future.successful(validCompanyDetails))
 
@@ -147,7 +196,11 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Calling getEmployment" should {
     "return a Forbidden response if the user is not logged in" in new Setup {
-      AuthorisationMocks.mockNotLoggedInOrAuthorised
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getEmployment("AC123456")(FakeRequest())
 
@@ -155,7 +208,12 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.getEmployment(Matchers.contains("AC123456")))
         .thenReturn(Future.successful(None))
 
@@ -165,7 +223,12 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.getEmployment(Matchers.contains("AC123456")))
         .thenReturn(Future.successful(validRegistration.employment))
 
@@ -177,7 +240,11 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Calling upsertEmployment" should {
     "return a Forbidden response if the user is not logged in" in new Setup {
-      AuthorisationMocks.mockNotLoggedInOrAuthorised
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
 
@@ -185,7 +252,13 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.upsertEmployment(Matchers.contains("AC123456"), Matchers.any[Employment]()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
@@ -195,7 +268,13 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return an OK response for a valid upsert" in new Setup {
-      AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
+
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(Matchers.eq("AC123456"))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
       when(mockRegistrationService.upsertEmployment(Matchers.contains("AC123456"), Matchers.any[Employment]()))
         .thenReturn(Future.successful(validEmployment))
 
@@ -204,5 +283,4 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.OK
     }
   }
-
 }
