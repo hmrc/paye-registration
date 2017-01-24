@@ -33,6 +33,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "registrationID":"12345",
+           |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
            |  "companyDetails":
            |    {
@@ -54,6 +55,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
+        internalID = "09876",
         formCreationTimestamp = "2016-05-31",
         companyDetails = Some(
           CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
@@ -69,12 +71,14 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "registrationID":"12345",
+           |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31"
            |}
         """.stripMargin)
 
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
+        internalID = "09876",
         formCreationTimestamp = "2016-05-31",
         companyDetails = None,
         None
@@ -87,6 +91,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
+           |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
            |  "companyDetails":
            |    {

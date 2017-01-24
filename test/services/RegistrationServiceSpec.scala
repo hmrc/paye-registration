@@ -28,8 +28,6 @@ import scala.concurrent.Future
 
 class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
-  val mockRegistrationRepository = mock[RegistrationMongoRepository]
-
   class Setup {
     val service = new RegistrationService {
       override val registrationRepository = mockRegistrationRepository
@@ -41,15 +39,15 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     "return a DBDuplicate response when the database already has a PAYERegistration" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
 
-      val actual = await(service.createNewPAYERegistration("AC123456"))
+      val actual = await(service.createNewPAYERegistration("AC123456", validRegistration.internalID))
       actual shouldBe validRegistration
     }
 
     "return a DBSuccess response when the Registration is correctly inserted into the database" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(None))
-      when(mockRegistrationRepository.createNewRegistration(Matchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration))
+      when(mockRegistrationRepository.createNewRegistration(Matchers.contains("AC123456"), Matchers.any[String]())).thenReturn(Future.successful(validRegistration))
 
-      val actual = await(service.createNewPAYERegistration("AC123456"))
+      val actual = await(service.createNewPAYERegistration("AC123456", "09876"))
       actual shouldBe validRegistration
     }
   }

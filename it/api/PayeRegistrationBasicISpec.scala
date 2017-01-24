@@ -56,13 +56,15 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
+      val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, timestamp, None, None))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
 
       val response = client(s"/${regID}").get.futureValue
       response.status shouldBe 200
       response.json shouldBe Json.obj(
         "registrationID" -> regID,
+        "internalID" -> intID,
         "formCreationTimestamp" -> timestamp
       )
     }

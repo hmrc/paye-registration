@@ -35,18 +35,18 @@ class RegistrationMongoRepositoryISpec
   private val date = LocalDate.of(2016, 12, 20)
   private val companyDetails: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"))
   private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, FirstPayment(true, date))
-  private val reg = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails)) //employment =
-  private val reg2 = PAYERegistration(registrationID = "AC234567", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
+  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails)) //employment =
+  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
 
   // Company Details
-  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = None, Some(employmentDetails))
+  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = None, Some(employmentDetails))
   private val companyDetails2: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany2", tradingName = Some("tstTradingName2"))
-  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails2), Some(employmentDetails))
+  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails2), Some(employmentDetails))
 
   // Employment
-  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
+  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
   private val employmentDetails2: Employment = Employment(employees = true, companyPension = Some(false), subcontractors = true, FirstPayment(true, date))
-  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails2))
+  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails2))
 
   class Setup {
     val repository = RegistrationMongo.store
@@ -62,7 +62,7 @@ class RegistrationMongoRepositoryISpec
 
     "create a new, blank PAYERegistration with the correct ID" in new Setup {
 
-      val actual = await(repository.createNewRegistration("AC234321"))
+      val actual = await(repository.createNewRegistration("AC234321", "09876"))
       actual.registrationID shouldBe "AC234321"
 
     }
@@ -70,7 +70,7 @@ class RegistrationMongoRepositoryISpec
     "throw an Insert Failed exception when creating a new PAYE reg when one already exists" in new Setup {
       await(setupCollection(repository, reg))
 
-      an[InsertFailed] shouldBe thrownBy(await(repository.createNewRegistration(reg.registrationID)))
+      an[InsertFailed] shouldBe thrownBy(await(repository.createNewRegistration(reg.registrationID, reg.internalID)))
 
     }
   }

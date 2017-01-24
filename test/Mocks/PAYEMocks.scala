@@ -16,10 +16,13 @@
 
 package Mocks
 
-import connectors.{Authority, AuthConnector}
+import auth.AuthorisationResource
+import connectors.{AuthConnector, Authority}
 import org.mockito.Matchers
 import org.mockito.Mockito._
+import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.mockito.MockitoSugar
+import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -29,6 +32,14 @@ trait PAYEMocks {
   this:MockitoSugar =>
 
   lazy val mockAuthConnector = mock[AuthConnector]
+  lazy val mockRegistrationRepository = mock[RegistrationMongoRepository]
+
+  object AuthenticationMocks {
+    def getCurrentAuthority(authority: Option[Authority]): OngoingStubbing[Future[Option[Authority]]] = {
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(authority))
+    }
+  }
 
   object AuthorisationMocks {
 
@@ -45,6 +56,16 @@ trait PAYEMocks {
     def mockNotAuthorised(registrationId: String, authority: Authority) = {
       when(mockAuthConnector.getCurrentAuthority()(Matchers.any()))
         .thenReturn(Future.successful(Some(authority)))
+    }
+
+    def getCurrentAuthority(authority: Option[Authority]): OngoingStubbing[Future[Option[Authority]]] = {
+      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(authority))
+    }
+
+    def getInternalId(intId: String, thenReturn: Option[(String, String)]): OngoingStubbing[Future[Option[(String, String)]]] = {
+      when(mockRegistrationRepository.getInternalId(Matchers.eq(intId))(Matchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(thenReturn))
     }
   }
 

@@ -26,16 +26,16 @@ import play.api.Logger
 import play.api.libs.json.{Format, Json}
 import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.bson.BSONDocument
-import reactivemongo.api.indexes.{IndexType, Index}
+import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-
 
 object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
@@ -43,7 +43,7 @@ object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
 }
 
 trait RegistrationRepository {
-  def createNewRegistration(registrationID: String): Future[PAYERegistration]
+  def createNewRegistration(registrationID: String, internalId : String): Future[PAYERegistration]
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
@@ -58,6 +58,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   domainFormat = format
   ) with RegistrationRepository
     with AuthorisationResource[String] {
+
   override def indexes: Seq[Index] = Seq(
     Index(
       key = Seq("registrationID" -> IndexType.Ascending),
@@ -71,8 +72,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     "registrationID" -> BSONString(registrationID)
   )
 
-  override def createNewRegistration(registrationID: String): Future[PAYERegistration] = {
-    val newReg = newRegistrationObject(registrationID)
+  override def createNewRegistration(registrationID: String, internalId : String): Future[PAYERegistration] = {
+    val newReg = newRegistrationObject(registrationID, internalId)
     collection.insert[PAYERegistration](newReg) map {
       res => newReg
     } recover {
@@ -139,9 +140,15 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
+  override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
+    retrieveRegistration(id) map {
+      case Some(registration) => Some(id -> registration.internalID)
+      case None => None
+    }
+  }
+
   // TODO - rename the test repo methods
   // Test endpoints
-  override def getInternalId(id: String): Future[Option[(String, String)]] = ???
 
   override def dropCollection: Future[Unit] = {
     collection.drop()
@@ -164,11 +171,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
-
-  private def newRegistrationObject(registrationID: String): PAYERegistration = {
+  private def newRegistrationObject(registrationID: String, internalId : String): PAYERegistration = {
     val timeStamp = DateHelper.formatTimestamp(LocalDateTime.now())
     PAYERegistration(
       registrationID = registrationID,
+      internalID = internalId,
       formCreationTimestamp = timeStamp,
       companyDetails = None,
       employment = None

@@ -20,17 +20,19 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.__
 
 case class PAYERegistration (registrationID: String,
+                             internalID : String,
                              formCreationTimestamp: String,
                              companyDetails: Option[CompanyDetails],
                              employment: Option[Employment])
 
 object PAYERegistration extends {
 
-  implicit val format =
-    ((__ \ "registrationID").format[String] and
-      (__ \ "formCreationTimestamp").format[String] and
-      (__ \ "companyDetails").formatNullable[CompanyDetails] and
-      (__ \ "employment").formatNullable[Employment]
-      )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
+  implicit val format = (
+    (__ \ "registrationID").format[String] and
+    (__ \ "internalID").format[String] and
+    (__ \ "formCreationTimestamp").format[String] and
+    (__ \ "companyDetails").formatNullable[CompanyDetails] and
+    (__ \ "employment").formatNullable[Employment]
+  )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
 }

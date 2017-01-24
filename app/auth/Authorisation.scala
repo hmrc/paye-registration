@@ -47,29 +47,6 @@ trait Authorisation[I] {
     }
   }
 
-  def authorisedFor(registrationId: I)(f: Authority => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    val res = for {
-      authority <- auth.getCurrentAuthority()
-      resource <- resourceConn.getInternalId(registrationId)
-    } yield {
-      Logger.debug(s"Got authority = $authority")
-      mapToAuthResult(authority, resource)
-    }
-
-    res.flatMap {
-      case Authorised(a) => f(a)
-      case NotLoggedInOrAuthorised =>
-        Logger.info(s"[Authorisation] [authorisedFor] User not logged in")
-        Future.successful(Forbidden)
-      case NotAuthorised(_) =>
-        Logger.info(s"[Authorisation] [authorisedFor] User logged in but not authorised for resource $registrationId")
-        Future.successful(Forbidden)
-      case AuthResourceNotFound(_) =>
-        Logger.info(s"[Authorisation] [authorisedFor] Could not match an Auth resource to registration id $registrationId")
-        Future.successful(NotFound)
-    }
-  }
-
   private def mapToAuthResult(authContext: Option[Authority], resource: Option[(I,String)] ) : AuthorisationResult = {
     authContext match {
       case None => NotLoggedInOrAuthorised
