@@ -37,7 +37,7 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
     "microservice.services.auth.port" -> s"$mockPort"
   ))
 
-  private def client(path: String) = WS.url(s"http://localhost:$port/register-for-paye$path").withFollowRedirects(false)
+  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup {
     val repository = RegistrationMongo.store
