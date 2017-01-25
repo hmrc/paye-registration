@@ -15,12 +15,16 @@
  */
 package api
 
+import java.awt.image.WritableRenderedImage
+import java.time.LocalDate
+
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.PAYERegistration
-import play.api.libs.json.{JsValue, Json}
+import models.{CompanyDetails, Employment, FirstPayment, PAYERegistration}
+import play.api.libs.json.{JsUndefined, JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.test.FakeApplication
 import repositories.RegistrationMongo
+import uk.gov.hmrc.play.http.HttpReads
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -81,6 +85,46 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       response.status shouldBe 403
     }
 
+    val validCompanyDetails = CompanyDetails(
+      crn = None,
+      companyName = "Test Company Name",
+      tradingName = Some("Test Trading Name")
+    )
+
+    "Return a 200 when the user gets company details" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, Some(validCompanyDetails), None))
+
+      val response = client(s"/${regID}/company-details").get.futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson(validCompanyDetails)
+    }
+
+    "Return a 200 when the user upserts company details" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val getResponse1 = client(s"/${regID}/company-details").get.futureValue
+      getResponse1.status shouldBe 404
+
+      val patchResponse = client(s"/${regID}/company-details")
+                            .patch[JsValue](Json.toJson(validCompanyDetails))
+                            .futureValue
+      patchResponse.status shouldBe 200
+
+      val getResponse2 = client(s"/${regID}/company-details").get.futureValue
+      getResponse2.status shouldBe 200
+      getResponse2.json shouldBe Json.toJson(validCompanyDetails)
+    }
+
     "Return a 403 when the user is not authorised to get company details" in new Setup {
       setupSimpleAuthMocks()
 
@@ -93,7 +137,62 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       response.status shouldBe 403
     }
 
-    "Return a 403 when the user is not authorised to get employment details" in new Setup {
+    "Return a 403 when the user is not authorised to upsert company details" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}/company-details")
+        .patch(Json.toJson(validCompanyDetails))
+        .futureValue
+      response.status shouldBe 403
+    }
+
+    val validEmployment = Employment(
+      employees = true,
+      companyPension = Some(true),
+      subcontractors = true,
+      firstPayment = FirstPayment(paymentMade = true, LocalDate.of(2016, 12, 20))
+    )
+
+    "Return a 200 when the user gets employment" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Some(validEmployment)))
+
+      val response = client(s"/${regID}/employment").get.futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson(validEmployment)
+    }
+
+    "Return a 200 when the user upserts employment" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val getResponse1 = client(s"/${regID}/employment").get.futureValue
+      getResponse1.status shouldBe 404
+
+      val patchResponse = client(s"/${regID}/employment")
+        .patch[JsValue](Json.toJson(validEmployment))
+        .futureValue
+      patchResponse.status shouldBe 200
+
+      val getResponse2 = client(s"/${regID}/employment").get.futureValue
+      getResponse2.status shouldBe 200
+      getResponse2.json shouldBe Json.toJson(validEmployment)
+    }
+
+    "Return a 403 when the user is not authorised to get employment" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -102,6 +201,20 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
 
       val response = client(s"/${regID}/employment").get.futureValue
+      response.status shouldBe 403
+    }
+
+    "Return a 403 when the user is not authorised to upsert employment" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}/employment")
+        .patch(Json.toJson(validEmployment))
+        .futureValue
       response.status shouldBe 403
     }
 

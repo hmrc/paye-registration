@@ -26,4 +26,5 @@ trait DBExceptions {
   class UpdateFailed(regId: String, attemptedModel: String) extends NoStackTrace
   class InsertFailed(regId: String, attemptedModel: String) extends NoStackTrace
   class DeleteFailed(regId: String, msg: String) extends NoStackTrace
+  class RetrieveFailed(regId: String) extends NoStackTrace
 }
