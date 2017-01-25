@@ -93,18 +93,6 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       response.status shouldBe 403
     }
 
-    "Return a 403 when the user is not authorised to upsert company details" ignore new Setup {
-      setupSimpleAuthMocks()
-
-      val regID = "12345"
-      val intID = "Int-xxx-yyy-zzz"
-      val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
-
-      val response = client(s"/${regID}/company-details").patch().futureValue
-      response.status shouldBe 403
-    }
-
     "Return a 403 when the user is not authorised to get employment details" in new Setup {
       setupSimpleAuthMocks()
 
@@ -114,18 +102,6 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
 
       val response = client(s"/${regID}/employment").get.futureValue
-      response.status shouldBe 403
-    }
-
-    "Return a 403 when the user is not authorised to upsert employment details" ignore new Setup {
-      setupSimpleAuthMocks()
-
-      val regID = "12345"
-      val intID = "Int-xxx-yyy-zzz"
-      val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
-
-      val response = client(s"/${regID}/employment").patch().futureValue
       response.status shouldBe 403
     }
 
