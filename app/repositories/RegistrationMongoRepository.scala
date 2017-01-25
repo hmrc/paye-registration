@@ -85,7 +85,10 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
     val selector = registrationIDSelector(registrationID)
-    collection.find(selector).one[PAYERegistration]
+    collection.find(selector).one[PAYERegistration] recover {
+      case e : Throwable => Logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+                            throw new RetrieveFailed(registrationID)
+    }
   }
 
   override def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]] = {
@@ -93,7 +96,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       case Some(registration) => registration.companyDetails
       case None =>
         Logger.warn(s"Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
-        None
+        throw new MissingRegDocument(registrationID)
     }
   }
 
@@ -120,7 +123,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       case Some(registration) => registration.employment
       case None =>
         Logger.warn(s"Unable to retrieve Employment for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
-        None
+        throw new MissingRegDocument(registrationID)
     }
   }
 

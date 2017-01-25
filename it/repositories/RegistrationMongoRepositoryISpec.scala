@@ -78,7 +78,6 @@ class RegistrationMongoRepositoryISpec
   "Calling retrieveRegistration" should {
 
     "retrieve a registration object" in new Setup {
-
       await(setupCollection(repository, reg))
 
       val actual = await(repository.retrieveRegistration("AC123456"))
@@ -86,13 +85,10 @@ class RegistrationMongoRepositoryISpec
       actual shouldBe Some(reg)
     }
 
-    "return empty option when there is no corresponding registration object" in new Setup {
-
+    "return a MissingRegDocument when there is no corresponding registration object" in new Setup {
       await(setupCollection(repository, reg))
 
-      val actual = await(repository.retrieveCompanyDetails("AC654321"))
-
-      actual shouldBe None
+      intercept[MissingRegDocument](await(repository.retrieveCompanyDetails("AC654321")))
     }
   }
 
@@ -107,11 +103,8 @@ class RegistrationMongoRepositoryISpec
       actual shouldBe Some(companyDetails)
     }
 
-    "return an empty option when there is no corresponding PAYE Registration in the database" in new Setup {
-
-      val actual = await(repository.retrieveCompanyDetails("AC123456"))
-
-      actual shouldBe None
+    "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
+      intercept[MissingRegDocument](await(repository.retrieveCompanyDetails("AC123456")))
     }
   }
 
@@ -160,11 +153,9 @@ class RegistrationMongoRepositoryISpec
       actual shouldBe Some(employmentDetails)
     }
 
-    "return an empty option when there is no corresponding PAYE Registration in the database" in new Setup {
+    "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
 
-      val actual = await(repository.retrieveEmployment("AC123456"))
-
-      actual shouldBe None
+      intercept[MissingRegDocument](await(repository.retrieveEmployment("AC123456")))
     }
   }
 
@@ -208,8 +199,7 @@ class RegistrationMongoRepositoryISpec
       await(setupCollection(repository, reg))
       await(repository.dropCollection)
 
-      val actual = await(repository.retrieveCompanyDetails("AC123456"))
-      actual shouldBe None
+      intercept[MissingRegDocument](await(repository.retrieveCompanyDetails("AC123456")))
     }
 
     "delete a specific registration" in new Setup {
