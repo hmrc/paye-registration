@@ -85,10 +85,10 @@ class RegistrationMongoRepositoryISpec
       actual shouldBe Some(reg)
     }
 
-    "return a MissingRegDocument when there is no corresponding registration object" in new Setup {
+    "return a None when there is no corresponding registration object" in new Setup {
       await(setupCollection(repository, reg))
 
-      intercept[MissingRegDocument](await(repository.retrieveCompanyDetails("AC654321")))
+      await(repository.retrieveRegistration("AC654321")) shouldBe None
     }
   }
 
