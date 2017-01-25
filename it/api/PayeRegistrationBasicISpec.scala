@@ -17,7 +17,7 @@ package api
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.PAYERegistration
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.test.FakeApplication
 import repositories.RegistrationMongo
@@ -68,6 +68,67 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
         "formCreationTimestamp" -> timestamp
       )
     }
+
+    "Return a 403 when the user is not authorised to get a paye registration" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}").get.futureValue
+      response.status shouldBe 403
+    }
+
+    "Return a 403 when the user is not authorised to get company details" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}/company-details").get.futureValue
+      response.status shouldBe 403
+    }
+
+    "Return a 403 when the user is not authorised to upsert company details" ignore new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}/company-details").patch().futureValue
+      response.status shouldBe 403
+    }
+
+    "Return a 403 when the user is not authorised to get employment details" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}/employment").get.futureValue
+      response.status shouldBe 403
+    }
+
+    "Return a 403 when the user is not authorised to upsert employment details" ignore new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None))
+
+      val response = client(s"/${regID}/employment").patch().futureValue
+      response.status shouldBe 403
+    }
+
     "Return a 404 if the registration is missing" in new Setup {
       setupSimpleAuthMocks()
 
