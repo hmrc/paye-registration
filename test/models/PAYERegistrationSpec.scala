@@ -42,10 +42,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "tradingName":"Test Trading Name"
            |    },
            |  "employment": {
-           |    "first-payment":{
-           |       "payment-date": "$date",
-           |       "payment-made": true
-           |    },
+           |    "first-payment-date": "$date",
            |    "cis": true,
            |    "employees": true,
            |    "ocpn": true
@@ -60,7 +57,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         companyDetails = Some(
           CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
         ),
-        employment = Some(Employment(employees = true, Some(true), subcontractors = true, FirstPayment(true, date)))
+        employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date))
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

@@ -32,17 +32,14 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
           |{
-          |  "first-payment":{
-          |     "payment-date": "$date",
-          |     "payment-made": true
-          |  },
+          |  "first-payment-date": "$date",
           |  "cis": true,
           |  "employees": true,
           |  "ocpn": true
           |}
         """.stripMargin)
 
-      val testEmployment = Employment(employees = true, Some(true), subcontractors = true, FirstPayment(true, date))
+      val testEmployment = Employment(employees = true, Some(true), subcontractors = true, date)
 
       Json.fromJson[Employment](json) shouldBe JsSuccess(testEmployment)
     }
@@ -51,16 +48,13 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
-           |  "first-payment":{
-           |     "payment-date": "$date",
-           |     "payment-made": true
-           |  },
+           |  "first-payment-date": "$date",
            |  "cis": true,
            |  "employees": true
            |}
         """.stripMargin)
 
-      val testEmployment = Employment(employees = true, None, subcontractors = true, FirstPayment(true, date))
+      val testEmployment = Employment(employees = true, None, subcontractors = true, date)
 
       Json.fromJson[Employment](json) shouldBe JsSuccess(testEmployment)
     }
@@ -69,10 +63,7 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
-           |  "first-payment":{
-           |     "payment-date": "2-12-2016",
-           |     "payment-made": true
-           |  },
+           |  "first-payment-date": "2-12-2016",
            |  "cis": true,
            |  "employees": true,
            |  "ocpn": true

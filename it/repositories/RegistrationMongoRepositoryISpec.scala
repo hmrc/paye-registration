@@ -34,7 +34,7 @@ class RegistrationMongoRepositoryISpec
 
   private val date = LocalDate.of(2016, 12, 20)
   private val companyDetails: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"))
-  private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, FirstPayment(true, date))
+  private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, date)
   private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails)) //employment =
   private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
 
@@ -45,7 +45,7 @@ class RegistrationMongoRepositoryISpec
 
   // Employment
   private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
-  private val employmentDetails2: Employment = Employment(employees = true, companyPension = Some(false), subcontractors = true, FirstPayment(true, date))
+  private val employmentDetails2: Employment = Employment(employees = true, companyPension = Some(false), subcontractors = true, date)
   private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails2))
 
   class Setup {

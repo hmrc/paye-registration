@@ -19,7 +19,7 @@ import java.awt.image.WritableRenderedImage
 import java.time.LocalDate
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{CompanyDetails, Employment, FirstPayment, PAYERegistration}
+import models.{CompanyDetails, Employment, PAYERegistration}
 import play.api.libs.json.{JsUndefined, JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.test.FakeApplication
@@ -155,7 +155,7 @@ class PayeRegistrationBasicISpec extends IntegrationSpecBase {
       employees = true,
       companyPension = Some(true),
       subcontractors = true,
-      firstPayment = FirstPayment(paymentMade = true, LocalDate.of(2016, 12, 20))
+      firstPaymentDate = LocalDate.of(2016, 12, 20)
     )
 
     "Return a 200 when the user gets employment" in new Setup {
