@@ -24,17 +24,7 @@ import play.api.libs.json._
 case class Employment(employees: Boolean,
                       companyPension: Option[Boolean],
                       subcontractors: Boolean,
-                      firstPayment: FirstPayment)
-
-case class FirstPayment(paymentMade: Boolean,
-                        firstPayDate: LocalDate)
-
-object FirstPayment {
-  implicit val format =
-  ((__ \ "payment-made").format[Boolean] and
-    (__ \ "payment-date").format[LocalDate]
-    )(FirstPayment.apply, unlift(FirstPayment.unapply))
-}
+                      firstPaymentDate: LocalDate)
 
 object Employment {
 
@@ -42,7 +32,7 @@ object Employment {
       ((__ \ "employees").format[Boolean] and
         (__ \ "ocpn").formatNullable[Boolean] and
         (__ \ "cis").format[Boolean] and
-        (__ \ "first-payment").format[FirstPayment]
+        (__ \ "first-payment-date").format[LocalDate]
       )(Employment.apply, unlift(Employment.unapply))
 
 }
