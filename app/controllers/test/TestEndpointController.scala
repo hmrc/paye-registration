@@ -56,7 +56,7 @@ trait TestEndpointController extends BaseController with Authenticated {
       }
   }
 
-  def insertRegistration(regID: String) = Action.async(parse.json) {
+  def updateRegistration(regID: String) = Action.async(parse.json) {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
@@ -65,7 +65,7 @@ trait TestEndpointController extends BaseController with Authenticated {
             reg =>
               reg.+("internalID" -> JsString(context.ids.internalId)).validate[PAYERegistration].fold (
                   errs => Future.successful(BadRequest(errs.toString())),
-                  registration => registrationRepository.addRegistration(registration) map {
+                  registration => registrationRepository.updateRegistration(registration) map {
                     case _ => Ok(Json.toJson(reg).as[JsObject])
                   } recover {
                     case e => InternalServerError(e.getMessage)

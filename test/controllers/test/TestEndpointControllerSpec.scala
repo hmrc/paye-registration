@@ -74,20 +74,20 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Insert Registration" should {
     "return a 200 response for success" in new Setup {
-      when(mockRepo.addRegistration(Matchers.any())).thenReturn(Future.successful(validRegistration))
+      when(mockRepo.updateRegistration(Matchers.any())).thenReturn(Future.successful(validRegistration))
       when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
-      val response = await(controller.insertRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.OK
     }
 
     "return a 500 response for failure" in new Setup {
-      when(mockRepo.addRegistration(Matchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
+      when(mockRepo.updateRegistration(Matchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
       when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
-      val response = await(controller.insertRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
 
@@ -95,7 +95,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
-      val response = await(controller.insertRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"regID":"invalid"}"""))))
+      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"regID":"invalid"}"""))))
       status(response) shouldBe Status.BAD_REQUEST
     }
 
@@ -103,7 +103,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = await(controller.insertRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.FORBIDDEN
     }
   }

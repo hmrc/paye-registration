@@ -216,15 +216,16 @@ class RegistrationMongoRepositoryISpec
       remaining shouldBe Some(reg2)
     }
 
-    "insert a Registration" in new Setup {
-      val actual = await(repository.addRegistration(reg))
+    "insert a Registration when none exists" in new Setup {
+      val actual = await(repository.updateRegistration(reg))
       actual shouldBe reg
     }
 
-    "throw the correct error when inserting a registration that already exists" in new Setup {
+    "correctly update a registration that already exists" in new Setup {
       await(setupCollection(repository, reg))
 
-      an[InsertFailed] shouldBe thrownBy(await(repository.addRegistration(reg)))
+      val actual = await(repository.updateRegistration(reg))
+      actual shouldBe reg
     }
   }
 
