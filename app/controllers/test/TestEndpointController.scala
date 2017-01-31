@@ -16,15 +16,16 @@
 
 package controllers.test
 
-import auth.Authenticated
+import auth.{LoggedIn, NotLoggedIn, Authenticated}
 import connectors.AuthConnector
 import models.PAYERegistration
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json._
 import play.api.mvc.Action
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object TestEndpointController extends TestEndpointController {
   //$COVERAGE-OFF$
@@ -57,13 +58,21 @@ trait TestEndpointController extends BaseController with Authenticated {
 
   def insertRegistration(regID: String) = Action.async(parse.json) {
     implicit request =>
-      withJsonBody[PAYERegistration] {
-        reg => registrationRepository.addRegistration(reg) map {
-          case _ => Ok(Json.toJson(reg).as[JsObject])
-        } recover {
-          case e => InternalServerError(e.getMessage)
-        }
-      }
+      authenticated {
+        case NotLoggedIn => Future.successful(Forbidden)
+        case LoggedIn(context) =>
+          withJsonBody[JsObject] {
+            reg =>
+              reg.+("internalID" -> JsString(context.ids.internalId)).validate[PAYERegistration].fold (
+                  errs => Future.successful(BadRequest(errs.toString())),
+                  registration => registrationRepository.addRegistration(registration) map {
+                    case _ => Ok(Json.toJson(reg).as[JsObject])
+                  } recover {
+                    case e => InternalServerError(e.getMessage)
+                  }
+                )
+              }
+          }
   }
 
 }
