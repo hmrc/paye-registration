@@ -16,8 +16,8 @@
 
 package auth
 
-import connectors.{AuthConnector, Authority, UserIds}
-import org.mockito.Matchers
+import connectors.{AuthConnect, AuthConnector, Authority, UserIds}
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest._
 import play.api.mvc.Results
@@ -31,7 +31,7 @@ class AuthenticationSpec extends PAYERegSpec with BeforeAndAfter {
 
   implicit val hc = HeaderCarrier()
 
-  val mockAuth = mock[AuthConnector]
+  val mockAuth = mock[AuthConnect]
 
   object Authenticated extends Authenticated {
     val auth = mockAuth
@@ -47,7 +47,7 @@ class AuthenticationSpec extends PAYERegSpec with BeforeAndAfter {
 
       val a = Authority("x", "y", "z", UserIds("tiid","teid"))
 
-      when(mockAuth.getCurrentAuthority()(Matchers.any())).
+      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any())).
         thenReturn(Future.successful(Some(a)))
 
       val result = Authenticated.authenticated { authResult => {
@@ -61,7 +61,7 @@ class AuthenticationSpec extends PAYERegSpec with BeforeAndAfter {
 
     "indicate there's no logged in user where there isn't a valid bearer token" in {
 
-      when(mockAuth.getCurrentAuthority()(Matchers.any())).
+      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any())).
         thenReturn(Future.successful(None))
 
       val result = Authenticated.authenticated { authResult => {

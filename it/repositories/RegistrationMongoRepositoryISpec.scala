@@ -49,7 +49,8 @@ class RegistrationMongoRepositoryISpec
   private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails2))
 
   class Setup {
-    val repository = RegistrationMongo.store
+    val mongo = new RegistrationMongo
+    val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }

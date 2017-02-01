@@ -16,37 +16,38 @@
 
 package controllers
 
-import connectors.AuthConnector
+import connectors.{AuthConnect, AuthConnector}
 import models.{CompanyDetails, Employment}
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
+import com.google.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.MissingRegDocument
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RegistrationController extends RegistrationController {
-  //$COVERAGE-OFF$
-  override val auth = AuthConnector
-  override val registrationService = RegistrationService
-  val resourceConn = RegistrationService.registrationRepository
-  //$COVERAGE-ON$
+@Singleton
+class RegistrationController @Inject()(authConnector: AuthConnector, registrationService: RegistrationService) extends RegistrationCtrl {
+  val auth: AuthConnect = authConnector
+  val registrationSrv: RegistrationService = registrationService
+  val resourceConn: RegistrationMongoRepository = registrationService.registrationRepository
 }
 
-trait RegistrationController extends BaseController with Authenticated with Authorisation[String] {
+trait RegistrationCtrl extends BaseController with Authenticated with Authorisation[String] {
 
-  val registrationService: RegistrationService
+  val registrationSrv: RegistrationService
 
   def newPAYERegistration(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) =>
-          registrationService.createNewPAYERegistration(regID, context.ids.internalId) map {
+          registrationSrv.createNewPAYERegistration(regID, context.ids.internalId) map {
             reg => Ok(Json.toJson(reg))
           }
       }
@@ -55,8 +56,8 @@ trait RegistrationController extends BaseController with Authenticated with Auth
   def getPAYERegistration(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       authorised(regID) {
-        case Authorised(context) =>
-          registrationService.fetchPAYERegistration(regID) map {
+        case Authorised(_) =>
+          registrationSrv.fetchPAYERegistration(regID) map {
             case Some(registration) => Ok(Json.toJson(registration))
             case None => NotFound
           }
@@ -74,7 +75,7 @@ trait RegistrationController extends BaseController with Authenticated with Auth
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationService.getCompanyDetails(regID) map {
+          registrationSrv.getCompanyDetails(regID) map {
             case Some(companyDetails) => Ok(Json.toJson(companyDetails))
             case None => NotFound
           }
@@ -93,7 +94,7 @@ trait RegistrationController extends BaseController with Authenticated with Auth
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[CompanyDetails] { companyDetails =>
-            registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
+            registrationSrv.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -113,7 +114,7 @@ trait RegistrationController extends BaseController with Authenticated with Auth
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationService.getEmployment(regID) map {
+          registrationSrv.getEmployment(regID) map {
             case Some(employment) => Ok(Json.toJson(employment))
             case None => NotFound
           }
@@ -132,7 +133,7 @@ trait RegistrationController extends BaseController with Authenticated with Auth
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[Employment] { employmentDetails =>
-            registrationService.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
+            registrationSrv.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
               Ok(Json.toJson(employmentResponse))
             } recover {
               case missing : MissingRegDocument => NotFound

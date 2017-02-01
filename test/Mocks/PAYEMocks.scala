@@ -16,9 +16,8 @@
 
 package Mocks
 
-import auth.AuthorisationResource
 import connectors.{AuthConnector, Authority}
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.mockito.MockitoSugar
@@ -36,7 +35,7 @@ trait PAYEMocks {
 
   object AuthenticationMocks {
     def getCurrentAuthority(authority: Option[Authority]): OngoingStubbing[Future[Option[Authority]]] = {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(authority))
     }
   }
@@ -44,29 +43,28 @@ trait PAYEMocks {
   object AuthorisationMocks {
 
     def mockSuccessfulAuthorisation(registrationId: String, authority: Authority) = {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(authority)))
     }
 
     def mockNotLoggedInOrAuthorised = {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
     }
 
     def mockNotAuthorised(registrationId: String, authority: Authority) = {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(authority)))
     }
 
     def getCurrentAuthority(authority: Option[Authority]): OngoingStubbing[Future[Option[Authority]]] = {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(authority))
     }
 
     def getInternalId(intId: String, thenReturn: Option[(String, String)]): OngoingStubbing[Future[Option[(String, String)]]] = {
-      when(mockRegistrationRepository.getInternalId(Matchers.eq(intId))(Matchers.any[HeaderCarrier]()))
+      when(mockRegistrationRepository.getInternalId(ArgumentMatchers.eq(intId))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(thenReturn))
     }
   }
-
 }

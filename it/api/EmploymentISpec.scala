@@ -42,7 +42,8 @@ class EmploymentISpec extends IntegrationSpecBase {
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup {
-    val repository = RegistrationMongo.store
+    val mongo = new RegistrationMongo
+    val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }

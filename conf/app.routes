@@ -1,11 +1,11 @@
 # microservice specific routes
 
-GET        /:regID                            controllers.RegistrationController.getPAYERegistration(regID)
+GET        /:regID                            @controllers.RegistrationController.getPAYERegistration(regID)
 
-PATCH      /:regID/new                        controllers.RegistrationController.newPAYERegistration(regID)
+PATCH      /:regID/new                        @controllers.RegistrationController.newPAYERegistration(regID)
 
-GET        /:regID/company-details            controllers.RegistrationController.getCompanyDetails(regID)
-PATCH      /:regID/company-details            controllers.RegistrationController.upsertCompanyDetails(regID)
+GET        /:regID/company-details            @controllers.RegistrationController.getCompanyDetails(regID)
+PATCH      /:regID/company-details            @controllers.RegistrationController.upsertCompanyDetails(regID)
 
-GET        /:regID/employment                 controllers.RegistrationController.getEmployment(regID)
-PATCH      /:regID/employment                 controllers.RegistrationController.upsertEmployment(regID)
+GET        /:regID/employment                 @controllers.RegistrationController.getEmployment(regID)
+PATCH      /:regID/employment                 @controllers.RegistrationController.upsertEmployment(regID)

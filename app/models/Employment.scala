@@ -28,8 +28,9 @@ case class Employment(employees: Boolean,
 
 object Employment {
 
-  implicit val format =
-      ((__ \ "employees").format[Boolean] and
+  implicit val format: OFormat[Employment] =
+      (
+        (__ \ "employees").format[Boolean] and
         (__ \ "ocpn").formatNullable[Boolean] and
         (__ \ "cis").format[Boolean] and
         (__ \ "first-payment-date").format[LocalDate]

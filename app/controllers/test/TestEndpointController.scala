@@ -16,57 +16,57 @@
 
 package controllers.test
 
-import auth.{LoggedIn, NotLoggedIn, Authenticated}
+import auth.{Authenticated, LoggedIn, NotLoggedIn}
+import com.google.inject.{Inject, Singleton}
 import connectors.AuthConnector
 import models.PAYERegistration
 import play.api.libs.json._
-import play.api.mvc.Action
-import repositories.RegistrationMongoRepository
+import play.api.mvc.{Action, AnyContent}
+import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object TestEndpointController extends TestEndpointController {
-  //$COVERAGE-OFF$
-  override val auth = AuthConnector
-  override val registrationRepository = repositories.RegistrationMongo.store
-  //$COVERAGE-ON$
+@Singleton
+class TestEndpointController @Inject()(authConnector: AuthConnector, registrationMongo : RegistrationMongo) extends TestEndpointCtrl {
+  val auth: AuthConnector = authConnector
+  val registrationRepository: RegistrationMongoRepository = registrationMongo.store
 }
 
-trait TestEndpointController extends BaseController with Authenticated {
+trait TestEndpointCtrl extends BaseController with Authenticated {
 
   val registrationRepository: RegistrationMongoRepository
 
-  def registrationTeardown = Action.async {
+  def registrationTeardown: Action[AnyContent] = Action.async {
     implicit request =>
       registrationRepository.dropCollection map {
-        case _ => Ok
+        _ => Ok
       } recover {
         case e => InternalServerError(e.getMessage)
       }
   }
 
-  def deleteRegistration(regID: String) = Action.async {
+  def deleteRegistration(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       registrationRepository.deleteRegistration(regID) map {
-        case _ => Ok
+        _ => Ok
       } recover {
         case e => InternalServerError(e.getMessage)
       }
   }
 
-  def updateRegistration(regID: String) = Action.async(parse.json) {
+  def updateRegistration(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) =>
           withJsonBody[JsObject] {
             reg =>
-              reg.+("internalID" -> JsString(context.ids.internalId)).validate[PAYERegistration].fold (
+              reg. +("internalID" -> JsString(context.ids.internalId)).validate[PAYERegistration].fold (
                   errs => Future.successful(BadRequest(errs.toString())),
                   registration => registrationRepository.updateRegistration(registration) map {
-                    case _ => Ok(Json.toJson(reg).as[JsObject])
+                    _ => Ok(Json.toJson(reg).as[JsObject])
                   } recover {
                     case e => InternalServerError(e.getMessage)
                   }

@@ -17,9 +17,8 @@
 package auth
 
 import play.api.mvc.Result
-import play.api.mvc.Results._
 import play.api.Logger
-import connectors.{AuthConnector, Authority}
+import connectors.{AuthConnect, Authority}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,7 +32,7 @@ final case class AuthResourceNotFound(authContext: Authority) extends Authorisat
 
 trait Authorisation[I] {
 
-  val auth: AuthConnector
+  val auth: AuthConnect
   val resourceConn : AuthorisationResource[I]
 
   def authorised(id:I)(f: => AuthorisationResult => Future[Result])(implicit hc: HeaderCarrier) = {

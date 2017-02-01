@@ -21,7 +21,7 @@ import models.{CompanyDetails, PAYERegistration}
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.test.FakeApplication
-import repositories.RegistrationMongo
+import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -41,7 +41,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup {
-    val repository = RegistrationMongo.store
+    val mongo = new RegistrationMongo()
+    val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }
