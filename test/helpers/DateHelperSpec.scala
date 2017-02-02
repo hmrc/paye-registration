@@ -22,21 +22,21 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class DateHelperSpec extends UnitSpec {
 
-  val tstDateHelper = DateHelper
+  object TestDateHelper extends DateHelper
 
   "formatTimeStamp" should {
     "Correctly format a LocalDateTime to a String" in {
       // date time of 12:35 on 20th Feb, 2017
       val tstDate = LocalDateTime.of(2017, 2, 20, 12, 35, 0)
 
-      tstDateHelper.formatTimestamp(tstDate) shouldBe "2017-02-20T12:35:00"
+      TestDateHelper.formatTimestamp(tstDate) shouldBe "2017-02-20T12:35:00"
     }
 
     "Correctly format a LocalDateTime with nanoseconds to a String" in {
       // date time of 12:35.3 on 20th Feb, 2017
       val tstDate = LocalDateTime.of(2017, 2, 20, 12, 35, 0, 300000000)
 
-      tstDateHelper.formatTimestamp(tstDate) shouldBe "2017-02-20T12:35:00"
+      TestDateHelper.formatTimestamp(tstDate) shouldBe "2017-02-20T12:35:00"
     }
   }
 }

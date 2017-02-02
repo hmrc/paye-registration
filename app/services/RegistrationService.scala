@@ -16,22 +16,22 @@
 
 package services
 
-import models.{CompanyDetails, PAYERegistration, Employment}
-import repositories.RegistrationMongoRepository
+import com.google.inject.{Inject, Singleton}
+import models.{CompanyDetails, Employment, PAYERegistration}
+import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import play.api.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RegistrationService extends RegistrationService {
-  //$COVERAGE-OFF$
-  override val registrationRepository = repositories.RegistrationMongo.store
-  //$COVERAGE-ON$
+@Singleton
+class RegistrationService @Inject()(registrationMongoRepository: RegistrationMongo) extends RegistrationSrv {
+  val registrationRepository : RegistrationMongoRepository = registrationMongoRepository.store
 }
 
-trait RegistrationService {
+trait RegistrationSrv {
 
-  val registrationRepository: RegistrationMongoRepository
+  val registrationRepository : RegistrationMongoRepository
 
   def createNewPAYERegistration(regID: String, internalId : String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
@@ -61,5 +61,4 @@ trait RegistrationService {
   def upsertEmployment(regID: String, employmentDetails: Employment): Future[Employment] = {
     registrationRepository.upsertEmployment(regID, employmentDetails)
   }
-
 }

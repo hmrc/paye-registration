@@ -19,6 +19,7 @@ package repositories
 import java.time.LocalDateTime
 
 import auth.AuthorisationResource
+import com.google.inject.Singleton
 import common.exceptions.DBExceptions._
 import helpers.DateHelper
 import models._
@@ -37,7 +38,8 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RegistrationMongo extends MongoDbConnection with ReactiveMongoFormats {
+@Singleton
+class RegistrationMongo() extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   val store = new RegistrationMongoRepository(db, registrationFormat)
 }
@@ -57,7 +59,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   mongo = mongo,
   domainFormat = format
   ) with RegistrationRepository
-    with AuthorisationResource[String] {
+    with AuthorisationResource[String]
+    with DateHelper {
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -175,7 +178,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   private def newRegistrationObject(registrationID: String, internalId : String): PAYERegistration = {
-    val timeStamp = DateHelper.formatTimestamp(LocalDateTime.now())
+    val timeStamp = formatTimestamp(LocalDateTime.now())
     PAYERegistration(
       registrationID = registrationID,
       internalID = internalId,

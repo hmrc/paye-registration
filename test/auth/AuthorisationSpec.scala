@@ -17,7 +17,7 @@
 package auth
 
 import connectors.{AuthConnector, Authority, UserIds}
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest._
 import play.api.mvc.{Result, Results}
@@ -38,7 +38,7 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
     Future.successful(Results.Ok("tstOutcome"))
   }
 
-  object Authorisation extends Authorisation[String] {
+  val authorisation = new Authorisation[String] {
     val auth = mockAuth
     val resourceConn = mockResource
   }
@@ -52,13 +52,13 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
     "indicate there's no logged in user where there isn't a valid bearer token" in {
 
-      when(mockAuth.getCurrentAuthority()(Matchers.any()))
+      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
-      when(mockResource.getInternalId(Matchers.any())(Matchers.any[HeaderCarrier]()))
+      when(mockResource.getInternalId(ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val result = Authorisation.authorised("xxx") { authResult => {
+      val result = authorisation.authorised("xxx") { authResult => {
         authResult shouldBe NotLoggedInOrAuthorised
         Future.successful(Results.Forbidden)
       }
@@ -73,13 +73,13 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
       val userIDs = UserIds("foo", "bar")
       val a = Authority("x", "y", "z", userIDs)
 
-      when(mockAuth.getCurrentAuthority()(Matchers.any()))
+      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(a)))
 
-      when(mockResource.getInternalId(Matchers.eq(regId))(Matchers.any[HeaderCarrier]()))
+      when(mockResource.getInternalId(ArgumentMatchers.eq(regId))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some((regId, userIDs.internalId))))
 
-      val result = Authorisation.authorised(regId){ authResult => {
+      val result = authorisation.authorised(regId){ authResult => {
         authResult shouldBe Authorised(a)
         Future.successful(Results.Ok)
       }
@@ -94,13 +94,13 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
       val userIDs = UserIds("foo", "bar")
       val a = Authority("x", "y", "z", userIDs)
 
-      when(mockAuth.getCurrentAuthority()(Matchers.any()))
+      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(a)))
 
-      when(mockResource.getInternalId(Matchers.eq(regId))(Matchers.any[HeaderCarrier]()))
+      when(mockResource.getInternalId(ArgumentMatchers.eq(regId))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some((regId, userIDs.internalId +"xxx"))))
 
-      val result = Authorisation.authorised(regId){ authResult => {
+      val result = authorisation.authorised(regId){ authResult => {
         authResult shouldBe NotAuthorised(a)
         Future.successful(Results.Ok)
       }
@@ -113,13 +113,13 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
       val a = Authority("x", "y", "z", UserIds("tiid","teid"))
 
-      when(mockAuth.getCurrentAuthority()(Matchers.any()))
+      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(a)))
 
-      when(mockResource.getInternalId(Matchers.any())(Matchers.any[HeaderCarrier]()))
+      when(mockResource.getInternalId(ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val result = Authorisation.authorised("xxx"){ authResult => {
+      val result = authorisation.authorised("xxx"){ authResult => {
         authResult shouldBe AuthResourceNotFound(a)
         Future.successful(Results.Ok)
         }

@@ -16,13 +16,13 @@
 
 package controllers.test
 
-import fixtures.{RegistrationFixture, AuthFixture}
+import fixtures.{AuthFixture, RegistrationFixture}
 import models.PAYERegistration
 import play.api.libs.json.Json
 import repositories.RegistrationMongoRepository
 import play.api.test.FakeRequest
 import play.api.http.Status
-import org.mockito.Matchers
+import org.mockito.{ArgumentMatchers, Matchers}
 import org.mockito.Mockito._
 import testHelpers.PAYERegSpec
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -34,7 +34,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
   val mockRepo = mock[RegistrationMongoRepository]
 
   class Setup {
-    val controller = new TestEndpointController {
+    val controller = new TestEndpointCtrl {
       override val auth = mockAuthConnector
       override val registrationRepository = mockRepo
     }
@@ -58,14 +58,14 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Delete Registration" should {
     "return a 200 response for success" in new Setup {
-      when(mockRepo.deleteRegistration(Matchers.any())).thenReturn(Future.successful(true))
+      when(mockRepo.deleteRegistration(ArgumentMatchers.any())).thenReturn(Future.successful(true))
 
       val response = await(controller.deleteRegistration("AC123456")(FakeRequest()))
       status(response) shouldBe Status.OK
     }
 
     "return a 500 response for failure" in new Setup {
-      when(mockRepo.deleteRegistration(Matchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
+      when(mockRepo.deleteRegistration(ArgumentMatchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = await(controller.deleteRegistration("AC123456")(FakeRequest()))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
@@ -74,8 +74,8 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   "Insert Registration" should {
     "return a 200 response for success" in new Setup {
-      when(mockRepo.updateRegistration(Matchers.any())).thenReturn(Future.successful(validRegistration))
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockRepo.updateRegistration(ArgumentMatchers.any())).thenReturn(Future.successful(validRegistration))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
@@ -83,8 +83,8 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 500 response for failure" in new Setup {
-      when(mockRepo.updateRegistration(Matchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockRepo.updateRegistration(ArgumentMatchers.any())).thenReturn(Future.failed(new RuntimeException("test failure message")))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
@@ -92,7 +92,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a Bad Request response for incorrect Json" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"regID":"invalid"}"""))))
@@ -100,7 +100,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a forbidden response for unauthorised" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(Matchers.any[HeaderCarrier]()))
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))

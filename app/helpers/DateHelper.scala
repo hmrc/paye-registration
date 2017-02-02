@@ -19,8 +19,6 @@ package helpers
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-object DateHelper extends DateHelper
-
 trait DateHelper {
 
   def formatTimestamp(timeStamp: LocalDateTime) : String = {
@@ -28,5 +26,4 @@ trait DateHelper {
     val format: DateTimeFormatter = DateTimeFormatter.ofPattern(timeStampFormat)
     format.format(timeStamp)
   }
-
 }

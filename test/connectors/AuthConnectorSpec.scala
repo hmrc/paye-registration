@@ -17,26 +17,24 @@
 package connectors
 
 import java.util.UUID
-import org.mockito.Matchers
+
+import org.mockito.{ArgumentMatchers, Matchers}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Json
 import testHelpers.PAYERegSpec
-import uk.gov.hmrc.play.http.{HttpResponse, HeaderCarrier, _}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse, _}
 import uk.gov.hmrc.play.http.logging.SessionId
 
 import scala.concurrent.Future
 
-/**
-  * Created by crispy on 03/08/16.
-  */
 class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
   implicit val hc = HeaderCarrier()
 
   val mockHttp = mock[HttpGet with HttpPost]
 
-  object TestAuthConnector extends AuthConnector {
+  val testAuthConnector = new AuthConnect {
     lazy val serviceUrl = "localhost"
     val authorityUri = "auth/authority"
     override val http: HttpGet with HttpPost = mockHttp
@@ -75,15 +73,15 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
       val userIDs = UserIds("foo", "bar")
       val expected = Authority(uri, ggid, userDetailsLink, userIDs)
 
-      when(mockHttp.GET[HttpResponse](Matchers.eq("localhost/auth/authority"))(Matchers.any(), Matchers.any())).
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq("localhost/auth/authority"))(ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(200, Some(authResponseJson(uri, userDetailsLink, ggid, idsLink)))))
 
-      when(mockHttp.GET[HttpResponse](Matchers.eq(s"localhost${idsLink}"))(Matchers.any(), Matchers.any())).
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(s"localhost${idsLink}"))(ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(200, Some(idsResponseJson(userIDs.internalId, userIDs.externalId)))))
 
 
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-      val result = TestAuthConnector.getCurrentAuthority()
+      val result = testAuthConnector.getCurrentAuthority()
       val authority = await(result)
 
       authority shouldBe Some(expected)
@@ -91,11 +89,11 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
     "return None when an authority isn't found" in {
 
-      when(mockHttp.GET[HttpResponse](Matchers.eq("localhost/auth/authority"))(Matchers.any(), Matchers.any())).
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq("localhost/auth/authority"))(ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(404, None)))
 
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-      val result = TestAuthConnector.getCurrentAuthority()
+      val result = testAuthConnector.getCurrentAuthority()
       val authority = await(result)
 
       authority shouldBe None

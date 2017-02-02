@@ -17,7 +17,7 @@
 package models
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.__
+import play.api.libs.json.{OFormat, __}
 
 case class CompanyDetails(crn: Option[String],
                           companyName: String,
@@ -25,10 +25,11 @@ case class CompanyDetails(crn: Option[String],
 
 object CompanyDetails extends CompanyDetailsValidator {
 
-  implicit val format =
-    ((__ \ "crn").formatNullable[String](crnValidator) and
-     (__ \ "companyName").format[String](companyNameValidator) and
-     (__ \ "tradingName").formatNullable[String](companyNameValidator)
-      )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
+  implicit val format: OFormat[CompanyDetails] =
+    (
+      (__ \ "crn").formatNullable[String](crnValidator) and
+      (__ \ "companyName").format[String](companyNameValidator) and
+      (__ \ "tradingName").formatNullable[String](companyNameValidator)
+    )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 
 }

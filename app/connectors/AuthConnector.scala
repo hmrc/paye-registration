@@ -16,6 +16,7 @@
 
 package connectors
 
+import com.google.inject.Singleton
 import config.WSHttp
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -27,12 +28,10 @@ import play.api.libs.json.Json
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class Authority(
-                      uri: String,
-                      gatewayId: String,
-                      userDetailsLink: String,
-                      ids: UserIds
-                    )
+case class Authority(uri: String,
+                     gatewayId: String,
+                     userDetailsLink: String,
+                     ids: UserIds)
 
 case class UserIds(internalId : String,
                    externalId : String)
@@ -41,7 +40,14 @@ object UserIds {
   implicit val format = Json.format[UserIds]
 }
 
-trait AuthConnector extends ServicesConfig with RawResponseReads {
+@Singleton
+class AuthConnector extends AuthConnect with ServicesConfig {
+  lazy val serviceUrl: String = baseUrl("auth")
+  val authorityUri = "auth/authority"
+  val http: HttpGet with HttpPost = WSHttp
+}
+
+trait AuthConnect extends RawResponseReads {
 
   def serviceUrl: String
 
@@ -70,17 +76,9 @@ trait AuthConnector extends ServicesConfig with RawResponseReads {
                 Some(Authority(uri, gatewayId, userDetails, ids))
             }
           }
-          case status => Future.successful(None)
+          case _ => Future.successful(None)
         }
     }
   }
 
-}
-
-object AuthConnector extends AuthConnector {
-  // $COVERAGE-OFF$
-  lazy val serviceUrl = baseUrl("auth")
-  // $COVERAGE-OFF$
-  val authorityUri = "auth/authority"
-  val http: HttpGet with HttpPost = WSHttp
 }
