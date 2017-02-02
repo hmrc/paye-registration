@@ -34,7 +34,7 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
   val mockHttp = mock[HttpGet with HttpPost]
 
-  object TestAuthConnector extends AuthConnect {
+  val testAuthConnector = new AuthConnect {
     lazy val serviceUrl = "localhost"
     val authorityUri = "auth/authority"
     override val http: HttpGet with HttpPost = mockHttp
@@ -81,7 +81,7 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
 
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-      val result = TestAuthConnector.getCurrentAuthority()
+      val result = testAuthConnector.getCurrentAuthority()
       val authority = await(result)
 
       authority shouldBe Some(expected)
@@ -93,7 +93,7 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
         thenReturn(Future.successful(HttpResponse(404, None)))
 
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-      val result = TestAuthConnector.getCurrentAuthority()
+      val result = testAuthConnector.getCurrentAuthority()
       val authority = await(result)
 
       authority shouldBe None

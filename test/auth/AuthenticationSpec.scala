@@ -33,7 +33,7 @@ class AuthenticationSpec extends PAYERegSpec with BeforeAndAfter {
 
   val mockAuth = mock[AuthConnect]
 
-  object Authenticated extends Authenticated {
+  val authenticated = new Authenticated {
     val auth = mockAuth
   }
 
@@ -50,7 +50,7 @@ class AuthenticationSpec extends PAYERegSpec with BeforeAndAfter {
       when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any())).
         thenReturn(Future.successful(Some(a)))
 
-      val result = Authenticated.authenticated { authResult => {
+      val result = authenticated.authenticated { authResult => {
         authResult shouldBe LoggedIn(a)
         Future.successful(Results.Ok)
       }
@@ -64,7 +64,7 @@ class AuthenticationSpec extends PAYERegSpec with BeforeAndAfter {
       when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any())).
         thenReturn(Future.successful(None))
 
-      val result = Authenticated.authenticated { authResult => {
+      val result = authenticated.authenticated { authResult => {
         authResult shouldBe NotLoggedIn
         Future.successful(Results.Forbidden)
       }
