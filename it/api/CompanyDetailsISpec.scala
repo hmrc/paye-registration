@@ -18,6 +18,8 @@ package api
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{CompanyDetails, PAYERegistration}
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.test.FakeApplication
@@ -31,12 +33,16 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
   val mockPort = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
 
-  override implicit lazy val app = FakeApplication(additionalConfiguration = Map(
+  val additionalConfiguration = Map(
     "auditing.consumer.baseUri.host" -> s"$mockHost",
     "auditing.consumer.baseUri.port" -> s"$mockPort",
     "microservice.services.auth.host" -> s"$mockHost",
     "microservice.services.auth.port" -> s"$mockPort"
-  ))
+  )
+
+  override implicit lazy val app: Application = new GuiceApplicationBuilder()
+    .configure(additionalConfiguration)
+    .build
 
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
