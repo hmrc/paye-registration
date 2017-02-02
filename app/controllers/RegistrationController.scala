@@ -22,7 +22,7 @@ import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.MissingRegDocument
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}

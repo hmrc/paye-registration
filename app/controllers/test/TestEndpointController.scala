@@ -17,7 +17,7 @@
 package controllers.test
 
 import auth.{Authenticated, LoggedIn, NotLoggedIn}
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import connectors.AuthConnector
 import models.PAYERegistration
 import play.api.libs.json._
