@@ -41,15 +41,13 @@ object UserIds {
 }
 
 @Singleton
-class AuthConnector extends AuthConnect {
-  // $COVERAGE-OFF$
+class AuthConnector extends AuthConnect with ServicesConfig {
   lazy val serviceUrl: String = baseUrl("auth")
-  // $COVERAGE-OFF$
   val authorityUri = "auth/authority"
   val http: HttpGet with HttpPost = WSHttp
 }
 
-trait AuthConnect extends ServicesConfig with RawResponseReads {
+trait AuthConnect extends RawResponseReads {
 
   def serviceUrl: String
 
