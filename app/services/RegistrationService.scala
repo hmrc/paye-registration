@@ -16,7 +16,7 @@
 
 package services
 
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import models.{CompanyDetails, Employment, PAYERegistration}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import play.api.Logger

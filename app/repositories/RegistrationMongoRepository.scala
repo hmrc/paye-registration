@@ -19,7 +19,7 @@ package repositories
 import java.time.LocalDateTime
 
 import auth.AuthorisationResource
-import com.google.inject.Singleton
+import javax.inject.Singleton
 import common.exceptions.DBExceptions._
 import helpers.DateHelper
 import models._

@@ -16,7 +16,7 @@
 
 package connectors
 
-import com.google.inject.Singleton
+import javax.inject.Singleton
 import config.WSHttp
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.HeaderCarrier
