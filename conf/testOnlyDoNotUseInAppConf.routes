@@ -11,4 +11,4 @@
 
 # Add all the application routes to the prod.routes file
 ->         /                                    prod.Routes
-->         /register-for-paye/test-only         test.Routes
+->         /paye-registration/test-only         test.Routes
