@@ -20,6 +20,7 @@ import auth.{Authenticated, LoggedIn, NotLoggedIn}
 import com.google.inject.{Inject, Singleton}
 import connectors.AuthConnector
 import models.PAYERegistration
+import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
@@ -61,6 +62,7 @@ trait TestEndpointCtrl extends BaseController with Authenticated {
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) =>
+          Logger.error(request.body.toString())
           withJsonBody[JsObject] {
             reg =>
               val regWithId = reg ++ Json.obj("internalID" -> context.ids.internalId)
