@@ -62,7 +62,6 @@ trait TestEndpointCtrl extends BaseController with Authenticated {
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) =>
-          Logger.error(request.body.toString())
           withJsonBody[JsObject] {
             reg =>
               val regWithId = reg ++ Json.obj("internalID" -> context.ids.internalId)
