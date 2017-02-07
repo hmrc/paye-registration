@@ -19,7 +19,7 @@ package controllers
 import java.time.LocalDate
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{CompanyDetails, Employment, PAYERegistration}
+import models.{Address, CompanyDetails, Employment, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
@@ -120,7 +120,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
             CompanyDetails(
               Some("1234567890"),
               "testCompanyName",
-              Some("test")
+              Some("test"),
+              Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
             )
           ),
           Some(

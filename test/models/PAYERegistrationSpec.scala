@@ -39,7 +39,15 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    {
            |      "crn":"Ac123456",
            |      "companyName":"Test Company",
-           |      "tradingName":"Test Trading Name"
+           |      "tradingName":"Test Trading Name",
+           |      "address": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "country":"UK"
+           |      }
            |    },
            |  "employment": {
            |    "first-payment-date": "$date",
@@ -55,7 +63,12 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
         companyDetails = Some(
-          CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
+          CompanyDetails(
+            crn = Some("Ac123456"),
+            companyName = "Test Company",
+            tradingName = Some("Test Trading Name"),
+            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+          )
         ),
         employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date))
       )
@@ -94,7 +107,15 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    {
            |      "crn":"Ac123456",
            |      "companyName":"Test Company",
-           |      "tradingName":"Test Trading Name"
+           |      "tradingName":"Test Trading Name",
+           |      "address": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "country":"UK"
+           |      }
            |    }
            |}
         """.stripMargin)

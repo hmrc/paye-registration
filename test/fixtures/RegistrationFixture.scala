@@ -16,7 +16,7 @@
 
 package fixtures
 
-import models.{CompanyDetails, Employment, PAYERegistration}
+import models.{Address, CompanyDetails, Employment, PAYERegistration}
 import java.time.LocalDate
 
 trait RegistrationFixture {
@@ -24,7 +24,8 @@ trait RegistrationFixture {
   val validCompanyDetails = CompanyDetails(
     crn = None,
     companyName = "Test Company Name",
-    tradingName = Some("Test Trading Name")
+    tradingName = Some("Test Trading Name"),
+    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
   )
 
   val validEmployment = Employment(
