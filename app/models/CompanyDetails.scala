@@ -22,7 +22,7 @@ import play.api.libs.json.{Json, OFormat, __}
 case class CompanyDetails(crn: Option[String],
                           companyName: String,
                           tradingName: Option[String],
-                          address: Address)
+                          roAddress: Address)
 
 case class Address(
                     line1: String,
@@ -44,7 +44,7 @@ object CompanyDetails extends CompanyDetailsValidator {
       (__ \ "crn").formatNullable[String](crnValidator) and
       (__ \ "companyName").format[String](companyNameValidator) and
       (__ \ "tradingName").formatNullable[String](companyNameValidator) and
-        (__ \ "address").format[Address]
+        (__ \ "roAddress").format[Address]
     )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 
 }
