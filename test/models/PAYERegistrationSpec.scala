@@ -40,7 +40,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "crn":"Ac123456",
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name",
-           |      "address": {
+           |      "roAddress": {
            |        "line1":"14 St Test Walk",
            |        "line2":"Testley",
            |        "line3":"Testford",
@@ -108,7 +108,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "crn":"Ac123456",
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name",
-           |      "address": {
+           |      "roAddress": {
            |        "line1":"14 St Test Walk",
            |        "line2":"Testley",
            |        "line3":"Testford",

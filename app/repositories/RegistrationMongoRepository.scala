@@ -170,8 +170,10 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   def updateRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
-    collection.update[BSONDocument, PAYERegistration](registrationIDSelector(payeReg.registrationID), payeReg) map {
-      res => payeReg
+    collection.findAndUpdate[BSONDocument, PAYERegistration](registrationIDSelector(payeReg.registrationID), payeReg, fetchNewObject = true, upsert = true) map {
+      res => {
+        payeReg
+      }
     } recover {
       case e => throw new InsertFailed(payeReg.registrationID, "PAYE Registration")
     }
