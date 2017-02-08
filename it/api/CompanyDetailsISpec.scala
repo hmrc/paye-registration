@@ -17,12 +17,11 @@ package api
 
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{CompanyDetails, PAYERegistration}
+import models.{Address, CompanyDetails, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
-import play.api.test.FakeApplication
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -64,7 +63,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     val validCompanyDetails = CompanyDetails(
       crn = None,
       companyName = "Test Company Name",
-      tradingName = Some("Test Trading Name")
+      tradingName = Some("Test Trading Name"),
+      address = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
     )
 
     "Return a 200 when the user gets company details" in new Setup {

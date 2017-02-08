@@ -29,11 +29,24 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |{
           |  "crn":"Ac123456",
           |  "companyName":"Test Company",
-          |  "tradingName":"Test Trading Name"
+          |  "tradingName":"Test Trading Name",
+          |  "address": {
+          |    "line1":"14 St Test Walk",
+          |    "line2":"Testley",
+          |    "line3":"Testford",
+          |    "line4":"Testshire",
+          |    "postCode":"TE1 1ST",
+          |    "country":"UK"
+          |  }
           |}
         """.stripMargin)
 
-      val tstCompanyDetails = CompanyDetails(crn = Some("Ac123456"), companyName = "Test Company", tradingName = Some("Test Trading Name"))
+      val tstCompanyDetails = CompanyDetails(
+        crn = Some("Ac123456"),
+        companyName = "Test Company",
+        tradingName = Some("Test Trading Name"),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+      )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
     }
@@ -43,11 +56,24 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "companyName":"Test Company",
-           |  "tradingName":"Test Trading Name"
+           |  "tradingName":"Test Trading Name",
+           |  "address": {
+           |    "line1":"14 St Test Walk",
+           |    "line2":"Testley",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE1 1ST",
+           |    "country":"UK"
+           |  }
            |}
         """.stripMargin)
 
-      val tstCompanyDetails = CompanyDetails(crn = None, companyName = "Test Company", tradingName = Some("Test Trading Name"))
+      val tstCompanyDetails = CompanyDetails(
+        crn = None,
+        companyName = "Test Company",
+        tradingName = Some("Test Trading Name"),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+      )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
     }
@@ -58,7 +84,15 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |{
            |  "crn":"Ac123456",
            |  "companyName":"Test£Company",
-           |  "tradingName":"Test Trading Name"
+           |  "tradingName":"Test Trading Name",
+           |  "address": {
+           |    "line1":"14 St Test Walk",
+           |    "line2":"Testley",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE1 1ST",
+           |    "country":"UK"
+           |  }
            |}
         """.stripMargin)
 
@@ -72,12 +106,73 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |{
            |  "crn":"AX123456",
            |  "companyName":"Test Company",
-           |  "tradingName":"Test Trading Name"
+           |  "tradingName":"Test Trading Name",
+           |  "address": {
+           |    "line1":"14 St Test Walk",
+           |    "line2":"Testley",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE1 1ST",
+           |    "country":"UK"
+           |  }
            |}
         """.stripMargin)
 
       val result = Json.fromJson[CompanyDetails](json)
       shouldHaveErrors(result, JsPath() \ "crn", Seq(ValidationError("error.pattern")))
+    }
+  }
+
+  "Creating a Address model from Json" should {
+    "complete successfully from full Json" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "line1":"14 St Test Walk",
+           |  "line2":"Testley",
+           |  "line3":"Testford",
+           |  "line4":"Testshire",
+           |  "postCode":"TE1 1ST",
+           |  "country":"UK"
+           |}
+        """.stripMargin)
+
+      val tstAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+
+      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+    }
+
+    "complete successfully from Json with no address line4" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "line1":"14 St Test Walk",
+           |  "line2":"Testley",
+           |  "line3":"Testford",
+           |  "postCode":"TE1 1ST",
+           |  "country":"UK"
+           |}
+        """.stripMargin)
+
+      val tstAddress = Address("14 St Test Walk", "Testley", Some("Testford"), None, Some("TE1 1ST"), Some("UK"))
+
+      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+    }
+
+    "fail from Json with invalid address" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "line2":"Testley",
+           |  "line3":"Testford",
+           |  "line4":"Testshire",
+           |  "postCode":"TE1 1ST",
+           |  "country":"UK"
+           |}
+      """.stripMargin)
+
+      val result = Json.fromJson[Address](json)
+      shouldHaveErrors(result, JsPath() \ "line1", Seq(ValidationError("error.path.missing")))
     }
   }
 
