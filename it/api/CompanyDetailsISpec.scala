@@ -17,7 +17,7 @@ package api
 
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Address, CompanyDetails, PAYERegistration}
+import models.{Address, BusinessContactDetails, CompanyDetails, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -60,11 +60,12 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validCompanyDetails = CompanyDetails(
+    val validCompanyDetails = new CompanyDetails(
       crn = None,
       companyName = "Test Company Name",
       tradingName = Some("Test Trading Name"),
-      roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+      roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+      businessContactDetails = BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
     )
 
     "Return a 200 when the user gets company details" in new Setup {

@@ -17,34 +17,41 @@
 package models
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Json, OFormat, __}
+import play.api.libs.json.{Format, Json, __}
 
 case class CompanyDetails(crn: Option[String],
                           companyName: String,
                           tradingName: Option[String],
-                          roAddress: Address)
+                          roAddress: Address,
+                          businessContactDetails: BusinessContactDetails)
 
-case class Address(
-                    line1: String,
-                    line2: String,
-                    line3: Option[String],
-                    line4: Option[String],
-                    postCode: Option[String],
-                    country: Option[String] = None
-                  )
+case class Address(line1: String,
+                   line2: String,
+                   line3: Option[String],
+                   line4: Option[String],
+                   postCode: Option[String],
+                   country: Option[String] = None)
+
+case class BusinessContactDetails(businessEmail: Option[String],
+                                  phoneNumber: Option[String],
+                                  mobileNumber: Option[String])
 
 object Address {
   implicit val format = Json.format[Address]
 }
 
+object BusinessContactDetails {
+  implicit val format = Json.format[BusinessContactDetails]
+}
+
 object CompanyDetails extends CompanyDetailsValidator {
 
-  implicit val format: OFormat[CompanyDetails] =
-    (
+  implicit val format: Format[CompanyDetails] = (
       (__ \ "crn").formatNullable[String](crnValidator) and
       (__ \ "companyName").format[String](companyNameValidator) and
       (__ \ "tradingName").formatNullable[String](companyNameValidator) and
-        (__ \ "roAddress").format[Address]
+      (__ \ "roAddress").format[Address] and
+      (__ \ "businessContactDetails").format[BusinessContactDetails]
     )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 
 }
