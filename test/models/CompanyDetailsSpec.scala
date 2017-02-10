@@ -37,6 +37,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |    "line4":"Testshire",
           |    "postCode":"TE1 1ST",
           |    "country":"UK"
+          |  },
+          |  "businessContactDetails": {
+          |    "businessEmail":"test@email.com",
+          |    "phoneNumber":"012345",
+          |    "mobileNumber":"543210"
           |  }
           |}
         """.stripMargin)
@@ -45,7 +50,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         crn = Some("Ac123456"),
         companyName = "Test Company",
         tradingName = Some("Test Trading Name"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
@@ -64,6 +70,9 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "line4":"Testshire",
            |    "postCode":"TE1 1ST",
            |    "country":"UK"
+           |  },
+           |  "businessContactDetails": {
+           |    "phoneNumber":"012345"
            |  }
            |}
         """.stripMargin)
@@ -72,7 +81,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         crn = None,
         companyName = "Test Company",
         tradingName = Some("Test Trading Name"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        BusinessContactDetails(None, Some("012345"), None)
       )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
@@ -92,6 +102,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "line4":"Testshire",
            |    "postCode":"TE1 1ST",
            |    "country":"UK"
+           |  },
+           |  "businessContactDetails": {
+           |    "businessEmail":"email@test.co.uk",
+           |    "phoneNumber":"999",
+           |    "mobileNumber":"00000"
            |  }
            |}
         """.stripMargin)
@@ -114,6 +129,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "line4":"Testshire",
            |    "postCode":"TE1 1ST",
            |    "country":"UK"
+           |  },
+           |  "businessContactDetails": {
+           |    "businessEmail":"email@test.co.uk",
+           |    "phoneNumber":"999",
+           |    "mobileNumber":"00000"
            |  }
            |}
         """.stripMargin)
