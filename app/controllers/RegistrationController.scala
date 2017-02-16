@@ -17,12 +17,13 @@
 package controllers
 
 import connectors.{AuthConnect, AuthConnector}
-import models.{CompanyDetails, Employment}
+import models.{CompanyDetails, Director, Employment}
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import javax.inject.{Inject, Singleton}
+
 import common.exceptions.DBExceptions.MissingRegDocument
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
@@ -144,6 +145,45 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
           Logger.info(s"[RegistrationController] [upsertEmployment] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def getDirectors(regID: String) : Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          registrationSrv.getDirectors(regID) map {
+            case Nil => NotFound
+            case directors: Seq[Director] => Ok(Json.toJson(directors))
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getDirectors] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getDirectors] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def upsertDirectors(regID: String) : Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          withJsonBody[Seq[Director]] { directors =>
+            registrationSrv.upsertDirectors(regID, directors) map { directorsResponse =>
+              Ok(Json.toJson(directorsResponse))
+            } recover {
+              case missing : MissingRegDocument => NotFound
+            }
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [upsertDirectors] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [upsertDirectors] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }

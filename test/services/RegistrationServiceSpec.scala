@@ -18,7 +18,7 @@ package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.RegistrationFixture
-import models.{CompanyDetails, Employment}
+import models.{CompanyDetails, Director, Employment}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import testHelpers.PAYERegSpec
@@ -164,6 +164,52 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
       val actual = await(service.upsertEmployment("AC123456", validEmployment))
       actual shouldBe validEmployment
+    }
+  }
+
+  "Calling getDirectors" should {
+
+    "return a None response when there is no registration in mongo for the reg ID" in new Setup {
+      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(Seq()))
+
+      val actual = await(service.getDirectors("AC123456"))
+      actual shouldBe Seq()
+    }
+
+    "return a failed future with exception when the database errors" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.failed(exception))
+
+      intercept[RuntimeException] { await(service.getDirectors("AC123456")) }
+    }
+
+    "return a registration there is one matching the reg ID in mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(validDirectors))
+
+      val actual = await(service.getDirectors("AC123456"))
+      actual shouldBe validRegistration.directors
+    }
+  }
+
+  "Calling upsertDirectors" should {
+
+    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+      when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+      intercept[MissingRegDocument] { await(service.upsertDirectors("AC123456", validDirectors)) }
+    }
+
+    "return a DBSuccess response when the company details are successfully updated" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+        .thenReturn(Future.successful(validDirectors))
+
+      val actual = await(service.upsertDirectors("AC123456", validDirectors))
+      actual shouldBe validDirectors
     }
   }
 
