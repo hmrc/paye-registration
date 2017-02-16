@@ -41,6 +41,26 @@ trait RegistrationFixture {
     internalID = "09876",
     formCreationTimestamp = "20161021-16:00:00",
     companyDetails = Some(validCompanyDetails),
+    directors = Seq(
+      Director(
+        Name(
+          forename = Some("Thierry"),
+          otherForenames = Some("Dominique"),
+          surname = Some("Henry"),
+          title = Some("Sir")
+        ),
+        Some("AA123456Z")
+      ),
+      Director(
+        Name(
+          forename = Some("David"),
+          otherForenames = Some("Jesus"),
+          surname = Some("Trezeguet"),
+          title = Some("Mr")
+        ),
+        Some("AA000009Z")
+      )
+    ),
     employment = Some(validEmployment)
   )
 
