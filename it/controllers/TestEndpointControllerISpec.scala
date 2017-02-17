@@ -62,8 +62,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None)))
-      await(repository.insert(PAYERegistration(regID2, intID, timestamp, None, None)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, Seq(), None)))
+      await(repository.insert(PAYERegistration(regID2, intID, timestamp, None, Seq(), None)))
 
       await(repository.count) shouldBe 2
 
@@ -81,8 +81,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None)))
-      await(repository.insert(PAYERegistration(regID2, intID, timestamp, None, None)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, Seq(), None)))
+      await(repository.insert(PAYERegistration(regID2, intID, timestamp, None, Seq(), None)))
 
       await(repository.count) shouldBe 2
 
@@ -108,7 +108,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, Seq(), None)))
       await(repository.count) shouldBe 1
 
       val jsonBody = Json.toJson[PAYERegistration](
@@ -123,6 +123,17 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
               Some("test"),
               Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
               BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+            )
+          ),
+          Seq(
+            Director(
+              Name(
+                forename = Some("Thierry"),
+                otherForenames = Some("Dominique"),
+                surname = Some("Henry"),
+                title = Some("Sir")
+              ),
+              Some("AA123456Z")
             )
           ),
           Some(
@@ -147,7 +158,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, Seq(), None)))
       await(repository.count) shouldBe 1
 
       val response = client(s"/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue

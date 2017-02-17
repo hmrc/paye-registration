@@ -37,18 +37,42 @@ class RegistrationMongoRepositoryISpec
   private val businessContact = BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   private val companyDetails: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"), roAddress = address, businessContactDetails = businessContact)
   private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, date)
-  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails)) //employment =
-  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
+  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), Some(employmentDetails)) //employment =
+  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None)
 
   // Company Details
-  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = None, Some(employmentDetails))
+  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = None, directors = Seq(), Some(employmentDetails))
   private val companyDetails2: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany2", tradingName = Some("tstTradingName2"), roAddress = address, businessContactDetails = businessContact)
-  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails2), Some(employmentDetails))
+  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails2), directors = Seq(), Some(employmentDetails))
 
   // Employment
-  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), None)
+  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None)
   private val employmentDetails2: Employment = Employment(employees = true, companyPension = Some(false), subcontractors = true, date)
-  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), Some(employmentDetails2))
+  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), Some(employmentDetails2))
+
+  // Directors
+  private val regNoDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None)
+  private val directors: Seq[Director] = Seq(
+    Director(
+      Name(
+        forename = Some("Thierry"),
+        otherForenames = Some("Dominique"),
+        surname = Some("Henry"),
+        title = Some("Sir")
+      ),
+      Some("AA123456Z")
+    ),
+    Director(
+      Name(
+        forename = Some("David"),
+        otherForenames = Some("Jesus"),
+        surname = Some("Trezeguet"),
+        title = Some("Mr")
+      ),
+      Some("AA000009Z")
+    )
+  )
+  private val regUpdatedDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = directors, None)
 
   class Setup {
     val mongo = new RegistrationMongo
@@ -191,6 +215,44 @@ class RegistrationMongoRepositoryISpec
     "throw a Missing Reg Document exception when updating employment for a nonexistent registration" in new Setup {
 
       a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertEmployment("AC123456", employmentDetails)))
+
+    }
+  }
+
+  "Calling retrieveDirectors" should {
+
+    "retrieve directors" in new Setup {
+
+      await(setupCollection(repository, regUpdatedDirectors))
+
+      val actual = await(repository.retrieveDirectors("AC123456"))
+
+      actual shouldBe directors
+    }
+
+    "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
+
+      intercept[MissingRegDocument](await(repository.retrieveDirectors("AC123456")))
+    }
+  }
+
+  "Calling upsertDirectors" should {
+
+    "upsert directors when the list is empty" in new Setup {
+
+      await(setupCollection(repository, regNoDirectors))
+
+      val actual = await(repository.upsertDirectors("AC123456", directors))
+      actual shouldBe directors
+
+      val updated = await(repository.retrieveRegistration("AC123456"))
+      updated shouldBe Some(regUpdatedDirectors)
+
+    }
+
+    "throw a Missing Reg Document exception when updating employment for a nonexistent registration" in new Setup {
+
+      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertDirectors("AC123456", directors)))
 
     }
   }

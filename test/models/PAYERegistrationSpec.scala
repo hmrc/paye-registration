@@ -54,6 +54,26 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "mobileNumber":"00000"
            |      }
            |    },
+           |  "directors" : [
+           |    {
+           |      "nino":"AA123456Z",
+           |      "director": {
+           |        "forename":"Thierry",
+           |        "other_forenames":"Dominique",
+           |        "surname":"Henry",
+           |        "title":"Sir"
+           |      }
+           |    },
+           |    {
+           |      "nino":"AA000009Z",
+           |      "director": {
+           |        "forename":"David",
+           |        "other_forenames":"Jesus",
+           |        "surname":"Trezeguet",
+           |        "title":"Mr"
+           |      }
+           |    }
+           |  ],
            |  "employment": {
            |    "first-payment-date": "$date",
            |    "cis": true,
@@ -76,6 +96,26 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             BusinessContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
           )
         ),
+        directors = Seq(
+          Director(
+            Name(
+              forename = Some("Thierry"),
+              otherForenames = Some("Dominique"),
+              surname = Some("Henry"),
+              title = Some("Sir")
+            ),
+            Some("AA123456Z")
+          ),
+          Director(
+            Name(
+              forename = Some("David"),
+              otherForenames = Some("Jesus"),
+              surname = Some("Trezeguet"),
+              title = Some("Mr")
+            ),
+            Some("AA000009Z")
+          )
+        ),
         employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date))
       )
 
@@ -88,7 +128,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |{
            |  "registrationID":"12345",
            |  "internalID" : "09876",
-           |  "formCreationTimestamp":"2016-05-31"
+           |  "formCreationTimestamp":"2016-05-31",
+           |  "directors" : []
            |}
         """.stripMargin)
 
@@ -97,6 +138,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
         companyDetails = None,
+        Seq(),
         None
       )
 
@@ -127,7 +169,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "phoneNumber":"999",
            |        "mobileNumber":"00000"
            |      }
-           |    }
+           |    },
+           |  "directors": []
            |}
         """.stripMargin)
 

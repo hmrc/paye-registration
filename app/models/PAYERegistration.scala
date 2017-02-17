@@ -23,6 +23,7 @@ case class PAYERegistration (registrationID: String,
                              internalID : String,
                              formCreationTimestamp: String,
                              companyDetails: Option[CompanyDetails],
+                             directors: Seq[Director],
                              employment: Option[Employment])
 
 object PAYERegistration extends {
@@ -32,6 +33,7 @@ object PAYERegistration extends {
     (__ \ "internalID").format[String] and
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails] and
+    (__ \ "directors").format[Seq[Director]] and
     (__ \ "employment").formatNullable[Employment]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 

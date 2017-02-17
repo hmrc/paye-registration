@@ -9,3 +9,6 @@ PATCH      /:regID/company-details            controllers.RegistrationController
 
 GET        /:regID/employment                 controllers.RegistrationController.getEmployment(regID)
 PATCH      /:regID/employment                 controllers.RegistrationController.upsertEmployment(regID)
+
+GET        /:regID/directors                  controllers.RegistrationController.getDirectors(regID)
+PATCH      /:regID/directors                  controllers.RegistrationController.upsertDirectors(regID)
