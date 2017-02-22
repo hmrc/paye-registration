@@ -1,35 +1,16 @@
-/*
- * Copyright 2017 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package api
 
-import java.time.LocalDate
-
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Employment, PAYERegistration}
+import models.{PAYERegistration, SICCode}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
-import play.api.test.FakeApplication
 import repositories.RegistrationMongo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class EmploymentISpec extends IntegrationSpecBase {
-
+class SICCodesISpec extends IntegrationSpecBase {
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
@@ -54,35 +35,32 @@ class EmploymentISpec extends IntegrationSpecBase {
     await(repository.ensureIndexes)
   }
 
-
-  "PAYE Registration API - Employment" should {
+  "PAYE Registration API - SIC Codes" should {
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validEmployment = Employment(
-      employees = true,
-      companyPension = Some(true),
-      subcontractors = true,
-      firstPaymentDate = LocalDate.of(2016, 12, 20)
+    val validSICCodes = Seq(
+      SICCode(code = Some("123"), description = Some("consulting")),
+      SICCode(code = None, description = Some("something"))
     )
 
-    "Return a 200 when the user gets employment" in new Setup {
+    "Return a 200 when the user gets sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), Some(validEmployment), Seq()))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, validSICCodes))
 
-      val response = client(s"/${regID}/employment").get.futureValue
+      val response = client(s"/${regID}/sic-codes").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validEmployment)
+      response.json shouldBe Json.toJson(validSICCodes)
     }
 
-    "Return a 200 when the user upserts employment" in new Setup {
+    "Return a 200 when the user upserts sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -90,20 +68,20 @@ class EmploymentISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, Seq()))
 
-      val getResponse1 = client(s"/${regID}/employment").get.futureValue
+      val getResponse1 = client(s"/${regID}/sic-codes").get.futureValue
       getResponse1.status shouldBe 404
 
-      val patchResponse = client(s"/${regID}/employment")
-        .patch[JsValue](Json.toJson(validEmployment))
+      val patchResponse = client(s"/${regID}/sic-codes")
+        .patch[JsValue](Json.toJson(validSICCodes))
         .futureValue
       patchResponse.status shouldBe 200
 
-      val getResponse2 = client(s"/${regID}/employment").get.futureValue
+      val getResponse2 = client(s"/${regID}/sic-codes").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validEmployment)
+      getResponse2.json shouldBe Json.toJson(validSICCodes)
     }
 
-    "Return a 403 when the user is not authorised to get employment" in new Setup {
+    "Return a 403 when the user is not authorised to get sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -111,11 +89,11 @@ class EmploymentISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, Seq()))
 
-      val response = client(s"/${regID}/employment").get.futureValue
+      val response = client(s"/${regID}/sic-codes").get.futureValue
       response.status shouldBe 403
     }
 
-    "Return a 403 when the user is not authorised to upsert employment" in new Setup {
+    "Return a 403 when the user is not authorised to upsert sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -123,8 +101,8 @@ class EmploymentISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, Seq()))
 
-      val response = client(s"/${regID}/employment")
-        .patch(Json.toJson(validEmployment))
+      val response = client(s"/${regID}/sic-codes")
+        .patch(Json.toJson(validSICCodes))
         .futureValue
       response.status shouldBe 403
     }

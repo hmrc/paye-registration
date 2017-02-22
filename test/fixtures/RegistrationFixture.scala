@@ -57,13 +57,19 @@ trait RegistrationFixture {
     )
   )
 
+  val validSICCodes = Seq(
+    SICCode(code = Some("123"), description = Some("consulting")),
+    SICCode(code = None, description = Some("something"))
+  )
+
   val validRegistration = PAYERegistration(
     registrationID = "AC187651",
     internalID = "09876",
     formCreationTimestamp = "20161021-16:00:00",
     companyDetails = Some(validCompanyDetails),
     directors = validDirectors,
-    employment = Some(validEmployment)
+    employment = Some(validEmployment),
+    validSICCodes
   )
 
 }

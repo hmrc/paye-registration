@@ -18,7 +18,7 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import models.{CompanyDetails, Director, Employment, PAYERegistration}
+import models.{CompanyDetails, Director, Employment, PAYERegistration, SICCode}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import play.api.Logger
 
@@ -69,5 +69,13 @@ trait RegistrationSrv {
 
   def upsertDirectors(regID: String, directors: Seq[Director]): Future[Seq[Director]] = {
     registrationRepository.upsertDirectors(regID, directors)
+  }
+
+  def getSICCodes(regID: String): Future[Seq[SICCode]] = {
+    registrationRepository.retrieveSICCodes(regID)
+  }
+
+  def upsertSICCodes(regID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]] = {
+    registrationRepository.upsertSICCodes(regID, sicCodes)
   }
 }

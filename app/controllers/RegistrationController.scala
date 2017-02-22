@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.{AuthConnect, AuthConnector}
-import models.{CompanyDetails, Director, Employment}
+import models.{CompanyDetails, Director, Employment, SICCode}
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -184,6 +184,45 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
           Logger.info(s"[RegistrationController] [upsertDirectors] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def getSICCodes(regID: String) : Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          registrationSrv.getSICCodes(regID) map {
+            case Nil => NotFound
+            case sicCodes: Seq[SICCode] => Ok(Json.toJson(sicCodes))
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getSICCodes] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getSICCodes] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def upsertSICCodes(regID: String) : Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          withJsonBody[Seq[SICCode]] { sicCodes =>
+            registrationSrv.upsertSICCodes(regID, sicCodes) map { sicCodesResponse =>
+              Ok(Json.toJson(sicCodesResponse))
+            } recover {
+              case missing : MissingRegDocument => NotFound
+            }
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [upsertSICCodes] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [upsertSICCodes] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }

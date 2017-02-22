@@ -12,3 +12,6 @@ PATCH      /:regID/employment                 controllers.RegistrationController
 
 GET        /:regID/directors                  controllers.RegistrationController.getDirectors(regID)
 PATCH      /:regID/directors                  controllers.RegistrationController.upsertDirectors(regID)
+
+GET        /:regID/sic-codes                  controllers.RegistrationController.getSICCodes(regID)
+PATCH      /:regID/sic-codes                  controllers.RegistrationController.upsertSICCodes(regID)

@@ -18,7 +18,7 @@ package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.RegistrationFixture
-import models.{CompanyDetails, Director, Employment}
+import models.{CompanyDetails, Director, Employment, SICCode}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import testHelpers.PAYERegSpec
@@ -210,6 +210,52 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
       val actual = await(service.upsertDirectors("AC123456", validDirectors))
       actual shouldBe validDirectors
+    }
+  }
+
+  "Calling getSICCodes" should {
+
+    "return a None response when there is no registration in mongo for the reg ID" in new Setup {
+      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(Seq()))
+
+      val actual = await(service.getSICCodes("AC123456"))
+      actual shouldBe Seq()
+    }
+
+    "return a failed future with exception when the database errors" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.failed(exception))
+
+      intercept[RuntimeException] { await(service.getSICCodes("AC123456")) }
+    }
+
+    "return a registration there is one matching the reg ID in mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(validSICCodes))
+
+      val actual = await(service.getSICCodes("AC123456"))
+      actual shouldBe validRegistration.sicCodes
+    }
+  }
+
+  "Calling upsertSICCodes" should {
+
+    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+      when(mockRegistrationRepository.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+      intercept[MissingRegDocument] { await(service.upsertSICCodes("AC123456", validSICCodes)) }
+    }
+
+    "return a DBSuccess response when the company details are successfully updated" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]()))
+        .thenReturn(Future.successful(validSICCodes))
+
+      val actual = await(service.upsertSICCodes("AC123456", validSICCodes))
+      actual shouldBe validSICCodes
     }
   }
 
