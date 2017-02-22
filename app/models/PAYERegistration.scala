@@ -24,7 +24,8 @@ case class PAYERegistration (registrationID: String,
                              formCreationTimestamp: String,
                              companyDetails: Option[CompanyDetails],
                              directors: Seq[Director],
-                             employment: Option[Employment])
+                             employment: Option[Employment],
+                             sicCodes: Seq[SICCode])
 
 object PAYERegistration extends {
 
@@ -34,7 +35,8 @@ object PAYERegistration extends {
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails] and
     (__ \ "directors").format[Seq[Director]] and
-    (__ \ "employment").formatNullable[Employment]
+    (__ \ "employment").formatNullable[Employment] and
+    (__ \ "sicCodes").format[Seq[SICCode]]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
 }

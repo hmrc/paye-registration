@@ -1,7 +1,7 @@
 package api
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Director, Name, PAYERegistration}
+import models.{PAYERegistration, SICCode}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -10,7 +10,7 @@ import repositories.RegistrationMongo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DirectorsISpec extends IntegrationSpecBase {
+class SICCodesISpec extends IntegrationSpecBase {
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
@@ -35,48 +35,32 @@ class DirectorsISpec extends IntegrationSpecBase {
     await(repository.ensureIndexes)
   }
 
-  "PAYE Registration API - Directors" should {
+  "PAYE Registration API - SIC Codes" should {
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validDirectors = Seq(
-      Director(
-        Name(
-          forename = Some("Thierry"),
-          otherForenames = Some("Dominique"),
-          surname = Some("Henry"),
-          title = Some("Sir")
-        ),
-        Some("AA123456Z")
-      ),
-      Director(
-        Name(
-          forename = Some("David"),
-          otherForenames = Some("Jesus"),
-          surname = Some("Trezeguet"),
-          title = Some("Mr")
-        ),
-        Some("AA000009Z")
-      )
+    val validSICCodes = Seq(
+      SICCode(code = Some("123"), description = Some("consulting")),
+      SICCode(code = None, description = Some("something"))
     )
 
-    "Return a 200 when the user gets directors" in new Setup {
+    "Return a 200 when the user gets sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, validDirectors, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, validSICCodes))
 
-      val response = client(s"/${regID}/directors").get.futureValue
+      val response = client(s"/${regID}/sic-codes").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validDirectors)
+      response.json shouldBe Json.toJson(validSICCodes)
     }
 
-    "Return a 200 when the user upserts directors" in new Setup {
+    "Return a 200 when the user upserts sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -84,20 +68,20 @@ class DirectorsISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
 
-      val getResponse1 = client(s"/${regID}/directors").get.futureValue
+      val getResponse1 = client(s"/${regID}/sic-codes").get.futureValue
       getResponse1.status shouldBe 404
 
-      val patchResponse = client(s"/${regID}/directors")
-        .patch[JsValue](Json.toJson(validDirectors))
+      val patchResponse = client(s"/${regID}/sic-codes")
+        .patch[JsValue](Json.toJson(validSICCodes))
         .futureValue
       patchResponse.status shouldBe 200
 
-      val getResponse2 = client(s"/${regID}/directors").get.futureValue
+      val getResponse2 = client(s"/${regID}/sic-codes").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validDirectors)
+      getResponse2.json shouldBe Json.toJson(validSICCodes)
     }
 
-    "Return a 403 when the user is not authorised to get directors" in new Setup {
+    "Return a 403 when the user is not authorised to get sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -105,11 +89,11 @@ class DirectorsISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
 
-      val response = client(s"/${regID}/directors").get.futureValue
+      val response = client(s"/${regID}/sic-codes").get.futureValue
       response.status shouldBe 403
     }
 
-    "Return a 403 when the user is not authorised to upsert directors" in new Setup {
+    "Return a 403 when the user is not authorised to upsert sic codes" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -117,8 +101,8 @@ class DirectorsISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
 
-      val response = client(s"/${regID}/directors")
-        .patch(Json.toJson(validDirectors))
+      val response = client(s"/${regID}/sic-codes")
+        .patch(Json.toJson(validSICCodes))
         .futureValue
       response.status shouldBe 403
     }

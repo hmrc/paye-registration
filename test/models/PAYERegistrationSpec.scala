@@ -79,7 +79,16 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    "cis": true,
            |    "employees": true,
            |    "ocpn": true
-           |  }
+           |  },
+           |  "sicCodes": [
+           |    {
+           |      "code":"666",
+           |      "description":"demolition"
+           |    },
+           |    {
+           |      "description":"laundring"
+           |    }
+           |  ]
            |}
         """.stripMargin)
 
@@ -116,7 +125,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             Some("AA000009Z")
           )
         ),
-        employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date))
+        employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),
+        Seq(
+          SICCode(code = Some("666"), description = Some("demolition")),
+          SICCode(code = None, description = Some("laundring"))
+        )
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -129,7 +142,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "registrationID":"12345",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
-           |  "directors" : []
+           |  "directors" : [],
+           |  "sicCodes" : []
            |}
         """.stripMargin)
 
@@ -138,8 +152,9 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
         companyDetails = None,
-        Seq(),
-        None
+        Seq.empty,
+        None,
+        Seq.empty
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -170,7 +185,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "mobileNumber":"00000"
            |      }
            |    },
-           |  "directors": []
+           |  "directors": [],
+           |  "sicCodes": []
            |}
         """.stripMargin)
 
