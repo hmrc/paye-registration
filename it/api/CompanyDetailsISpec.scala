@@ -74,7 +74,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, Some(validCompanyDetails), Seq(), None, Seq()))
+      repository.insert(PAYERegistration(regID, intID, timestamp, Some(validCompanyDetails), Seq.empty, None, Seq.empty))
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
@@ -87,7 +87,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, Seq()))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue
       getResponse1.status shouldBe 404
@@ -108,7 +108,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, Seq()))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 403
@@ -120,7 +120,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq(), None, Seq()))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
 
       val response = client(s"/${regID}/company-details")
         .patch(Json.toJson(validCompanyDetails))

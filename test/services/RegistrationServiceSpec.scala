@@ -171,10 +171,10 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
       when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
-        .thenReturn(Future.successful(Seq()))
+        .thenReturn(Future.successful(Seq.empty))
 
       val actual = await(service.getDirectors("AC123456"))
-      actual shouldBe Seq()
+      actual shouldBe Seq.empty
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -217,10 +217,10 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
       when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
-        .thenReturn(Future.successful(Seq()))
+        .thenReturn(Future.successful(Seq.empty))
 
       val actual = await(service.getSICCodes("AC123456"))
-      actual shouldBe Seq()
+      actual shouldBe Seq.empty
     }
 
     "return a failed future with exception when the database errors" in new Setup {

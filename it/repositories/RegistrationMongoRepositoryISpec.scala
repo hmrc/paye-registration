@@ -37,21 +37,21 @@ class RegistrationMongoRepositoryISpec
   private val businessContact = BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   private val companyDetails: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"), roAddress = address, businessContactDetails = businessContact)
   private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, date)
-  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), Some(employmentDetails), sicCodes = Seq()) //employment =
-  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None, sicCodes = Seq())
+  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, Some(employmentDetails), sicCodes = Seq.empty) //employment =
+  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, None, sicCodes = Seq.empty)
 
   // Company Details
-  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = None, directors = Seq(), Some(employmentDetails), sicCodes = Seq())
+  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = None, directors = Seq.empty, Some(employmentDetails), sicCodes = Seq.empty)
   private val companyDetails2: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany2", tradingName = Some("tstTradingName2"), roAddress = address, businessContactDetails = businessContact)
-  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails2), directors = Seq(), Some(employmentDetails), sicCodes = Seq())
+  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails2), directors = Seq.empty, Some(employmentDetails), sicCodes = Seq.empty)
 
   // Employment
-  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None, sicCodes = Seq())
+  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, None, sicCodes = Seq.empty)
   private val employmentDetails2: Employment = Employment(employees = true, companyPension = Some(false), subcontractors = true, date)
-  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), Some(employmentDetails2), sicCodes = Seq())
+  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, Some(employmentDetails2), sicCodes = Seq.empty)
 
   // Directors
-  private val regNoDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None, sicCodes = Seq())
+  private val regNoDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, None, sicCodes = Seq.empty)
   private val directors: Seq[Director] = Seq(
     Director(
       Name(
@@ -72,15 +72,15 @@ class RegistrationMongoRepositoryISpec
       Some("AA000009Z")
     )
   )
-  private val regUpdatedDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = directors, None, sicCodes = Seq())
+  private val regUpdatedDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = directors, None, sicCodes = Seq.empty)
 
   //SIC Codes
-  private val regNoSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None, sicCodes = Seq())
+  private val regNoSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, None, sicCodes = Seq.empty)
   private val sicCodes: Seq[SICCode] = Seq(
     SICCode(code = Some("123"), description = Some("consulting")),
     SICCode(code = None, description = Some("something"))
   )
-  private val regUpdatedSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq(), None, sicCodes = sicCodes)
+  private val regUpdatedSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", companyDetails = Some(companyDetails), directors = Seq.empty, None, sicCodes = sicCodes)
 
   class Setup {
     val mongo = new RegistrationMongo

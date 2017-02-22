@@ -152,9 +152,9 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
         companyDetails = None,
-        Seq(),
+        Seq.empty,
         None,
-        Seq()
+        Seq.empty
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

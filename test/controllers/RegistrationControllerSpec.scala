@@ -305,7 +305,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
       when(mockRegistrationService.getDirectors(ArgumentMatchers.contains("AC123456")))
-        .thenReturn(Future.successful(Seq()))
+        .thenReturn(Future.successful(Seq.empty))
 
       val response = controller.getDirectors("AC123456")(FakeRequest())
 
@@ -395,7 +395,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
       when(mockRegistrationService.getSICCodes(ArgumentMatchers.contains("AC123456")))
-        .thenReturn(Future.successful(Seq()))
+        .thenReturn(Future.successful(Seq.empty))
 
       val response = controller.getSICCodes("AC123456")(FakeRequest())
 

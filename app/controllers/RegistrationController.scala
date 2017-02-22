@@ -155,7 +155,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationSrv.getDirectors(regID) map {
-            case Nil => NotFound
+            case s: Seq[Director] if s.isEmpty => NotFound
             case directors: Seq[Director] => Ok(Json.toJson(directors))
           }
         case NotLoggedInOrAuthorised =>
@@ -194,7 +194,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationSrv.getSICCodes(regID) map {
-            case Nil => NotFound
+            case s: Seq[SICCode] if s.isEmpty => NotFound
             case sicCodes: Seq[SICCode] => Ok(Json.toJson(sicCodes))
           }
         case NotLoggedInOrAuthorised =>

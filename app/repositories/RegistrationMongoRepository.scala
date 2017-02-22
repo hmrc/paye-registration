@@ -240,9 +240,9 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       internalID = internalId,
       formCreationTimestamp = timeStamp,
       companyDetails = None,
-      directors = Seq(),
+      directors = Seq.empty,
       employment = None,
-      sicCodes = Nil
+      sicCodes = Seq.empty
     )
   }
 }
