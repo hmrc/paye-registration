@@ -26,6 +26,7 @@ trait RegistrationFixture {
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
     Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+    Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
     BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
