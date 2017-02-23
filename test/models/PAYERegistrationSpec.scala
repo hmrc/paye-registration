@@ -48,6 +48,14 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "postCode":"TE1 1ST",
            |        "country":"UK"
            |      },
+           |      "ppobAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "country":"UK"
+           |      },
            |      "businessContactDetails": {
            |        "businessEmail":"email@test.co.uk",
            |        "phoneNumber":"999",
@@ -101,6 +109,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             crn = Some("Ac123456"),
             companyName = "Test Company",
             tradingName = Some("Test Trading Name"),
+            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
             BusinessContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
           )
@@ -172,6 +181,14 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name",
            |      "roAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "country":"UK"
+           |      },
+           |      "ppobAddress": {
            |        "line1":"14 St Test Walk",
            |        "line2":"Testley",
            |        "line3":"Testford",

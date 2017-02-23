@@ -23,6 +23,7 @@ case class CompanyDetails(crn: Option[String],
                           companyName: String,
                           tradingName: Option[String],
                           roAddress: Address,
+                          ppobAddress: Address,
                           businessContactDetails: BusinessContactDetails)
 
 case class Address(line1: String,
@@ -51,6 +52,7 @@ object CompanyDetails extends CompanyDetailsValidator {
       (__ \ "companyName").format[String](companyNameValidator) and
       (__ \ "tradingName").formatNullable[String](companyNameValidator) and
       (__ \ "roAddress").format[Address] and
+      (__ \ "ppobAddress").format[Address] and
       (__ \ "businessContactDetails").format[BusinessContactDetails]
     )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 

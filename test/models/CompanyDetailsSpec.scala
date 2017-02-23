@@ -38,6 +38,14 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |    "postCode":"TE1 1ST",
           |    "country":"UK"
           |  },
+          |  "ppobAddress": {
+          |    "line1":"15 St Walk",
+          |    "line2":"Testley",
+          |    "line3":"Testford",
+          |    "line4":"Testshire",
+          |    "postCode":"TE4 1ST",
+          |    "country":"UK"
+          |  },
           |  "businessContactDetails": {
           |    "businessEmail":"test@email.com",
           |    "phoneNumber":"012345",
@@ -51,6 +59,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         companyName = "Test Company",
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
         BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
 
@@ -71,6 +80,14 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "postCode":"TE1 1ST",
            |    "country":"UK"
            |  },
+           |  "ppobAddress": {
+           |    "line1":"15 St Walk",
+           |    "line2":"Testley",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE4 1ST",
+           |    "country":"UK"
+           |  },
            |  "businessContactDetails": {
            |    "phoneNumber":"012345"
            |  }
@@ -82,6 +99,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         companyName = "Test Company",
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
         BusinessContactDetails(None, Some("012345"), None)
       )
 
@@ -96,6 +114,14 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "companyName":"Test£Company",
            |  "tradingName":"Test Trading Name",
            |  "roAddress": {
+           |    "line1":"14 St Test Walk",
+           |    "line2":"Testley",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE1 1ST",
+           |    "country":"UK"
+           |  },
+           |  "ppobAddress": {
            |    "line1":"14 St Test Walk",
            |    "line2":"Testley",
            |    "line3":"Testford",
@@ -123,6 +149,14 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "companyName":"Test Company",
            |  "tradingName":"Test Trading Name",
            |  "roAddress": {
+           |    "line1":"14 St Test Walk",
+           |    "line2":"Testley",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE1 1ST",
+           |    "country":"UK"
+           |  },
+           |  "ppobAddress": {
            |    "line1":"14 St Test Walk",
            |    "line2":"Testley",
            |    "line3":"Testford",
