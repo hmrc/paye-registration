@@ -122,11 +122,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "country":"UK"
            |  },
            |  "ppobAddress": {
-           |    "line1":"14 St Test Walk",
+           |    "line1":"15 St Walk",
            |    "line2":"Testley",
            |    "line3":"Testford",
            |    "line4":"Testshire",
-           |    "postCode":"TE1 1ST",
+           |    "postCode":"TE4 1ST",
            |    "country":"UK"
            |  },
            |  "businessContactDetails": {
@@ -157,11 +157,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "country":"UK"
            |  },
            |  "ppobAddress": {
-           |    "line1":"14 St Test Walk",
+           |    "line1":"15 St Walk",
            |    "line2":"Testley",
            |    "line3":"Testford",
            |    "line4":"Testshire",
-           |    "postCode":"TE1 1ST",
+           |    "postCode":"TE4 1ST",
            |    "country":"UK"
            |  },
            |  "businessContactDetails": {
