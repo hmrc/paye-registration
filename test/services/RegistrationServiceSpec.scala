@@ -282,7 +282,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(validPAYEContact)))
 
       val actual = await(service.getPAYEContact("AC123456"))
-      actual shouldBe validRegistration.payeContact
+      actual shouldBe validRegistration.payeContactDetails
     }
   }
 

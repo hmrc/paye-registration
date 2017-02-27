@@ -20,13 +20,13 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, __}
 
 case class PAYEContact(name: String,
-                       digitalContactDetails: DigitalContactDetails)
+                       digitalContact: DigitalContactDetails)
 
 object PAYEContact extends PAYEContactValidator {
 
   implicit val format: Format[PAYEContact] = (
     (__ \ "name").format[String](nameValidator) and
-      (__ \ "digitalContactDetails").format[DigitalContactDetails]
+      (__ \ "digitalContact").format[DigitalContactDetails]
     )(PAYEContact.apply, unlift(PAYEContact.unapply))
 
 }

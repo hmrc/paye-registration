@@ -27,7 +27,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "name":"Luis Fernandez",
-           |  "digitalContactDetails" : {
+           |  "digitalContact" : {
            |    "email":"test@test.com",
            |    "mobileNumber":"07123456789",
            |    "phoneNumber":"0123456789"
@@ -37,7 +37,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
 
       val tstPAYEContact = PAYEContact(
         name = "Luis Fernandez",
-        digitalContactDetails = DigitalContactDetails(
+        digitalContact = DigitalContactDetails(
           email = Some("test@test.com"),
           mobileNumber = Some("07123456789"),
           phoneNumber = Some("0123456789")
@@ -52,7 +52,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "name":"Luis Fernandez",
-           |  "digitalContactDetails" : {
+           |  "digitalContact" : {
            |    "email":"test@test.com",
            |    "phoneNumber":"0123456789"
            |  }
@@ -61,7 +61,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
 
       val tstPAYEContact = PAYEContact(
         name = "Luis Fernandez",
-        digitalContactDetails = DigitalContactDetails(
+        digitalContact = DigitalContactDetails(
           email = Some("test@test.com"),
           mobileNumber = None,
           phoneNumber = Some("0123456789")
@@ -76,7 +76,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "name":"Luis@Fernandez",
-           |  "digitalContactDetails" : {
+           |  "digitalContact" : {
            |    "email":"test@test.com",
            |    "phoneNumber":"0123456789"
            |  }

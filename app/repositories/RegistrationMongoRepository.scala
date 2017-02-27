@@ -204,7 +204,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]] = {
     retrieveRegistration(registrationID) map {
-      case Some(registration) => registration.payeContact
+      case Some(registration) => registration.payeContactDetails
       case None =>
         Logger.warn(s"Unable to retrieve Contact Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
@@ -214,7 +214,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   override def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact] = {
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(payeContact = Some(contactDetails))) map {
+        collection.update(registrationIDSelector(registrationID), reg.copy(payeContactDetails = Some(contactDetails))) map {
           res => contactDetails
         } recover {
           case e =>
@@ -268,7 +268,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       formCreationTimestamp = timeStamp,
       companyDetails = None,
       directors = Seq.empty,
-      payeContact = None,
+      payeContactDetails = None,
       employment = None,
       sicCodes = Seq.empty
     )
