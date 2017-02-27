@@ -24,7 +24,7 @@ case class CompanyDetails(crn: Option[String],
                           tradingName: Option[String],
                           roAddress: Address,
                           ppobAddress: Address,
-                          businessContactDetails: BusinessContactDetails)
+                          businessContactDetails: DigitalContactDetails)
 
 case class Address(line1: String,
                    line2: String,
@@ -33,16 +33,8 @@ case class Address(line1: String,
                    postCode: Option[String],
                    country: Option[String] = None)
 
-case class BusinessContactDetails(email: Option[String],
-                                  phoneNumber: Option[String],
-                                  mobileNumber: Option[String])
-
 object Address {
   implicit val format = Json.format[Address]
-}
-
-object BusinessContactDetails {
-  implicit val format = Json.format[BusinessContactDetails]
 }
 
 object CompanyDetails extends CompanyDetailsValidator {
@@ -53,7 +45,7 @@ object CompanyDetails extends CompanyDetailsValidator {
       (__ \ "tradingName").formatNullable[String](companyNameValidator) and
       (__ \ "roAddress").format[Address] and
       (__ \ "ppobAddress").format[Address] and
-      (__ \ "businessContactDetails").format[BusinessContactDetails]
+      (__ \ "businessContactDetails").format[DigitalContactDetails]
     )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 
 }

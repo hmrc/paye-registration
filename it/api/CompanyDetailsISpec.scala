@@ -17,7 +17,7 @@ package api
 
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Address, BusinessContactDetails, CompanyDetails, PAYERegistration}
+import models.{Address, CompanyDetails, DigitalContactDetails, DigitalContactDetails$, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -66,7 +66,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       tradingName = Some("Test Trading Name"),
       roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
       ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-      businessContactDetails = BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
     )
 
     "Return a 200 when the user gets company details" in new Setup {
@@ -75,7 +75,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, Some(validCompanyDetails), Seq.empty, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, Some(validCompanyDetails), Seq.empty, None, None, Seq.empty))
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
@@ -88,7 +88,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue
       getResponse1.status shouldBe 404
@@ -109,7 +109,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 403
@@ -121,7 +121,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
 
       val response = client(s"/${regID}/company-details")
         .patch(Json.toJson(validCompanyDetails))

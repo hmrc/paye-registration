@@ -82,6 +82,14 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      }
            |    }
            |  ],
+           |  "payeContact": {
+           |    "name": "toto tata",
+           |    "digitalContactDetails": {
+           |      "email": "payeemail@test.co.uk",
+           |      "phoneNumber": "654",
+           |      "mobileNumber": "12345"
+           |    }
+           |  },
            |  "employment": {
            |    "first-payment-date": "$date",
            |    "cis": true,
@@ -111,7 +119,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             tradingName = Some("Test Trading Name"),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
             Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-            BusinessContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
+            DigitalContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
           )
         ),
         directors = Seq(
@@ -132,6 +140,16 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
               title = Some("Mr")
             ),
             Some("AA000009Z")
+          )
+        ),
+        payeContact = Some(
+          PAYEContact(
+            name = "toto tata",
+            digitalContactDetails = DigitalContactDetails(
+              Some("payeemail@test.co.uk"),
+              Some("654"),
+              Some("12345")
+            )
           )
         ),
         employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),
@@ -162,6 +180,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         formCreationTimestamp = "2016-05-31",
         companyDetails = None,
         Seq.empty,
+        None,
         None,
         Seq.empty
       )

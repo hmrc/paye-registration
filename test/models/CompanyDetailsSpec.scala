@@ -60,7 +60,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
         Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-        BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+        DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
@@ -100,7 +100,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
         Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-        BusinessContactDetails(None, Some("012345"), None)
+        DigitalContactDetails(None, Some("012345"), None)
       )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
