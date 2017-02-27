@@ -33,7 +33,7 @@ case class Address(line1: String,
                    postCode: Option[String],
                    country: Option[String] = None)
 
-case class BusinessContactDetails(businessEmail: Option[String],
+case class BusinessContactDetails(email: Option[String],
                                   phoneNumber: Option[String],
                                   mobileNumber: Option[String])
 
