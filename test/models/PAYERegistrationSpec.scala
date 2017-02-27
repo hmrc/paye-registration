@@ -57,7 +57,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "country":"UK"
            |      },
            |      "businessContactDetails": {
-           |        "businessEmail":"email@test.co.uk",
+           |        "email":"email@test.co.uk",
            |        "phoneNumber":"999",
            |        "mobileNumber":"00000"
            |      }
@@ -197,7 +197,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "country":"UK"
            |      },
            |      "businessContactDetails": {
-           |        "businessEmail":"email@test.co.uk",
+           |        "email":"email@test.co.uk",
            |        "phoneNumber":"999",
            |        "mobileNumber":"00000"
            |      }
