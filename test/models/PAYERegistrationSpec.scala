@@ -82,9 +82,9 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      }
            |    }
            |  ],
-           |  "payeContact": {
+           |  "payeContactDetails": {
            |    "name": "toto tata",
-           |    "digitalContactDetails": {
+           |    "digitalContact": {
            |      "email": "payeemail@test.co.uk",
            |      "phoneNumber": "654",
            |      "mobileNumber": "12345"
@@ -142,10 +142,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             Some("AA000009Z")
           )
         ),
-        payeContact = Some(
+        payeContactDetails = Some(
           PAYEContact(
             name = "toto tata",
-            digitalContactDetails = DigitalContactDetails(
+            digitalContact = DigitalContactDetails(
               Some("payeemail@test.co.uk"),
               Some("654"),
               Some("12345")

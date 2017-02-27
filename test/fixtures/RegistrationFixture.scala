@@ -65,7 +65,7 @@ trait RegistrationFixture {
 
   val validPAYEContact = PAYEContact(
     name = "Toto Tata",
-    digitalContactDetails = DigitalContactDetails(
+    digitalContact = DigitalContactDetails(
       Some("test@email.com"),
       Some("012345"),
       Some("543210")
@@ -78,7 +78,7 @@ trait RegistrationFixture {
     formCreationTimestamp = "20161021-16:00:00",
     companyDetails = Some(validCompanyDetails),
     directors = validDirectors,
-    payeContact = Some(validPAYEContact),
+    payeContactDetails = Some(validPAYEContact),
     employment = Some(validEmployment),
     validSICCodes
   )

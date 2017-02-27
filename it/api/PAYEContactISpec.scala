@@ -45,7 +45,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
 
     val validPAYEContact = new PAYEContact(
       name = "Thierry Henry",
-      digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      digitalContact = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
     )
 
     "Return a 200 when the user gets paye contact" in new Setup {
