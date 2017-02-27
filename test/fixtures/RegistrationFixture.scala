@@ -27,7 +27,7 @@ trait RegistrationFixture {
     tradingName = Some("Test Trading Name"),
     Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
     Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-    BusinessContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+    DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
   val validEmployment = Employment(
@@ -63,12 +63,22 @@ trait RegistrationFixture {
     SICCode(code = None, description = Some("something"))
   )
 
+  val validPAYEContact = PAYEContact(
+    name = "Toto Tata",
+    digitalContactDetails = DigitalContactDetails(
+      Some("test@email.com"),
+      Some("012345"),
+      Some("543210")
+    )
+  )
+
   val validRegistration = PAYERegistration(
     registrationID = "AC187651",
     internalID = "09876",
     formCreationTimestamp = "20161021-16:00:00",
     companyDetails = Some(validCompanyDetails),
     directors = validDirectors,
+    payeContact = Some(validPAYEContact),
     employment = Some(validEmployment),
     validSICCodes
   )

@@ -18,7 +18,7 @@ package controllers
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.{AuthFixture, RegistrationFixture}
-import models.{CompanyDetails, Director, Employment, SICCode}
+import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
@@ -459,6 +459,92 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         .thenReturn(Future.successful(validSICCodes))
 
       val response = controller.upsertSICCodes("AC123456")(FakeRequest().withBody(Json.toJson[Seq[SICCode]](validSICCodes)))
+
+      status(response) shouldBe Status.OK
+    }
+  }
+
+  "Calling getPAYEContact" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.getPAYEContact("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.getPAYEContact(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+
+      val response = controller.getPAYEContact("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return a PAYERegistration for a successful query" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.getPAYEContact(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration.payeContact))
+
+      val response = controller.getPAYEContact("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.OK
+    }
+  }
+
+  "Calling upsertPAYEContact" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return an OK response for a valid upsert" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+        .thenReturn(Future.successful(validPAYEContact))
+
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
 
       status(response) shouldBe Status.OK
     }

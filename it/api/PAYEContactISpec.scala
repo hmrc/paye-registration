@@ -1,23 +1,7 @@
-/*
- * Copyright 2017 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package api
 
-
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Address, CompanyDetails, DigitalContactDetails, DigitalContactDetails$, PAYERegistration}
+import models.{DigitalContactDetails, PAYEContact, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -26,7 +10,7 @@ import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class CompanyDetailsISpec extends IntegrationSpecBase {
+class PAYEContactISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -52,37 +36,32 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     await(repository.ensureIndexes)
   }
 
-
-  "PAYE Registration API - Company Details" should {
+  "PAYE Registration API - PAYE Contact" should {
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validCompanyDetails = new CompanyDetails(
-      crn = None,
-      companyName = "Test Company Name",
-      tradingName = Some("Test Trading Name"),
-      roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-      ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-      businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+    val validPAYEContact = new PAYEContact(
+      name = "Thierry Henry",
+      digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
     )
 
-    "Return a 200 when the user gets company details" in new Setup {
+    "Return a 200 when the user gets paye contact" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, Some(validCompanyDetails), Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, Some(validPAYEContact), None, Seq.empty))
 
-      val response = client(s"/${regID}/company-details").get.futureValue
+      val response = client(s"/${regID}/contact-paye").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validCompanyDetails)
+      response.json shouldBe Json.toJson(validPAYEContact)
     }
 
-    "Return a 200 when the user upserts company details" in new Setup {
+    "Return a 200 when the user upserts paye contact" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -90,20 +69,20 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
 
-      val getResponse1 = client(s"/${regID}/company-details").get.futureValue
+      val getResponse1 = client(s"/${regID}/contact-paye").get.futureValue
       getResponse1.status shouldBe 404
 
-      val patchResponse = client(s"/${regID}/company-details")
-        .patch[JsValue](Json.toJson(validCompanyDetails))
+      val patchResponse = client(s"/${regID}/contact-paye")
+        .patch[JsValue](Json.toJson(validPAYEContact))
         .futureValue
       patchResponse.status shouldBe 200
 
-      val getResponse2 = client(s"/${regID}/company-details").get.futureValue
+      val getResponse2 = client(s"/${regID}/contact-paye").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)
+      getResponse2.json shouldBe Json.toJson(validPAYEContact)
     }
 
-    "Return a 403 when the user is not authorised to get company details" in new Setup {
+    "Return a 403 when the user is not authorised to get paye contact" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -111,11 +90,11 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
 
-      val response = client(s"/${regID}/company-details").get.futureValue
+      val response = client(s"/${regID}/contact-paye").get.futureValue
       response.status shouldBe 403
     }
 
-    "Return a 403 when the user is not authorised to upsert company details" in new Setup {
+    "Return a 403 when the user is not authorised to upsert paye contact" in new Setup {
       setupSimpleAuthMocks()
 
       val regID = "12345"
@@ -123,8 +102,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
 
-      val response = client(s"/${regID}/company-details")
-        .patch(Json.toJson(validCompanyDetails))
+      val response = client(s"/${regID}/contact-paye")
+        .patch(Json.toJson(validPAYEContact))
         .futureValue
       response.status shouldBe 403
     }

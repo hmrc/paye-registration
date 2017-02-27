@@ -55,6 +55,8 @@ trait RegistrationRepository {
   def upsertDirectors(registrationID: String, directors: Seq[Director]): Future[Seq[Director]]
   def retrieveSICCodes(registrationID: String): Future[Seq[SICCode]]
   def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]]
+  def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]]
+  def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
   def dropCollection: Future[Unit]
 }
 
@@ -200,6 +202,31 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
+  override def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]] = {
+    retrieveRegistration(registrationID) map {
+      case Some(registration) => registration.payeContact
+      case None =>
+        Logger.warn(s"Unable to retrieve Contact Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
+  override def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact] = {
+    retrieveRegistration(registrationID) flatMap {
+      case Some(reg) =>
+        collection.update(registrationIDSelector(registrationID), reg.copy(payeContact = Some(contactDetails))) map {
+          res => contactDetails
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: ${e.getMessage}")
+            throw new UpdateFailed(registrationID, "SIC Codes")
+        }
+      case None =>
+        Logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
   override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
     retrieveRegistration(id) map {
       case Some(registration) => Some(id -> registration.internalID)
@@ -241,6 +268,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       formCreationTimestamp = timeStamp,
       companyDetails = None,
       directors = Seq.empty,
+      payeContact = None,
       employment = None,
       sicCodes = Seq.empty
     )

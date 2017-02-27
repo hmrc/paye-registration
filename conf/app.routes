@@ -15,3 +15,6 @@ PATCH      /:regID/directors                  controllers.RegistrationController
 
 GET        /:regID/sic-codes                  controllers.RegistrationController.getSICCodes(regID)
 PATCH      /:regID/sic-codes                  controllers.RegistrationController.upsertSICCodes(regID)
+
+GET        /:regID/contact-paye               controllers.RegistrationController.getPAYEContact(regID)
+PATCH      /:regID/contact-paye               controllers.RegistrationController.upsertPAYEContact(regID)
