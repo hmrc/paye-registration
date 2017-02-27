@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.{AuthConnect, AuthConnector}
-import models.{CompanyDetails, Director, Employment, SICCode}
+import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -223,6 +223,45 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
           Logger.info(s"[RegistrationController] [upsertSICCodes] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def getPAYEContact(regID: String) : Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          registrationSrv.getPAYEContact(regID) map {
+            case Some(payeContact) => Ok(Json.toJson(payeContact))
+            case None => NotFound
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getPAYEContact] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getPAYEContact] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def upsertPAYEContact(regID: String) : Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          withJsonBody[PAYEContact] { payeContact =>
+            registrationSrv.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
+              Ok(Json.toJson(payeContactResponse))
+            } recover {
+              case missing : MissingRegDocument => NotFound
+            }
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [upsertPAYEContact] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [upsertPAYEContact] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }
