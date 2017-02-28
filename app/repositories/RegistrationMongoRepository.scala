@@ -57,6 +57,8 @@ trait RegistrationRepository {
   def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]]
   def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]]
   def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
+  def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
+  def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
   def dropCollection: Future[Unit]
 }
 
@@ -227,6 +229,31 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
+  override def retrieveCompletionCapacity(registrationID: String): Future[Option[String]] = {
+    retrieveRegistration(registrationID) map {
+      case Some(registration) => registration.completionCapacity
+      case None =>
+        Logger.warn(s"Unable to retrieve Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
+  override def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String] = {
+    retrieveRegistration(registrationID) flatMap {
+      case Some(reg) =>
+        collection.update(registrationIDSelector(registrationID), reg.copy(completionCapacity = Some(capacity))) map {
+          res => capacity
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: ${e.getMessage}")
+            throw new UpdateFailed(registrationID, "SIC Codes")
+        }
+      case None =>
+        Logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
   override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
     retrieveRegistration(id) map {
       case Some(registration) => Some(id -> registration.internalID)
@@ -266,6 +293,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       registrationID = registrationID,
       internalID = internalId,
       formCreationTimestamp = timeStamp,
+      completionCapacity = None,
       companyDetails = None,
       directors = Seq.empty,
       payeContact = None,
