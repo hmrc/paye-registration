@@ -18,3 +18,6 @@ PATCH      /:regID/sic-codes                  controllers.RegistrationController
 
 GET        /:regID/contact-paye               controllers.RegistrationController.getPAYEContact(regID)
 PATCH      /:regID/contact-paye               controllers.RegistrationController.upsertPAYEContact(regID)
+
+GET        /:regID/capacity                   controllers.RegistrationController.getCompletionCapacity(regID)
+PATCH      /:regID/capacity                   controllers.RegistrationController.upsertCompletionCapacity(regID)

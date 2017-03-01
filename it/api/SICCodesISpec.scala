@@ -113,7 +113,7 @@ class SICCodesISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val intID = "Int-xxx-yyy-zzz"
+      val intID = "Int-abc-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
       repository.insert(PAYERegistration(regID, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty))
 
