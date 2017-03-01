@@ -35,6 +35,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "registrationID":"12345",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "completionCapacity":"Director",
            |  "companyDetails":
            |    {
            |      "crn":"Ac123456",
@@ -112,6 +113,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
+        completionCapacity = Some("Director"),
         companyDetails = Some(
           CompanyDetails(
             crn = Some("Ac123456"),
@@ -178,6 +180,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
+        completionCapacity = None,
         companyDetails = None,
         Seq.empty,
         None,

@@ -86,4 +86,12 @@ trait RegistrationSrv {
   def upsertPAYEContact(regID: String, payeContact: PAYEContact): Future[PAYEContact] = {
     registrationRepository.upsertPAYEContact(regID, payeContact)
   }
+
+  def getCompletionCapacity(regID: String): Future[Option[String]] = {
+    registrationRepository.retrieveCompletionCapacity(regID)
+  }
+
+  def upsertCompletionCapacity(regID: String, capacity: String): Future[String] = {
+    registrationRepository.upsertCompletionCapacity(regID, capacity)
+  }
 }

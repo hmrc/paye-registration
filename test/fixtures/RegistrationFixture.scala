@@ -76,6 +76,7 @@ trait RegistrationFixture {
     registrationID = "AC187651",
     internalID = "09876",
     formCreationTimestamp = "20161021-16:00:00",
+    completionCapacity = Some("Director"),
     companyDetails = Some(validCompanyDetails),
     directors = validDirectors,
     payeContact = Some(validPAYEContact),
