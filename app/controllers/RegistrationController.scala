@@ -26,7 +26,7 @@ import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
@@ -250,13 +250,30 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          withJsonBody[PAYEContact] { payeContact =>
+          //TODO: remove that stub code once FE is ready to send data and uncomment original code
+          withJsonBody[JsObject] { json =>
+            val payeContact = json.keys.contains("payeCorrespondenceAddress") match {
+              case true => json.as[PAYEContact]
+              case false => {
+                import models.Address
+                val stubPAYECorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+                val stubJson = json + ("payeCorrespondenceAddress" -> Json.toJson(stubPAYECorrespondenceAddress))
+                stubJson.as[PAYEContact]
+              }
+            }
             registrationSrv.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
               Ok(Json.toJson(payeContactResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
             }
           }
+          //withJsonBody[PAYEContact] { payeContact =>
+          //  registrationSrv.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
+          //    Ok(Json.toJson(payeContactResponse))
+          //  } recover {
+          //    case missing : MissingRegDocument => NotFound
+          //  }
+          //}
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [upsertPAYEContact] User not logged in")
           Future.successful(Forbidden)
