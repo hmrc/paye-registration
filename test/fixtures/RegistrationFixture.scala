@@ -69,7 +69,8 @@ trait RegistrationFixture {
       Some("test@email.com"),
       Some("012345"),
       Some("543210")
-    )
+    ),
+    payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
   val validRegistration = PAYERegistration(

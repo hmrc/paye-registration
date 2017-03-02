@@ -31,6 +31,14 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |    "email":"test@test.com",
            |    "mobileNumber":"07123456789",
            |    "phoneNumber":"0123456789"
+           |  },
+           |  "payeCorrespondenceAddress": {
+           |    "line1":"19 St Walk",
+           |    "line2":"Testley CA",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE4 1ST",
+           |    "country":"UK"
            |  }
            |}
         """.stripMargin)
@@ -41,7 +49,8 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
           email = Some("test@test.com"),
           mobileNumber = Some("07123456789"),
           phoneNumber = Some("0123456789")
-        )
+        ),
+        payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
       )
 
       Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
@@ -55,6 +64,13 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |  "digitalContactDetails" : {
            |    "email":"test@test.com",
            |    "phoneNumber":"0123456789"
+           |  },
+           |  "payeCorrespondenceAddress": {
+           |    "line1":"19 St Walk",
+           |    "line2":"Testley CA",
+           |    "line3":"Testford",
+           |    "postCode":"TE4 1ST",
+           |    "country":"UK"
            |  }
            |}
         """.stripMargin)
@@ -65,7 +81,8 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
           email = Some("test@test.com"),
           mobileNumber = None,
           phoneNumber = Some("0123456789")
-        )
+        ),
+        payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), None, Some("TE4 1ST"), Some("UK"))
       )
 
       Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
@@ -79,6 +96,14 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |  "digitalContactDetails" : {
            |    "email":"test@test.com",
            |    "phoneNumber":"0123456789"
+           |  },
+           |  "payeCorrespondenceAddress": {
+           |    "line1":"19 St Walk",
+           |    "line2":"Testley CA",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE4 1ST",
+           |    "country":"UK"
            |  }
            |}
         """.stripMargin)

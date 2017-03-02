@@ -145,7 +145,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
                 Some("test@test.com"),
                 Some("1234"),
                 Some("4358475")
-              )
+              ),
+              payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
             )
           ),
           Some(

@@ -91,7 +91,8 @@ class RegistrationMongoRepositoryISpec
       Some("test@test.com"),
       Some("1234"),
       Some("09876")
-    )
+    ),
+    payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
   private val regUpdatedPAYEContact = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = Some(payeContact), None, sicCodes = Seq.empty)
 

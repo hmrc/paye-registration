@@ -1,7 +1,7 @@
 package api
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{DigitalContactDetails, PAYEContact, PAYERegistration}
+import models.{Address, DigitalContactDetails, PAYEContact, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -45,7 +45,8 @@ class PAYEContactISpec extends IntegrationSpecBase {
 
     val validPAYEContact = new PAYEContact(
       name = "Thierry Henry",
-      digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654")),
+      payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
     )
 
     "Return a 200 when the user gets paye contact" in new Setup {
