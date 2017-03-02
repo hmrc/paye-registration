@@ -252,12 +252,12 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case Authorised(_) =>
           //TODO: remove that stub code once FE is ready to send data and uncomment original code
           withJsonBody[JsObject] { json =>
-            val payeContact = json.keys.contains("payeCorrespondenceAddress") match {
+            val payeContact = json.keys.contains("correspondenceAddress") match {
               case true => json.as[PAYEContact]
               case false => {
                 import models.Address
                 val stubPAYECorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
-                val stubJson = json + ("payeCorrespondenceAddress" -> Json.toJson(stubPAYECorrespondenceAddress))
+                val stubJson = json + ("correspondenceAddress" -> Json.toJson(stubPAYECorrespondenceAddress))
                 stubJson.as[PAYEContact]
               }
             }
