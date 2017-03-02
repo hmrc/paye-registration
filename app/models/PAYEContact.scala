@@ -17,18 +17,23 @@
 package models
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, __}
+import play.api.libs.json.{Format, Json, __}
 
-case class PAYEContact(name: String,
-                       digitalContactDetails: DigitalContactDetails,
-                       payeCorrespondenceAddress: Address)
+case class PAYEContact(contactDetails: PAYEContactDetails,
+                       correspondenceAddress: Address)
 
-object PAYEContact extends PAYEContactValidator {
+case class PAYEContactDetails(name: String,
+                              digitalContactDetails: DigitalContactDetails)
 
-  implicit val format: Format[PAYEContact] = (
+object PAYEContactDetails extends PAYEContactDetailsValidator {
+  implicit val format: Format[PAYEContactDetails] = (
     (__ \ "name").format[String](nameValidator) and
-    (__ \ "digitalContactDetails").format[DigitalContactDetails] and
-    (__ \ "payeCorrespondenceAddress").format[Address]
-    )(PAYEContact.apply, unlift(PAYEContact.unapply))
+    (__ \ "digitalContactDetails").format[DigitalContactDetails]
+  )(PAYEContactDetails.apply, unlift(PAYEContactDetails.unapply))
+}
 
+object PAYEContact {
+  implicit val payeContactDetails = PAYEContactDetails.format
+  implicit val addressFormat = Address.format
+  implicit val format = Json.format[PAYEContact]
 }

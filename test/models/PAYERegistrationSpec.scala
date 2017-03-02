@@ -84,20 +84,22 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    }
            |  ],
            |  "payeContact": {
-           |    "name": "toto tata",
-           |    "digitalContactDetails": {
-           |      "email": "payeemail@test.co.uk",
-           |      "phoneNumber": "654",
-           |      "mobileNumber": "12345"
+           |    "contactDetails": {
+           |      "name": "toto tata",
+           |      "digitalContactDetails": {
+           |        "email": "payeemail@test.co.uk",
+           |        "phoneNumber": "654",
+           |        "mobileNumber": "12345"
+           |      }
            |    },
-             |  "payeCorrespondenceAddress": {
-             |    "line1":"19 St Walk",
-             |    "line2":"Testley CA",
-             |    "line3":"Testford",
-             |    "line4":"Testshire",
-             |    "postCode":"TE4 1ST",
-             |    "country":"UK"
-             |  }
+           |    "correspondenceAddress": {
+           |      "line1":"19 St Walk",
+           |      "line2":"Testley CA",
+           |      "line3":"Testford",
+           |      "line4":"Testshire",
+           |      "postCode":"TE4 1ST",
+           |      "country":"UK"
+           |    }
            |  },
            |  "employment": {
            |    "first-payment-date": "$date",
@@ -154,13 +156,15 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         ),
         payeContact = Some(
           PAYEContact(
-            name = "toto tata",
-            digitalContactDetails = DigitalContactDetails(
-              Some("payeemail@test.co.uk"),
-              Some("654"),
-              Some("12345")
+            contactDetails = PAYEContactDetails(
+              name = "toto tata",
+              digitalContactDetails = DigitalContactDetails(
+                Some("payeemail@test.co.uk"),
+                Some("654"),
+                Some("12345")
+              )
             ),
-            payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+            correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
           )
         ),
         employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),

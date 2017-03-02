@@ -16,8 +16,8 @@ PATCH      /:regID/directors                  controllers.RegistrationController
 GET        /:regID/sic-codes                  controllers.RegistrationController.getSICCodes(regID)
 PATCH      /:regID/sic-codes                  controllers.RegistrationController.upsertSICCodes(regID)
 
-GET        /:regID/contact-paye               controllers.RegistrationController.getPAYEContact(regID)
-PATCH      /:regID/contact-paye               controllers.RegistrationController.upsertPAYEContact(regID)
+GET        /:regID/contact-correspond-paye    controllers.RegistrationController.getPAYEContact(regID)
+PATCH      /:regID/contact-correspond-paye    controllers.RegistrationController.upsertPAYEContact(regID)
 
 GET        /:regID/capacity                   controllers.RegistrationController.getCompletionCapacity(regID)
 PATCH      /:regID/capacity                   controllers.RegistrationController.upsertCompletionCapacity(regID)

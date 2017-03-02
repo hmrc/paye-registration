@@ -140,13 +140,15 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           ),
           Some(
             PAYEContact(
-              name = "Thierry Henry",
-              digitalContactDetails = DigitalContactDetails(
-                Some("test@test.com"),
-                Some("1234"),
-                Some("4358475")
+              contactDetails = PAYEContactDetails(
+                name = "Thierry Henry",
+                digitalContactDetails = DigitalContactDetails(
+                  Some("test@test.com"),
+                  Some("1234"),
+                  Some("4358475")
+                )
               ),
-              payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+              correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
             )
           ),
           Some(

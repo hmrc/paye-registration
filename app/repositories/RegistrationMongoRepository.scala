@@ -213,11 +213,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
-  override def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact] = {
+  override def upsertPAYEContact(registrationID: String, payeContact: PAYEContact): Future[PAYEContact] = {
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(payeContact = Some(contactDetails))) map {
-          res => contactDetails
+        collection.update(registrationIDSelector(registrationID), reg.copy(payeContact = Some(payeContact))) map {
+          res => payeContact
         } recover {
           case e =>
             Logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: ${e.getMessage}")
