@@ -35,6 +35,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "registrationID":"12345",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "completionCapacity":"Director",
            |  "companyDetails":
            |    {
            |      "crn":"Ac123456",
@@ -83,11 +84,21 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    }
            |  ],
            |  "payeContact": {
-           |    "name": "toto tata",
-           |    "digitalContactDetails": {
-           |      "email": "payeemail@test.co.uk",
-           |      "phoneNumber": "654",
-           |      "mobileNumber": "12345"
+           |    "contactDetails": {
+           |      "name": "toto tata",
+           |      "digitalContactDetails": {
+           |        "email": "payeemail@test.co.uk",
+           |        "phoneNumber": "654",
+           |        "mobileNumber": "12345"
+           |      }
+           |    },
+           |    "correspondenceAddress": {
+           |      "line1":"19 St Walk",
+           |      "line2":"Testley CA",
+           |      "line3":"Testford",
+           |      "line4":"Testshire",
+           |      "postCode":"TE4 1ST",
+           |      "country":"UK"
            |    }
            |  },
            |  "employment": {
@@ -112,6 +123,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
+        completionCapacity = Some("Director"),
         companyDetails = Some(
           CompanyDetails(
             crn = Some("Ac123456"),
@@ -144,12 +156,15 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         ),
         payeContact = Some(
           PAYEContact(
-            name = "toto tata",
-            digitalContactDetails = DigitalContactDetails(
-              Some("payeemail@test.co.uk"),
-              Some("654"),
-              Some("12345")
-            )
+            contactDetails = PAYEContactDetails(
+              name = "toto tata",
+              digitalContactDetails = DigitalContactDetails(
+                Some("payeemail@test.co.uk"),
+                Some("654"),
+                Some("12345")
+              )
+            ),
+            correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
           )
         ),
         employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),
@@ -178,6 +193,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
+        completionCapacity = None,
         companyDetails = None,
         Seq.empty,
         None,

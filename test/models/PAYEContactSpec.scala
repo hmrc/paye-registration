@@ -21,7 +21,7 @@ import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
-  "Creating a PAYEContact model from Json" should {
+  "Creating a PAYEContactDetails model from Json" should {
     "complete successfully from full Json" in {
       val json = Json.parse(
         s"""
@@ -35,7 +35,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val tstPAYEContact = PAYEContact(
+      val tstPAYEContactDetails = PAYEContactDetails(
         name = "Luis Fernandez",
         digitalContactDetails = DigitalContactDetails(
           email = Some("test@test.com"),
@@ -44,7 +44,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
+      Json.fromJson[PAYEContactDetails](json) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
     "complete successfully from Json with incomplete digital contact details" in {
@@ -59,7 +59,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val tstPAYEContact = PAYEContact(
+      val tstPAYEContactDetails = PAYEContactDetails(
         name = "Luis Fernandez",
         digitalContactDetails = DigitalContactDetails(
           email = Some("test@test.com"),
@@ -68,7 +68,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
+      Json.fromJson[PAYEContactDetails](json) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
     "fail from Json with invalid paye contact name" in {
@@ -83,8 +83,85 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val result = Json.fromJson[PAYEContact](json)
+      val result = Json.fromJson[PAYEContactDetails](json)
       shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+    }
+  }
+
+  "Creating a PAYEContact model from Json" should {
+    "complete successfully from full Json" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "contactDetails": {
+           |    "name":"Luis Fernandez",
+           |    "digitalContactDetails" : {
+           |      "email":"test@test.com",
+           |      "mobileNumber":"07123456789",
+           |      "phoneNumber":"0123456789"
+           |    }
+           |  },
+           |  "correspondenceAddress": {
+           |    "line1":"19 St Walk",
+           |    "line2":"Testley CA",
+           |    "line3":"Testford",
+           |    "line4":"Testshire",
+           |    "postCode":"TE4 1ST",
+           |    "country":"UK"
+           |  }
+           |}
+        """.stripMargin)
+
+      val tstPAYEContact = PAYEContact(
+        contactDetails = PAYEContactDetails(
+          name = "Luis Fernandez",
+          digitalContactDetails = DigitalContactDetails(
+            email = Some("test@test.com"),
+            mobileNumber = Some("07123456789"),
+            phoneNumber = Some("0123456789")
+          )
+        ),
+        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+      )
+
+      Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
+    }
+
+    "complete successfully from incomplete Correspondence Address Json" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "contactDetails": {
+           |    "name":"Luis Fernandez",
+           |    "digitalContactDetails" : {
+           |      "email":"test@test.com",
+           |      "mobileNumber":"07123456789",
+           |      "phoneNumber":"0123456789"
+           |    }
+           |  },
+           |  "correspondenceAddress": {
+           |    "line1":"19 St Walk",
+           |    "line2":"Testley CA",
+           |    "line4":"Testshire",
+           |    "postCode":"TE4 1ST",
+           |    "country":"UK"
+           |  }
+           |}
+        """.stripMargin)
+
+      val tstPAYEContact = PAYEContact(
+        contactDetails = PAYEContactDetails(
+          name = "Luis Fernandez",
+          digitalContactDetails = DigitalContactDetails(
+            email = Some("test@test.com"),
+            mobileNumber = Some("07123456789"),
+            phoneNumber = Some("0123456789")
+          )
+        ),
+        correspondenceAddress = Address("19 St Walk", "Testley CA", None, Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+      )
+
+      Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
     }
   }
 }

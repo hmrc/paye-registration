@@ -26,7 +26,7 @@ import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
@@ -262,6 +262,45 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
           Logger.info(s"[RegistrationController] [upsertPAYEContact] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def getCompletionCapacity(regID: String) : Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          registrationSrv.getCompletionCapacity(regID) map {
+            case Some(capacity) => Ok(Json.toJson(capacity))
+            case None => NotFound
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getCompletionCapacity] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getCompletionCapacity] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def upsertCompletionCapacity(regID: String) : Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          withJsonBody[String] { capacity =>
+            registrationSrv.upsertCompletionCapacity(regID, capacity) map { capacityResponse =>
+              Ok(Json.toJson(capacityResponse))
+            } recover {
+              case missing : MissingRegDocument => NotFound
+            }
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [upsertCompletionCapacity] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [upsertCompletionCapacity] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }

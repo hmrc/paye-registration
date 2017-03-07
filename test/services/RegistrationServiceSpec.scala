@@ -305,4 +305,50 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
+  "Calling getCompletionCapacity" should {
+
+    "return a None response when there is no registration in mongo for the reg ID" in new Setup {
+      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(None))
+
+      val actual = await(service.getCompletionCapacity("AC123456"))
+      actual shouldBe None
+    }
+
+    "return a failed future with exception when the database errors" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.failed(exception))
+
+      intercept[RuntimeException] { await(service.getCompletionCapacity("AC123456")) }
+    }
+
+    "return a registration there is one matching the reg ID in mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(Some("Director")))
+
+      val actual = await(service.getCompletionCapacity("AC123456"))
+      actual shouldBe validRegistration.completionCapacity
+    }
+  }
+
+  "Calling upsertCompletionCapacity" should {
+
+    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+      when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+      intercept[MissingRegDocument] { await(service.upsertCompletionCapacity("AC123456", "Agent")) }
+    }
+
+    "return a DBSuccess response when the paye contact are successfully updated" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+        .thenReturn(Future.successful("Agent"))
+
+      val actual = await(service.upsertCompletionCapacity("AC123456", "Agent"))
+      actual shouldBe "Agent"
+    }
+  }
+
 }

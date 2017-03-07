@@ -1,7 +1,7 @@
 package api
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{DigitalContactDetails, PAYEContact, PAYERegistration}
+import models.{Address, DigitalContactDetails, PAYEContact, PAYEContactDetails, PAYERegistration}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -44,8 +44,11 @@ class PAYEContactISpec extends IntegrationSpecBase {
     }
 
     val validPAYEContact = new PAYEContact(
-      name = "Thierry Henry",
-      digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      contactDetails = PAYEContactDetails(
+        name = "Thierry Henry",
+        digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      ),
+      correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
     )
 
     "Return a 200 when the user gets paye contact" in new Setup {
@@ -54,9 +57,9 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, Some(validPAYEContact), None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None, Seq.empty, Some(validPAYEContact), None, Seq.empty))
 
-      val response = client(s"/${regID}/contact-paye").get.futureValue
+      val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 200
       response.json shouldBe Json.toJson(validPAYEContact)
     }
@@ -67,17 +70,17 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty))
 
-      val getResponse1 = client(s"/${regID}/contact-paye").get.futureValue
+      val getResponse1 = client(s"/${regID}/contact-correspond-paye").get.futureValue
       getResponse1.status shouldBe 404
 
-      val patchResponse = client(s"/${regID}/contact-paye")
+      val patchResponse = client(s"/${regID}/contact-correspond-paye")
         .patch[JsValue](Json.toJson(validPAYEContact))
         .futureValue
       patchResponse.status shouldBe 200
 
-      val getResponse2 = client(s"/${regID}/contact-paye").get.futureValue
+      val getResponse2 = client(s"/${regID}/contact-correspond-paye").get.futureValue
       getResponse2.status shouldBe 200
       getResponse2.json shouldBe Json.toJson(validPAYEContact)
     }
@@ -88,9 +91,9 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty))
 
-      val response = client(s"/${regID}/contact-paye").get.futureValue
+      val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 403
     }
 
@@ -100,9 +103,9 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val regID = "12345"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, timestamp, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty))
 
-      val response = client(s"/${regID}/contact-paye")
+      val response = client(s"/${regID}/contact-correspond-paye")
         .patch(Json.toJson(validPAYEContact))
         .futureValue
       response.status shouldBe 403
