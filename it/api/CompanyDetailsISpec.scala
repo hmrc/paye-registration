@@ -18,11 +18,12 @@ package api
 
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Address, CompanyDetails, DigitalContactDetails, DigitalContactDetails$, PAYERegistration}
-import play.api.Application
+import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -46,7 +47,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup {
-    val mongo = new RegistrationMongo()
+    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

@@ -22,7 +22,9 @@ import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import play.api.Play
 import reactivemongo.api.commands.WriteResult
+import services.MetricsService
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
@@ -104,7 +106,8 @@ class RegistrationMongoRepositoryISpec
   private val regUpdatedCompletionCapacity = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = Some(completionCapacity), companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
 
   class Setup {
-    val mongo = new RegistrationMongo
+    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
