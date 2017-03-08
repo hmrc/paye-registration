@@ -19,7 +19,7 @@ package repositories
 import java.time.LocalDateTime
 
 import auth.AuthorisationResource
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions._
 import helpers.DateHelper
@@ -41,13 +41,12 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo() extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(db, registrationFormat)
+  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics)
 }
 
 trait RegistrationRepository {
-  val metricsService: MetricsSrv
   def createNewRegistration(registrationID: String, internalId : String): Future[PAYERegistration]
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
@@ -65,15 +64,13 @@ trait RegistrationRepository {
   def dropCollection: Future[Unit]
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration]) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format
   ) with RegistrationRepository
     with AuthorisationResource[String]
     with DateHelper {
-
-  override val metricsService = Play.current.injector.instanceOf[MetricsService]
 
   override def indexes: Seq[Index] = Seq(
     Index(
