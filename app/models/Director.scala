@@ -42,11 +42,11 @@ object Name {
     )
 }
 
-object Director {
+object Director extends DirectorValidator {
   implicit val format: Format[Director] =
     (
       (__ \ "director").format[Name] and
-        (__ \ "nino").formatNullable[String]
+        (__ \ "nino").formatNullable[String](ninoValidator)
       )(Director.apply, unlift(Director.unapply)
     )
 }

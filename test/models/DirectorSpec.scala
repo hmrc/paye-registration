@@ -16,7 +16,8 @@
 
 package models
 
-import play.api.libs.json.{JsSuccess, Json}
+import play.api.data.validation.ValidationError
+import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class DirectorSpec extends UnitSpec with JsonFormatValidation {
@@ -59,7 +60,7 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
     val tstJson = Json.parse(
       s"""
          |{
-         |  "nino":"AA098765Z",
+         |  "nino":"SR098765C",
          |  "director": {
          |    "forename":"Thierry",
          |    "other_forenames":"Dominique",
@@ -76,7 +77,7 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
       title = Some("Sir")
     )
 
-    val tstModel = Director(tstName, Some("AA098765Z"))
+    val tstModel = Director(tstName, Some("SR098765C"))
 
     "read from json with full data" in {
       Json.fromJson[Director](tstJson) shouldBe JsSuccess(tstModel)
@@ -94,6 +95,35 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
 
     "write to json with empty data" in {
       Json.toJson[Director](tstEmptyModel) shouldBe tstEmptyJson
+    }
+
+    "fail from Json with invalid nino" in {
+      def json(nino: String) = Json.parse(
+        s"""
+           |{
+           |  "nino":"$nino",
+           |  "director": {
+           |    "forename":"Thierry",
+           |    "other_forenames":"Dominique",
+           |    "surname":"Henry",
+           |    "title":"Sir"
+           |  }
+           |}
+      """.stripMargin)
+
+      def result(nino: String) = Json.fromJson[Director](json(nino))
+
+      shouldHaveErrors(result("BG098765B"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+
+      shouldHaveErrors(result("AD098765D"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+
+      shouldHaveErrors(result("CV098765C"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+
+      shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+
+      shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+
+      shouldHaveErrors(result("SR 09 87 65 C"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
     }
   }
 }

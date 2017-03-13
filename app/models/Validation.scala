@@ -55,3 +55,18 @@ trait PAYEContactDetailsValidator {
   val nameValidator: Format[String] =
     readToFmt(pattern("^[A-Za-z 0-9\\-']{1,100}$".r))
 }
+
+trait DirectorValidator {
+  import Validation._
+
+  val ninoValidator: Format[String] =
+    readToFmt(Reads.StringReads.filter(ValidationError("error.pattern"))(nino => {
+      isValidNino(nino)
+    }))
+
+  private val validNinoFormat = "[[A-Z]&&[^DFIQUV]][[A-Z]&&[^DFIQUVO]]\\d{2}\\d{2}\\d{2}[A-D]{1}"
+  private val invalidPrefixes = List("BG", "GB", "NK", "KN", "TN", "NT", "ZZ")
+  private def hasValidPrefix(nino: String) = invalidPrefixes.find(nino.startsWith).isEmpty
+
+  private def isValidNino(nino: String) = nino.nonEmpty && hasValidPrefix(nino) && nino.matches(validNinoFormat)
+}

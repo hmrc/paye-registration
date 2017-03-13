@@ -65,7 +65,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    },
            |  "directors" : [
            |    {
-           |      "nino":"AA123456Z",
+           |      "nino":"SR123456C",
            |      "director": {
            |        "forename":"Thierry",
            |        "other_forenames":"Dominique",
@@ -74,7 +74,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      }
            |    },
            |    {
-           |      "nino":"AA000009Z",
+           |      "nino":"SR000009C",
            |      "director": {
            |        "forename":"David",
            |        "other_forenames":"Jesus",
@@ -142,7 +142,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
               surname = Some("Henry"),
               title = Some("Sir")
             ),
-            Some("AA123456Z")
+            Some("SR123456C")
           ),
           Director(
             Name(
@@ -151,7 +151,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
               surname = Some("Trezeguet"),
               title = Some("Mr")
             ),
-            Some("AA000009Z")
+            Some("SR000009C")
           )
         ),
         payeContact = Some(

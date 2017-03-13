@@ -68,7 +68,7 @@ class DirectorsISpec extends IntegrationSpecBase {
           surname = Some("Henry"),
           title = Some("Sir")
         ),
-        Some("AA123456Z")
+        Some("SR123456C")
       ),
       Director(
         Name(
@@ -77,7 +77,7 @@ class DirectorsISpec extends IntegrationSpecBase {
           surname = Some("Trezeguet"),
           title = Some("Mr")
         ),
-        Some("AA000009Z")
+        Some("SR000009C")
       )
     )
 
