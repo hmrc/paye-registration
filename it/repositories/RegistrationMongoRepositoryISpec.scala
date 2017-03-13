@@ -63,7 +63,7 @@ class RegistrationMongoRepositoryISpec
         surname = Some("Henry"),
         title = Some("Sir")
       ),
-      Some("AA123456Z")
+      Some("SR123456C")
     ),
     Director(
       Name(
@@ -72,7 +72,7 @@ class RegistrationMongoRepositoryISpec
         surname = Some("Trezeguet"),
         title = Some("Mr")
       ),
-      Some("AA000009Z")
+      Some("SR000009C")
     )
   )
   private val regUpdatedDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = directors, payeContact = None, None, sicCodes = Seq.empty)
