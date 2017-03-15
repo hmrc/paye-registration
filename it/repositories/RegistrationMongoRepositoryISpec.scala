@@ -19,6 +19,7 @@ package repositories
 import java.time.LocalDate
 
 import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
+import enums.PAYEStatus
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -40,21 +41,21 @@ class RegistrationMongoRepositoryISpec
   private val businessContact = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   private val companyDetails: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
   private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, date)
-  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, Some(employmentDetails), sicCodes = Seq.empty) //employment =
-  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.held, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
 
   // Company Details
-  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = None, directors = Seq.empty, payeContact = None, Some(employmentDetails), sicCodes = Seq.empty)
+  private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = None, directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val companyDetails2: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany2", tradingName = Some("tstTradingName2"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
-  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails2), directors = Seq.empty, payeContact = None, Some(employmentDetails), sicCodes = Seq.empty)
+  private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails2), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
 
   // Employment
-  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val regNoEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val employmentDetails2: Employment = Employment(employees = true, companyPension = Some(false), subcontractors = true, date)
-  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, Some(employmentDetails2), sicCodes = Seq.empty)
+  private val regUpdatedEmployment = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, Some(employmentDetails2), sicCodes = Seq.empty)
 
   // Directors
-  private val regNoDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val regNoDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val directors: Seq[Director] = Seq(
     Director(
       Name(
@@ -75,18 +76,18 @@ class RegistrationMongoRepositoryISpec
       Some("SR000009C")
     )
   )
-  private val regUpdatedDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = directors, payeContact = None, None, sicCodes = Seq.empty)
+  private val regUpdatedDirectors = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = directors, payeContact = None, None, sicCodes = Seq.empty)
 
   //SIC Codes
-  private val regNoSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val regNoSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val sicCodes: Seq[SICCode] = Seq(
     SICCode(code = Some("123"), description = Some("consulting")),
     SICCode(code = None, description = Some("something"))
   )
-  private val regUpdatedSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = sicCodes)
+  private val regUpdatedSICCodes = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = sicCodes)
 
   //PAYE Contact
-  private val regNoPAYEContact = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val regNoPAYEContact = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val payeContact = PAYEContact(
     contactDetails = PAYEContactDetails(
       name = "toto tata",
@@ -98,12 +99,15 @@ class RegistrationMongoRepositoryISpec
     ),
     correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
-  private val regUpdatedPAYEContact = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = Some(payeContact), None, sicCodes = Seq.empty)
+  private val regUpdatedPAYEContact = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = Some(payeContact), None, sicCodes = Seq.empty)
 
   //Completion Capacity
-  private val regNoCompletionCapacity = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val regNoCompletionCapacity = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val completionCapacity = "Director"
-  private val regUpdatedCompletionCapacity = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", completionCapacity = Some(completionCapacity), companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+  private val regUpdatedCompletionCapacity = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = Some(completionCapacity), companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
+
+  //Registration Status
+  private val regUpdatedRegistrationStatus = PAYERegistration(registrationID = "AC123456", internalID = "09876", formCreationTimestamp = "timestamp", status = PAYEStatus.held, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
@@ -205,11 +209,11 @@ class RegistrationMongoRepositoryISpec
 
     "retrieve employment" in new Setup {
 
-      await(setupCollection(repository, reg))
+      await(setupCollection(repository, regUpdatedEmployment))
 
       val actual = await(repository.retrieveEmployment("AC123456"))
 
-      actual shouldBe Some(employmentDetails)
+      actual shouldBe Some(employmentDetails2)
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -434,6 +438,37 @@ class RegistrationMongoRepositoryISpec
     "throw a Missing Reg Document exception when updating company details for a nonexistent registration" in new Setup {
 
       a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertCompletionCapacity("AC123456", completionCapacity)))
+
+    }
+  }
+
+
+  "Calling retrieveRegistrationStatus" should {
+    "retrieve registration status" in new Setup {
+      await(setupCollection(repository, reg))
+
+      val actual = await(repository.retrieveRegistrationStatus("AC123456"))
+      actual shouldBe PAYEStatus.draft
+    }
+
+    "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
+      intercept[MissingRegDocument](await(repository.retrieveCompletionCapacity("AC123456")))
+    }
+  }
+
+  "Calling updateRegistrationStatus" should {
+    "update registration status" in new Setup {
+      await(setupCollection(repository, reg))
+
+      val actual = await(repository.updateRegistrationStatus("AC123456", PAYEStatus.held))
+      actual shouldBe PAYEStatus.held
+
+      val updated = await(repository.retrieveRegistration("AC123456"))
+      updated shouldBe Some(regUpdatedRegistrationStatus)
+    }
+
+    "throw a Missing Reg Document exception when updating registration status for a nonexistent registration" in new Setup {
+      a[MissingRegDocument] shouldBe thrownBy(await(repository.updateRegistrationStatus("AC123456", PAYEStatus.held)))
 
     }
   }

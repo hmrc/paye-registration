@@ -22,17 +22,19 @@ import auth.AuthorisationResource
 import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions._
+import enums.PAYEStatus
 import helpers.DateHelper
 import models._
-import play.api.{Logger, Play}
+import play.api.Logger
 import play.api.libs.json.{Format, Json}
 import play.modules.reactivemongo.MongoDbConnection
+import reactivemongo.json._
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.bson.BSONObjectID
-import services.{MetricsService, MetricsSrv}
+import services.MetricsService
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -49,6 +51,8 @@ class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbCon
 trait RegistrationRepository {
   def createNewRegistration(registrationID: String, internalId : String): Future[PAYERegistration]
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
+  def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value]
+  def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value): Future[PAYEStatus.Value]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
   def retrieveEmployment(registrationID: String): Future[Option[Employment]]
@@ -122,6 +126,41 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         registration.companyDetails
       case None =>
         Logger.warn(s"Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        mongoTimer.stop()
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
+  override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) flatMap {
+      case Some(regDoc) =>
+        collection.update(registrationIDSelector(registrationID), regDoc.copy(status = payeStatus)) map {
+          _ =>
+            mongoTimer.stop()
+            payeStatus
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
+            mongoTimer.stop()
+            throw new UpdateFailed(registrationID, "Registration status")
+        }
+      case None =>
+        Logger.warn(s"Unable to update registration status for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        mongoTimer.stop()
+        throw new MissingRegDocument(registrationID)
+    }
+
+  }
+
+  override def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) map {
+      case Some(registration) =>
+        mongoTimer.stop()
+        registration.status
+      case None =>
+        Logger.warn(s"Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -372,6 +411,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       registrationID = registrationID,
       internalID = internalId,
       formCreationTimestamp = timeStamp,
+      status = PAYEStatus.draft,
       completionCapacity = None,
       companyDetails = None,
       directors = Seq.empty,
