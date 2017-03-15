@@ -19,6 +19,8 @@ package fixtures
 import models._
 import java.time.LocalDate
 
+import enums.PAYEStatus
+
 trait RegistrationFixture {
 
   val validCompanyDetails = CompanyDetails(
@@ -79,6 +81,7 @@ trait RegistrationFixture {
     registrationID = "AC187651",
     internalID = "09876",
     formCreationTimestamp = "20161021-16:00:00",
+    status = PAYEStatus.draft,
     completionCapacity = Some("Director"),
     companyDetails = Some(validCompanyDetails),
     directors = validDirectors,

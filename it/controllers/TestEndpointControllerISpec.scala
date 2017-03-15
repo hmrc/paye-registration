@@ -18,6 +18,7 @@ package controllers
 
 import java.time.LocalDate
 
+import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.{Application, Play}
@@ -64,8 +65,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty)))
-      await(repository.insert(PAYERegistration(regID2, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID2, intID, timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
 
       await(repository.count) shouldBe 2
 
@@ -83,8 +84,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty)))
-      await(repository.insert(PAYERegistration(regID2, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID2, intID, timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
 
       await(repository.count) shouldBe 2
 
@@ -110,7 +111,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
       await(repository.count) shouldBe 1
 
       val jsonBody = Json.toJson[PAYERegistration](
@@ -118,6 +119,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           regID1,
           intID,
           timestamp,
+          PAYEStatus.draft,
           Some("Director"),
           Some(
             CompanyDetails(
@@ -179,7 +181,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, timestamp, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, intID, timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
       await(repository.count) shouldBe 1
 
       val response = client(s"/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue

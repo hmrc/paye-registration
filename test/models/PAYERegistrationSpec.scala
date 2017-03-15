@@ -18,6 +18,7 @@ package models
 
 import java.time.LocalDate
 
+import enums.PAYEStatus
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -35,6 +36,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "registrationID":"12345",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "status":"draft",
            |  "completionCapacity":"Director",
            |  "companyDetails":
            |    {
@@ -123,6 +125,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
+        status = PAYEStatus.draft,
         completionCapacity = Some("Director"),
         companyDetails = Some(
           CompanyDetails(
@@ -184,6 +187,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "registrationID":"12345",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "status":"draft",
            |  "directors" : [],
            |  "sicCodes" : []
            |}
@@ -193,6 +197,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         registrationID = "12345",
         internalID = "09876",
         formCreationTimestamp = "2016-05-31",
+        status = PAYEStatus.draft,
         completionCapacity = None,
         companyDetails = None,
         Seq.empty,
@@ -210,6 +215,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |{
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "status" : "draft",
            |  "companyDetails":
            |    {
            |      "crn":"Ac123456",
@@ -244,6 +250,50 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "registrationID", Seq(ValidationError("error.path.missing")))
+    }
+
+    "fail if the status isn't one of the pre defined PAYE statuses" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "registrationID":"12345",
+           |  "internalID" : "09876",
+           |  "formCreationTimestamp":"2016-05-31",
+           |  "status" : "INVALID_STATUS",
+           |  "companyDetails":
+           |    {
+           |      "crn":"Ac123456",
+           |      "companyName":"Test Company",
+           |      "tradingName":"Test Trading Name",
+           |      "roAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "country":"UK"
+           |      },
+           |      "ppobAddress": {
+           |        "line1":"15 St Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE4 1ST",
+           |        "country":"UK"
+           |      },
+           |      "businessContactDetails": {
+           |        "email":"email@test.co.uk",
+           |        "phoneNumber":"999",
+           |        "mobileNumber":"00000"
+           |      }
+           |    },
+           |  "directors": [],
+           |  "sicCodes": []
+           |}
+        """.stripMargin)
+
+      val result = Json.fromJson[PAYERegistration](json)
+      shouldHaveErrors(result, JsPath() \ "status", Seq(ValidationError("error.expected.validenumvalue")))
     }
   }
 }

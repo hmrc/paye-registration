@@ -16,12 +16,14 @@
 
 package models
 
+import enums.PAYEStatus
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{OFormat, __}
 
 case class PAYERegistration (registrationID: String,
                              internalID : String,
                              formCreationTimestamp: String,
+                             status: PAYEStatus.Value,
                              completionCapacity: Option[String],
                              companyDetails: Option[CompanyDetails],
                              directors: Seq[Director],
@@ -35,6 +37,7 @@ object PAYERegistration extends {
     (__ \ "registrationID").format[String] and
     (__ \ "internalID").format[String] and
     (__ \ "formCreationTimestamp").format[String] and
+    (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails] and
     (__ \ "directors").format[Seq[Director]] and
