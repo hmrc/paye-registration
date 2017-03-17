@@ -124,6 +124,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
         internalID = "09876",
+        acknowledgementReference = None,
         formCreationTimestamp = "2016-05-31",
         status = PAYEStatus.draft,
         completionCapacity = Some("Director"),
@@ -196,6 +197,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
         internalID = "09876",
+        acknowledgementReference = None,
         formCreationTimestamp = "2016-05-31",
         status = PAYEStatus.draft,
         completionCapacity = None,

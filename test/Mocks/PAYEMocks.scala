@@ -21,7 +21,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.mockito.MockitoSugar
-import repositories.RegistrationMongoRepository
+import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -32,6 +32,7 @@ trait PAYEMocks {
 
   lazy val mockAuthConnector = mock[AuthConnector]
   lazy val mockRegistrationRepository = mock[RegistrationMongoRepository]
+  lazy val mockSequenceRepository = mock[SequenceMongoRepository]
 
   object AuthenticationMocks {
     def getCurrentAuthority(authority: Option[Authority]): OngoingStubbing[Future[Option[Authority]]] = {

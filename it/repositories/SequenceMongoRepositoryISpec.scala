@@ -27,10 +27,12 @@ class SequenceMongoRepositoryISpec
   extends UnitSpec with MongoSpecSupport with BeforeAndAfterEach with ScalaFutures with Eventually with WithFakeApplication {
 
   class Setup {
-    val repository = new SequenceMongoRepository
+    val mongo = new SequenceMongo()
+    val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }
+
 
 
   override def afterAll() = new Setup {
