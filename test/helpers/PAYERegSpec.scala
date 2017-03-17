@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package Mocks
+package helpers
 
-import com.codahale.metrics.{Counter, Timer}
-import services.MetricsSrv
-import testHelpers.PAYERegSpec
+import mocks.PAYEMocks
+import org.mockito.Mockito.reset
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-class MetricsMock extends MetricsSrv with PAYERegSpec {
-  lazy val mockContext = mock[Timer.Context]
-  val mockTimer = new Timer()
-  val mockCounter = mock[Counter]
-
-  override val mongoResponseTimer = mockTimer
+trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
+  override def beforeEach() {
+    reset(mockRegistrationRepository)
+    reset(mockSequenceRepository)
+    reset(mockAuthConnector)
+  }
 }

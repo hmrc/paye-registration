@@ -24,8 +24,8 @@ private object AppDependencies {
   private val domainVersion = "4.1.0"
   private val hmrcTestVersion = "2.3.0"
   private val scalaTestVersion_test = "3.0.1"
-  private val scalaTestVersion_it = "2.2.6"
-  private val scalaTestPlusVersion = "1.5.1"
+  private val scalaTestVersion_it = "3.0.1"
+  private val scalaTestPlusVersion = "2.0.0"
   private val pegdownVersion = "1.6.0"
   private val cryptoVersion = "4.2.0"
 
@@ -59,7 +59,7 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
         "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope,
-        "org.mockito" % "mockito-core" % "2.6.2"
+        "org.mockito" % "mockito-core" % "2.7.17"
       )
     }.test
   }
@@ -75,8 +75,8 @@ private object AppDependencies {
         "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope,
-        "com.github.tomakehurst" % "wiremock" % "2.5.0" % scope
+        "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope,
+        "com.github.tomakehurst" % "wiremock" % "2.5.1" % scope
       )
     }.test
   }

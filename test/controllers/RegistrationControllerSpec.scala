@@ -18,6 +18,7 @@ package controllers
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.{AuthFixture, RegistrationFixture}
+import helpers.PAYERegSpec
 import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -26,7 +27,6 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import repositories.RegistrationMongoRepository
 import services._
-import testHelpers.PAYERegSpec
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future

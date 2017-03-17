@@ -17,6 +17,7 @@
 package controllers.test
 
 import fixtures.{AuthFixture, RegistrationFixture}
+import helpers.PAYERegSpec
 import models.PAYERegistration
 import play.api.libs.json.Json
 import repositories.RegistrationMongoRepository
@@ -24,7 +25,6 @@ import play.api.test.FakeRequest
 import play.api.http.Status
 import org.mockito.{ArgumentMatchers, Matchers}
 import org.mockito.Mockito._
-import testHelpers.PAYERegSpec
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future

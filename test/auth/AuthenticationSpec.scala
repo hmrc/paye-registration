@@ -17,12 +17,12 @@
 package auth
 
 import connectors.{AuthConnect, AuthConnector, Authority, UserIds}
+import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest._
 import play.api.mvc.Results
 import play.api.test.Helpers._
-import testHelpers.PAYERegSpec
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
