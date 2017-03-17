@@ -22,13 +22,13 @@ import auth.AuthorisationResource
 import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions._
+import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
 import models._
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
 import play.modules.reactivemongo.MongoDbConnection
-import reactivemongo.json._
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson._
@@ -53,6 +53,8 @@ trait RegistrationRepository {
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value]
   def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value): Future[PAYEStatus.Value]
+  def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]]
+  def saveAcknowledgementReference(registrationID: String, ackRef: String): Future[String]
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
   def retrieveEmployment(registrationID: String): Future[Option[Employment]]
@@ -66,6 +68,7 @@ trait RegistrationRepository {
   def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
   def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
   def dropCollection: Future[Unit]
+  def cleardownRegistration(registrationID: String): Future[PAYERegistration]
 }
 
 class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService) extends ReactiveRepository[PAYERegistration, BSONObjectID](
@@ -151,6 +154,36 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         throw new MissingRegDocument(registrationID)
     }
 
+  }
+
+  override def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]] = {
+    retrieveRegistration(registrationID) map {
+      case Some(registration) => registration.acknowledgementReference
+      case None =>
+        Logger.warn(s"[RegistrationMongoRepository] - [retrieveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
+  override def saveAcknowledgementReference(registrationID: String, ackRef: String): Future[String] = {
+    retrieveRegistration(registrationID) flatMap  {
+      case Some(registration) => registration.acknowledgementReference.isDefined match {
+        case false =>
+          collection.update(registrationIDSelector(registrationID), registration.copy(acknowledgementReference = Some(ackRef))) map {
+            res => ackRef
+          } recover {
+            case e =>
+              Logger.warn(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to save acknowledgement reference for reg ID $registrationID, Error: ${e.getMessage}")
+              throw new UpdateFailed(registrationID, "AcknowledgementReference")
+          }
+        case true =>
+          Logger.warn(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Acknowledgement reference for $registrationID already exists")
+          throw new AcknowledgementReferenceExistsException(registrationID)
+      }
+      case None =>
+        Logger.warn(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        throw new MissingRegDocument(registrationID)
+    }
   }
 
   override def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value] = {
@@ -315,7 +348,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
           case e =>
             Logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
-            throw new UpdateFailed(registrationID, "SIC Codes")
+            throw new UpdateFailed(registrationID, "PAYE Contact")
         }
       case None =>
         Logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
@@ -349,10 +382,39 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
           case e =>
             Logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
-            throw new UpdateFailed(registrationID, "SIC Codes")
+            throw new UpdateFailed(registrationID, "Completion Capacity")
         }
       case None =>
         Logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        mongoTimer.stop()
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
+  override def cleardownRegistration(registrationID: String): Future[PAYERegistration] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) flatMap {
+      case Some(reg) =>
+        val clearedDocument = reg.copy(completionCapacity = None,
+                                       companyDetails = None,
+                                       directors = Nil,
+                                       payeContact = None,
+                                       employment = None,
+                                       sicCodes = Nil)
+        collection.update(
+          registrationIDSelector(registrationID),
+          clearedDocument
+        ) map { _ =>
+            mongoTimer.stop()
+            clearedDocument
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to cleardown personal data for reg ID $registrationID, Error: ${e.getMessage}")
+            mongoTimer.stop()
+            throw new UpdateFailed(registrationID, "Cleardown Registration")
+        }
+      case None =>
+        Logger.warn(s"Unable to cleardown personal data for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -410,6 +472,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     PAYERegistration(
       registrationID = registrationID,
       internalID = internalId,
+      acknowledgementReference = None,
       formCreationTimestamp = timeStamp,
       status = PAYEStatus.draft,
       completionCapacity = None,

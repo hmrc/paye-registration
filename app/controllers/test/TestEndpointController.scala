@@ -64,8 +64,9 @@ trait TestEndpointCtrl extends BaseController with Authenticated {
           withJsonBody[JsObject] {
             reg =>
               val regWithId = reg ++ Json.obj("internalID" -> context.ids.internalId)
+              val regWithStatus = regWithId ++ Json.obj("status" -> "draft")
 
-              regWithId.validate[PAYERegistration].fold (
+              regWithStatus.validate[PAYERegistration].fold (
                   errs => Future.successful(BadRequest(errs.toString())),
                   registration => registrationRepository.updateRegistration(registration) map {
                     _ => Ok(Json.toJson(reg).as[JsObject])

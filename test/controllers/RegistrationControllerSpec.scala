@@ -34,13 +34,17 @@ import scala.concurrent.Future
 class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with RegistrationFixture {
 
   val mockRegistrationService = mock[RegistrationService]
+  val mockSubmissionService = mock[SubmissionService]
   val mockRepo = mock[RegistrationMongoRepository]
+
+  implicit val materializer = fakeApplication.materializer
 
   class Setup {
     val controller = new RegistrationCtrl {
-      val auth = mockAuthConnector
-      val resourceConn = mockRepo
-      val registrationSrv = mockRegistrationService
+      override val auth = mockAuthConnector
+      override val resourceConn = mockRepo
+      override val registrationService = mockRegistrationService
+      override val submissionService = mockSubmissionService
     }
   }
 
@@ -951,4 +955,57 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
   }
 
+  "Calling submitPAYERegistration" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.submitPAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Forbidden response if the user is not authorised" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
+
+      val response = controller.submitPAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Not Found response if there is no authored resource" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.submitPAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return an Ok response with acknowledgement reference for a valid submit" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockSubmissionService.submitPartialToDES(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful("BRPY00000000001"))
+
+      val response = controller.submitPAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.OK
+      jsonBodyOf(await(response)) shouldBe Json.toJson("BRPY00000000001")
+    }
+  }
 }

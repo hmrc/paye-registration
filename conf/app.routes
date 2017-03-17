@@ -21,3 +21,5 @@ PATCH      /:regID/contact-correspond-paye    controllers.RegistrationController
 
 GET        /:regID/capacity                   controllers.RegistrationController.getCompletionCapacity(regID)
 PATCH      /:regID/capacity                   controllers.RegistrationController.upsertCompletionCapacity(regID)
+
+PUT        /:regID/submit-registration        controllers.RegistrationController.submitPAYERegistration(regID)

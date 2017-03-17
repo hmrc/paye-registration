@@ -59,4 +59,45 @@ trait WiremockHelper {
           withBody(responseBody)
       )
     )
+
+
+  val userId = "/auth/oid/1234567890"
+  def setupSimpleAuthMocks() = {
+    stubFor(post(urlMatching("/write/audit"))
+      .willReturn(
+        aResponse().
+          withStatus(200).
+          withBody("""{"x":2}""")
+      )
+    )
+
+    stubFor(get(urlMatching("/auth/authority"))
+      .willReturn(
+        aResponse().
+          withStatus(200).
+          withBody(s"""
+                      |{
+                      |"uri":"${userId}",
+                      |"loggedInAt": "2014-06-09T14:57:09.522Z",
+                      |"previouslyLoggedInAt": "2014-06-09T14:48:24.841Z",
+                      |"credentials":{"gatewayId":"xxx2"},
+                      |"accounts":{},
+                      |"levelOfAssurance": "2",
+                      |"confidenceLevel" : 50,
+                      |"credentialStrength": "strong",
+                      |"legacyOid":"1234567890",
+                      |"userDetailsLink":"xxx3",
+                      |"ids":"/auth/ids"
+                      |}""".stripMargin)
+      )
+    )
+
+    stubFor(get(urlMatching("/auth/ids"))
+      .willReturn(
+        aResponse().
+          withStatus(200).
+          withBody("""{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
+      )
+    )
+  }
 }

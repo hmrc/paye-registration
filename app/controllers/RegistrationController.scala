@@ -33,22 +33,26 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationController @Inject()(authConnector: AuthConnector, registrationService: RegistrationService) extends RegistrationCtrl {
-  val auth: AuthConnect = authConnector
-  val registrationSrv: RegistrationService = registrationService
-  val resourceConn: RegistrationMongoRepository = registrationService.registrationRepository
+class RegistrationController @Inject()(injAuthConnector: AuthConnector,
+                                       injRegistrationService: RegistrationService,
+                                       injSubmissionService: SubmissionService) extends RegistrationCtrl {
+  val auth: AuthConnect = injAuthConnector
+  val registrationService: RegistrationService = injRegistrationService
+  val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
+  val submissionService: SubmissionService = injSubmissionService
 }
 
 trait RegistrationCtrl extends BaseController with Authenticated with Authorisation[String] {
 
-  val registrationSrv: RegistrationService
+  val registrationService: RegistrationSrv
+  val submissionService: SubmissionSrv
 
   def newPAYERegistration(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) =>
-          registrationSrv.createNewPAYERegistration(regID, context.ids.internalId) map {
+          registrationService.createNewPAYERegistration(regID, context.ids.internalId) map {
             reg => Ok(Json.toJson(reg))
           }
       }
@@ -58,7 +62,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.fetchPAYERegistration(regID) map {
+          registrationService.fetchPAYERegistration(regID) map {
             case Some(registration) => Ok(Json.toJson(registration))
             case None => NotFound
           }
@@ -76,7 +80,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.getCompanyDetails(regID) map {
+          registrationService.getCompanyDetails(regID) map {
             case Some(companyDetails) => Ok(Json.toJson(companyDetails))
             case None => NotFound
           }
@@ -95,7 +99,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[CompanyDetails] { companyDetails =>
-            registrationSrv.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
+            registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -115,7 +119,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.getEmployment(regID) map {
+          registrationService.getEmployment(regID) map {
             case Some(employment) => Ok(Json.toJson(employment))
             case None => NotFound
           }
@@ -134,7 +138,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[Employment] { employmentDetails =>
-            registrationSrv.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
+            registrationService.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
               Ok(Json.toJson(employmentResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -154,7 +158,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.getDirectors(regID) map {
+          registrationService.getDirectors(regID) map {
             case s: Seq[Director] if s.isEmpty => NotFound
             case directors: Seq[Director] => Ok(Json.toJson(directors))
           }
@@ -173,7 +177,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[Seq[Director]] { directors =>
-            registrationSrv.upsertDirectors(regID, directors) map { directorsResponse =>
+            registrationService.upsertDirectors(regID, directors) map { directorsResponse =>
               Ok(Json.toJson(directorsResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -193,7 +197,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.getSICCodes(regID) map {
+          registrationService.getSICCodes(regID) map {
             case s: Seq[SICCode] if s.isEmpty => NotFound
             case sicCodes: Seq[SICCode] => Ok(Json.toJson(sicCodes))
           }
@@ -212,7 +216,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[Seq[SICCode]] { sicCodes =>
-            registrationSrv.upsertSICCodes(regID, sicCodes) map { sicCodesResponse =>
+            registrationService.upsertSICCodes(regID, sicCodes) map { sicCodesResponse =>
               Ok(Json.toJson(sicCodesResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -232,7 +236,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.getPAYEContact(regID) map {
+          registrationService.getPAYEContact(regID) map {
             case Some(payeContact) => Ok(Json.toJson(payeContact))
             case None => NotFound
           }
@@ -251,7 +255,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[PAYEContact] { payeContact =>
-            registrationSrv.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
+            registrationService.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
               Ok(Json.toJson(payeContactResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -271,7 +275,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          registrationSrv.getCompletionCapacity(regID) map {
+          registrationService.getCompletionCapacity(regID) map {
             case Some(capacity) => Ok(Json.toJson(capacity))
             case None => NotFound
           }
@@ -290,7 +294,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[String] { capacity =>
-            registrationSrv.upsertCompletionCapacity(regID, capacity) map { capacityResponse =>
+            registrationService.upsertCompletionCapacity(regID, capacity) map { capacityResponse =>
               Ok(Json.toJson(capacityResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
@@ -301,6 +305,21 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
           Logger.info(s"[RegistrationController] [upsertCompletionCapacity] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def submitPAYERegistration(regID: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          submissionService.submitPartialToDES(regID) map (ackRef => Ok(Json.toJson(ackRef)))
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [submitPAYERegistration] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [submitPAYERegistration] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }

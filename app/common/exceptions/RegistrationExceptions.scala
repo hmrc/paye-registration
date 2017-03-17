@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package testHelpers
+package common.exceptions
 
-import Mocks.PAYEMocks
-import org.mockito.Mockito.reset
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import scala.util.control.NoStackTrace
 
-trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
-  override def beforeEach() {
-    reset(mockRegistrationRepository)
-    reset(mockSequenceRepository)
-    reset(mockAuthConnector)
-  }
+object RegistrationExceptions extends RegistrationExceptions
+
+trait RegistrationExceptions {
+  class AcknowledgementReferenceExistsException(regId: String) extends NoStackTrace
+  class AcknowledgementReferenceNotExistsException(regId: String) extends NoStackTrace
+
+  class CompanyDetailsNotDefinedException extends NoStackTrace
+  class PAYEContactNotDefinedException extends NoStackTrace
+  class EmploymentDetailsNotDefinedException extends NoStackTrace
+  class CompletionCapacityNotDefinedException extends NoStackTrace
 }

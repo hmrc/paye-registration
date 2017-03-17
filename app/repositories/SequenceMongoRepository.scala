@@ -16,8 +16,11 @@
 
 package repositories
 
+import javax.inject.{Inject, Singleton}
+
 import models.Sequence
 import play.api.libs.json.JsValue
+import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.api.DB
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -26,11 +29,16 @@ import uk.gov.hmrc.mongo.{ReactiveRepository, Repository}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
+@Singleton
+class SequenceMongo @Inject()() extends MongoDbConnection with ReactiveMongoFormats {
+  val store = new SequenceMongoRepository(db)
+}
+
 trait SequenceRepository extends Repository[Sequence, BSONObjectID]{
   def getNext(sequenceID: String): Future[Int]
 }
 
-class SequenceMongoRepository(implicit mongo: () => DB)
+class SequenceMongoRepository(mongo: () => DB)
   extends ReactiveRepository[Sequence, BSONObjectID]("sequence", mongo, Sequence.formats, ReactiveMongoFormats.objectIdFormats)
     with SequenceRepository{
 

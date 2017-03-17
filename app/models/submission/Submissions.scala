@@ -16,13 +16,29 @@
 
 package models.submission
 
-sealed trait Submission
+import play.api.libs.functional.syntax._
+import play.api.libs.functional.syntax.unlift
+import play.api.libs.json.{Writes, __}
 
 case class PartialDESSubmission (acknowledgementReference: String,
                                  company: DESCompanyDetails,
-                                 directors: List[DESDirector],
+                                 directors: Seq[DESDirector],
                                  payeContact: DESPAYEContact,
                                  businessContact: DESBusinessContact,
-                                 sicCodes: List[DESSICCode],
+                                 sicCodes: Seq[DESSICCode],
                                  employment: DESEmployment,
-                                 completionCapacity: DESCompletionCapacity) extends Submission
+                                 completionCapacity: DESCompletionCapacity)
+
+object PartialDESSubmission {
+  implicit val writes: Writes[PartialDESSubmission] =
+    (
+      (__ \ "acknowledgement-reference").write[String] and
+      (__ \ "company").write[DESCompanyDetails] and
+      (__ \ "directors").write[Seq[DESDirector]] and
+      (__ \ "paye-contact").write[DESPAYEContact] and
+      (__ \ "business-contact").write[DESBusinessContact] and
+      (__ \ "sic-codes").write[Seq[DESSICCode]] and
+      (__ \ "employment").write[DESEmployment] and
+      (__ \ "completion-capacity").write[DESCompletionCapacity]
+      )(unlift(PartialDESSubmission.unapply))
+}

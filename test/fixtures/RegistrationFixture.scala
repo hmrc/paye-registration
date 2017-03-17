@@ -80,6 +80,7 @@ trait RegistrationFixture {
   val validRegistration = PAYERegistration(
     registrationID = "AC187651",
     internalID = "09876",
+    acknowledgementReference = None,
     formCreationTimestamp = "20161021-16:00:00",
     status = PAYEStatus.draft,
     completionCapacity = Some("Director"),

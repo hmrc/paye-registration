@@ -19,20 +19,20 @@ package services
 import javax.inject.{Inject, Singleton}
 
 import models.{CompanyDetails, Director, Employment, PAYEContact, PAYERegistration, SICCode}
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import play.api.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationService @Inject()(registrationMongoRepository: RegistrationMongo) extends RegistrationSrv {
-  val registrationRepository : RegistrationMongoRepository = registrationMongoRepository.store
+class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends RegistrationSrv {
+  val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
 }
 
 trait RegistrationSrv {
 
-  val registrationRepository : RegistrationMongoRepository
+  val registrationRepository : RegistrationRepository
 
   def createNewPAYERegistration(regID: String, internalId : String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
