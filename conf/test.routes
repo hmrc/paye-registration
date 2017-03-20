@@ -1,4 +1,6 @@
 
-GET                   /registration-teardown              controllers.test.TestEndpointController.registrationTeardown
-GET                   /delete-registration/:regID         controllers.test.TestEndpointController.deleteRegistration(regID)
-POST                  /update-registration/:regID         controllers.test.TestEndpointController.updateRegistration(regID)
+GET        /registration-teardown                        controllers.test.TestEndpointController.registrationTeardown
+GET        /delete-registration/:regID                   controllers.test.TestEndpointController.deleteRegistration(regID)
+POST       /update-registration/:regID                   controllers.test.TestEndpointController.updateRegistration(regID)
+
+GET        /feature-flag/:featureName/:featureStatus     controllers.test.FeatureSwitchController.switch(featureName: String, featureStatus: String)

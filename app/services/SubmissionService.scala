@@ -51,8 +51,8 @@ trait SubmissionSrv {
     for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
       desSubmission <- buildPartialDesSubmission(regId)
-      test          <- desConnector.submitToDES(desSubmission)
-      testset       <- processSuccessfulDESResponse(regId)
+      _             <- desConnector.submitToDES(desSubmission)
+      _             <- processSuccessfulDESResponse(regId)
     } yield ackRef
   }
 

@@ -22,11 +22,19 @@ import config.WSHttp
 import models.submission.PartialDESSubmission
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpPost, HttpResponse}
+import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
 
 @Singleton
-class DESConnector extends DESConnect with ServicesConfig {
-  lazy val desUrl = baseUrl("des-stub")
-  lazy val desURI = getConfString("des-stub.uri", "")
+class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESConnect with ServicesConfig {
+  val featureSwitch = injFeatureSwitch
+  lazy val desUrl = useDESStubFeature match {
+    case true => baseUrl("des-stub")
+    case false => baseUrl("des-stub") //TODO: set the production DES settings
+  }
+  lazy val desURI = useDESStubFeature match {
+    case true => getConfString("des-stub.uri", "")
+    case false => getConfString("des-stub.uri", "") //TODO: set the production DES settings
+  }
   val http = WSHttp
 }
 
@@ -35,9 +43,12 @@ trait DESConnect {
   val desUrl: String
   val desURI: String
   def http: HttpPost
+  val featureSwitch: PAYEFeatureSwitches
 
   def submitToDES(submission: PartialDESSubmission)(implicit hc: HeaderCarrier) = {
     http.POST[PartialDESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
   }
+
+  private[connectors] def useDESStubFeature: Boolean = featureSwitch.desStubFeature.enabled
 
 }

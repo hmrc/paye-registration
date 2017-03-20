@@ -26,6 +26,7 @@ import play.api.libs.json.Writes
 import helpers.PAYERegSpec
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.http._
+import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
 
@@ -33,9 +34,12 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   implicit val hc = HeaderCarrier()
   val mockHttp = mock[WSHttp]
+  val mockFeatureSwitch = mock[PAYEFeatureSwitch]
 
-  class Setup {
+  class SetupWithProxy(withProxy: Boolean) {
     val connector = new DESConnect {
+      override val featureSwitch = mockFeatureSwitch
+      override def useDESStubFeature = withProxy
       override def http = mockHttp
       override val desURI = "testURL"
       override val desUrl = "desURI"
@@ -49,7 +53,13 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   }
 
   "submitToDES" should {
-    "successfully POST" in new Setup {
+    "successfully POST with proxy" in new SetupWithProxy(true) {
+      mockHttpPOST[PartialDESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+
+      await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
+    }
+
+    "successfully POST without proxy" in new SetupWithProxy(false) {
       mockHttpPOST[PartialDESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
