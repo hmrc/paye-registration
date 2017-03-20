@@ -324,4 +324,22 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }
   }
+
+  def getAcknowledgementReference(regID: String) : Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          registrationService.getAcknowledgementReference(regID) map {
+            case Some(ackRef) => Ok(Json.toJson(ackRef))
+            case None => NotFound
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getAcknowledgementReference] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getAcknowledgementReference] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+    }
 }

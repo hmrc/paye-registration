@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
+import common.exceptions.SubmissionExceptions.RegistrationAlreadySubmitted
 import connectors.{DESConnect, DESConnector}
 import enums.PAYEStatus
 import models._
@@ -50,8 +51,8 @@ trait SubmissionSrv {
     for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
       desSubmission <- buildPartialDesSubmission(regId)
-      test             <- desConnector.submitToDES(desSubmission)
-      testset             <- processSuccessfulDESResponse(regId)
+      test          <- desConnector.submitToDES(desSubmission)
+      testset       <- processSuccessfulDESResponse(regId)
     } yield ackRef
   }
 
@@ -74,8 +75,9 @@ trait SubmissionSrv {
 
   private[services] def buildPartialDesSubmission(regId: String): Future[PartialDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
-      case Some(payeReg) => payeReg2PartialDESSubmission(payeReg)
       case None => throw new MissingRegDocument(regId)
+      case Some(payeReg) if( payeReg.status == PAYEStatus.draft ) => payeReg2PartialDESSubmission(payeReg)
+      case _ => throw new RegistrationAlreadySubmitted(regId)
     }
   }
 

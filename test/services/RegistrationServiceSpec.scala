@@ -351,4 +351,31 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
+  "Calling getAcknowledgementReference" should {
+
+    "return a None response when there is no registration in mongo for the reg ID" in new Setup {
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(None))
+
+      val actual = await(service.getAcknowledgementReference("AC123456"))
+      actual shouldBe None
+    }
+
+    "return a failed future with exception when the database errors" in new Setup {
+      val exception = new RuntimeException("tst message")
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.failed(exception))
+
+      intercept[RuntimeException] { await(service.getAcknowledgementReference("AC123456")) }
+    }
+
+    "return a registration there is one matching the reg ID in mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.contains("AC123456")))
+        .thenReturn(Future.successful(Some("tstBRPY")))
+
+      val actual = await(service.getAcknowledgementReference("AC123456"))
+      actual shouldBe Some("tstBRPY")
+    }
+  }
+
 }
