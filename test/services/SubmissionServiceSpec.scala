@@ -20,6 +20,7 @@ import java.time.LocalDate
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
+import common.exceptions.SubmissionExceptions.RegistrationAlreadySubmitted
 import connectors.DESConnector
 import enums.PAYEStatus
 import fixtures.RegistrationFixture
@@ -197,6 +198,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.buildPartialDesSubmission("regId")))
+    }
+
+    "throw the correct exception when the registration is already submitted" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
+
+      intercept[RegistrationAlreadySubmitted](await(service.buildPartialDesSubmission("regId")))
     }
   }
 

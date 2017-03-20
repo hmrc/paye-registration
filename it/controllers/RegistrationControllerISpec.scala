@@ -159,6 +159,17 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
     }
+
+    "return a 500 status when registration is already submitted" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedSubmission))
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 500
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+    }
   }
 
 }

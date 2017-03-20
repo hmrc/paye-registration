@@ -94,4 +94,8 @@ trait RegistrationSrv {
   def upsertCompletionCapacity(regID: String, capacity: String): Future[String] = {
     registrationRepository.upsertCompletionCapacity(regID, capacity)
   }
+
+  def getAcknowledgementReference(regID: String) : Future[Option[String]] = {
+    registrationRepository.retrieveAcknowledgementReference(regID)
+  }
 }
