@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
-import testHelpers.PAYERegSpec
+import helpers.PAYERegSpec
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.http._
 
@@ -55,5 +55,4 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
     }
   }
-
 }
