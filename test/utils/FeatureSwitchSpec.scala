@@ -89,31 +89,31 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
 
   "SCRSFeatureSwitches" should {
     "return a disabled feature when the associated system property doesn't exist" in {
-      payeFeatureSwitch.desStubFeature.enabled shouldBe false
+      payeFeatureSwitch.desService.enabled shouldBe false
     }
 
     "return an enabled feature when the associated system property is true" in {
-      featureSwitch.enable(payeFeatureSwitch.desStubFeature)
+      featureSwitch.enable(payeFeatureSwitch.desService)
 
-      payeFeatureSwitch.desStubFeature.enabled shouldBe true
+      payeFeatureSwitch.desService.enabled shouldBe true
     }
 
     "return a disable feature when the associated system property is false" in {
-      featureSwitch.disable(payeFeatureSwitch.desStubFeature)
+      featureSwitch.disable(payeFeatureSwitch.desService)
 
-      payeFeatureSwitch.desStubFeature.enabled shouldBe false
+      payeFeatureSwitch.desService.enabled shouldBe false
     }
 
-    "return true if the desStubFeature system property is true" in {
-      System.setProperty("feature.desStubFeature", "true")
+    "return true if the desServiceFeature system property is true" in {
+      System.setProperty("feature.desServiceFeature", "true")
 
-      payeFeatureSwitch("desStubFeature") shouldBe Some(BooleanFeatureSwitch("desStubFeature", true))
+      payeFeatureSwitch("desServiceFeature") shouldBe Some(BooleanFeatureSwitch("desServiceFeature", true))
     }
 
-    "return false if the desStubFeature system property is false" in {
-      System.setProperty("feature.desStubFeature", "false")
+    "return false if the desServiceFeature system property is false" in {
+      System.setProperty("feature.desServiceFeature", "false")
 
-      payeFeatureSwitch("desStubFeature") shouldBe Some(BooleanFeatureSwitch("desStubFeature", false))
+      payeFeatureSwitch("desServiceFeature") shouldBe Some(BooleanFeatureSwitch("desServiceFeature", false))
     }
 
     "return an empty option if a system property doesn't exist when using the apply function" in {

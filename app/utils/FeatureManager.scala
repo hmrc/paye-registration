@@ -52,19 +52,19 @@ trait FeatureManager {
 
 @Singleton
 class PAYEFeatureSwitch @Inject()(injManager: FeatureSwitchManager) extends PAYEFeatureSwitches {
-  val desStubFeatureName = "desStubFeature"
+  val desServiceFeature = "desServiceFeature"
   val manager = injManager
 }
 
 trait PAYEFeatureSwitches {
 
-  val desStubFeatureName: String
+  val desServiceFeature: String
   val manager: FeatureManager
 
-  def desStubFeature = manager.getProperty(desStubFeatureName)
+  def desService = manager.getProperty(desServiceFeature)
 
   def apply(name: String): Option[FeatureSwitch] = name match {
-    case "desStubFeature" => Some(desStubFeature)
+    case "desServiceFeature" => Some(desService)
     case _ => None
   }
 }

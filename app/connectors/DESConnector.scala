@@ -31,11 +31,11 @@ class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESCon
   val featureSwitch = injFeatureSwitch
   lazy val desUrl = useDESStubFeature match {
     case true => baseUrl("des-stub")
-    case false => baseUrl("des-stub") //TODO: set the production DES settings
+    case false => baseUrl("des-service") //TODO: set the production DES settings
   }
   lazy val desURI = useDESStubFeature match {
     case true => getConfString("des-stub.uri", "")
-    case false => getConfString("des-stub.uri", "") //TODO: set the production DES settings
+    case false => getConfString("des-service.uri", "") //TODO: set the production DES settings
   }
   val http = WSHttp
 }
@@ -51,6 +51,6 @@ trait DESConnect {
     http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
   }
 
-  private[connectors] def useDESStubFeature: Boolean = featureSwitch.desStubFeature.enabled
+  private[connectors] def useDESStubFeature: Boolean = !featureSwitch.desService.enabled
 
 }
