@@ -18,7 +18,18 @@ package models.submission
 
 import play.api.libs.functional.syntax._
 import play.api.libs.functional.syntax.unlift
-import play.api.libs.json.{Writes, __}
+import play.api.libs.json.{JsValue, Json, Writes, __}
+
+sealed trait DESSubmission
+object DESSubmission {
+  implicit val writes: Writes[DESSubmission] =
+    new Writes[DESSubmission] {
+      override def writes(o: DESSubmission): JsValue = o match {
+        case s: PartialDESSubmission => PartialDESSubmission.writes.writes(s)
+        case s: TopUpDESSubmission => TopUpDESSubmission.writes.writes(s)
+      }
+    }
+}
 
 case class PartialDESSubmission (acknowledgementReference: String,
                                  company: DESCompanyDetails,
@@ -27,7 +38,7 @@ case class PartialDESSubmission (acknowledgementReference: String,
                                  businessContact: DESBusinessContact,
                                  sicCodes: Seq[DESSICCode],
                                  employment: DESEmployment,
-                                 completionCapacity: DESCompletionCapacity)
+                                 completionCapacity: DESCompletionCapacity) extends DESSubmission
 
 object PartialDESSubmission {
   implicit val writes: Writes[PartialDESSubmission] =
@@ -41,4 +52,15 @@ object PartialDESSubmission {
       (__ \ "employment").write[DESEmployment] and
       (__ \ "completion-capacity").write[DESCompletionCapacity]
       )(unlift(PartialDESSubmission.unapply))
+}
+
+case class TopUpDESSubmission(acknowledgementReference: String,
+                              crn: String) extends DESSubmission
+
+object TopUpDESSubmission {
+  implicit val writes: Writes[TopUpDESSubmission] =
+    (
+      (__ \ "acknowledgement-reference").write[String] and
+      (__ \ "crn").write[String]
+    )(unlift(TopUpDESSubmission.unapply))
 }

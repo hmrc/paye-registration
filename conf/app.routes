@@ -23,5 +23,6 @@ GET        /:regID/capacity                   controllers.RegistrationController
 PATCH      /:regID/capacity                   controllers.RegistrationController.upsertCompletionCapacity(regID)
 
 PUT        /:regID/submit-registration        controllers.RegistrationController.submitPAYERegistration(regID)
+PUT        /:regID/submit-top-up-registration controllers.RegistrationController.submitTopUpPAYERegistration(regID)
 
 GET        /:regID/acknowledgement-reference  controllers.RegistrationController.getAcknowledgementReference(regID)

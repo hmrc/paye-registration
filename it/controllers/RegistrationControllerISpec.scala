@@ -124,12 +124,49 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     )
   )
 
+  val payeRegAfterPartialSubmissionWithCRN = PAYERegistration(
+    regId,
+    intId,
+    Some("testAckRef"),
+    timestamp,
+    PAYEStatus.held,
+    None,
+    Some(
+      CompanyDetails(
+        Some("123456"),
+        "testCompanyName",
+        None,
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+      )
+    ),
+    Seq(),
+    None,
+    None,
+    Seq()
+  )
+
   val processedSubmission = PAYERegistration(
     regId,
     intId,
     Some("testAckRef"),
     timestamp,
     PAYEStatus.held,
+    None,
+    None,
+    Nil,
+    None,
+    None,
+    Nil
+  )
+
+  val processedTopUpSubmission = PAYERegistration(
+    regId,
+    intId,
+    Some("testAckRef"),
+    timestamp,
+    PAYEStatus.submitted,
     None,
     None,
     Nil,
@@ -169,6 +206,51 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       response.status shouldBe 500
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+    }
+  }
+
+  "submit-top-up-registration" should {
+    "return a 200 with an ack ref" in new Setup {
+
+
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(200)
+        )
+      )
+
+      await(repository.insert(payeRegAfterPartialSubmissionWithCRN))
+
+      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson("testAckRef")
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+    }
+
+    "return a 500 status when registration is already submitted" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedTopUpSubmission))
+
+      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      response.status shouldBe 500
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+    }
+
+    "return a 500 status when registration is not yet submitted with partial" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission))
+
+      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      response.status shouldBe 500
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
     }
   }
 

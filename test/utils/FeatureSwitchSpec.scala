@@ -1,0 +1,124 @@
+/*
+ * Copyright 2017 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package utils
+
+import org.scalatest.BeforeAndAfterEach
+import uk.gov.hmrc.play.test.UnitSpec
+
+class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
+
+  override def beforeEach() {
+    System.clearProperty("feature.test")
+  }
+
+  val featureSwitch = new FeatureSwitchManager
+  val payeFeatureSwitch = new PAYEFeatureSwitch(featureSwitch)
+  val booleanFeatureSwitch = BooleanFeatureSwitch("test", false)
+
+  "getProperty" should {
+
+    "return a disabled feature switch if the system property is undefined" in {
+      featureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = false)
+    }
+
+    "return an enabled feature switch if the system property is defined as 'true'" in {
+      System.setProperty("feature.test", "true")
+
+      featureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = true)
+    }
+
+    "return an enabled feature switch if the system property is defined as 'false'" in {
+      System.setProperty("feature.test", "false")
+
+      featureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = false)
+    }
+  }
+
+  "systemPropertyName" should {
+
+    "append feature. to the supplied string'" in {
+      featureSwitch.systemPropertyName("test") shouldBe "feature.test"
+    }
+  }
+
+  "setProperty" should {
+
+    "return a feature switch (testKey, false) when supplied with (testKey, testValue)" in {
+      featureSwitch.setProperty("test", "testValue") shouldBe BooleanFeatureSwitch("test", enabled = false)
+    }
+
+    "return a feature switch (testKey, true) when supplied with (testKey, true)" in {
+      featureSwitch.setProperty("test", "true") shouldBe BooleanFeatureSwitch("test", enabled = true)
+    }
+  }
+
+  "enable" should {
+    "set the value for the supplied key to 'true'" in {
+      System.setProperty("feature.test", "false")
+
+      featureSwitch.enable(booleanFeatureSwitch) shouldBe BooleanFeatureSwitch("test", enabled = true)
+    }
+  }
+
+  "disable" should {
+    "set the value for the supplied key to 'false'" in {
+      System.setProperty("feature.test", "true")
+
+      featureSwitch.disable(booleanFeatureSwitch) shouldBe BooleanFeatureSwitch("test", enabled = false)
+    }
+  }
+
+  "dynamic toggling should be supported" in {
+    featureSwitch.disable(booleanFeatureSwitch).enabled shouldBe false
+    featureSwitch.enable(booleanFeatureSwitch).enabled shouldBe true
+  }
+
+  "SCRSFeatureSwitches" should {
+    "return a disabled feature when the associated system property doesn't exist" in {
+      payeFeatureSwitch.desStubFeature.enabled shouldBe false
+    }
+
+    "return an enabled feature when the associated system property is true" in {
+      featureSwitch.enable(payeFeatureSwitch.desStubFeature)
+
+      payeFeatureSwitch.desStubFeature.enabled shouldBe true
+    }
+
+    "return a disable feature when the associated system property is false" in {
+      featureSwitch.disable(payeFeatureSwitch.desStubFeature)
+
+      payeFeatureSwitch.desStubFeature.enabled shouldBe false
+    }
+
+    "return true if the desStubFeature system property is true" in {
+      System.setProperty("feature.desStubFeature", "true")
+
+      payeFeatureSwitch("desStubFeature") shouldBe Some(BooleanFeatureSwitch("desStubFeature", true))
+    }
+
+    "return false if the desStubFeature system property is false" in {
+      System.setProperty("feature.desStubFeature", "false")
+
+      payeFeatureSwitch("desStubFeature") shouldBe Some(BooleanFeatureSwitch("desStubFeature", false))
+    }
+
+    "return an empty option if a system property doesn't exist when using the apply function" in {
+      payeFeatureSwitch("somethingElse") shouldBe None
+    }
+  }
+
+}

@@ -17,7 +17,7 @@
 package connectors
 
 import fixtures.SubmissionFixture
-import models.submission.PartialDESSubmission
+import models.submission.DESSubmission
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
@@ -26,6 +26,7 @@ import play.api.libs.json.Writes
 import helpers.PAYERegSpec
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.http._
+import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
 
@@ -33,9 +34,12 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   implicit val hc = HeaderCarrier()
   val mockHttp = mock[WSHttp]
+  val mockFeatureSwitch = mock[PAYEFeatureSwitch]
 
-  class Setup {
+  class SetupWithProxy(withProxy: Boolean) {
     val connector = new DESConnect {
+      override val featureSwitch = mockFeatureSwitch
+      override def useDESStubFeature = withProxy
       override def http = mockHttp
       override val desURI = "testURL"
       override val desUrl = "desURI"
@@ -48,11 +52,19 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       .thenReturn(Future.successful(thenReturn))
   }
 
-  "submitToDES" should {
-    "successfully POST" in new Setup {
-      mockHttpPOST[PartialDESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+  "submitToDES with a Partial DES Submission Model" should {
+    "successfully POST with proxy" in new SetupWithProxy(true) {
+      mockHttpPOST[DESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
+    }
+  }
+
+  "submitToDES with a Top Up DES Submission Model" should {
+    "successfully POST with proxy" in new SetupWithProxy(true) {
+      mockHttpPOST[DESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+
+      await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
     }
   }
 }

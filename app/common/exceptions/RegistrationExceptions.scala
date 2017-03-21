@@ -23,6 +23,7 @@ object RegistrationExceptions extends RegistrationExceptions
 trait RegistrationExceptions {
   class AcknowledgementReferenceExistsException(regId: String) extends NoStackTrace
   class AcknowledgementReferenceNotExistsException(regId: String) extends NoStackTrace
+  class CRNNotExistsException(regId: String) extends NoStackTrace
 
   class CompanyDetailsNotDefinedException extends NoStackTrace
   class PAYEContactNotDefinedException extends NoStackTrace
