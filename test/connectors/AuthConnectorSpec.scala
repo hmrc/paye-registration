@@ -18,11 +18,11 @@ package connectors
 
 import java.util.UUID
 
+import helpers.PAYERegSpec
 import org.mockito.{ArgumentMatchers, Matchers}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Json
-import testHelpers.PAYERegSpec
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse, _}
 import uk.gov.hmrc.play.http.logging.SessionId
 

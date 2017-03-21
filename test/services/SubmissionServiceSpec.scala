@@ -26,7 +26,7 @@ import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import models._
 import models.submission._
-import testHelpers.PAYERegSpec
+import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 

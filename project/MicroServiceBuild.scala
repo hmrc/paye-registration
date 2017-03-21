@@ -14,34 +14,33 @@ private object AppDependencies {
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val microserviceBootstrapVersion = "5.8.0"
-  private val playAuthVersion = "4.2.0"
-  private val playHealthVersion = "2.0.0"
+  private val microserviceBootstrapVersion = "5.13.0"
+  private val playAuthVersion = "4.3.0"
+  private val playHealthVersion = "2.1.0"
   private val playJsonLoggerVersion = "3.0.0"
   private val logbackJsonLoggerVersion = "3.1.0"
-  private val playUrlBindersVersion = "2.0.0"
-  private val playConfigVersion = "3.0.0"
-  private val domainVersion = "4.0.0"
-  private val hmrcTestVersion = "2.2.0"
+  private val playUrlBindersVersion = "2.1.0"
+  private val playConfigVersion = "4.3.0"
+  private val domainVersion = "4.1.0"
+  private val hmrcTestVersion = "2.3.0"
   private val scalaTestVersion_test = "3.0.1"
-  private val scalaTestVersion_it = "2.2.6"
-  private val scalaTestPlusVersion = "1.5.1"
+  private val scalaTestVersion_it = "3.0.1"
+  private val scalaTestPlusVersion = "2.0.0"
   private val pegdownVersion = "1.6.0"
-  private val cryptoVersion = "3.1.0"
+  private val cryptoVersion = "4.2.0"
 
-  private val playReactivemongoVersion = "5.1.0"
+  private val playReactivemongoVersion = "5.2.0"
 
   val compile = Seq(
-    "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion,
-
     ws,
+    "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion,
     "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
     "uk.gov.hmrc" %% "play-authorisation" % playAuthVersion,
     "uk.gov.hmrc" %% "play-health" % playHealthVersion,
     "uk.gov.hmrc" %% "play-url-binders" % playUrlBindersVersion,
     "uk.gov.hmrc" %% "play-config" % playConfigVersion,
-//    "uk.gov.hmrc" %% "logback-json-logger" % logbackJsonLoggerVersion,
-    "uk.gov.hmrc" %% "play-json-logger" %  playJsonLoggerVersion,
+    "uk.gov.hmrc" %% "logback-json-logger" % logbackJsonLoggerVersion,
+    //"uk.gov.hmrc" %% "play-json-logger" %  playJsonLoggerVersion,
     "uk.gov.hmrc" %% "domain" % domainVersion,
     "uk.gov.hmrc" %% "crypto" % cryptoVersion
   )
@@ -59,8 +58,8 @@ private object AppDependencies {
         "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope,
-        "org.mockito" % "mockito-core" % "2.2.29"
+        "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope,
+        "org.mockito" % "mockito-core" % "2.7.17"
       )
     }.test
   }
@@ -76,8 +75,8 @@ private object AppDependencies {
         "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope,
-        "com.github.tomakehurst" % "wiremock" % "2.5.0" % scope
+        "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope,
+        "com.github.tomakehurst" % "wiremock" % "2.5.1" % scope
       )
     }.test
   }

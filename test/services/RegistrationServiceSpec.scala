@@ -18,10 +18,10 @@ package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.RegistrationFixture
+import helpers.PAYERegSpec
 import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import testHelpers.PAYERegSpec
 
 import scala.concurrent.Future
 
