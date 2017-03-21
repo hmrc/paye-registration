@@ -20,7 +20,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, OK}
-import testHelpers.PAYERegSpec
+import helpers.PAYERegSpec
 import utils.{BooleanFeatureSwitch, FeatureManager, PAYEFeatureSwitches}
 
 import scala.concurrent.Future

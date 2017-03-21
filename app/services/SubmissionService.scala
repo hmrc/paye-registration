@@ -56,7 +56,7 @@ trait SubmissionSrv {
     } yield ackRef
   }
 
-  def submittopUpToDES(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
+  def submitTopUpToDES(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
       desSubmission <- buildTopUpDESSubmission(regId)

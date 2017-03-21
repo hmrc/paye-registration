@@ -18,9 +18,18 @@ package models.submission
 
 import play.api.libs.functional.syntax._
 import play.api.libs.functional.syntax.unlift
-import play.api.libs.json.{Writes, __}
+import play.api.libs.json.{JsValue, Json, Writes, __}
 
 sealed trait DESSubmission
+object DESSubmission {
+  implicit val writes: Writes[DESSubmission] =
+    new Writes[DESSubmission] {
+      override def writes(o: DESSubmission): JsValue = o match {
+        case s: PartialDESSubmission => PartialDESSubmission.writes.writes(s)
+        case s: TopUpDESSubmission => TopUpDESSubmission.writes.writes(s)
+      }
+    }
+}
 
 case class PartialDESSubmission (acknowledgementReference: String,
                                  company: DESCompanyDetails,

@@ -29,12 +29,15 @@ import models.submission._
 import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
 
 class SubmissionServiceSpec extends PAYERegSpec {
 
   val mockDESConnector = mock[DESConnector]
+
+  implicit val hc = HeaderCarrier()
 
   class Setup {
     val service = new SubmissionSrv{
@@ -184,6 +187,20 @@ class SubmissionServiceSpec extends PAYERegSpec {
     sicCodes = Seq.empty
   )
 
+  val validRegistrationAfterTopUpSubmission = PAYERegistration(
+    registrationID = "regID",
+    internalID = "internalID",
+    status = PAYEStatus.submitted,
+    acknowledgementReference = Some("ackRef"),
+    formCreationTimestamp = "the year of the rooster",
+    companyDetails = None,
+    completionCapacity = None,
+    directors = Seq.empty,
+    payeContact = None,
+    employment = None,
+    sicCodes = Seq.empty
+  )
+
   val validPartialDESSubmissionModel = PartialDESSubmission(
     acknowledgementReference = "ackRef",
     company = validDESCompanyDetails,
@@ -307,6 +324,48 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
     "build a Top Up" in new Setup{
       service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission) shouldBe validTopUpDESSubmissionModel
+    }
+  }
+
+  "Calling submitPartialToDES" should {
+    "return the acknowledgement reference" in new Setup {
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some("ackRef")))
+
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some(validRegistration)))
+
+      when(mockDESConnector.submitToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(200)))
+
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(PAYEStatus.held))
+
+      when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(validRegistrationAfterPartialSubmission))
+
+      await(service.submitPartialToDES("regID")) shouldBe "ackRef"
+    }
+  }
+
+  "Calling submitTopUpToDES" should {
+    "return the acknowledgement reference" in new Setup {
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some("ackRef")))
+
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
+
+      when(mockDESConnector.submitToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(HttpResponse(200)))
+
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(PAYEStatus.submitted))
+
+      when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
+
+      await(service.submitTopUpToDES("regID")) shouldBe "ackRef"
     }
   }
 }
