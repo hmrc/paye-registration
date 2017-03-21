@@ -325,6 +325,21 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       }
   }
 
+  def submitTopUpPAYERegistration(regID: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regID) {
+        case Authorised(_) =>
+          submissionService.submitTopUpToDES(regID) map (ackRef => Ok(Json.toJson(ackRef)))
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [submitTopUpPAYERegistration] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [submitTopUpPAYERegistration] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
   def getAcknowledgementReference(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       authorised(regID) {

@@ -17,7 +17,7 @@
 package connectors
 
 import fixtures.SubmissionFixture
-import models.submission.PartialDESSubmission
+import models.submission.DESSubmission
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
@@ -52,17 +52,19 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       .thenReturn(Future.successful(thenReturn))
   }
 
-  "submitToDES" should {
+  "submitToDES with a Partial DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[PartialDESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+      mockHttpPOST[DESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
     }
+  }
 
-    "successfully POST without proxy" in new SetupWithProxy(false) {
-      mockHttpPOST[PartialDESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+  "submitToDES with a Top Up DES Submission Model" should {
+    "successfully POST with proxy" in new SetupWithProxy(true) {
+      mockHttpPOST[DESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
 
-      await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
+      await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
     }
   }
 }

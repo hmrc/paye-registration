@@ -19,10 +19,12 @@ package connectors
 import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
-import models.submission.PartialDESSubmission
+import models.submission.DESSubmission
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpPost, HttpResponse}
 import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
+
+import scala.concurrent.Future
 
 @Singleton
 class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESConnect with ServicesConfig {
@@ -45,8 +47,8 @@ trait DESConnect {
   def http: HttpPost
   val featureSwitch: PAYEFeatureSwitches
 
-  def submitToDES(submission: PartialDESSubmission)(implicit hc: HeaderCarrier) = {
-    http.POST[PartialDESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
+  def submitToDES(submission: DESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
   }
 
   private[connectors] def useDESStubFeature: Boolean = featureSwitch.desStubFeature.enabled

@@ -20,6 +20,8 @@ import play.api.libs.functional.syntax._
 import play.api.libs.functional.syntax.unlift
 import play.api.libs.json.{Writes, __}
 
+sealed trait DESSubmission
+
 case class PartialDESSubmission (acknowledgementReference: String,
                                  company: DESCompanyDetails,
                                  directors: Seq[DESDirector],
@@ -27,7 +29,7 @@ case class PartialDESSubmission (acknowledgementReference: String,
                                  businessContact: DESBusinessContact,
                                  sicCodes: Seq[DESSICCode],
                                  employment: DESEmployment,
-                                 completionCapacity: DESCompletionCapacity)
+                                 completionCapacity: DESCompletionCapacity) extends DESSubmission
 
 object PartialDESSubmission {
   implicit val writes: Writes[PartialDESSubmission] =
@@ -41,4 +43,15 @@ object PartialDESSubmission {
       (__ \ "employment").write[DESEmployment] and
       (__ \ "completion-capacity").write[DESCompletionCapacity]
       )(unlift(PartialDESSubmission.unapply))
+}
+
+case class TopUpDESSubmission(acknowledgementReference: String,
+                              crn: String) extends DESSubmission
+
+object TopUpDESSubmission {
+  implicit val writes: Writes[TopUpDESSubmission] =
+    (
+      (__ \ "acknowledgement-reference").write[String] and
+      (__ \ "crn").write[String]
+    )(unlift(TopUpDESSubmission.unapply))
 }

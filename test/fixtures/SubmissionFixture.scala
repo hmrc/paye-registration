@@ -83,4 +83,8 @@ trait SubmissionFixture {
     completionCapacity = DESCompletionCapacity("director", None)
   )
 
+  val validTopUpDESSubmissionModel = TopUpDESSubmission(
+    acknowledgementReference = "ackRef",
+    crn = "123456"
+  )
 }
