@@ -233,5 +233,30 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     }
   }
 
+  "submitting a top up registration with DES stubbed out" should {
+
+
+    "return a 200 with an ack ref" in new Setup {
+
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(200)
+        )
+      )
+
+      await(repository.insert(payeRegAfterPartialSubmissionWithCRN))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson("testAckRef")
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+    }
+  }
+
 }
 
