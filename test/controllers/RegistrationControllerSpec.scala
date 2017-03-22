@@ -1077,7 +1077,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
   }
 
   "Calling processIncorporationData" should {
-    val topUpData = TopUp(regId = "AC123456", crn = "123456")
+    val topUpData = TopUp(registrationId = "AC123456", crn = "123456")
 
     "return a Forbidden response if the user is not logged in" in new Setup {
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))

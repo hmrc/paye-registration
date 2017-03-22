@@ -19,13 +19,13 @@ package models.incorporation
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, __}
 
-case class TopUp (regId: String,
+case class TopUp (registrationId: String,
                   crn: String)
 
 object TopUp {
   implicit val format: Format[TopUp] =
     (
-      (__ \ "reg-id").format[String] and
+      (__ \ "registration-id").format[String] and
       (__ \ "crn").format[String]
     )(TopUp.apply, unlift(TopUp.unapply))
 }

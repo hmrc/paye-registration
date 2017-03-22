@@ -346,7 +346,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
 
   def processIncorporationData : Action[JsValue] = Action.async(parse.json) {
     implicit request => {
-      val regID = request.body.as[TopUp].regId
+      val regID = request.body.as[TopUp].registrationId
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[TopUp] { topUpData =>

@@ -211,7 +211,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     completionCapacity = DESCompletionCapacity("director", None)
   )
 
-  val topUpData = TopUp(regId = "AC123456", crn = "123456")
+  val topUpData = TopUp(registrationId = "AC123456", crn = "123456")
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",

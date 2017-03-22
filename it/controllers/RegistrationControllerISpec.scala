@@ -152,7 +152,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Nil
   )
 
-  val incorporationData = TopUp(regId = regId, crn = "123456")
+  val incorporationData = TopUp(registrationId = regId, crn = "123456")
 
   "submit-registration" should {
     "return a 200 with an ack ref" in new Setup {
