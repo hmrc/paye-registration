@@ -247,12 +247,12 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
-      await(repository.insert(payeRegAfterPartialSubmissionWithCRN))
+      await(repository.insert(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
+      response.json shouldBe Json.toJson(incorporationData.crn)
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
     }

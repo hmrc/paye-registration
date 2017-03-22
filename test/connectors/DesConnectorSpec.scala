@@ -71,7 +71,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   }
 
   "submitToDES with a Partial DES Submission Model - feature switch disabled" should {
-    "successfully POST with proxy" in new SetupWithProxy(false) {
+    "successfully POST" in new SetupWithProxy(false) {
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
@@ -79,7 +79,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   }
 
   "submitToDES with a Top Up DES Submission Model - feature switch disabled" should {
-    "successfully POST with proxy" in new SetupWithProxy(false) {
+    "successfully POST" in new SetupWithProxy(false) {
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
