@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
+import models.incorporation.TopUp
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.WS
@@ -78,7 +79,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Some("Director"),
     Some(
       CompanyDetails(
-        None,
         "testCompanyName",
         Some("test"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -124,29 +124,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     )
   )
 
-  val payeRegAfterPartialSubmissionWithCRN = PAYERegistration(
-    regId,
-    intId,
-    Some("testAckRef"),
-    timestamp,
-    PAYEStatus.held,
-    None,
-    Some(
-      CompanyDetails(
-        Some("123456"),
-        "testCompanyName",
-        None,
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-        DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
-      )
-    ),
-    Seq(),
-    None,
-    None,
-    Seq()
-  )
-
   val processedSubmission = PAYERegistration(
     regId,
     intId,
@@ -174,6 +151,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     None,
     Nil
   )
+
+  val incorporationData = TopUp(regId = regId, crn = "123456")
 
   "submit-registration" should {
     "return a 200 with an ack ref" in new Setup {
@@ -209,7 +188,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     }
   }
 
-  "submit-top-up-registration" should {
+  "incorporation-data" should {
     "return a 200 with an ack ref" in new Setup {
 
 
@@ -222,9 +201,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
-      await(repository.insert(payeRegAfterPartialSubmissionWithCRN))
+      await(repository.insert(processedSubmission))
 
-      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
 
@@ -236,7 +215,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
       await(repository.insert(processedTopUpSubmission))
 
-      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 500
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
@@ -247,7 +226,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
       await(repository.insert(submission))
 
-      val response = client(s"$regId/submit-top-up-registration").put("").futureValue
+      val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 500
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(submission)

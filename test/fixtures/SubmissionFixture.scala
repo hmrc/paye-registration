@@ -19,6 +19,7 @@ package fixtures
 import java.time.LocalDate
 
 import models.Address
+import models.incorporation.TopUp
 import models.submission._
 
 trait SubmissionFixture {
@@ -87,4 +88,6 @@ trait SubmissionFixture {
     acknowledgementReference = "ackRef",
     crn = "123456"
   )
+
+  val topUpData = TopUp(regId = "AC123456", crn = "123456")
 }

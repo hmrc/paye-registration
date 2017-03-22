@@ -25,6 +25,7 @@ import auth._
 import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.MissingRegDocument
+import models.incorporation.TopUp
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import repositories.RegistrationMongoRepository
@@ -325,21 +326,6 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       }
   }
 
-  def submitTopUpPAYERegistration(regID: String): Action[AnyContent] = Action.async {
-    implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
-          submissionService.submitTopUpToDES(regID) map (ackRef => Ok(Json.toJson(ackRef)))
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [submitTopUpPAYERegistration] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [submitTopUpPAYERegistration] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
-      }
-  }
-
   def getAcknowledgementReference(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       authorised(regID) {
@@ -357,4 +343,23 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }
     }
+
+  def processIncorporationData : Action[JsValue] = Action.async(parse.json) {
+    implicit request => {
+      val regID = request.body.as[TopUp].regId
+      authorised(regID) {
+        case Authorised(_) =>
+          withJsonBody[TopUp] { topUpData =>
+            submissionService.submitTopUpToDES(regID, topUpData) map (ackRef => Ok(Json.toJson(ackRef)))
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [upsertIncorporationData] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [upsertIncorporationData] User logged in but not authorised for resource $regID")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+    }
+  }
 }

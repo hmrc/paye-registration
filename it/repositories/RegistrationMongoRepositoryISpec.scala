@@ -40,14 +40,14 @@ class RegistrationMongoRepositoryISpec
   private val address = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
   private val ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   private val businessContact = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
-  private val companyDetails: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany", tradingName = Some("tstTradingName"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
+  private val companyDetails: CompanyDetails = CompanyDetails(companyName = "tstCcompany", tradingName = Some("tstTradingName"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
   private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, date)
   private val reg = PAYERegistration(registrationID = "AC123456", internalID = "09876", acknowledgementReference = Some("testAckRef"), formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
   private val reg2 = PAYERegistration(registrationID = "AC234567", internalID = "09876", acknowledgementReference = Some("testAckRef"), formCreationTimestamp = "timestamp", status = PAYEStatus.held, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
 
   // Company Details
   private val regNoCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", acknowledgementReference = Some("testAckRef"), formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = None, directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
-  private val companyDetails2: CompanyDetails = CompanyDetails(crn = None, companyName = "tstCcompany2", tradingName = Some("tstTradingName2"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
+  private val companyDetails2: CompanyDetails = CompanyDetails(companyName = "tstCcompany2", tradingName = Some("tstTradingName2"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
   private val regUpdatedCompanyDetails = PAYERegistration(registrationID = "AC123456", internalID = "09876", acknowledgementReference = Some("testAckRef"), formCreationTimestamp = "timestamp", status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails2), directors = Seq.empty, payeContact = None, None, sicCodes = Seq.empty)
 
   // Employment

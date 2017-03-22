@@ -20,11 +20,11 @@ import models._
 import java.time.LocalDate
 
 import enums.PAYEStatus
+import models.incorporation.TopUp
 
 trait RegistrationFixture {
 
   val validCompanyDetails = CompanyDetails(
-    crn = None,
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
     Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -91,4 +91,11 @@ trait RegistrationFixture {
     validSICCodes
   )
 
+  val validCompanyDetailsWithCRN = CompanyDetails(
+    companyName = "Test Company Name",
+    tradingName = Some("Test Trading Name"),
+    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+    Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+    DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+  )
 }
