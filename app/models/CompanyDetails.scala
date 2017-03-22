@@ -19,8 +19,7 @@ package models
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Json, __}
 
-case class CompanyDetails(crn: Option[String],
-                          companyName: String,
+case class CompanyDetails(companyName: String,
                           tradingName: Option[String],
                           roAddress: Address,
                           ppobAddress: Address,
@@ -40,7 +39,6 @@ object Address {
 object CompanyDetails extends CompanyDetailsValidator {
 
   implicit val format: Format[CompanyDetails] = (
-      (__ \ "crn").formatNullable[String](crnValidator) and
       (__ \ "companyName").format[String](companyNameValidator) and
       (__ \ "tradingName").formatNullable[String](companyNameValidator) and
       (__ \ "roAddress").format[Address] and

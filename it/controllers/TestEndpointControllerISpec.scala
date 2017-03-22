@@ -124,7 +124,6 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Some("Director"),
           Some(
             CompanyDetails(
-              Some("1234567890"),
               "testCompanyName",
               Some("test"),
               Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),

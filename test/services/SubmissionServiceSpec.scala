@@ -27,6 +27,7 @@ import fixtures.RegistrationFixture
 import models._
 import models.submission._
 import helpers.PAYERegSpec
+import models.incorporation.TopUp
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
@@ -49,7 +50,6 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
 
   val validCompanyDetails = CompanyDetails(
-    crn = None,
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
     Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -58,7 +58,6 @@ class SubmissionServiceSpec extends PAYERegSpec {
   )
 
   val validCompanyDetailsWithCRN = CompanyDetails(
-    crn = Some("123456"),
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
     Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -212,6 +211,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
     completionCapacity = DESCompletionCapacity("director", None)
   )
 
+  val topUpData = TopUp(registrationId = "AC123456", crn = "123456")
+
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
     crn = "123456"
@@ -258,21 +259,21 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
-      intercept[MissingRegDocument](await(service.buildTopUpDESSubmission("regId")))
+      intercept[MissingRegDocument](await(service.buildTopUpDESSubmission("regId", topUpData)))
     }
 
     "throw the correct exception when the registration is not yet submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
-      intercept[RegistrationNotYetSubmitted](await(service.buildTopUpDESSubmission("regId")))
+      intercept[RegistrationNotYetSubmitted](await(service.buildTopUpDESSubmission("regId", topUpData)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
-      intercept[RegistrationAlreadySubmitted](await(service.buildTopUpDESSubmission("regId")))
+      intercept[RegistrationAlreadySubmitted](await(service.buildTopUpDESSubmission("regId", topUpData)))
     }
   }
 
@@ -313,17 +314,11 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   "Building a Top Up DES Submission" should {
-    "throw the correct error when company details are not present" in new Setup{
-      intercept[CompanyDetailsNotDefinedException](service.payeReg2TopUpDESSubmission(validRegistration.copy(companyDetails = None)))
-    }
     "throw the correct error when acknowledgement reference is not present" in new Setup{
-      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None)))
-    }
-    "throw the correct error when CRN is not present" in new Setup{
-      intercept[CRNNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration))
+      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), topUpData))
     }
     "build a Top Up" in new Setup{
-      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission) shouldBe validTopUpDESSubmissionModel
+      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, topUpData) shouldBe validTopUpDESSubmissionModel
     }
   }
 
@@ -365,7 +360,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
-      await(service.submitTopUpToDES("regID")) shouldBe "ackRef"
+      await(service.submitTopUpToDES("regID", topUpData)) shouldBe "ackRef"
     }
   }
 }

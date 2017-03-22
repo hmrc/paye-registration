@@ -27,7 +27,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
           |{
-          |  "crn":"Ac123456",
           |  "companyName":"Test Company",
           |  "tradingName":"Test Trading Name",
           |  "roAddress": {
@@ -55,7 +54,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val tstCompanyDetails = CompanyDetails(
-        crn = Some("Ac123456"),
         companyName = "Test Company",
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -95,7 +93,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val tstCompanyDetails = CompanyDetails(
-        crn = None,
         companyName = "Test Company",
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -110,7 +107,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
-           |  "crn":"Ac123456",
            |  "companyName":"Test£Company",
            |  "tradingName":"Test Trading Name",
            |  "roAddress": {
@@ -139,41 +135,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
       val result = Json.fromJson[CompanyDetails](json)
       shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("error.pattern")))
-    }
-
-    "fail from Json with invalid crn" in {
-      val json = Json.parse(
-        s"""
-           |{
-           |  "crn":"AX123456",
-           |  "companyName":"Test Company",
-           |  "tradingName":"Test Trading Name",
-           |  "roAddress": {
-           |    "line1":"14 St Test Walk",
-           |    "line2":"Testley",
-           |    "line3":"Testford",
-           |    "line4":"Testshire",
-           |    "postCode":"TE1 1ST",
-           |    "country":"UK"
-           |  },
-           |  "ppobAddress": {
-           |    "line1":"15 St Walk",
-           |    "line2":"Testley",
-           |    "line3":"Testford",
-           |    "line4":"Testshire",
-           |    "postCode":"TE4 1ST",
-           |    "country":"UK"
-           |  },
-           |  "businessContactDetails": {
-           |    "email":"email@test.co.uk",
-           |    "phoneNumber":"999",
-           |    "mobileNumber":"00000"
-           |  }
-           |}
-        """.stripMargin)
-
-      val result = Json.fromJson[CompanyDetails](json)
-      shouldHaveErrors(result, JsPath() \ "crn", Seq(ValidationError("error.pattern")))
     }
   }
 

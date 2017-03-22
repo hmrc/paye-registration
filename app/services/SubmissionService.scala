@@ -24,6 +24,7 @@ import common.exceptions.SubmissionExceptions._
 import connectors.{DESConnect, DESConnector}
 import enums.PAYEStatus
 import models._
+import models.incorporation.TopUp
 import models.submission._
 import play.api.Logger
 import repositories._
@@ -56,10 +57,10 @@ trait SubmissionSrv {
     } yield ackRef
   }
 
-  def submitTopUpToDES(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
+  def submitTopUpToDES(regId: String, topUpData: TopUp)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
-      desSubmission <- buildTopUpDESSubmission(regId)
+      desSubmission <- buildTopUpDESSubmission(regId, topUpData)
       _             <- desConnector.submitToDES(desSubmission)
       _             <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
     } yield ackRef
@@ -89,10 +90,10 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def buildTopUpDESSubmission(regId: String): Future[TopUpDESSubmission] = {
+  private[services] def buildTopUpDESSubmission(regId: String, topUpData: TopUp): Future[TopUpDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
       case None => throw new MissingRegDocument(regId)
-      case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg)
+      case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, topUpData)
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => throw new RegistrationNotYetSubmitted(regId)
       case _ => throw new RegistrationAlreadySubmitted(regId)
     }
@@ -122,17 +123,13 @@ trait SubmissionSrv {
     )
   }
 
-  private[services] def payeReg2TopUpDESSubmission(payeReg: PAYERegistration): TopUpDESSubmission = {
-    val companyDetails = payeReg.companyDetails.getOrElse{throw new CompanyDetailsNotDefinedException}
+  private[services] def payeReg2TopUpDESSubmission(payeReg: PAYERegistration, topUpData: TopUp): TopUpDESSubmission = {
     TopUpDESSubmission(
       acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
         Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
-      crn = companyDetails.crn.getOrElse {
-        Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing CRN")
-        throw new CRNNotExistsException(payeReg.registrationID)
-      }
+      crn = topUpData.crn
     )
   }
 

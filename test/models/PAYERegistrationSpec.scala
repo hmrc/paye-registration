@@ -40,7 +40,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "completionCapacity":"Director",
            |  "companyDetails":
            |    {
-           |      "crn":"Ac123456",
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name",
            |      "roAddress": {
@@ -130,7 +129,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         completionCapacity = Some("Director"),
         companyDetails = Some(
           CompanyDetails(
-            crn = Some("Ac123456"),
             companyName = "Test Company",
             tradingName = Some("Test Trading Name"),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
@@ -220,7 +218,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "status" : "draft",
            |  "companyDetails":
            |    {
-           |      "crn":"Ac123456",
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name",
            |      "roAddress": {
@@ -264,7 +261,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "status" : "INVALID_STATUS",
            |  "companyDetails":
            |    {
-           |      "crn":"Ac123456",
            |      "companyName":"Test Company",
            |      "tradingName":"Test Trading Name",
            |      "roAddress": {
