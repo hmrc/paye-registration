@@ -29,14 +29,10 @@ import scala.concurrent.Future
 @Singleton
 class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESConnect with ServicesConfig {
   val featureSwitch = injFeatureSwitch
-  lazy val desUrl = useDESStubFeature match {
-    case true => baseUrl("des-stub")
-    case false => baseUrl("des-service") //TODO: set the production DES settings
-  }
-  lazy val desURI = useDESStubFeature match {
-    case true => getConfString("des-stub.uri", "")
-    case false => getConfString("des-service.uri", "") //TODO: set the production DES settings
-  }
+  lazy val desUrl = baseUrl("des-service")
+  lazy val desURI = getConfString("des-service.uri", "")
+  lazy val desStubUrl = baseUrl("des-stub")
+  lazy val desStubURI = getConfString("des-service.uri", "")
   val http = WSHttp
 }
 
@@ -44,11 +40,19 @@ trait DESConnect {
 
   val desUrl: String
   val desURI: String
+
+  val desStubUrl: String
+  val desStubURI: String
+
   def http: HttpPost
   val featureSwitch: PAYEFeatureSwitches
 
   def submitToDES(submission: DESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
+    if(useDESStubFeature) {
+      http.POST[DESSubmission, HttpResponse](s"$desStubUrl/$desStubURI", submission)
+    } else {
+      http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
+    }
   }
 
   private[connectors] def useDESStubFeature: Boolean = !featureSwitch.desService.enabled

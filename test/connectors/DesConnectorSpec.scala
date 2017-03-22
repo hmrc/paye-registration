@@ -41,20 +41,22 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override val featureSwitch = mockFeatureSwitch
       override def useDESStubFeature = withProxy
       override def http = mockHttp
-      override val desURI = "testURL"
-      override val desUrl = "desURI"
+      override val desURI = "testURI"
+      override val desUrl = "desURL"
+      override val desStubURI = "testStubURI"
+      override val desStubUrl = "desStubURL"
     }
   }
 
   def mockHttpPOST[I, O](url: String, thenReturn: O, mockWSHttp: WSHttp): OngoingStubbing[Future[O]] = {
-    when(mockWSHttp.POST[I, O](ArgumentMatchers.anyString(), ArgumentMatchers.any[I](), ArgumentMatchers.any())
+    when(mockWSHttp.POST[I, O](ArgumentMatchers.contains(url), ArgumentMatchers.any[I](), ArgumentMatchers.any())
       (ArgumentMatchers.any[Writes[I]](), ArgumentMatchers.any[HttpReads[O]](), ArgumentMatchers.any[HeaderCarrier]()))
       .thenReturn(Future.successful(thenReturn))
   }
 
   "submitToDES with a Partial DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[DESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
     }
@@ -62,7 +64,23 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Top Up DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[DESSubmission, HttpResponse]("", HttpResponse(200), mockHttp)
+      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200), mockHttp)
+
+      await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
+    }
+  }
+
+  "submitToDES with a Partial DES Submission Model - feature switch disabled" should {
+    "successfully POST with proxy" in new SetupWithProxy(false) {
+      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200), mockHttp)
+
+      await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
+    }
+  }
+
+  "submitToDES with a Top Up DES Submission Model - feature switch disabled" should {
+    "successfully POST with proxy" in new SetupWithProxy(false) {
+      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200), mockHttp)
 
       await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
     }
