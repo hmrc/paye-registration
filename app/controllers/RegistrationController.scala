@@ -350,13 +350,13 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           withJsonBody[TopUp] { topUpData =>
-            submissionService.submitTopUpToDES(regID, topUpData) map (ackRef => Ok(Json.toJson(ackRef)))
+            submissionService.submitTopUpToDES(regID, topUpData) map (_ => Ok(Json.toJson(topUpData.crn)))
           }
         case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertIncorporationData] User not logged in")
+          Logger.info(s"[RegistrationController] [processIncorporationData] User not logged in")
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertIncorporationData] User logged in but not authorised for resource $regID")
+          Logger.info(s"[RegistrationController] [processIncorporationData] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }

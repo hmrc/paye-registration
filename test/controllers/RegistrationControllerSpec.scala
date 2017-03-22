@@ -1128,6 +1128,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson[TopUp](topUpData)))
 
       status(response) shouldBe Status.OK
+      jsonBodyOf(await(response)) shouldBe Json.toJson(topUpData.crn)
     }
   }
 }
