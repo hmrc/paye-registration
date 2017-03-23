@@ -57,10 +57,10 @@ trait AuthConnect extends RawResponseReads {
 
   def getCurrentAuthority()(implicit headerCarrier: HeaderCarrier): Future[Option[Authority]] = {
     val getUrl = s"""$serviceUrl/$authorityUri"""
-    Logger.debug(s"[AuthConnector][getCurrentAuthority] - GET $getUrl")
+    Logger.debug(s"[AuthConnector] - [getCurrentAuthority]: GET $getUrl")
     http.GET[HttpResponse](getUrl) flatMap {
       response =>
-        Logger.debug(s"[AuthConnector][getCurrentAuthority] - RESPONSE status: ${response.status}, body: ${response.body}")
+        Logger.debug(s"[AuthConnector] - [getCurrentAuthority]: RESPONSE status: ${response.status}, body: ${response.body}")
         response.status match {
           case OK => {
             val uri = (response.json \ "uri").as[String]
