@@ -19,6 +19,7 @@ package repositories
 import javax.inject.{Inject, Singleton}
 
 import models.Sequence
+import play.api.Logger
 import play.api.libs.json.JsValue
 import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.api.DB
@@ -51,8 +52,9 @@ class SequenceMongoRepository(mongo: () => DB)
       _.result[JsValue] match {
         // $COVERAGE-OFF$
         case None => {
-          logger.error("[SequenceRepository] [getNext] returned a None when Upserting")
-          class InvalidSequence extends NoStackTrace; throw new InvalidSequence
+          Logger.error("[SequenceRepository] - [getNext] returned a None when Upserting")
+          class InvalidSequence extends NoStackTrace
+          throw new InvalidSequence
         }
         // $COVERAGE-ON$
         case Some(res) => (res \ "seq").as[Int]

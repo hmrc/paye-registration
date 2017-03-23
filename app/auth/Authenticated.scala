@@ -33,8 +33,6 @@ trait Authenticated {
   val auth: AuthConnect
 
   def authenticated(f: => AuthenticationResult => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    Logger.debug(s"Current user id is ${hc.userId}") // always outputs NONE :-(
-
     for {
       authority <- auth.getCurrentAuthority()
       result <- f(mapToAuthResult(authority))
@@ -46,8 +44,12 @@ trait Authenticated {
 
   private def mapToAuthResult(authContext: Option[Authority]) : AuthenticationResult = {
     authContext match {
-      case None => NotLoggedIn
-      case Some(context) => LoggedIn(context)
+      case None =>
+        Logger.warn("[Authenticated] - [mapToAuthResult] : No user present; FORBIDDEN")
+        NotLoggedIn
+      case Some(context) =>
+        Logger.debug(s"[Authenticated] - [mapToAuthResult] : current user is ${context.ids.internalId}")
+        LoggedIn(context)
     }
   }
 }

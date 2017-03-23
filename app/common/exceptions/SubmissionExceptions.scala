@@ -18,9 +18,7 @@ package common.exceptions
 
 import scala.util.control.NoStackTrace
 
-object SubmissionExceptions extends SubmissionExceptions {
-
-}
+object SubmissionExceptions extends SubmissionExceptions
 
 trait SubmissionExceptions {
   class RegistrationAlreadySubmitted(regId: String) extends NoStackTrace

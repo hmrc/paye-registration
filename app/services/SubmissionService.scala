@@ -28,7 +28,7 @@ import models.incorporation.TopUp
 import models.submission._
 import play.api.Logger
 import repositories._
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -84,18 +84,28 @@ trait SubmissionSrv {
 
   private[services] def buildPartialDesSubmission(regId: String): Future[PartialDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
-      case None => throw new MissingRegDocument(regId)
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => payeReg2PartialDESSubmission(payeReg)
-      case _ => throw new RegistrationAlreadySubmitted(regId)
+      case None =>
+        Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]:  building des top submission failed, there was no registration document present for regId $regId")
+        throw new MissingRegDocument(regId)
+      case _ =>
+        Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]: The registration for regId $regId has already been submitted")
+        throw new RegistrationAlreadySubmitted(regId)
     }
   }
 
   private[services] def buildTopUpDESSubmission(regId: String, topUpData: TopUp): Future[TopUpDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
-      case None => throw new MissingRegDocument(regId)
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, topUpData)
-      case Some(payeReg) if payeReg.status == PAYEStatus.draft => throw new RegistrationNotYetSubmitted(regId)
-      case _ => throw new RegistrationAlreadySubmitted(regId)
+      case Some(payeReg) if payeReg.status == PAYEStatus.draft =>
+        Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: ")
+        throw new RegistrationNotYetSubmitted(regId)
+      case None =>
+        Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: building des top submission failed, there was no registration document present for regId $regId")
+        throw new MissingRegDocument(regId)
+      case _ =>
+        Logger.warn(s"[SubmissionService] - [buildTopUpDESSubmission]: The registration for regId $regId has already been submitted")
+        throw new RegistrationAlreadySubmitted(regId)
     }
   }
 

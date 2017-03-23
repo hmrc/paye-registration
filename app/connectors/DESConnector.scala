@@ -20,11 +20,13 @@ import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
 import models.submission.DESSubmission
+import play.api.Logger
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpPost, HttpResponse}
 import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESConnect with ServicesConfig {
@@ -49,9 +51,15 @@ trait DESConnect {
 
   def submitToDES(submission: DESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     if(useDESStubFeature) {
-      http.POST[DESSubmission, HttpResponse](s"$desStubUrl/$desStubURI", submission)
+      http.POST[DESSubmission, HttpResponse](s"$desStubUrl/$desStubURI", submission) map { resp =>
+        Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
+        resp
+      }
     } else {
-      http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission)
+      http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission) map { resp =>
+        Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
+        resp
+      }
     }
   }
 

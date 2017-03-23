@@ -48,12 +48,18 @@ trait Authorisation[I] {
 
   private def mapToAuthResult(authContext: Option[Authority], resource: Option[(I,String)] ) : AuthorisationResult = {
     authContext match {
-      case None => NotLoggedInOrAuthorised
+      case None =>
+        Logger.warn("[Authorisation] - [mapToAuthResult]: No authority was found")
+        NotLoggedInOrAuthorised
       case Some(context) => {
         resource match {
-          case None => AuthResourceNotFound(context)
-          case Some((_, context.ids.internalId)) => Authorised (context)
-          case Some((_, _)) => NotAuthorised (context)
+          case None =>
+            Logger.warn("[Authorisation] - [mapToAuthResult]: No auth resource was found the current user")
+            AuthResourceNotFound(context)
+          case Some((_, context.ids.internalId)) => Authorised(context)
+          case Some((_, _)) =>
+            Logger.warn("[Authorisation] - [mapToAuthResult]: The current user is authorised to access this resource")
+            NotAuthorised (context)
         }
       }
     }

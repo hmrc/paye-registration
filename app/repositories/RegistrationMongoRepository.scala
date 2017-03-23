@@ -101,7 +101,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         newReg
     } recover {
       case e =>
-        Logger.warn(s"Unable to insert new PAYE Registration for reg ID $registrationID, Error: ${e.getMessage}")
+        Logger.error(s"Unable to insert new PAYE Registration for reg ID $registrationID, Error: ${e.getMessage}")
         mongoTimer.stop()
         throw new InsertFailed(registrationID, "PAYERegistration")
     }
@@ -128,7 +128,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         mongoTimer.stop()
         registration.companyDetails
       case None =>
-        Logger.warn(s"Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        Logger.error(s"Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -144,12 +144,12 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
             payeStatus
         } recover {
           case e =>
-            Logger.warn(s"Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
+            Logger.error(s"Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "Registration status")
         }
       case None =>
-        Logger.warn(s"Unable to update registration status for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        Logger.error(s"Unable to update registration status for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -160,7 +160,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     retrieveRegistration(registrationID) map {
       case Some(registration) => registration.acknowledgementReference
       case None =>
-        Logger.warn(s"[RegistrationMongoRepository] - [retrieveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        Logger.error(s"[RegistrationMongoRepository] - [retrieveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
     }
   }
@@ -173,15 +173,15 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
             res => ackRef
           } recover {
             case e =>
-              Logger.warn(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to save acknowledgement reference for reg ID $registrationID, Error: ${e.getMessage}")
+              Logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to save acknowledgement reference for reg ID $registrationID, Error: ${e.getMessage}")
               throw new UpdateFailed(registrationID, "AcknowledgementReference")
           }
         case true =>
-          Logger.warn(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Acknowledgement reference for $registrationID already exists")
+          Logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Acknowledgement reference for $registrationID already exists")
           throw new AcknowledgementReferenceExistsException(registrationID)
       }
       case None =>
-        Logger.warn(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        Logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
     }
   }
