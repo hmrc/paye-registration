@@ -45,6 +45,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "microservice.services.auth.port" -> s"$mockPort",
     "microservice.services.des-stub.port" -> s"$mockPort",
     "microservice.services.des-stub.url" -> s"$mockHost",
+    "microservice.services.des-service.port" -> s"$mockPort",
+    "microservice.services.des-service.url" -> s"$mockHost",
     "application.router" -> "testOnlyDoNotUseInAppConf.Routes"
   )
 
@@ -168,6 +170,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       )
 
       await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
       response.status shouldBe 200
@@ -180,6 +183,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       await(repository.insert(processedSubmission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
       response.status shouldBe 500
@@ -201,6 +205,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
       await(repository.insert(processedSubmission))
 
       val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
@@ -214,6 +219,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       await(repository.insert(processedTopUpSubmission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 500
@@ -225,6 +231,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 500
@@ -248,7 +255,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       )
 
       await(repository.insert(processedSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"test-only/feature-flag/desServiceFeature/false").get())
 
       val response = client(s"incorporation-data").post(Json.toJson(incorporationData)).futureValue
       response.status shouldBe 200
