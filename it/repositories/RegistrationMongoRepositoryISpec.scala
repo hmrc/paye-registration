@@ -230,7 +230,7 @@ class RegistrationMongoRepositoryISpec
       await(setupCollection(repository, regNoEmployment))
 
       val actual = await(repository.upsertEmployment("AC123456", employmentDetails2))
-      actual shouldBe employmentDetails2
+      actual shouldBe regNoEmployment
 
       val updated = await(repository.retrieveRegistration("AC123456"))
       updated shouldBe Some(regUpdatedEmployment)
@@ -242,7 +242,7 @@ class RegistrationMongoRepositoryISpec
       await(setupCollection(repository, reg))
 
       val actual = await(repository.upsertEmployment("AC123456", employmentDetails2))
-      actual shouldBe employmentDetails2
+      actual shouldBe reg
 
       val updated = await(repository.retrieveRegistration("AC123456"))
       updated shouldBe Some(regUpdatedEmployment)

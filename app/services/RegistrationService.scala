@@ -18,6 +18,7 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
+import enums.PAYEStatus
 import models.{CompanyDetails, Director, Employment, PAYEContact, PAYERegistration, SICCode}
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import play.api.Logger
@@ -60,7 +61,19 @@ trait RegistrationSrv {
   }
 
   def upsertEmployment(regID: String, employmentDetails: Employment): Future[Employment] = {
-    registrationRepository.upsertEmployment(regID, employmentDetails)
+      registrationRepository.upsertEmployment(regID, employmentDetails) flatMap {
+        result =>
+          (employmentDetails.subcontractors, employmentDetails.employees) match {
+            case (false, false) =>
+              if(!result.status.equals(PAYEStatus.invalid)) {
+                  registrationRepository.updateRegistrationStatus(regID, PAYEStatus.invalid) map { _ => employmentDetails}
+                }else {Future.successful(employmentDetails)}
+            case _ =>
+              if(!result.status.equals(PAYEStatus.draft)) {
+                  registrationRepository.updateRegistrationStatus(regID, PAYEStatus.draft) map {_ => employmentDetails}
+              } else {Future.successful(employmentDetails)}
+          }
+      }
   }
 
   def getDirectors(regID: String): Future[Seq[Director]] = {

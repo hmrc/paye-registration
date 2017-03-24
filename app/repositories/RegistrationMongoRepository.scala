@@ -58,7 +58,7 @@ trait RegistrationRepository {
   def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
   def retrieveEmployment(registrationID: String): Future[Option[Employment]]
-  def upsertEmployment(registrationID: String, details: Employment): Future[Employment]
+  def upsertEmployment(registrationID: String, details: Employment): Future[PAYERegistration]
   def retrieveDirectors(registrationID: String): Future[Seq[Director]]
   def upsertDirectors(registrationID: String, directors: Seq[Director]): Future[Seq[Director]]
   def retrieveSICCodes(registrationID: String): Future[Seq[SICCode]]
@@ -234,14 +234,14 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
-  override def upsertEmployment(registrationID: String, details: Employment): Future[Employment] = {
+  override def upsertEmployment(registrationID: String, details: Employment): Future[PAYERegistration] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         collection.update(registrationIDSelector(registrationID), reg.copy(employment = Some(details))) map {
           res =>
             mongoTimer.stop()
-            details
+            reg
         } recover {
           case e =>
             Logger.warn(s"Unable to update Employment for reg ID $registrationID, Error: ${e.getMessage}")

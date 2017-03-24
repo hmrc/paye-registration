@@ -17,10 +17,11 @@
 package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
+import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
-import org.mockito.ArgumentMatchers
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
@@ -33,20 +34,22 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
+  val regId = "AB123456"
+
   "Calling newPAYERegistration" should {
 
     "return a DBDuplicate response when the database already has a PAYERegistration" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.successful(Some(validRegistration)))
 
-      val actual = await(service.createNewPAYERegistration("AC123456", validRegistration.internalID))
+      val actual = await(service.createNewPAYERegistration(regId, validRegistration.internalID))
       actual shouldBe validRegistration
     }
 
     "return a DBSuccess response when the Registration is correctly inserted into the database" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
-      when(mockRegistrationRepository.createNewRegistration(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[String]())).thenReturn(Future.successful(validRegistration))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.successful(None))
+      when(mockRegistrationRepository.createNewRegistration(ArgumentMatchers.eq(regId), ArgumentMatchers.any[String]())).thenReturn(Future.successful(validRegistration))
 
-      val actual = await(service.createNewPAYERegistration("AC123456", "09876"))
+      val actual = await(service.createNewPAYERegistration(regId, "09876"))
       actual shouldBe validRegistration
     }
   }
@@ -54,23 +57,23 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling fetchPAYERegistration" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.successful(None))
 
-      val actual = await(service.fetchPAYERegistration("AC123456"))
+      val actual = await(service.fetchPAYERegistration(regId))
       actual shouldBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.failed(exception))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.fetchPAYERegistration("AC123456")) }
+      intercept[RuntimeException] { await(service.fetchPAYERegistration(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(Some(validRegistration)))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.successful(Some(validRegistration)))
 
-      val actual = await(service.fetchPAYERegistration("AC123456"))
+      val actual = await(service.fetchPAYERegistration(regId))
       actual shouldBe Some(validRegistration)
     }
   }
@@ -78,26 +81,26 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getCompanyDetails" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveCompanyDetails(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveCompanyDetails(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(None))
 
-      val actual = await(service.getCompanyDetails("AC123456"))
+      val actual = await(service.getCompanyDetails(regId))
       actual shouldBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveCompanyDetails(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveCompanyDetails(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getCompanyDetails("AC123456")) }
+      intercept[RuntimeException] { await(service.getCompanyDetails(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveCompanyDetails(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveCompanyDetails(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Some(validCompanyDetails)))
 
-      val actual = await(service.getCompanyDetails("AC123456"))
+      val actual = await(service.getCompanyDetails(regId))
       actual shouldBe validRegistration.companyDetails
     }
   }
@@ -105,18 +108,18 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling upsertCompanyDetails" should {
 
     "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]()))
-        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationRepository.upsertCompanyDetails(ArgumentMatchers.eq(regId), ArgumentMatchers.any[CompanyDetails]()))
+        .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      intercept[MissingRegDocument] { await(service.upsertCompanyDetails("AC123456", validCompanyDetails)) }
+      intercept[MissingRegDocument] { await(service.upsertCompanyDetails(regId, validCompanyDetails)) }
     }
 
     "return a DBSuccess response when the company details are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]()))
+      when(mockRegistrationRepository.upsertCompanyDetails(ArgumentMatchers.eq(regId), ArgumentMatchers.any[CompanyDetails]()))
         .thenReturn(Future.successful(validCompanyDetails))
 
-      val actual = await(service.upsertCompanyDetails("AC123456", validCompanyDetails))
+      val actual = await(service.upsertCompanyDetails(regId, validCompanyDetails))
       actual shouldBe validCompanyDetails
     }
   }
@@ -124,26 +127,26 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getEmployment" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveEmployment(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveEmployment(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(None))
 
-      val actual = await(service.getEmployment("AC123456"))
+      val actual = await(service.getEmployment(regId))
       actual shouldBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveEmployment(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveEmployment(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getEmployment("AC123456")) }
+      intercept[RuntimeException] { await(service.getEmployment(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveEmployment(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveEmployment(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Some(validEmployment)))
 
-      val actual = await(service.getEmployment("AC123456"))
+      val actual = await(service.getEmployment(regId))
       actual shouldBe validRegistration.employment
     }
   }
@@ -151,45 +154,84 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling upsertEmployment" should {
 
     "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]()))
-        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Employment]()))
+        .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      intercept[MissingRegDocument] { await(service.upsertEmployment("AC123456", validEmployment)) }
+      intercept[MissingRegDocument] { await(service.upsertEmployment(regId, validEmployment)) }
     }
 
     "return a DBSuccess response when the company details are successfully updated" in new Setup {
-      val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]()))
-        .thenReturn(Future.successful(validEmployment))
+      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Employment]()))
+        .thenReturn(Future.successful(validRegistration))
 
-      val actual = await(service.upsertEmployment("AC123456", validEmployment))
-      actual shouldBe validEmployment
+      await(service.upsertEmployment(regId, validEmployment)) shouldBe validEmployment
+      verify(mockRegistrationRepository, times(0)).updateRegistrationStatus(ArgumentMatchers.eq(regId), ArgumentMatchers.any())
+    }
+
+    "return a DBSuccess response when the company details are successfully updated from previously invalid" in new Setup {
+      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Employment]()))
+        .thenReturn(Future.successful(validRegistration.copy(status = PAYEStatus.invalid)))
+
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.eq(regId), ArgumentMatchers.any[PAYEStatus.Value]()))
+        .thenReturn(Future.successful(PAYEStatus.draft))
+
+      val captor = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
+
+      await(service.upsertEmployment(regId, validEmployment)) shouldBe validEmployment
+      verify(mockRegistrationRepository, times(1)).updateRegistrationStatus(ArgumentMatchers.eq(regId), captor.capture())
+      captor.getValue shouldBe PAYEStatus.draft
+    }
+
+    "set status to INVALID when false is recorded for both Subcontractors and Employees" in new Setup {
+      val invalidEmployment = Employment(employees = false, None, subcontractors = false, validEmployment.firstPaymentDate)
+      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Employment]()))
+        .thenReturn(Future.successful(validRegistration))
+
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.eq(regId), ArgumentMatchers.any[PAYEStatus.Value]()))
+        .thenReturn(Future.successful(PAYEStatus.invalid))
+
+      val captor = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
+
+      await(service.upsertEmployment(regId, invalidEmployment)) shouldBe invalidEmployment
+      verify(mockRegistrationRepository, times(1)).updateRegistrationStatus(ArgumentMatchers.eq(regId), captor.capture())
+      captor.getValue shouldBe PAYEStatus.invalid
+    }
+
+    "not set status to INVALID when false is recorded for both Subcontractors and Employees if already INVALID" in new Setup {
+      val invalidEmployment = Employment(employees = false, None, subcontractors = false, validEmployment.firstPaymentDate)
+      when(mockRegistrationRepository.upsertEmployment(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Employment]()))
+        .thenReturn(Future.successful(validRegistration.copy(status = PAYEStatus.invalid)))
+
+      val captor = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
+
+      await(service.upsertEmployment(regId, invalidEmployment)) shouldBe invalidEmployment
+      verify(mockRegistrationRepository, times(0)).updateRegistrationStatus(ArgumentMatchers.eq(regId), captor.capture())
     }
   }
 
   "Calling getDirectors" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Seq.empty))
 
-      val actual = await(service.getDirectors("AC123456"))
+      val actual = await(service.getDirectors(regId))
       actual shouldBe Seq.empty
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getDirectors("AC123456")) }
+      intercept[RuntimeException] { await(service.getDirectors(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveDirectors(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(validDirectors))
 
-      val actual = await(service.getDirectors("AC123456"))
+      val actual = await(service.getDirectors(regId))
       actual shouldBe validRegistration.directors
     }
   }
@@ -197,18 +239,18 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling upsertDirectors" should {
 
     "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
-        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Seq[Director]]()))
+        .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      intercept[MissingRegDocument] { await(service.upsertDirectors("AC123456", validDirectors)) }
+      intercept[MissingRegDocument] { await(service.upsertDirectors(regId, validDirectors)) }
     }
 
     "return a DBSuccess response when the company details are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+      when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Seq[Director]]()))
         .thenReturn(Future.successful(validDirectors))
 
-      val actual = await(service.upsertDirectors("AC123456", validDirectors))
+      val actual = await(service.upsertDirectors(regId, validDirectors))
       actual shouldBe validDirectors
     }
   }
@@ -216,26 +258,26 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getSICCodes" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Seq.empty))
 
-      val actual = await(service.getSICCodes("AC123456"))
+      val actual = await(service.getSICCodes(regId))
       actual shouldBe Seq.empty
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getSICCodes("AC123456")) }
+      intercept[RuntimeException] { await(service.getSICCodes(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveSICCodes(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(validSICCodes))
 
-      val actual = await(service.getSICCodes("AC123456"))
+      val actual = await(service.getSICCodes(regId))
       actual shouldBe validRegistration.sicCodes
     }
   }
@@ -243,18 +285,18 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling upsertSICCodes" should {
 
     "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]()))
-        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationRepository.upsertSICCodes(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Seq[SICCode]]()))
+        .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      intercept[MissingRegDocument] { await(service.upsertSICCodes("AC123456", validSICCodes)) }
+      intercept[MissingRegDocument] { await(service.upsertSICCodes(regId, validSICCodes)) }
     }
 
     "return a DBSuccess response when the company details are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]()))
+      when(mockRegistrationRepository.upsertSICCodes(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Seq[SICCode]]()))
         .thenReturn(Future.successful(validSICCodes))
 
-      val actual = await(service.upsertSICCodes("AC123456", validSICCodes))
+      val actual = await(service.upsertSICCodes(regId, validSICCodes))
       actual shouldBe validSICCodes
     }
   }
@@ -262,26 +304,26 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getPAYEContact" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrievePAYEContact(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrievePAYEContact(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(None))
 
-      val actual = await(service.getPAYEContact("AC123456"))
+      val actual = await(service.getPAYEContact(regId))
       actual shouldBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrievePAYEContact(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrievePAYEContact(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getPAYEContact("AC123456")) }
+      intercept[RuntimeException] { await(service.getPAYEContact(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrievePAYEContact(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrievePAYEContact(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Some(validPAYEContact)))
 
-      val actual = await(service.getPAYEContact("AC123456"))
+      val actual = await(service.getPAYEContact(regId))
       actual shouldBe validRegistration.payeContact
     }
   }
@@ -289,18 +331,18 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling upsertPAYEContact" should {
 
     "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
-        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationRepository.upsertPAYEContact(ArgumentMatchers.eq(regId), ArgumentMatchers.any[PAYEContact]()))
+        .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      intercept[MissingRegDocument] { await(service.upsertPAYEContact("AC123456", validPAYEContact)) }
+      intercept[MissingRegDocument] { await(service.upsertPAYEContact(regId, validPAYEContact)) }
     }
 
     "return a DBSuccess response when the paye contact are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+      when(mockRegistrationRepository.upsertPAYEContact(ArgumentMatchers.eq(regId), ArgumentMatchers.any[PAYEContact]()))
         .thenReturn(Future.successful(validPAYEContact))
 
-      val actual = await(service.upsertPAYEContact("AC123456", validPAYEContact))
+      val actual = await(service.upsertPAYEContact(regId, validPAYEContact))
       actual shouldBe validPAYEContact
     }
   }
@@ -308,26 +350,26 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getCompletionCapacity" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(None))
 
-      val actual = await(service.getCompletionCapacity("AC123456"))
+      val actual = await(service.getCompletionCapacity(regId))
       actual shouldBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getCompletionCapacity("AC123456")) }
+      intercept[RuntimeException] { await(service.getCompletionCapacity(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveCompletionCapacity(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Some("Director")))
 
-      val actual = await(service.getCompletionCapacity("AC123456"))
+      val actual = await(service.getCompletionCapacity(regId))
       actual shouldBe validRegistration.completionCapacity
     }
   }
@@ -335,18 +377,18 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling upsertCompletionCapacity" should {
 
     "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
-        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.eq(regId), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      intercept[MissingRegDocument] { await(service.upsertCompletionCapacity("AC123456", "Agent")) }
+      intercept[MissingRegDocument] { await(service.upsertCompletionCapacity(regId, "Agent")) }
     }
 
     "return a DBSuccess response when the paye contact are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+      when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.eq(regId), ArgumentMatchers.any()))
         .thenReturn(Future.successful("Agent"))
 
-      val actual = await(service.upsertCompletionCapacity("AC123456", "Agent"))
+      val actual = await(service.upsertCompletionCapacity(regId, "Agent"))
       actual shouldBe "Agent"
     }
   }
@@ -354,26 +396,26 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling getAcknowledgementReference" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(None))
 
-      val actual = await(service.getAcknowledgementReference("AC123456"))
+      val actual = await(service.getAcknowledgementReference(regId))
       actual shouldBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
       val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.failed(exception))
 
-      intercept[RuntimeException] { await(service.getAcknowledgementReference("AC123456")) }
+      intercept[RuntimeException] { await(service.getAcknowledgementReference(regId)) }
     }
 
     "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Some("tstBRPY")))
 
-      val actual = await(service.getAcknowledgementReference("AC123456"))
+      val actual = await(service.getAcknowledgementReference(regId))
       actual shouldBe Some("tstBRPY")
     }
   }
