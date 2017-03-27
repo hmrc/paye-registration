@@ -57,13 +57,12 @@ trait SubmissionSrv {
     } yield ackRef
   }
 
-  def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[String] = {
+  def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
-      ackRef        <- assertOrGenerateAcknowledgementReference(regId)
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
-      _             <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
-    } yield ackRef
+      status             <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
+    } yield status
   }
 
   private[services] def assertOrGenerateAcknowledgementReference(regId: String): Future[String]= {
@@ -137,7 +136,8 @@ trait SubmissionSrv {
         Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
-      crn = incorpStatusUpdate.crn.getOrElse("")
+      status = incorpStatusUpdate.status,
+      crn = incorpStatusUpdate.crn
     )
   }
 

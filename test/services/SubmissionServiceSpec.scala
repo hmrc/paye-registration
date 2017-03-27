@@ -223,7 +223,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
-    crn = "123456"
+    status = "accepted",
+    crn = Some("123456")
   )
 
   "Calling assertOrGenerateAcknowledgementReference" should {
@@ -375,7 +376,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
-      await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe "ackRef"
+      await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
     }
   }
 }

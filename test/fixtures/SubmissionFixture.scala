@@ -86,7 +86,8 @@ trait SubmissionFixture {
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
-    crn = "123456"
+    status = "accepted",
+    crn = Some("123456")
   )
 
   val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
