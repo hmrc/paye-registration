@@ -16,7 +16,9 @@
 
 package controllers
 
+import common.exceptions.SubmissionExceptions.InvalidRegistrationException
 import connectors.{AuthConnect, AuthConnector}
+import enums.PAYEStatus
 import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
 import play.api.mvc._
 import services._
@@ -24,7 +26,7 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import javax.inject.{Inject, Singleton}
 
-import common.exceptions.DBExceptions.MissingRegDocument
+import common.exceptions.DBExceptions.{MissingRegDocument, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -354,6 +356,14 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case Some(reg) => withJsonBody[IncorpStatusUpdate] { incorpStatusUpdateData =>
           submissionService.submitTopUpToDES(reg.registrationID, incorpStatusUpdateData) map (_ => Ok(Json.toJson(incorpStatusUpdateData.crn)))
         }
+      } recover {
+        case invalid: InvalidRegistrationException => InternalServerError(
+                s"Cannot process Incorporation Update for transaction ID '$transactionId' - attempting to submit Top Up when status is not '${PAYEStatus.held}'"
+              )
+        case mongo @ (_: UpdateFailed | _: MissingRegDocument) => InternalServerError(
+                s"Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream"
+              )
+        case e => throw e
       }
     }
   }
