@@ -16,10 +16,12 @@
 
 package controllers
 
+import java.time.LocalDate
+
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
-import models.incorporation.TopUp
+import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
 import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -53,17 +55,17 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     "return a Forbidden response if the user is not logged in" in new Setup {
       AuthorisationMocks.mockNotLoggedInOrAuthorised
 
-      val response = controller.newPAYERegistration("AC123456")(FakeRequest())
+      val response = controller.newPAYERegistration("AC123456")(FakeRequest().withBody(Json.toJson[String]("NNASD9789F")))
 
       status(response) shouldBe Status.FORBIDDEN
     }
 
     "return a PAYERegistration for a successful creation" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.eq(validAuthority.ids.internalId)))
+      when(mockRegistrationService.createNewPAYERegistration(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.contains("NNASD9789F"), ArgumentMatchers.eq(validAuthority.ids.internalId)))
         .thenReturn(Future.successful(validRegistration))
 
-      val response = controller.newPAYERegistration("AC123456")(FakeRequest())
+      val response = controller.newPAYERegistration("AC123456")(FakeRequest().withBody(Json.toJson[String]("NNASD9789F")))
 
       status(response) shouldBe Status.OK
     }
@@ -1073,62 +1075,6 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.getAcknowledgementReference("AC123456")(FakeRequest())
 
       status(response) shouldBe Status.OK
-    }
-  }
-
-  "Calling processIncorporationData" should {
-    val topUpData = TopUp(registrationId = "AC123456", crn = "123456")
-
-    "return a Forbidden response if the user is not logged in" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(None))
-
-      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(None))
-
-      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson[TopUp](topUpData)))
-
-      status(response) shouldBe Status.FORBIDDEN
-    }
-
-    "return a Forbidden response if the user is not authorised" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some(validAuthority)))
-
-      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
-
-      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson[TopUp](topUpData)))
-
-      status(response) shouldBe Status.FORBIDDEN
-    }
-
-    "return a Not Found response if there is no authored resource" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some(validAuthority)))
-
-      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(None))
-
-      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson[TopUp](topUpData)))
-
-      status(response) shouldBe Status.NOT_FOUND
-    }
-
-    "return a PAYERegistration for a successful query" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some(validAuthority)))
-
-      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
-
-      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful("tstAckRef"))
-
-      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson[TopUp](topUpData)))
-
-      status(response) shouldBe Status.OK
-      jsonBodyOf(await(response)) shouldBe Json.toJson(topUpData.crn)
     }
   }
 }

@@ -62,11 +62,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
     "return a 200 when the collection is dropped" in new Setup {
       val regID1 = "12345"
       val regID2 = "12346"
+      val transactionID1 = "NN1234"
+      val transactionID2 = "NN5678"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
-      await(repository.insert(PAYERegistration(regID2, intID, Some("testAckRef2"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, transactionID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID2, transactionID2, intID, Some("testAckRef2"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
 
       await(repository.count) shouldBe 2
 
@@ -81,11 +83,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
     "return a 200 when a specified registration has been removed" in new Setup {
       val regID1 = "12345"
       val regID2 = "12346"
+      val transactionID1 = "NN1234"
+      val transactionID2 = "NN5678"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
-      await(repository.insert(PAYERegistration(regID2, intID, Some("testAckRef2"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, transactionID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID2, transactionID2, intID, Some("testAckRef2"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
 
       await(repository.count) shouldBe 2
 
@@ -108,15 +112,17 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       // Doesn't seem to work! as expected - TODO SCRS-4976
       setupSimpleAuthMocks()
       val regID1 = "12345"
+      val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
       await(repository.count) shouldBe 1
 
       val jsonBody = Json.toJson[PAYERegistration](
         PAYERegistration(
           regID1,
+          transactionID,
           intID,
           Some("testAckRef"),
           timestamp,
@@ -178,10 +184,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID1 = "12345"
+      val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(PAYERegistration(regID1, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
       await(repository.count) shouldBe 1
 
       val response = client(s"/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue

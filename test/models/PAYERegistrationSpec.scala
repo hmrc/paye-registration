@@ -34,6 +34,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "registrationID":"12345",
+           |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
            |  "status":"draft",
@@ -122,6 +123,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
+        transactionID = "NNASD9789F",
         internalID = "09876",
         acknowledgementReference = None,
         formCreationTimestamp = "2016-05-31",
@@ -184,6 +186,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "registrationID":"12345",
+           |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
            |  "status":"draft",
@@ -194,6 +197,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
       val tstPAYERegistration = PAYERegistration(
         registrationID = "12345",
+        transactionID = "NNASD9789F",
         internalID = "09876",
         acknowledgementReference = None,
         formCreationTimestamp = "2016-05-31",
@@ -213,6 +217,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
+           |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
            |  "status" : "draft",
@@ -251,11 +256,55 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
       shouldHaveErrors(result, JsPath() \ "registrationID", Seq(ValidationError("error.path.missing")))
     }
 
+    "fail from json without transactionID" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "registrationID":"12345",
+           |  "internalID" : "09876",
+           |  "formCreationTimestamp":"2016-05-31",
+           |  "status" : "draft",
+           |  "companyDetails":
+           |    {
+           |      "companyName":"Test Company",
+           |      "tradingName":"Test Trading Name",
+           |      "roAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "country":"UK"
+           |      },
+           |      "ppobAddress": {
+           |        "line1":"15 St Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE4 1ST",
+           |        "country":"UK"
+           |      },
+           |      "businessContactDetails": {
+           |        "email":"email@test.co.uk",
+           |        "phoneNumber":"999",
+           |        "mobileNumber":"00000"
+           |      }
+           |    },
+           |  "directors": [],
+           |  "sicCodes": []
+           |}
+        """.stripMargin)
+
+      val result = Json.fromJson[PAYERegistration](json)
+      shouldHaveErrors(result, JsPath() \ "transactionID", Seq(ValidationError("error.path.missing")))
+    }
+
     "fail if the status isn't one of the pre defined PAYE statuses" in {
       val json = Json.parse(
         s"""
            |{
            |  "registrationID":"12345",
+           |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
            |  "status" : "INVALID_STATUS",

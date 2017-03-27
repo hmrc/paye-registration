@@ -24,7 +24,7 @@ import common.exceptions.SubmissionExceptions._
 import connectors.{DESConnect, DESConnector}
 import enums.PAYEStatus
 import models._
-import models.incorporation.TopUp
+import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
 import models.submission._
 import play.api.Logger
 import repositories._
@@ -57,10 +57,10 @@ trait SubmissionSrv {
     } yield ackRef
   }
 
-  def submitTopUpToDES(regId: String, topUpData: TopUp)(implicit hc: HeaderCarrier): Future[String] = {
+  def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
-      desSubmission <- buildTopUpDESSubmission(regId, topUpData)
+      desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
       _             <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
     } yield ackRef
@@ -95,18 +95,15 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def buildTopUpDESSubmission(regId: String, topUpData: TopUp): Future[TopUpDESSubmission] = {
+  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
-      case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, topUpData)
+      case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) =>
         Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: paye status is currently ${payeReg.status} for registrationId $regId")
         throw new InvalidRegistrationException(regId)
       case None =>
         Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: building des top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
-      case _ =>
-        Logger.warn(s"[SubmissionService] - [buildTopUpDESSubmission]: The registration for regId $regId has already been submitted")
-        throw new RegistrationAlreadySubmitted(regId)
     }
   }
 
@@ -134,13 +131,13 @@ trait SubmissionSrv {
     )
   }
 
-  private[services] def payeReg2TopUpDESSubmission(payeReg: PAYERegistration, topUpData: TopUp): TopUpDESSubmission = {
+  private[services] def payeReg2TopUpDESSubmission(payeReg: PAYERegistration, incorpStatusUpdate: IncorpStatusUpdate): TopUpDESSubmission = {
     TopUpDESSubmission(
       acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
         Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
-      crn = topUpData.crn
+      crn = incorpStatusUpdate.crn.getOrElse("")
     )
   }
 

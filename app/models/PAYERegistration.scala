@@ -21,6 +21,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{OFormat, __}
 
 case class PAYERegistration (registrationID: String,
+                             transactionID: String,
                              internalID : String,
                              acknowledgementReference: Option[String],
                              formCreationTimestamp: String,
@@ -36,6 +37,7 @@ object PAYERegistration extends {
 
   implicit val format: OFormat[PAYERegistration] = (
     (__ \ "registrationID").format[String] and
+    (__ \ "transactionID").format[String] and
     (__ \ "internalID").format[String] and
     (__ \ "acknowledgementReference").formatNullable[String] and
     (__ \ "formCreationTimestamp").format[String] and

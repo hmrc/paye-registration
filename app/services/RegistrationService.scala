@@ -35,9 +35,9 @@ trait RegistrationSrv {
 
   val registrationRepository : RegistrationRepository
 
-  def createNewPAYERegistration(regID: String, internalId : String): Future[PAYERegistration] = {
+  def createNewPAYERegistration(regID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
-      case None => registrationRepository.createNewRegistration(regID, internalId)
+      case None => registrationRepository.createNewRegistration(regID, transactionID, internalId)
       case Some(registration) =>
         Logger.info(s"Cannot create new registration for reg ID '$regID' as registration already exists")
         Future.successful(registration)
@@ -46,6 +46,10 @@ trait RegistrationSrv {
 
   def fetchPAYERegistration(regID: String): Future[Option[PAYERegistration]] = {
     registrationRepository.retrieveRegistration(regID)
+  }
+
+  def fetchPAYERegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
+    registrationRepository.retrieveRegistrationByTransactionID(transactionID)
   }
 
   def getCompanyDetails(regID: String): Future[Option[CompanyDetails]] = {

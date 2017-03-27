@@ -25,7 +25,7 @@ import auth._
 import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.MissingRegDocument
-import models.incorporation.TopUp
+import models.incorporation.IncorpStatusUpdate
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import repositories.RegistrationMongoRepository
@@ -48,13 +48,15 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val registrationService: RegistrationSrv
   val submissionService: SubmissionSrv
 
-  def newPAYERegistration(regID: String) : Action[AnyContent] = Action.async {
+  def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       authenticated {
         case NotLoggedIn => Future.successful(Forbidden)
         case LoggedIn(context) =>
-          registrationService.createNewPAYERegistration(regID, context.ids.internalId) map {
-            reg => Ok(Json.toJson(reg))
+          withJsonBody[String] { transactionID =>
+            registrationService.createNewPAYERegistration(regID, transactionID, context.ids.internalId) map {
+              reg => Ok(Json.toJson(reg))
+            }
           }
       }
   }
@@ -346,19 +348,12 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
 
   def processIncorporationData : Action[JsValue] = Action.async(parse.json) {
     implicit request => {
-      val regID = request.body.as[TopUp].registrationId
-      authorised(regID) {
-        case Authorised(_) =>
-          withJsonBody[TopUp] { topUpData =>
-            submissionService.submitTopUpToDES(regID, topUpData) map (_ => Ok(Json.toJson(topUpData.crn)))
-          }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [processIncorporationData] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [processIncorporationData] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      val transactionId = request.body.as[IncorpStatusUpdate].transactionId
+      registrationService.fetchPAYERegistrationByTransactionID(transactionId) flatMap {
+        case None => Future.successful(NotFound(s"No registration found for transaction id $transactionId"))
+        case Some(reg) => withJsonBody[IncorpStatusUpdate] { incorpStatusUpdateData =>
+          submissionService.submitTopUpToDES(reg.registrationID, incorpStatusUpdateData) map (_ => Ok(Json.toJson(incorpStatusUpdateData.crn)))
+        }
       }
     }
   }
