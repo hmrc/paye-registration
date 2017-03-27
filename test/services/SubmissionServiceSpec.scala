@@ -27,7 +27,7 @@ import fixtures.RegistrationFixture
 import models._
 import models.submission._
 import helpers.PAYERegSpec
-import models.incorporation.TopUp
+import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
@@ -160,6 +160,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val validRegistration = PAYERegistration(
     registrationID = "regID",
+    transactionID = "NNASD9789F",
     internalID = "internalID",
     status = PAYEStatus.draft,
     acknowledgementReference = Some("ackRef"),
@@ -174,6 +175,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val validRegistrationAfterPartialSubmission = PAYERegistration(
     registrationID = "regID",
+    transactionID = "NNASD9789F",
     internalID = "internalID",
     status = PAYEStatus.held,
     acknowledgementReference = Some("ackRef"),
@@ -188,6 +190,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val validRegistrationAfterTopUpSubmission = PAYERegistration(
     registrationID = "regID",
+    transactionID = "NNASD9789F",
     internalID = "internalID",
     status = PAYEStatus.submitted,
     acknowledgementReference = Some("ackRef"),
@@ -211,11 +214,17 @@ class SubmissionServiceSpec extends PAYERegSpec {
     completionCapacity = DESCompletionCapacity("director", None)
   )
 
-  val topUpData = TopUp(registrationId = "AC123456", crn = "123456")
+  val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
+                                              status = "accepted",
+                                              crn = Some("123456"),
+                                              incorporationDate = Some(LocalDate.of(2000, 12, 12)),
+                                              description = None,
+                                              timestamp = "2017-12-21T10:13:09.429Z")
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
-    crn = "123456"
+    status = "accepted",
+    crn = Some("123456")
   )
 
   "Calling assertOrGenerateAcknowledgementReference" should {
@@ -266,21 +275,21 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
-      intercept[MissingRegDocument](await(service.buildTopUpDESSubmission("regId", topUpData)))
+      intercept[MissingRegDocument](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is not yet submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
-      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", topUpData)))
+      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
-      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", topUpData)))
+      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
   }
 
@@ -322,10 +331,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Building a Top Up DES Submission" should {
     "throw the correct error when acknowledgement reference is not present" in new Setup{
-      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), topUpData))
+      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
     }
     "build a Top Up" in new Setup{
-      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, topUpData) shouldBe validTopUpDESSubmissionModel
+      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) shouldBe validTopUpDESSubmissionModel
     }
   }
 
@@ -367,7 +376,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
-      await(service.submitTopUpToDES("regID", topUpData)) shouldBe "ackRef"
+      await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
     }
   }
 }

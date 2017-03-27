@@ -20,7 +20,6 @@ import models._
 import java.time.LocalDate
 
 import enums.PAYEStatus
-import models.incorporation.TopUp
 
 trait RegistrationFixture {
 
@@ -79,6 +78,7 @@ trait RegistrationFixture {
 
   val validRegistration = PAYERegistration(
     registrationID = "AC187651",
+    transactionID = "NNASD9789F",
     internalID = "09876",
     acknowledgementReference = None,
     formCreationTimestamp = "20161021-16:00:00",

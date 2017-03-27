@@ -39,17 +39,17 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   "Calling newPAYERegistration" should {
 
     "return a DBDuplicate response when the database already has a PAYERegistration" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.successful(Some(validRegistration)))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(validRegistration.registrationID))).thenReturn(Future.successful(Some(validRegistration)))
 
-      val actual = await(service.createNewPAYERegistration(regId, validRegistration.internalID))
+      val actual = await(service.createNewPAYERegistration(validRegistration.registrationID, validRegistration.transactionID, validRegistration.internalID))
       actual shouldBe validRegistration
     }
 
     "return a DBSuccess response when the Registration is correctly inserted into the database" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId))).thenReturn(Future.successful(None))
-      when(mockRegistrationRepository.createNewRegistration(ArgumentMatchers.eq(regId), ArgumentMatchers.any[String]())).thenReturn(Future.successful(validRegistration))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationRepository.createNewRegistration(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.contains("NNASD9789F"), ArgumentMatchers.any[String]())).thenReturn(Future.successful(validRegistration))
 
-      val actual = await(service.createNewPAYERegistration(regId, "09876"))
+      val actual = await(service.createNewPAYERegistration("AC123456", "NNASD9789F", "09876"))
       actual shouldBe validRegistration
     }
   }

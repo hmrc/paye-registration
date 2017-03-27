@@ -55,12 +55,14 @@ object PartialDESSubmission {
 }
 
 case class TopUpDESSubmission(acknowledgementReference: String,
-                              crn: String) extends DESSubmission
+                              status: String,
+                              crn: Option[String]) extends DESSubmission
 
 object TopUpDESSubmission {
   implicit val writes: Writes[TopUpDESSubmission] =
     (
       (__ \ "acknowledgement-reference").write[String] and
-      (__ \ "crn").write[String]
+      (__ \ "status").write[String] and
+      (__ \ "crn").writeNullable[String]
     )(unlift(TopUpDESSubmission.unapply))
 }

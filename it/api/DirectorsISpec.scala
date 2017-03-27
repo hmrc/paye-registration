@@ -86,9 +86,10 @@ class DirectorsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
+      val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, validDirectors, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, validDirectors, None, None, Seq.empty))
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 200
@@ -99,9 +100,10 @@ class DirectorsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
+      val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
 
       val getResponse1 = client(s"/${regID}/directors").get.futureValue
       getResponse1.status shouldBe 404
@@ -120,9 +122,10 @@ class DirectorsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
+      val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 403
@@ -132,9 +135,10 @@ class DirectorsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
+      val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
 
       val response = client(s"/${regID}/directors")
         .patch(Json.toJson(validDirectors))

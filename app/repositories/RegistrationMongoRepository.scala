@@ -49,8 +49,9 @@ class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbCon
 }
 
 trait RegistrationRepository {
-  def createNewRegistration(registrationID: String, internalId : String): Future[PAYERegistration]
+  def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration]
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
+  def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]]
   def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value]
   def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value): Future[PAYEStatus.Value]
   def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]]
@@ -85,6 +86,12 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       name = Some("RegId"),
       unique = true,
       sparse = false
+    ),
+    Index(
+      key = Seq("transactionID" -> IndexType.Ascending),
+      name = Some("TxId"),
+      unique = true,
+      sparse = false
     )
   )
 
@@ -92,9 +99,13 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     "registrationID" -> BSONString(registrationID)
   )
 
-  override def createNewRegistration(registrationID: String, internalId : String): Future[PAYERegistration] = {
+  private[repositories] def transactionIDSelector(transactionID: String): BSONDocument = BSONDocument(
+    "transactionID" -> BSONString(transactionID)
+  )
+
+  override def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
-    val newReg = newRegistrationObject(registrationID, internalId)
+    val newReg = newRegistrationObject(registrationID, transactionID, internalId)
     collection.insert[PAYERegistration](newReg) map {
       res =>
         mongoTimer.stop()
@@ -118,6 +129,20 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         mongoTimer.stop()
         Logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(registrationID)
+    }
+  }
+
+  override def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val selector = transactionIDSelector(transactionID)
+    collection.find(selector).one[PAYERegistration] map { found =>
+      mongoTimer.stop()
+      found
+    } recover {
+      case e : Throwable =>
+        mongoTimer.stop()
+        Logger.error(s"Unable to retrieve PAYERegistration for transaction ID $transactionID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+        throw new RetrieveFailed(transactionID)
     }
   }
 
@@ -467,10 +492,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
-  private def newRegistrationObject(registrationID: String, internalId : String): PAYERegistration = {
+  private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
     val timeStamp = formatTimestamp(LocalDateTime.now())
     PAYERegistration(
       registrationID = registrationID,
+      transactionID = transactionID,
       internalID = internalId,
       acknowledgementReference = None,
       formCreationTimestamp = timeStamp,

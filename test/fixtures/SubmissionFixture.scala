@@ -19,7 +19,7 @@ package fixtures
 import java.time.LocalDate
 
 import models.Address
-import models.incorporation.TopUp
+import models.incorporation.IncorpStatusUpdate
 import models.submission._
 
 trait SubmissionFixture {
@@ -86,8 +86,14 @@ trait SubmissionFixture {
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
-    crn = "123456"
+    status = "accepted",
+    crn = Some("123456")
   )
 
-  val topUpData = TopUp(registrationId = "AC123456", crn = "123456")
+  val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
+                                     status = "accepted",
+                                     crn = Some("123456"),
+                                     incorporationDate = Some(LocalDate.of(2000, 12, 12)),
+                                     description = None,
+                                     timestamp = "2017-12-21T10:13:09.429Z")
 }
