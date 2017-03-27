@@ -85,6 +85,7 @@ trait SubmissionSrv {
   private[services] def buildPartialDesSubmission(regId: String): Future[PartialDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => payeReg2PartialDESSubmission(payeReg)
+      case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
       case None =>
         Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]:  building des top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
@@ -97,9 +98,9 @@ trait SubmissionSrv {
   private[services] def buildTopUpDESSubmission(regId: String, topUpData: TopUp): Future[TopUpDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, topUpData)
-      case Some(payeReg) if payeReg.status == PAYEStatus.draft =>
-        Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: ")
-        throw new RegistrationNotYetSubmitted(regId)
+      case Some(payeReg) =>
+        Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: paye status is currently ${payeReg.status} for registrationId $regId")
+        throw new InvalidRegistrationException(regId)
       case None =>
         Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: building des top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)

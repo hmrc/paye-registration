@@ -252,6 +252,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
       intercept[RegistrationAlreadySubmitted](await(service.buildPartialDesSubmission("regId")))
     }
+
+    "throw the correct exception when the registration is invalid" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
+
+      intercept[InvalidRegistrationException](await(service.buildPartialDesSubmission("regId")))
+    }
   }
 
   "Calling buildTopUpDESSubmission" should {
@@ -266,14 +273,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
-      intercept[RegistrationNotYetSubmitted](await(service.buildTopUpDESSubmission("regId", topUpData)))
+      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", topUpData)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
-      intercept[RegistrationAlreadySubmitted](await(service.buildTopUpDESSubmission("regId", topUpData)))
+      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", topUpData)))
     }
   }
 

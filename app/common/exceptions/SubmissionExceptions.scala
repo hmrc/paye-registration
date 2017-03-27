@@ -23,4 +23,5 @@ object SubmissionExceptions extends SubmissionExceptions
 trait SubmissionExceptions {
   class RegistrationAlreadySubmitted(regId: String) extends NoStackTrace
   class RegistrationNotYetSubmitted(regId: String) extends NoStackTrace
+  class InvalidRegistrationException(regId: String) extends NoStackTrace
 }
