@@ -61,7 +61,7 @@ trait SubmissionSrv {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
-      status             <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
+      status        <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
     } yield status
   }
 
