@@ -532,15 +532,25 @@ class RegistrationMongoRepositoryISpec
       val result = await(repository.cleardownRegistration(reg.registrationID))
       result shouldBe clearedRegistration
     }
+  }
 
-//    "throw a new AcknowledgementReferenceExistsException" in new Setup {
-//      await(setupCollection(repository, reg))
-//
-//      intercept[AcknowledgementReferenceExistsException](await(repository.saveAcknowledgementReference(reg.registrationID, "testAckRef")))
-//    }
-//
-//    "throw a MissingRegDocumentException" in new Setup {
-//      intercept[MissingRegDocument](await(repository.saveAcknowledgementReference("INVALID_REG_ID", "testAckRef")))
-//    }
+  "upsertEligibility" should {
+    "update the registration document with an eligibility block" when {
+      "given a registrationId and an eligibility model" in new Setup {
+        await(setupCollection(repository, reg.copy(eligibility = None)))
+
+        val testEligibility = Eligibility(false, false)
+
+        val result = await(repository.upsertEligibility("AC123456", Eligibility(false, false)))
+        result shouldBe testEligibility
+      }
+    }
+
+    "throw a MissingRegDocument exception" when {
+      "a registration document cannot be found against the given regId" in new Setup {
+        val testEligibility = Eligibility(false, false)
+        intercept[MissingRegDocument](await(repository.upsertEligibility("AC123456", Eligibility(false, false))))
+      }
+    }
   }
 }
