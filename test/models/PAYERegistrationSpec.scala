@@ -37,6 +37,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "eligibility" : {
+           |    "companyEligibility" : false,
+           |    "directorEligibility" : false
+           |  },
            |  "status":"draft",
            |  "completionCapacity":"Director",
            |  "companyDetails":
@@ -127,6 +131,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         acknowledgementReference = None,
         formCreationTimestamp = "2016-05-31",
+        eligibility = Some(Eligibility(
+          companyEligibility = false,
+          directorEligibility = false
+        )),
         status = PAYEStatus.draft,
         completionCapacity = Some("Director"),
         companyDetails = Some(
@@ -201,6 +209,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         acknowledgementReference = None,
         formCreationTimestamp = "2016-05-31",
+        eligibility = None,
         status = PAYEStatus.draft,
         completionCapacity = None,
         companyDetails = None,
@@ -220,6 +229,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "eligibility" : {
+           |    "companyEligibility" : false,
+           |    "directorEligibility" : false
+           |  },
            |  "status" : "draft",
            |  "companyDetails":
            |    {
@@ -263,6 +276,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "registrationID":"12345",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "eligibility" : {
+           |    "companyEligibility" : false,
+           |    "directorEligibility" : false
+           |  },
            |  "status" : "draft",
            |  "companyDetails":
            |    {
@@ -307,6 +324,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "eligibility" : {
+           |    "companyEligibility" : true,
+           |    "directorEligibility" : true
+           |  },
            |  "status" : "INVALID_STATUS",
            |  "companyDetails":
            |    {

@@ -33,8 +33,6 @@ class SequenceMongoRepositoryISpec
     await(repository.ensureIndexes)
   }
 
-
-
   override def afterAll() = new Setup {
     await(repository.drop)
   }

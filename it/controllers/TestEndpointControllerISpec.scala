@@ -67,8 +67,41 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, transactionID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
-      await(repository.insert(PAYERegistration(regID2, transactionID2, intID, Some("testAckRef2"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(
+        PAYERegistration(
+          regID1,
+          transactionID1,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      ))
+
+      await(repository.insert(
+        PAYERegistration(
+          regID2,
+          transactionID2,
+          intID,
+          Some("testAckRef2"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      ))
 
       await(repository.count) shouldBe 2
 
@@ -88,8 +121,41 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, transactionID1, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
-      await(repository.insert(PAYERegistration(regID2, transactionID2, intID, Some("testAckRef2"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(
+        PAYERegistration(
+          regID1,
+          transactionID1,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      ))
+
+      await(repository.insert(
+        PAYERegistration(
+          regID2,
+          transactionID2,
+          intID,
+          Some("testAckRef2"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      ))
 
       await(repository.count) shouldBe 2
 
@@ -116,7 +182,23 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(
+        PAYERegistration(
+          regID1,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      ))
       await(repository.count) shouldBe 1
 
       val jsonBody = Json.toJson[PAYERegistration](
@@ -126,6 +208,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           intID,
           Some("testAckRef"),
           timestamp,
+          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           Some("Director"),
           Some(
@@ -188,12 +271,27 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(PAYERegistration(regID1, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty)))
+      await(repository.insert(
+        PAYERegistration(
+          regID1,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      ))
       await(repository.count) shouldBe 1
 
       val response = client(s"/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue
       response.status shouldBe 400
-      println(response.body)
     }
   }
 }

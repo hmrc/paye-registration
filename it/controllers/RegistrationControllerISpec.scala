@@ -79,6 +79,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     timestamp,
+    Some(Eligibility(false, false)),
     PAYEStatus.draft,
     Some("Director"),
     Some(
@@ -134,6 +135,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     timestamp,
+    eligibility = Some(Eligibility(false, false)),
     PAYEStatus.held,
     None,
     None,
@@ -149,6 +151,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     timestamp,
+    eligibility = Some(Eligibility(false, false)),
     PAYEStatus.submitted,
     None,
     None,

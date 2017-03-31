@@ -18,7 +18,7 @@ package api
 
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Director, Name, PAYERegistration}
+import models.{Director, Eligibility, Name, PAYERegistration}
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -89,7 +89,23 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, validDirectors, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          validDirectors,
+          None,
+          None,
+          Seq.empty
+        )
+      )
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 200
@@ -103,7 +119,23 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      )
 
       val getResponse1 = client(s"/${regID}/directors").get.futureValue
       getResponse1.status shouldBe 404
@@ -125,7 +157,23 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        ))
+
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 403
@@ -138,7 +186,23 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      )
 
       val response = client(s"/${regID}/directors")
         .patch(Json.toJson(validDirectors))

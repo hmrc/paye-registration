@@ -500,6 +500,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       internalID = internalId,
       acknowledgementReference = None,
       formCreationTimestamp = timeStamp,
+      eligibility = None,
       status = PAYEStatus.draft,
       completionCapacity = None,
       companyDetails = None,
