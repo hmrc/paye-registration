@@ -18,6 +18,8 @@ package controllers
 
 import java.time.LocalDate
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
@@ -40,7 +42,9 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
   val mockSubmissionService = mock[SubmissionService]
   val mockRepo = mock[RegistrationMongoRepository]
 
-  implicit val materializer = fakeApplication.materializer
+  implicit val system = ActorSystem("PR")
+  implicit val materializer = ActorMaterializer()
+
 
   class Setup {
     val controller = new RegistrationCtrl {
@@ -49,6 +53,10 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       override val registrationService = mockRegistrationService
       override val submissionService = mockSubmissionService
     }
+  }
+
+  override def beforeEach() {
+    reset(mockAuthConnector)
   }
 
   "Calling newPAYERegistration" should {

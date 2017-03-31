@@ -40,6 +40,11 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
   }
 
+  override def beforeEach() {
+    reset(mockAuthConnector)
+    reset(mockRepo)
+  }
+
   "Teardown registration collection" should {
     "return a 200 response for success" in new Setup {
       when(mockRepo.dropCollection).thenReturn(Future.successful(()))

@@ -22,7 +22,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-trait PAYERegSpec extends UnitSpec with WithFakeApplication with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
+trait PAYERegSpec extends UnitSpec with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
   override def beforeEach() {
     reset(mockRegistrationRepository)
     reset(mockSequenceRepository)

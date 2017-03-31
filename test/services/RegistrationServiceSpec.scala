@@ -34,6 +34,10 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
+  override def beforeEach() {
+    reset(mockRegistrationRepository)
+  }
+
   val regId = "AB123456"
 
   "Calling newPAYERegistration" should {

@@ -48,6 +48,12 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
   }
 
+  override def beforeEach() {
+    reset(mockRegistrationRepository)
+    reset(mockSequenceRepository)
+    reset(mockDESConnector)
+  }
+
 
   val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
