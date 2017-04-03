@@ -19,7 +19,7 @@ package controllers
 import common.exceptions.SubmissionExceptions.InvalidRegistrationException
 import connectors.{AuthConnect, AuthConnector}
 import enums.PAYEStatus
-import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
+import models._
 import play.api.mvc._
 import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -366,5 +366,44 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case e => throw e
       }
     }
+  }
+
+  def getEligibility(regId: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regId) {
+        case Authorised(_) =>
+          registrationService.getEligibility(regId) map {
+            case Some(eligibility) => Ok(Json.toJson(eligibility))
+            case None => NotFound
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getEligibility] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getEligibility] User logged in but not authorised for resource $regId")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def updateEligibility(regId: String): Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      authorised(regId) {
+        case Authorised(_) =>
+          withJsonBody[Eligibility] { json =>
+            registrationService.updateEligibility(regId, json) map { updated =>
+              Ok(Json.toJson(updated))
+            } recover {
+              case missing : MissingRegDocument => NotFound
+            }
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getEligibility] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getEligibility] User logged in but not authorised for resource $regId")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
   }
 }

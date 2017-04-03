@@ -320,5 +320,4 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
     }
   }
-
 }

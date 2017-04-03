@@ -534,6 +534,32 @@ class RegistrationMongoRepositoryISpec
     }
   }
 
+  "getEligibility" should {
+    "return an eligibility model" when {
+      "there is a valid reg document matching the given reg id" in new Setup {
+        await(setupCollection(repository, reg))
+
+        val result = await(repository.getEligibility(reg.registrationID))
+        result shouldBe Some(Eligibility(false, false))
+      }
+    }
+
+    "return None" when {
+      "there is a valid reg document matching the given reg id but no eligibility section" in new Setup {
+        await(setupCollection(repository, reg.copy(eligibility = None)))
+
+        val result = await(repository.getEligibility(reg.registrationID))
+        result shouldBe None
+      }
+    }
+
+    "throw a missing document exception" when {
+      "there is a no reg doc against the given reg id" in new Setup {
+        intercept[MissingRegDocument](await(repository.getEligibility("testRegId")))
+      }
+    }
+  }
+
   "upsertEligibility" should {
     "update the registration document with an eligibility block" when {
       "given a registrationId and an eligibility model" in new Setup {

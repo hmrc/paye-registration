@@ -19,7 +19,7 @@ package services
 import javax.inject.{Inject, Singleton}
 
 import enums.PAYEStatus
-import models.{CompanyDetails, Director, Employment, PAYEContact, PAYERegistration, SICCode}
+import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import play.api.Logger
 
@@ -114,5 +114,13 @@ trait RegistrationSrv {
 
   def getAcknowledgementReference(regID: String) : Future[Option[String]] = {
     registrationRepository.retrieveAcknowledgementReference(regID)
+  }
+
+  def getEligibility(regID: String): Future[Option[Eligibility]] = {
+    registrationRepository.getEligibility(regID)
+  }
+
+  def updateEligibility(regID: String, eligibility: Eligibility): Future[Eligibility] = {
+    registrationRepository.upsertEligibility(regID, eligibility)
   }
 }
