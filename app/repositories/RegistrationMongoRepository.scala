@@ -189,7 +189,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         mongoTimer.stop()
         regDoc.eligibility
       case None =>
-        Logger.error(s"[RegistrationMongoRepository] - [retrieveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        Logger.error(s"[RegistrationMongoRepository] - [getEligibility]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -211,7 +211,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         }
       case None =>
         mongoTimer.stop()
-        Logger.error(s"[RegistrationMongoRepository] - [retrieveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        Logger.error(s"[RegistrationMongoRepository] - [upsertEligibility]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
     }
   }
