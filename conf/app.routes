@@ -26,3 +26,6 @@ PUT        /:regID/submit-registration        controllers.RegistrationController
 POST       /incorporation-data                controllers.RegistrationController.processIncorporationData
 
 GET        /:regID/acknowledgement-reference  controllers.RegistrationController.getAcknowledgementReference(regID)
+
+GET        /:regID/eligibility                controllers.RegistrationController.getEligibility(regID)
+PATCH      /:regID/eligibility                controllers.RegistrationController.updateEligibility(regID)

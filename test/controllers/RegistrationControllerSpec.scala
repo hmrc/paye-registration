@@ -24,7 +24,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
-import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
+import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
@@ -1083,6 +1083,144 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.getAcknowledgementReference("AC123456")(FakeRequest())
 
       status(response) shouldBe Status.OK
+    }
+  }
+
+  "getEligibility" should {
+    "return an OK" when {
+      "the users eligibility has been found" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+        when(mockRegistrationService.getEligibility("AC123456"))
+          .thenReturn(Future.successful(Some(Eligibility(false, false))))
+
+        val result = controller.getEligibility("AC123456")(FakeRequest())
+        status(result) shouldBe Status.OK
+      }
+    }
+
+    "return a NOT FOUND" when {
+      "the eligibility cannot be found" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+        when(mockRegistrationService.getEligibility("AC123456"))
+          .thenReturn(Future.successful(None))
+
+        val result = controller.getEligibility("AC123456")(FakeRequest())
+        status(result) shouldBe Status.NOT_FOUND
+      }
+
+      "the auth resource cannot be found" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(None))
+
+        val result = controller.getEligibility("AC123456")(FakeRequest())
+        status(result) shouldBe Status.NOT_FOUND
+      }
+    }
+
+    "return FORBIDDEN" when {
+      "NotLoggedInOrAuthorised" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(None))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(None))
+
+        val result = controller.getEligibility("AC123456")(FakeRequest())
+        status(result) shouldBe Status.FORBIDDEN
+      }
+
+      "NotAuthorised on the requested resource" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some("AC123456" -> "invalid")))
+
+        val result = controller.getEligibility("AC123456")(FakeRequest())
+        status(result) shouldBe Status.FORBIDDEN
+      }
+    }
+  }
+
+  "updateEligibility" should {
+    "return an OK" when {
+      "the eligibility has been updated" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+        when(mockRegistrationService.updateEligibility(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Eligibility(false, false)))
+
+        val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
+        status(result) shouldBe Status.OK
+      }
+    }
+
+    "return a NOT FOUND" when {
+      "the auth resource cannot be found" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(None))
+
+        val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
+        status(result) shouldBe Status.NOT_FOUND
+      }
+
+      "the reg document cannot found against the reg id" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+        when(mockRegistrationService.updateEligibility(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+        val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
+        status(result) shouldBe Status.NOT_FOUND
+      }
+    }
+
+    "return FORBIDDEN" when {
+      "NotLoggedInOrAuthorised" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(None))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(None))
+
+        val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
+        status(result) shouldBe Status.FORBIDDEN
+      }
+
+      "NotAuthorised on the requested resource" in new Setup {
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some(validAuthority)))
+
+        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+          .thenReturn(Future.successful(Some("AC123456" -> "invalid")))
+
+        val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
+        status(result) shouldBe Status.FORBIDDEN
+      }
     }
   }
 }

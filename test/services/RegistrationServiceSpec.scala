@@ -20,7 +20,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
-import models.{CompanyDetails, Director, Employment, PAYEContact, SICCode}
+import models._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.Mockito._
 
@@ -424,4 +424,37 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
+  "getEligibility" should {
+    "return an optional eligibility model" when {
+      "given a valid registration Id" in new Setup {
+        when(mockRegistrationRepository.getEligibility(ArgumentMatchers.any[String]()))
+          .thenReturn(Future.successful(Some(Eligibility(false, false))))
+
+        val result = await(service.getEligibility("testRegId"))
+        result shouldBe Some(Eligibility(false, false))
+      }
+    }
+
+    "return None" when {
+      "given a valid registration Id but the eligibility section is not defined" in new Setup {
+        when(mockRegistrationRepository.getEligibility(ArgumentMatchers.any[String]()))
+          .thenReturn(Future.successful(None))
+
+        val result = await(service.getEligibility("testRegId"))
+        result shouldBe None
+      }
+    }
+  }
+
+  "updateEligibility" should {
+    "return an eligibility model" when {
+      "given a valid regId and an eligibility model" in new Setup {
+        when(mockRegistrationRepository.upsertEligibility(ArgumentMatchers.any[String](), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Eligibility(false, false)))
+
+        val result = await(service.updateEligibility("testRegId", Eligibility(false, false)))
+        result shouldBe Eligibility(false, false)
+      }
+    }
+  }
 }

@@ -18,7 +18,7 @@ package api
 
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Address, DigitalContactDetails, PAYEContact, PAYEContactDetails, PAYERegistration}
+import models._
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -77,7 +77,23 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, Some(validPAYEContact), None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          Some(validPAYEContact),
+          None,
+          Seq.empty
+        )
+      )
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 200
@@ -91,7 +107,23 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      )
 
       val getResponse1 = client(s"/${regID}/contact-correspond-paye").get.futureValue
       getResponse1.status shouldBe 404
@@ -113,7 +145,23 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      )
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 403
@@ -126,7 +174,23 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(PAYERegistration(regID, transactionID, intID, Some("testAckRef"), timestamp, PAYEStatus.draft, None, None, Seq.empty, None, None, Seq.empty))
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty
+        )
+      )
 
       val response = client(s"/${regID}/contact-correspond-paye")
         .patch(Json.toJson(validPAYEContact))

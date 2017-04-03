@@ -168,6 +168,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
     registrationID = "regID",
     transactionID = "NNASD9789F",
     internalID = "internalID",
+    eligibility = Some(Eligibility(
+      companyEligibility = false,
+      directorEligibility = false
+    )),
     status = PAYEStatus.draft,
     acknowledgementReference = Some("ackRef"),
     formCreationTimestamp = "the year of the rooster",
@@ -183,6 +187,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     registrationID = "regID",
     transactionID = "NNASD9789F",
     internalID = "internalID",
+    eligibility = None,
     status = PAYEStatus.held,
     acknowledgementReference = Some("ackRef"),
     formCreationTimestamp = "the year of the rooster",
@@ -198,6 +203,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     registrationID = "regID",
     transactionID = "NNASD9789F",
     internalID = "internalID",
+    eligibility = None,
     status = PAYEStatus.submitted,
     acknowledgementReference = Some("ackRef"),
     formCreationTimestamp = "the year of the rooster",

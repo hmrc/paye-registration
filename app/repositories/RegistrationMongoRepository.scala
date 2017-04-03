@@ -53,6 +53,8 @@ trait RegistrationRepository {
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]]
   def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value]
+  def getEligibility(registrationID: String): Future[Option[Eligibility]]
+  def upsertEligibility(registrationID: String, eligibility: Eligibility): Future[Eligibility]
   def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value): Future[PAYEStatus.Value]
   def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]]
   def saveAcknowledgementReference(registrationID: String, ackRef: String): Future[String]
@@ -178,7 +180,40 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
+  }
 
+  override def getEligibility(registrationID: String): Future[Option[Eligibility]] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) map {
+      case Some(regDoc) =>
+        mongoTimer.stop()
+        regDoc.eligibility
+      case None =>
+        Logger.error(s"[RegistrationMongoRepository] - [getEligibility]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        mongoTimer.stop()
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
+  override def upsertEligibility(registrationID: String, eligibility: Eligibility): Future[Eligibility] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) flatMap {
+      case Some(registrationDocument) =>
+        collection.update(registrationIDSelector(registrationID), registrationDocument.copy(eligibility = Some(eligibility))) map {
+          _ =>
+            mongoTimer.stop()
+            eligibility
+        } recover {
+          case e =>
+            Logger.error(s"Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
+            mongoTimer.stop()
+            throw new UpdateFailed(registrationID, "Registration status")
+        }
+      case None =>
+        mongoTimer.stop()
+        Logger.error(s"[RegistrationMongoRepository] - [upsertEligibility]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        throw new MissingRegDocument(registrationID)
+    }
   }
 
   override def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]] = {
@@ -500,6 +535,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       internalID = internalId,
       acknowledgementReference = None,
       formCreationTimestamp = timeStamp,
+      eligibility = None,
       status = PAYEStatus.draft,
       completionCapacity = None,
       companyDetails = None,
