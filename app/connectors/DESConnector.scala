@@ -22,7 +22,7 @@ import config.WSHttp
 import models.submission.DESSubmission
 import play.api.Logger
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpPost, HttpResponse}
+import uk.gov.hmrc.play.http._
 import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
@@ -38,7 +38,7 @@ class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESCon
   val http = WSHttp
 }
 
-trait DESConnect {
+trait DESConnect extends HttpErrorFunctions {
 
   val desUrl: String
   val desURI: String
@@ -49,17 +49,33 @@ trait DESConnect {
   def http: HttpPost
   val featureSwitch: PAYEFeatureSwitches
 
+  private[connectors] def customDESRead(http: String, url: String, response: HttpResponse): HttpResponse = {
+    response.status match {
+      case 409 =>
+        Logger.warn("[DESConnect] - [customDESRead] Received 409 from DES - converting to 200")
+        HttpResponse(200, Some(response.json), response.allHeaders, Option(response.body))
+      case 499 =>
+        throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
+      case status if is4xx(status) =>
+        if(status == 400) {Logger.error("PAYE - 400 response returned from DES")} //used in alerting - DO NOT CHANGE ERROR TEXT
+        throw new Upstream4xxResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.allHeaders)
+      case _ => handleResponse(http, url)(response)
+    }
+  }
+
+  implicit val httpRds = new HttpReads[HttpResponse] {
+    def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
+  }
+
   def submitToDES(submission: DESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    if(useDESStubFeature) {
-      http.POST[DESSubmission, HttpResponse](s"$desStubUrl/$desStubURI", submission) map { resp =>
-        Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
-        resp
-      }
-    } else {
-      http.POST[DESSubmission, HttpResponse](s"$desUrl/$desURI", submission) map { resp =>
-        Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
-        resp
-      }
+    val url = useDESStubFeature match {
+      case true  => s"$desStubUrl/$desStubURI"
+      case false => s"$desUrl/$desURI"
+    }
+
+    http.POST[DESSubmission, HttpResponse](url, submission) map { resp =>
+      Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
+      resp
     }
   }
 
