@@ -81,6 +81,7 @@ trait RegistrationFixture {
     transactionID = "NNASD9789F",
     internalID = "09876",
     acknowledgementReference = None,
+    registrationConfirmation = None,
     formCreationTimestamp = "20161021-16:00:00",
     eligibility = Some(Eligibility(
       companyEligibility = false,

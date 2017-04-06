@@ -70,6 +70,7 @@ trait RegistrationRepository {
   def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
   def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
   def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
+  def updateRegistrationEmpRef(registrationID: String, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
 }
@@ -480,6 +481,27 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
+  override def updateRegistrationEmpRef(registrationID: String, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) flatMap {
+      case Some(regDoc) =>
+        collection.update(registrationIDSelector(registrationID), regDoc.copy(registrationConfirmation = Some(etmpRefNotification))) map {
+          res =>
+            mongoTimer.stop()
+            etmpRefNotification
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: ${e.getMessage}")
+            mongoTimer.stop()
+            throw new UpdateFailed(registrationID, "Completion Capacity")
+        }
+      case None =>
+        Logger.warn(s"Unable to update emp ref for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        mongoTimer.stop()
+        throw new MissingRegDocument(registrationID)
+    }
+  }
+
   override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(id) map {
@@ -534,6 +556,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       transactionID = transactionID,
       internalID = internalId,
       acknowledgementReference = None,
+      registrationConfirmation = None,
       formCreationTimestamp = timeStamp,
       eligibility = None,
       status = PAYEStatus.draft,
