@@ -29,7 +29,7 @@ import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.{MissingRegDocument, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
