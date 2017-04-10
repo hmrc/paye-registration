@@ -22,7 +22,6 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import models.incorporation.IncorpStatusUpdate
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.WS
@@ -52,7 +51,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .build
+    .build()
 
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/$path").withFollowRedirects(false)
 
@@ -199,7 +198,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         """.stripMargin)
 
   "submit-registration" should {
-    "return a 200 with an ack ref" in new Setup {
+    "return a 200 with an ack ref when DES submission completes successfully" in new Setup {
 
 
       setupSimpleAuthMocks()
@@ -221,7 +220,86 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
     }
 
-    "return a 500 status when registration is already submitted" in new Setup {
+    "return a 200 status with an ackRef when DES returns a 409" in new Setup {
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody("""{"acknowledgement_reference" : "testAckRef"}""")
+        )
+      )
+
+      await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson("testAckRef")
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+    }
+
+    "return a 502 status when DES returns a 499" in new Setup {
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(499)
+        )
+      )
+
+      await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 502
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+    }
+
+    "return a 502 status when DES returns a 5xx" in new Setup {
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(533)
+        )
+      )
+
+      await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 502
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+    }
+
+    "return a 400 status when DES returns a 4xx" in new Setup {
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(433)
+        )
+      )
+
+      await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 400
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+    }
+
+    "return a 500 status when registration has already been cleared post-submission in mongo" in new Setup {
       setupSimpleAuthMocks()
 
       await(repository.insert(processedSubmission))
