@@ -581,9 +581,21 @@ class RegistrationMongoRepositoryISpec
   }
 
   "updateRegistrationEmpRef" should {
-    "throw a missing reg document exception" when {
-      "a reg doc cannot be found against the given regId" in new Setup {
+    "return the emp ref notif" when {
+      "the reg doc has been updated" in new Setup {
+        await(setupCollection(repository, reg.copy(registrationConfirmation = None)))
 
+        val testEmpRefNotif = EmpRefNotification(Some("testEmpRef"), "2017-01-01T21:00:00Z", "testStatus")
+
+        val result = await(repository.updateRegistrationEmpRef("testAckRef", testEmpRefNotif))
+        result shouldBe testEmpRefNotif
+      }
+    }
+
+    "throw a missing document exception" when {
+      "the reg doc cannot be found against the given regId" in new Setup {
+        val testEmpRefNotif = EmpRefNotification(Some("testEmpRef"), "2017-01-01T21:00:00Z", "testStatus")
+        intercept[MissingRegDocument](await(repository.updateRegistrationEmpRef("AC123456", testEmpRefNotif)))
       }
     }
   }

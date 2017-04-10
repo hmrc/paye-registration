@@ -335,4 +335,33 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
     }
   }
+
+  "updateRegistrationWithEmpRef" should {
+    "return an OK with a Json body" when {
+      "the emp ref has been updated" in new Setup {
+        setupSimpleAuthMocks()
+
+        await(repository.insert(processedSubmission.copy(registrationConfirmation = None)))
+
+        val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
+
+        val response = client("registration-processed-confirmation?ackRef=testAckRef").post(testNotification).futureValue
+        response.status shouldBe 200
+        response.json shouldBe testNotification
+      }
+    }
+
+    "return a not found" when {
+      "a matching reg doc cannot be found" in new Setup {
+        setupSimpleAuthMocks()
+
+        val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
+
+        val response = client("registration-processed-confirmation?ackRef=invalidackref").post(testNotification).futureValue
+        response.status shouldBe 404
+
+        await(repository.retrieveRegistrationByAckRef("invalidackref")) shouldBe None
+      }
+    }
+  }
 }
