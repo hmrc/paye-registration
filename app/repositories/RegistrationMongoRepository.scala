@@ -50,8 +50,10 @@ class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbCon
 
 trait RegistrationRepository {
   def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration]
+  //TODO: Rename to something more generic and remove the above two retrieve functions
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
   def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]]
+  def retrieveRegistrationByAckRef(ackRef: String): Future[Option[PAYERegistration]]
   def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value]
   def getEligibility(registrationID: String): Future[Option[Eligibility]]
   def upsertEligibility(registrationID: String, eligibility: Eligibility): Future[Eligibility]
@@ -70,6 +72,7 @@ trait RegistrationRepository {
   def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
   def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
   def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
+  def updateRegistrationEmpRef(ackRef: String, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
 }
@@ -90,6 +93,12 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       sparse = false
     ),
     Index(
+      key = Seq("acknowledgementReference" -> IndexType.Ascending),
+      name = Some("AckRefIndex"),
+      unique = false,
+      sparse = false
+    ),
+    Index(
       key = Seq("transactionID" -> IndexType.Ascending),
       name = Some("TxId"),
       unique = true,
@@ -103,6 +112,10 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   private[repositories] def transactionIDSelector(transactionID: String): BSONDocument = BSONDocument(
     "transactionID" -> BSONString(transactionID)
+  )
+
+  private[repositories] def ackRefSelector(ackRef: String): BSONDocument = BSONDocument(
+    "acknowledgementReference" -> BSONString(ackRef)
   )
 
   override def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
@@ -145,6 +158,20 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         mongoTimer.stop()
         Logger.error(s"Unable to retrieve PAYERegistration for transaction ID $transactionID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(transactionID)
+    }
+  }
+
+  def retrieveRegistrationByAckRef(ackRef: String): Future[Option[PAYERegistration]] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val selector = ackRefSelector(ackRef)
+    collection.find(selector).one[PAYERegistration] map { found =>
+      mongoTimer.stop()
+      found
+    } recover {
+      case e : Throwable =>
+        mongoTimer.stop()
+        Logger.error(s"Unable to retrieve PAYERegistration for ack ref $ackRef, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+        throw new RetrieveFailed(ackRef)
     }
   }
 
@@ -480,6 +507,27 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
+  override def updateRegistrationEmpRef(ackRef: String, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistrationByAckRef(ackRef) flatMap {
+      case Some(regDoc) =>
+        collection.update(ackRefSelector(ackRef), regDoc.copy(registrationConfirmation = Some(etmpRefNotification))) map {
+          res =>
+            mongoTimer.stop()
+            etmpRefNotification
+        } recover {
+          case e =>
+            Logger.warn(s"Unable to update emp ref for ack ref $ackRef, Error: ${e.getMessage}")
+            mongoTimer.stop()
+            throw new UpdateFailed(ackRef, "Acknowledgement reference")
+        }
+      case None =>
+        Logger.warn(s"Unable to update emp ref for ack ref $ackRef, Error: Couldn't retrieve an existing registration with that ack ref")
+        mongoTimer.stop()
+        throw new MissingRegDocument(ackRef)
+    }
+  }
+
   override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(id) map {
@@ -534,6 +582,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       transactionID = transactionID,
       internalID = internalId,
       acknowledgementReference = None,
+      registrationConfirmation = None,
       formCreationTimestamp = timeStamp,
       eligibility = None,
       status = PAYEStatus.draft,

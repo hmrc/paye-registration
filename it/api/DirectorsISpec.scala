@@ -18,7 +18,7 @@ package api
 
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Director, Eligibility, Name, PAYERegistration}
+import models._
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -95,6 +95,11 @@ class DirectorsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          Some(EmpRefNotification(
+            Some("testEmpRef"),
+            "2017-01-01T12:00:00Z",
+            "testStatus"
+          )),
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,
@@ -125,6 +130,11 @@ class DirectorsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          Some(EmpRefNotification(
+            Some("testEmpRef"),
+            "2017-01-01T12:00:00Z",
+            "testStatus"
+          )),
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,
@@ -163,6 +173,11 @@ class DirectorsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          Some(EmpRefNotification(
+            Some("testEmpRef"),
+            "2017-01-01T12:00:00Z",
+            "testStatus"
+          )),
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,
@@ -192,6 +207,11 @@ class DirectorsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          Some(EmpRefNotification(
+            Some("testEmpRef"),
+            "2017-01-01T12:00:00Z",
+            "testStatus"
+          )),
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,

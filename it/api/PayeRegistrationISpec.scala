@@ -17,7 +17,7 @@ package api
 
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, PAYERegistration}
+import models.{Eligibility, EmpRefNotification, PAYERegistration}
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
@@ -76,6 +76,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some(ackRef),
+          None,
           timestamp,
           None,
           PAYEStatus.draft,
@@ -115,6 +116,11 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          Some(EmpRefNotification(
+            Some("testEmpRef"),
+            "2017-01-01T12:00:00Z",
+            "testStatus"
+          )),
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,

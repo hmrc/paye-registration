@@ -1,31 +1,33 @@
 # microservice specific routes
 
-GET        /:regID                            controllers.RegistrationController.getPAYERegistration(regID)
+GET        /:regID                                  controllers.RegistrationController.getPAYERegistration(regID)
 
-PATCH      /:regID/new                        controllers.RegistrationController.newPAYERegistration(regID)
+PATCH      /:regID/new                              controllers.RegistrationController.newPAYERegistration(regID)
 
-GET        /:regID/company-details            controllers.RegistrationController.getCompanyDetails(regID)
-PATCH      /:regID/company-details            controllers.RegistrationController.upsertCompanyDetails(regID)
+GET        /:regID/company-details                  controllers.RegistrationController.getCompanyDetails(regID)
+PATCH      /:regID/company-details                  controllers.RegistrationController.upsertCompanyDetails(regID)
 
-GET        /:regID/employment                 controllers.RegistrationController.getEmployment(regID)
-PATCH      /:regID/employment                 controllers.RegistrationController.upsertEmployment(regID)
+GET        /:regID/employment                       controllers.RegistrationController.getEmployment(regID)
+PATCH      /:regID/employment                       controllers.RegistrationController.upsertEmployment(regID)
 
-GET        /:regID/directors                  controllers.RegistrationController.getDirectors(regID)
-PATCH      /:regID/directors                  controllers.RegistrationController.upsertDirectors(regID)
+GET        /:regID/directors                        controllers.RegistrationController.getDirectors(regID)
+PATCH      /:regID/directors                        controllers.RegistrationController.upsertDirectors(regID)
 
-GET        /:regID/sic-codes                  controllers.RegistrationController.getSICCodes(regID)
-PATCH      /:regID/sic-codes                  controllers.RegistrationController.upsertSICCodes(regID)
+GET        /:regID/sic-codes                        controllers.RegistrationController.getSICCodes(regID)
+PATCH      /:regID/sic-codes                        controllers.RegistrationController.upsertSICCodes(regID)
 
-GET        /:regID/contact-correspond-paye    controllers.RegistrationController.getPAYEContact(regID)
-PATCH      /:regID/contact-correspond-paye    controllers.RegistrationController.upsertPAYEContact(regID)
+GET        /:regID/contact-correspond-paye          controllers.RegistrationController.getPAYEContact(regID)
+PATCH      /:regID/contact-correspond-paye          controllers.RegistrationController.upsertPAYEContact(regID)
 
-GET        /:regID/capacity                   controllers.RegistrationController.getCompletionCapacity(regID)
-PATCH      /:regID/capacity                   controllers.RegistrationController.upsertCompletionCapacity(regID)
+GET        /:regID/capacity                         controllers.RegistrationController.getCompletionCapacity(regID)
+PATCH      /:regID/capacity                         controllers.RegistrationController.upsertCompletionCapacity(regID)
 
-PUT        /:regID/submit-registration        controllers.RegistrationController.submitPAYERegistration(regID)
-POST       /incorporation-data                controllers.RegistrationController.processIncorporationData
+PUT        /:regID/submit-registration              controllers.RegistrationController.submitPAYERegistration(regID)
+POST       /incorporation-data                      controllers.RegistrationController.processIncorporationData
 
-GET        /:regID/acknowledgement-reference  controllers.RegistrationController.getAcknowledgementReference(regID)
+GET        /:regID/acknowledgement-reference        controllers.RegistrationController.getAcknowledgementReference(regID)
 
-GET        /:regID/eligibility                controllers.RegistrationController.getEligibility(regID)
-PATCH      /:regID/eligibility                controllers.RegistrationController.updateEligibility(regID)
+GET        /:regID/eligibility                      controllers.RegistrationController.getEligibility(regID)
+PATCH      /:regID/eligibility                      controllers.RegistrationController.updateEligibility(regID)
+
+POST       /registration-processed-confirmation     controllers.RegistrationController.updateRegistrationWithEmpRef(ackref: String)

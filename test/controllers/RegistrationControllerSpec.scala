@@ -1223,4 +1223,19 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       }
     }
   }
+
+  "updateRegistrationWithEmpRef" should {
+    "return an OK" when {
+      "the reg doc has been updated with the emp ref" in new Setup {
+        val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
+        val request = FakeRequest().withBody(Json.toJson(testNotification))
+
+        when(mockRegistrationService.updateEmpRef(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(testNotification))
+
+        val result = controller.updateRegistrationWithEmpRef("testAckRef")(request)
+        status(result) shouldBe Status.OK
+      }
+    }
+  }
 }

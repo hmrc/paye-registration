@@ -37,6 +37,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
+           |  "registrationConfirmation" : {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
+           |  },
            |  "eligibility" : {
            |    "companyEligibility" : false,
            |    "directorEligibility" : false
@@ -135,6 +140,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
           companyEligibility = false,
           directorEligibility = false
         )),
+        registrationConfirmation = Some(EmpRefNotification(
+          empRef = Some("testEmpRef"),
+          timestamp = "2017-01-01T12:00:00Z",
+          status = "testStatus"
+        )),
         status = PAYEStatus.draft,
         completionCapacity = Some("Director"),
         companyDetails = Some(
@@ -180,7 +190,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
           )
         ),
         employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),
-        Seq(
+        sicCodes = Seq(
           SICCode(code = Some("666"), description = Some("demolition")),
           SICCode(code = None, description = Some("laundring"))
         )
@@ -208,6 +218,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         transactionID = "NNASD9789F",
         internalID = "09876",
         acknowledgementReference = None,
+        registrationConfirmation = None,
         formCreationTimestamp = "2016-05-31",
         eligibility = None,
         status = PAYEStatus.draft,
@@ -232,6 +243,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "eligibility" : {
            |    "companyEligibility" : false,
            |    "directorEligibility" : false
+           |  },
+           |  "registrationConfirmation": {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
            |  },
            |  "status" : "draft",
            |  "companyDetails":
@@ -280,6 +296,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    "companyEligibility" : false,
            |    "directorEligibility" : false
            |  },
+           |  "registrationConfirmation": {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
+           |  },
            |  "status" : "draft",
            |  "companyDetails":
            |    {
@@ -327,6 +348,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "eligibility" : {
            |    "companyEligibility" : true,
            |    "directorEligibility" : true
+           |  },
+           |  "registrationConfirmation": {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
            |  },
            |  "status" : "INVALID_STATUS",
            |  "companyDetails":
