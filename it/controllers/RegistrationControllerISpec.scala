@@ -345,7 +345,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = client("registration-processed-confirmation?ackRef=testAckRef").post(testNotification).futureValue
+        val response = client("registration-processed-confirmation?ackref=testAckRef").post(testNotification).futureValue
         response.status shouldBe 200
         response.json shouldBe testNotification
       }
@@ -357,7 +357,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = client("registration-processed-confirmation?ackRef=invalidackref").post(testNotification).futureValue
+        val response = client("registration-processed-confirmation?ackref=invalidackref").post(testNotification).futureValue
         response.status shouldBe 404
 
         await(repository.retrieveRegistrationByAckRef("invalidackref")) shouldBe None

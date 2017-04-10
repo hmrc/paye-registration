@@ -30,4 +30,4 @@ GET        /:regID/acknowledgement-reference        controllers.RegistrationCont
 GET        /:regID/eligibility                      controllers.RegistrationController.getEligibility(regID)
 PATCH      /:regID/eligibility                      controllers.RegistrationController.updateEligibility(regID)
 
-POST       /registration-processed-confirmation     controllers.RegistrationController.updateRegistrationWithEmpRef(ackRef: String)
+POST       /registration-processed-confirmation     controllers.RegistrationController.updateRegistrationWithEmpRef(ackref: String)

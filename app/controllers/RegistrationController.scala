@@ -407,10 +407,10 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       }
   }
 
-  def updateRegistrationWithEmpRef(ackRef: String): Action[JsValue] = Action.async(parse.json) {
+  def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[EmpRefNotification] { notification =>
-        registrationService.updateEmpRef(ackRef, notification) map { updated =>
+        registrationService.updateEmpRef(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))
         } recover {
           case missing: MissingRegDocument => NotFound
