@@ -38,17 +38,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @Singleton
 class RegistrationController @Inject()(injAuthConnector: AuthConnector,
                                        injRegistrationService: RegistrationService,
-                                       injSubmissionService: SubmissionService) extends RegistrationCtrl {
+                                       injSubmissionService: SubmissionService,
+                                       injNotificationService: NotificationService) extends RegistrationCtrl {
   val auth: AuthConnect = injAuthConnector
   val registrationService: RegistrationService = injRegistrationService
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
   val submissionService: SubmissionService = injSubmissionService
+  val notificationService: NotificationService = injNotificationService
 }
 
 trait RegistrationCtrl extends BaseController with Authenticated with Authorisation[String] {
 
   val registrationService: RegistrationSrv
   val submissionService: SubmissionSrv
+  val notificationService: NotificationService
 
   def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
@@ -410,7 +413,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[EmpRefNotification] { notification =>
-        registrationService.updateEmpRef(ackref, notification) map { updated =>
+        notificationService.processNotification(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))
         } recover {
           case missing: MissingRegDocument => NotFound

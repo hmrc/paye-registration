@@ -457,18 +457,4 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       }
     }
   }
-
-  "updateEmpRef" should {
-    "return a notification model" when {
-      "the reg doc has been successfully updated with the emp ref" in new Setup {
-        val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
-
-        when(mockRegistrationRepository.updateRegistrationEmpRef(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(testNotification))
-
-        val result = await(service.updateEmpRef("testRegId", testNotification))
-        result shouldBe testNotification
-      }
-    }
-  }
 }
