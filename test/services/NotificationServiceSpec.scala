@@ -37,12 +37,12 @@ class NotificationServiceSpec extends PAYERegSpec {
     "return submitted" when {
       "the status is 04" in new Setup {
         val result = testService.getNewApplicationStatus("04")
-        result shouldBe PAYEStatus.submitted
+        result shouldBe PAYEStatus.acknowledged
       }
 
       "the status is 05" in new Setup {
         val result = testService.getNewApplicationStatus("05")
-        result shouldBe PAYEStatus.submitted
+        result shouldBe PAYEStatus.acknowledged
       }
     }
 

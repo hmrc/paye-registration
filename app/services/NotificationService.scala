@@ -46,10 +46,10 @@ trait NotificationSrv {
     status match {
       case APPROVED =>
         Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $APPROVED - Application approved")
-        PAYEStatus.submitted
+        PAYEStatus.acknowledged
       case APPROVED_WITH_CONDITIONS =>
         Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $APPROVED_WITH_CONDITIONS - Application approved but with conditions")
-        PAYEStatus.submitted
+        PAYEStatus.acknowledged
       case REJECTED =>
         Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED - Application has been rejected")
         PAYEStatus.rejected
