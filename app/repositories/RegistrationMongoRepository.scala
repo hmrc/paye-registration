@@ -72,7 +72,7 @@ trait RegistrationRepository {
   def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
   def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
   def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
-  def updateRegistrationEmpRef(ackRef: String, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
+  def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
 }
@@ -507,11 +507,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
-  override def updateRegistrationEmpRef(ackRef: String, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
+  override def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistrationByAckRef(ackRef) flatMap {
       case Some(regDoc) =>
-        collection.update(ackRefSelector(ackRef), regDoc.copy(registrationConfirmation = Some(etmpRefNotification))) map {
+        collection.update(ackRefSelector(ackRef), regDoc.copy(registrationConfirmation = Some(etmpRefNotification), status = applicationStatus)) map {
           res =>
             mongoTimer.stop()
             etmpRefNotification

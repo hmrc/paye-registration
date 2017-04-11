@@ -123,8 +123,4 @@ trait RegistrationSrv {
   def updateEligibility(regID: String, eligibility: Eligibility): Future[Eligibility] = {
     registrationRepository.upsertEligibility(regID, eligibility)
   }
-
-  def updateEmpRef(ackRef: String, notification: EmpRefNotification): Future[EmpRefNotification] = {
-    registrationRepository.updateRegistrationEmpRef(ackRef, notification)
-  }
 }

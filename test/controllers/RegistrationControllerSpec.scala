@@ -41,6 +41,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
   val mockRegistrationService = mock[RegistrationService]
   val mockSubmissionService = mock[SubmissionService]
   val mockRepo = mock[RegistrationMongoRepository]
+  val mockNotificationService = mock[NotificationService]
 
   implicit val system = ActorSystem("PR")
   implicit val materializer = ActorMaterializer()
@@ -52,6 +53,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       override val resourceConn = mockRepo
       override val registrationService = mockRegistrationService
       override val submissionService = mockSubmissionService
+      override val notificationService = mockNotificationService
     }
   }
 
@@ -1230,7 +1232,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
         val request = FakeRequest().withBody(Json.toJson(testNotification))
 
-        when(mockRegistrationService.updateEmpRef(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockNotificationService.processNotification(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testNotification))
 
         val result = controller.updateRegistrationWithEmpRef("testAckRef")(request)
