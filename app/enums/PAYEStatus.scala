@@ -23,6 +23,7 @@ object PAYEStatus extends Enumeration {
   val held = Value
   val submitted = Value
   val invalid = Value
+  val acknowledged = Value
   val rejected = Value
 
   implicit val format = Format(Reads.enumNameReads(PAYEStatus), Writes.enumNameWrites)
