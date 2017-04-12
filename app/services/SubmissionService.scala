@@ -24,7 +24,7 @@ import common.exceptions.SubmissionExceptions._
 import connectors.{DESConnect, DESConnector}
 import enums.PAYEStatus
 import models._
-import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
+import models.incorporation.IncorpStatusUpdate
 import models.submission._
 import play.api.Logger
 import repositories._
@@ -81,7 +81,7 @@ trait SubmissionSrv {
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildPartialDesSubmission(regId: String): Future[PartialDESSubmission] = {
+  private[services] def buildPartialDesSubmission(regId: String): Future[DESSubmissionModel] = {
     registrationRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => payeReg2PartialDESSubmission(payeReg)
       case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
@@ -113,13 +113,14 @@ trait SubmissionSrv {
     } yield status
   }
 
-  private[services] def payeReg2PartialDESSubmission(payeReg: PAYERegistration): PartialDESSubmission = {
+  private[services] def payeReg2PartialDESSubmission(payeReg: PAYERegistration): DESSubmissionModel = {
     val companyDetails = payeReg.companyDetails.getOrElse{throw new CompanyDetailsNotDefinedException}
-    PartialDESSubmission(
+    DESSubmissionModel(
       acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
         Logger.warn(s"[SubmissionService] - [payeReg2PartialDESSubmission]: Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
+      crn = None,
       company = buildDESCompanyDetails(companyDetails),
       directors = buildDESDirectors(payeReg.directors),
       payeContact = buildDESPAYEContact(payeReg.payeContact),

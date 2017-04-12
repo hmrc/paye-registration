@@ -25,25 +25,27 @@ object DESSubmission {
   implicit val writes: Writes[DESSubmission] =
     new Writes[DESSubmission] {
       override def writes(o: DESSubmission): JsValue = o match {
-        case s: PartialDESSubmission => PartialDESSubmission.writes.writes(s)
+        case s: DESSubmissionModel => DESSubmissionModel.writes.writes(s)
         case s: TopUpDESSubmission => TopUpDESSubmission.writes.writes(s)
       }
     }
 }
 
-case class PartialDESSubmission (acknowledgementReference: String,
-                                 company: DESCompanyDetails,
-                                 directors: Seq[DESDirector],
-                                 payeContact: DESPAYEContact,
-                                 businessContact: DESBusinessContact,
-                                 sicCodes: Seq[DESSICCode],
-                                 employment: DESEmployment,
-                                 completionCapacity: DESCompletionCapacity) extends DESSubmission
+case class DESSubmissionModel(acknowledgementReference: String,
+                              crn: Option[String],
+                              company: DESCompanyDetails,
+                              directors: Seq[DESDirector],
+                              payeContact: DESPAYEContact,
+                              businessContact: DESBusinessContact,
+                              sicCodes: Seq[DESSICCode],
+                              employment: DESEmployment,
+                              completionCapacity: DESCompletionCapacity) extends DESSubmission
 
-object PartialDESSubmission {
-  implicit val writes: Writes[PartialDESSubmission] =
+object DESSubmissionModel {
+  implicit val writes: Writes[DESSubmissionModel] =
     (
       (__ \ "acknowledgement-reference").write[String] and
+      (__ \ "crn").writeNullable[String] and
       (__ \ "company").write[DESCompanyDetails] and
       (__ \ "directors").write[Seq[DESDirector]] and
       (__ \ "paye-contact").write[DESPAYEContact] and
@@ -51,7 +53,7 @@ object PartialDESSubmission {
       (__ \ "sic-codes").write[Seq[DESSICCode]] and
       (__ \ "employment").write[DESEmployment] and
       (__ \ "completion-capacity").write[DESCompletionCapacity]
-      )(unlift(PartialDESSubmission.unapply))
+      )(unlift(DESSubmissionModel.unapply))
 }
 
 case class TopUpDESSubmission(acknowledgementReference: String,

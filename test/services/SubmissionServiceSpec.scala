@@ -226,8 +226,9 @@ class SubmissionServiceSpec extends PAYERegSpec {
     sicCodes = Seq.empty
   )
 
-  val validPartialDESSubmissionModel = PartialDESSubmission(
+  val validPartialDESSubmissionModel = DESSubmissionModel(
     acknowledgementReference = "ackRef",
+    crn = None,
     company = validDESCompanyDetails,
     directors = validDESDirectors,
     payeContact = validDESPAYEContact,
