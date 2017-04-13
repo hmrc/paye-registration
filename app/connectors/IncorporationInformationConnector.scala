@@ -19,6 +19,7 @@ package connectors
 import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
+import models.incorporation.{IncorpStatusUpdate, IncorporationStatus}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.http.Status.{ACCEPTED, OK}
 import uk.gov.hmrc.play.config.ServicesConfig
@@ -47,11 +48,11 @@ trait IncorporationInformationConnect {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
   }
 
-  def registerInterest(transactionId: String, regime: String, subscriber: String, callbackUrl: String)(implicit hc: HeaderCarrier): Future[Option[JsValue]] = {
+  def checkStatus(transactionId: String, regime: String, subscriber: String, callbackUrl: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> callbackUrl))
     http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
       resp.status match {
-        case OK => Some(resp.json)
+        case OK => Some(resp.json.as[IncorpStatusUpdate])
         case ACCEPTED => None
         case _ => throw new IncorporationInformationResponseException(s"Calling II on ${constructIncorporationInfoUri(transactionId, regime, subscriber)} returned a ${resp.status}")
       }

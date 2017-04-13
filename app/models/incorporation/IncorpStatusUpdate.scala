@@ -31,11 +31,11 @@ case class IncorpStatusUpdate(transactionId: String,
 
 object IncorpStatusUpdate extends IncorporationValidator {
   implicit val reads: Reads[IncorpStatusUpdate] = (
-      (__ \ "IncorpSubscriptionKey" \ "transactionId").read[String] and
-      (__ \ "IncorpStatusEvent" \ "status").read[String] and
-      (__ \ "IncorpStatusEvent" \ "crn").readNullable[String](crnValidator) and
-      (__ \ "IncorpStatusEvent" \ "incorporationDate").readNullable[LocalDate] and
-      (__ \ "IncorpStatusEvent" \ "description").readNullable[String] and
-      (__ \ "IncorpStatusEvent" \ "timestamp").read[String]
-      )(IncorpStatusUpdate.apply _)
+    (__ \\ "IncorpSubscriptionKey" \ "transactionId").read[String] and
+    (__ \\ "IncorpStatusEvent"     \ "status").read[String] and
+    (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](crnValidator) and
+    (__ \\ "IncorpStatusEvent"     \ "incorporationDate").readNullable[LocalDate] and
+    (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
+    (__ \\ "IncorpStatusEvent"     \ "timestamp").read[String]
+  )(IncorpStatusUpdate.apply _)
 }

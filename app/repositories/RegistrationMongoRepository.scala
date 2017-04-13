@@ -72,6 +72,7 @@ trait RegistrationRepository {
   def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
   def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
   def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
+  def retrieveTransactionId(registrationID: String): Future[String]
   def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
@@ -525,6 +526,18 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         Logger.warn(s"Unable to update emp ref for ack ref $ackRef, Error: Couldn't retrieve an existing registration with that ack ref")
         mongoTimer.stop()
         throw new MissingRegDocument(ackRef)
+    }
+  }
+
+  override def retrieveTransactionId(registrationID: String): Future[String] = {
+    val mongoTimer = metricsService.mongoResponseTimer.time()
+    retrieveRegistration(registrationID) map {
+      case Some(regDoc) =>
+        mongoTimer.stop()
+        regDoc.transactionID
+      case None =>
+        mongoTimer.stop()
+        throw new MissingRegDocument(registrationID)
     }
   }
 
