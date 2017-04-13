@@ -20,20 +20,20 @@ import enums.PAYEStatus
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{OFormat, __}
 
-case class PAYERegistration (registrationID: String,
-                             transactionID: String,
-                             internalID : String,
-                             acknowledgementReference: Option[String],
-                             registrationConfirmation: Option[EmpRefNotification],
-                             formCreationTimestamp: String,
-                             eligibility: Option[Eligibility],
-                             status: PAYEStatus.Value,
-                             completionCapacity: Option[String],
-                             companyDetails: Option[CompanyDetails],
-                             directors: Seq[Director],
-                             payeContact: Option[PAYEContact],
-                             employment: Option[Employment],
-                             sicCodes: Seq[SICCode])
+case class PAYERegistration(registrationID: String,
+                            transactionID: String,
+                            internalID : String,
+                            acknowledgementReference: Option[String],
+                            registrationConfirmation: Option[EmpRefNotification],
+                            formCreationTimestamp: String,
+                            eligibility: Option[Eligibility],
+                            status: PAYEStatus.Value,
+                            completionCapacity: Option[String],
+                            companyDetails: Option[CompanyDetails],
+                            directors: Seq[Director],
+                            payeContact: Option[PAYEContact],
+                            employment: Option[Employment],
+                            sicCodes: Seq[SICCode])
 
 object PAYERegistration extends {
 

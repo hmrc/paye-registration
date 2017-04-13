@@ -18,11 +18,43 @@ package connectors
 
 import javax.inject.{Inject, Singleton}
 
-@Singleton
-class IncorporationInformationConnector @Inject()() extends IncorporationInformationConnect {
+import config.WSHttp
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.http.Status.{ACCEPTED, OK}
+import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.http.ws.WSPost
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.control.NoStackTrace
+
+class IncorporationInformationResponseException(msg: String) extends NoStackTrace {
+  override def getMessage: String = msg
+}
+
+@Singleton
+class IncorporationInformationConnector @Inject()() extends IncorporationInformationConnect with ServicesConfig {
+  val http = WSHttp
+  val incorporationInformationUri: String = baseUrl("incorporation-information")
 }
 
 trait IncorporationInformationConnect {
+  val http: WSPost
+  val incorporationInformationUri: String
 
+  private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String = {
+    s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
+  }
+
+  def registerInterest(transactionId: String, regime: String, subscriber: String, callbackUrl: String)(implicit hc: HeaderCarrier): Future[Option[JsValue]] = {
+    val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> callbackUrl))
+    http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
+      resp.status match {
+        case OK => Some(resp.json)
+        case ACCEPTED => None
+        case _ => throw new IncorporationInformationResponseException(s"Calling II on ${constructIncorporationInfoUri(transactionId, regime, subscriber)} returned a ${resp.status}")
+      }
+    }
+  }
 }
