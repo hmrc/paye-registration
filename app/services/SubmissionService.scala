@@ -60,16 +60,17 @@ trait SubmissionSrv {
   private val SUBSCRIBER = "SCRS"
   private val CALLBACK_URL = controllers.routes.RegistrationController.processIncorporationData().url
 
-  def submitToDes(regId: String)(implicit hc: HeaderCarrier): Future[Int] = {
+  def submitToDes(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
     for {
-      ackRef    <- assertOrGenerateAcknowledgementReference(regId)
-      incStatus <- checkIncorpStatus(regId)
-      submission <- incStatus match {
-        case Some(incorporationStatus) => buildADesSubmission(regId, Some(incorporationStatus))
-        case None => buildADesSubmission(regId, None)
-      }
+      ackRef      <- assertOrGenerateAcknowledgementReference(regId)
+      incStatus   <- checkIncorpStatus(regId)
+      submission  <- buildADesSubmission(regId, incStatus)
       desResponse <- desConnector.submitToDES(submission)
-    } yield desResponse.status
+      _           <- incStatus match {
+        case Some(_) => processSuccessfulDESResponse(regId, PAYEStatus.submitted)
+        case None    => processSuccessfulDESResponse(regId, PAYEStatus.held)
+      }
+    } yield ackRef
   }
 
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
@@ -80,7 +81,7 @@ trait SubmissionSrv {
     } yield status
   }
 
-  def checkIncorpStatus(regId: String): Future[Option[IncorpStatusUpdate]] = {
+  def checkIncorpStatus(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     for {
       txId      <- registrationRepository.retrieveTransactionId(regId)
       incStatus <- incorporationInformationConnector.checkStatus(txId, REGIME, SUBSCRIBER, CALLBACK_URL)
@@ -90,7 +91,7 @@ trait SubmissionSrv {
   def buildADesSubmission(regId: String, incorporationStatus: Option[IncorpStatusUpdate]): Future[DESSubmission  ] = {
     incorporationStatus match {
       case Some(IncorpStatusUpdate(_, "accepted", Some(_), _, _, _))  => buildPartialOrFullDesSubmission(regId, incorporationStatus)
-      case Some(IncorpStatusUpdate(_, "rejected", _, _, _, _))        => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
+      case Some(_)                                                    => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
       case None                                                       => buildPartialOrFullDesSubmission(regId, None)
     }
   }

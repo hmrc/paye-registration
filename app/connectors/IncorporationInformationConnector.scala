@@ -19,7 +19,7 @@ package connectors
 import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
-import models.incorporation.{IncorpStatusUpdate, IncorporationStatus}
+import models.incorporation.IncorpStatusUpdate
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.http.Status.{ACCEPTED, OK}
 import uk.gov.hmrc.play.config.ServicesConfig

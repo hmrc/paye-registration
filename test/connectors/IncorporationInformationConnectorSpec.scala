@@ -17,6 +17,7 @@
 package connectors
 
 import helpers.PAYERegSpec
+import models.incorporation.IncorpStatusUpdate
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.Helpers.{ACCEPTED, INTERNAL_SERVER_ERROR, OK}
 import uk.gov.hmrc.play.http.ws.WSHttp
@@ -44,7 +45,8 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       |     },
       |     "IncorpStatusEvent" : {
       |       "status" : "accepted",
-      |       "crn" : "1234567890"
+      |       "crn" : "OC123456",
+      |       "timestamp" : "2016-01-01T12:00:00Z"
       |     }
       |   }
       |}
@@ -69,8 +71,8 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
     }
   }
 
-  "registerInterest" should {
-    "return a JsValue" when {
+  "checkStatus" should {
+    "return an IncorpStatusUpdate" when {
       "interest has been registered and there is already information about the given incorporation" in new Setup {
         val testResponse = new HttpResponse {
           override def status: Int = OK
@@ -80,8 +82,8 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
 
-        val result = await(testConnector.registerInterest("testTxId", "paye", "SCRS", "/test/call-back"))
-        result shouldBe Some(testJson)
+        val result = await(testConnector.checkStatus("testTxId", "paye", "SCRS", "/test/call-back"))
+        result shouldBe Some(Json.fromJson[IncorpStatusUpdate](testJson).get)
       }
     }
 
@@ -94,7 +96,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
 
-        val result = await(testConnector.registerInterest("testTxId", "paye", "SCRS", "/test/call-back"))
+        val result = await(testConnector.checkStatus("testTxId", "paye", "SCRS", "/test/call-back"))
         result shouldBe None
       }
     }
@@ -108,7 +110,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
 
-        val result = intercept[IncorporationInformationResponseException](await(testConnector.registerInterest("testTxId", "paye", "SCRS", "/test/call-back")))
+        val result = intercept[IncorporationInformationResponseException](await(testConnector.checkStatus("testTxId", "paye", "SCRS", "/test/call-back")))
         result.getMessage shouldBe s"Calling II on /incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS returned a 500"
       }
     }

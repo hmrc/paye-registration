@@ -29,19 +29,21 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
-           |  "IncorpSubscriptionKey" : {
-           |    "subscriber" : "SCRS",
-           |    "discriminator" : "PAYE",
-           |    "transactionId" : "NNASD9789F"
-           |  },
-           |  "SCRSIncorpSubscription" : {
+           |  "SCRSIncorpStatus": {
+           |    "IncorpSubscriptionKey" : {
+           |      "subscriber" : "SCRS",
+           |      "discriminator" : "PAYE",
+           |      "transactionId" : "NNASD9789F"
+           |    },
+           |    "SCRSIncorpSubscription" : {
            |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
-           |  },
-           |  "IncorpStatusEvent": {
+           |    },
+           |    "IncorpStatusEvent": {
            |      "status": "accepted",
            |      "crn":"1",
            |      "incorporationDate":"2000-12-12",
            |      "timestamp" : "2017-12-21T10:13:09.429Z"
+           |    }
            |  }
            |}
         """.stripMargin)
@@ -62,24 +64,26 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
-           |  "IncorpSubscriptionKey" : {
-           |    "subscriber" : "SCRS",
-           |    "discriminator" : "PAYE",
-           |    "transactionId" : "NNASD9789F"
-           |  },
-           |  "SCRSIncorpSubscription" : {
+           |  "SCRSIncorpStatus": {
+           |    "IncorpSubscriptionKey" : {
+           |      "subscriber" : "SCRS",
+           |      "discriminator" : "PAYE",
+           |      "transactionId" : "NNASD9789F"
+           |    },
+           |    "SCRSIncorpSubscription" : {
            |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
-           |  },
-           |  "IncorpStatusEvent": {
+           |    },
+           |    "IncorpStatusEvent": {
            |      "crn":"1",
            |      "incorporationDate":"2000-12-12",
            |      "timestamp" : "2017-12-21T10:13:09.429Z"
+           |    }
            |  }
            |}
         """.stripMargin)
 
       val result = Json.fromJson[IncorpStatusUpdate](json)
-      shouldHaveErrors(result, JsPath() \ "IncorpStatusEvent" \ "status", Seq(ValidationError("error.path.missing")))
+      shouldHaveErrors(result, JsPath() \\ "IncorpStatusEvent" \ "status", Seq(ValidationError("error.path.missing")))
     }
   }
 }

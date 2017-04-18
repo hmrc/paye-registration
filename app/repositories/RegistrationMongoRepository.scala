@@ -595,6 +595,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       transactionID = transactionID,
       internalID = internalId,
       acknowledgementReference = None,
+      crn = None,
       registrationConfirmation = None,
       formCreationTimestamp = timeStamp,
       eligibility = None,
