@@ -55,6 +55,7 @@ object RegistrationAuditEvent {
   val JOURNEY_ID = "journeyId"
   val ACK_REF = "acknowledgementReference"
   val DES_SUBMISSION_STATE = "desSubmissionState"
+  val DES_SUBMISSION = "desSubmission"
   val PATH = "path"
 
   def buildTags(transactionName: String, tagSet: TagSet)(implicit hc: HeaderCarrier, optReq: Option[Request[AnyContent]]) = {

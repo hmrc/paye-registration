@@ -35,16 +35,21 @@ class DesSubmissionEventSpec extends UnitSpec with RegistrationFixture {
           |   "externalId": "$externalId",
           |   "authProviderId": "$authProviderId",
           |   "journeyId": "${validRegistration.registrationID}",
-          |   "desSubmissionState": "$desSubmissionState"
+          |   "desSubmissionState": "$desSubmissionState",
+          |   "desSubmission": ${Json.toJson(validRegistration).as[JsObject]}
           |}
         """.stripMargin)
 
       val testModel = DesSubmissionAuditEventDetail(
         externalId,
         authProviderId,
+        validRegistration.registrationID,
         desSubmissionState,
         Json.toJson(validRegistration).as[JsObject]
       )
+
+      print(Json.toJson(testModel))
+
       Json.toJson(testModel)(DesSubmissionAuditEventDetail.writes) shouldBe expected
     }
   }

@@ -21,12 +21,13 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 case class DesSubmissionAuditEventDetail(externalId: String,
                                          authProviderId: String,
+                                         journeyId: String,
                                          desSubmissionState: String,
                                          jsSubmission: JsObject)
 
 object DesSubmissionAuditEventDetail {
 
-  import RegistrationAuditEvent.{EXTERNAL_ID, AUTH_PROVIDER_ID, JOURNEY_ID, DES_SUBMISSION_STATE}
+  import RegistrationAuditEvent.{EXTERNAL_ID, AUTH_PROVIDER_ID, JOURNEY_ID, DES_SUBMISSION_STATE, DES_SUBMISSION}
 
   implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
@@ -35,7 +36,8 @@ object DesSubmissionAuditEventDetail {
         EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> (detail.jsSubmission \ "registrationID").as[JsString],
-        DES_SUBMISSION_STATE -> detail.desSubmissionState
+        DES_SUBMISSION_STATE -> detail.desSubmissionState,
+        DES_SUBMISSION -> detail.jsSubmission
       )
     }
   }
