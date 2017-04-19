@@ -27,7 +27,7 @@ private object AppDependencies {
   private val scalaTestVersion_it = "3.0.1"
   private val scalaTestPlusVersion = "2.0.0"
   private val pegdownVersion = "1.6.0"
-  private val cryptoVersion = "4.2.0"
+  private val cryptoVersion = "4.4.0"
 
   private val playReactivemongoVersion = "5.2.0"
 
