@@ -32,10 +32,10 @@ object DESCompanyDetails {
 
   implicit val writes: Writes[DESCompanyDetails] =
     (
-      (__ \ "company-name").write[String] and
-        (__ \ "trading-name").writeNullable[String] and
-        (__ \ "ppob").write[Address] and
-        (__ \ "reg-address").write[Address]
+      (__ \ "companyName").write[String] and
+        (__ \ "tradingName").writeNullable[String] and
+        (__ \ "ppobAddress").write[Address] and
+        (__ \ "registeredOfficeAddress").write[Address]
       )(unlift(DESCompanyDetails.unapply))
 }
 
@@ -51,7 +51,7 @@ object DESDirector {
     (
       (__ \ "forename").writeNullable[String] and
         (__ \ "surname").writeNullable[String] and
-        (__ \ "other-forenames").writeNullable[String] and
+        (__ \ "otherForenames").writeNullable[String] and
         (__ \ "title").writeNullable[String] and
         (__ \ "nino").writeNullable[String]
       )(unlift(DESDirector.unapply))
@@ -70,7 +70,7 @@ object DESPAYEContact {
         (__ \ "email").writeNullable[String] and
         (__ \ "tel").writeNullable[String] and
         (__ \ "mobile").writeNullable[String] and
-        (__ \ "correspondence-address").write[Address]
+        (__ \ "correspondenceAddress").write[Address]
       )(unlift(DESPAYEContact.unapply))
 }
 
@@ -82,8 +82,8 @@ object DESBusinessContact {
   implicit val writes: Writes[DESBusinessContact] =
   (
       (__ \ "email").writeNullable[String] and
-      (__ \ "tel").writeNullable[String] and
-      (__ \ "mobile").writeNullable[String]
+      (__ \ "phoneNumber").writeNullable[String] and
+      (__ \ "mobileNumber").writeNullable[String]
     )(unlift(DESBusinessContact.unapply))
 }
 
@@ -109,7 +109,7 @@ object DESEmployment {
       (__ \ "employees").write[Boolean] and
       (__ \ "ocpn").writeNullable[Boolean] and
       (__ \ "cis").write[Boolean] and
-      (__ \ "first-payment-date").write[LocalDate]
+      (__ \ "firstPaymentDate").write[LocalDate]
     )(unlift(DESEmployment.unapply))
 }
 
@@ -119,7 +119,7 @@ case class DESCompletionCapacity(capacity: String,
 object DESCompletionCapacity {
   implicit val writes: Writes[DESCompletionCapacity] =
     (
-      (__ \ "capacity").write[String] and
-      (__ \ "other-capacity").writeNullable[String]
+      (__ \ "completionCapacity").write[String] and
+      (__ \ "completionCapacityOther").writeNullable[String]
     )(unlift(DESCompletionCapacity.unapply))
 }

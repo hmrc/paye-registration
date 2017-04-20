@@ -50,11 +50,13 @@ abstract class RegistrationAuditEvent(auditType: String, transactionName : Optio
 
 object RegistrationAuditEvent {
 
-  val EXTERNAL_ID = "externalId"
+  val EXTERNAL_USER_ID = "externalUserId"
   val AUTH_PROVIDER_ID = "authProviderId"
   val JOURNEY_ID = "journeyId"
   val ACK_REF = "acknowledgementReference"
+  val REG_METADATA = "registrationMetadata"
   val DES_SUBMISSION_STATE = "desSubmissionState"
+  val PAYE = "paye"
   val PATH = "path"
 
   def buildTags(transactionName: String, tagSet: TagSet)(implicit hc: HeaderCarrier, optReq: Option[Request[AnyContent]]) = {
