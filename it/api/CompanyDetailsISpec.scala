@@ -84,6 +84,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          None,
           Some(EmpRefNotification(
             Some("testEmpRef"),
             "2017-01-01T12:00:00Z",
@@ -119,6 +120,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          None,
           Some(EmpRefNotification(
             Some("testEmpRef"),
             "2017-01-01T12:00:00Z",
@@ -162,6 +164,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          None,
           Some(EmpRefNotification(
             Some("testEmpRef"),
             "2017-01-01T12:00:00Z",
@@ -196,6 +199,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
+          None,
           Some(EmpRefNotification(
             Some("testEmpRef"),
             "2017-01-01T12:00:00Z",

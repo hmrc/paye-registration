@@ -21,13 +21,12 @@ import java.time.LocalDate
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import connectors.DESConnector
+import connectors.{DESConnector, IncorporationInformationConnector}
 import enums.PAYEStatus
-import fixtures.RegistrationFixture
 import models._
 import models.submission._
 import helpers.PAYERegSpec
-import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
+import models.incorporation.IncorpStatusUpdate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
@@ -37,6 +36,7 @@ import scala.concurrent.Future
 class SubmissionServiceSpec extends PAYERegSpec {
 
   val mockDESConnector = mock[DESConnector]
+  val mockIIConnector = mock[IncorporationInformationConnector]
 
   implicit val hc = HeaderCarrier()
 
@@ -45,6 +45,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val sequenceRepository = mockSequenceRepository
       override val registrationRepository = mockRegistrationRepository
       override val desConnector = mockDESConnector
+      override val incorporationInformationConnector = mockIIConnector
     }
   }
 
@@ -179,6 +180,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     )),
     status = PAYEStatus.draft,
     acknowledgementReference = Some("ackRef"),
+    crn = None,
     formCreationTimestamp = "the year of the rooster",
     companyDetails = Some(validCompanyDetails),
     completionCapacity = Some("director"),
@@ -196,6 +198,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     registrationConfirmation = None,
     status = PAYEStatus.held,
     acknowledgementReference = Some("ackRef"),
+    crn = None,
     formCreationTimestamp = "the year of the rooster",
     companyDetails = Some(validCompanyDetailsWithCRN),
     completionCapacity = None,
@@ -217,6 +220,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     )),
     status = PAYEStatus.submitted,
     acknowledgementReference = Some("ackRef"),
+    crn = Some("OC123456"),
     formCreationTimestamp = "the year of the rooster",
     companyDetails = None,
     completionCapacity = None,
@@ -226,8 +230,9 @@ class SubmissionServiceSpec extends PAYERegSpec {
     sicCodes = Seq.empty
   )
 
-  val validPartialDESSubmissionModel = PartialDESSubmission(
+  val validPartialDESSubmissionModel = DESSubmissionModel(
     acknowledgementReference = "ackRef",
+    crn = None,
     company = validDESCompanyDetails,
     directors = validDESDirectors,
     payeContact = validDESPAYEContact,
@@ -250,6 +255,41 @@ class SubmissionServiceSpec extends PAYERegSpec {
     crn = Some("123456")
   )
 
+  "RejectedIncorporationException" should {
+    "return the message" when {
+      "the exception is thrown" in {
+        val result = intercept[RejectedIncorporationException](throw new RejectedIncorporationException("testMsg"))
+        result.getMessage shouldBe "testMsg"
+      }
+    }
+  }
+
+  "payeReg2DESSubmission" should {
+    "return a DESSubmission model" when {
+      "a valid PAYE reg doc is passed to it" in new Setup {
+        val result = service.payeReg2DESSubmission(validRegistration, None)
+        result shouldBe validPartialDESSubmissionModel
+      }
+
+      "a valid paye reg doc with a crn is passed to it" in new Setup {
+        val result = service.payeReg2DESSubmission(validRegistration, Some("OC123456"))
+        result shouldBe validPartialDESSubmissionModel.copy(crn = Some("OC123456"))
+      }
+    }
+
+    "throw a CompanyDetailsNotDefinedException" when {
+      "a paye reg doc is passed in that doesn't have a company details block" in new Setup {
+        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), None))
+      }
+    }
+
+    "throw a AcknowledgementReferenceNotExistsException" when {
+      "the paye reg doc is missing an ack ref" in new Setup {
+        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), None))
+      }
+    }
+  }
+
   "Calling assertOrGenerateAcknowledgementReference" should {
     "return an ack ref if there is one in the registration" in new Setup {
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
@@ -267,29 +307,6 @@ class SubmissionServiceSpec extends PAYERegSpec {
       .thenReturn(Future.successful("BRPY00000001234"))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "BRPY00000001234"
-    }
-  }
-
-  "Calling buildPartialDesSubmission" should {
-    "throw the correct exception when there is no registration in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(None))
-
-      intercept[MissingRegDocument](await(service.buildPartialDesSubmission("regId")))
-    }
-
-    "throw the correct exception when the registration is already submitted" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
-
-      intercept[RegistrationAlreadySubmitted](await(service.buildPartialDesSubmission("regId")))
-    }
-
-    "throw the correct exception when the registration is invalid" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
-
-      intercept[InvalidRegistrationException](await(service.buildPartialDesSubmission("regId")))
     }
   }
 
@@ -340,45 +357,12 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
   }
 
-  "Building a partial DES Submission" should {
-    "throw the correct error when company details are not present" in new Setup{
-      intercept[CompanyDetailsNotDefinedException](service.payeReg2PartialDESSubmission(validRegistration.copy(companyDetails = None)))
-    }
-    "throw the correct error when acknowledgement reference is not present" in new Setup{
-      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2PartialDESSubmission(validRegistration.copy(acknowledgementReference = None)))
-    }
-    "build a partial" in new Setup{
-      service.payeReg2PartialDESSubmission(validRegistration) shouldBe validPartialDESSubmissionModel
-    }
-  }
-
   "Building a Top Up DES Submission" should {
     "throw the correct error when acknowledgement reference is not present" in new Setup{
       intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
     }
     "build a Top Up" in new Setup{
       service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) shouldBe validTopUpDESSubmissionModel
-    }
-  }
-
-  "Calling submitPartialToDES" should {
-    "return the acknowledgement reference" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(Some("ackRef")))
-
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(Some(validRegistration)))
-
-      when(mockDESConnector.submitToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(200)))
-
-      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(PAYEStatus.held))
-
-      when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(validRegistrationAfterPartialSubmission))
-
-      await(service.submitPartialToDES("regID")) shouldBe "ackRef"
     }
   }
 

@@ -21,10 +21,10 @@ import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import connectors.{DESConnect, DESConnector}
+import connectors.{DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
 import enums.PAYEStatus
 import models._
-import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
+import models.incorporation.IncorpStatusUpdate
 import models.submission._
 import play.api.Logger
 import repositories._
@@ -32,14 +32,21 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.control.NoStackTrace
+
+class RejectedIncorporationException(msg: String) extends NoStackTrace {
+  override def getMessage: String = msg
+}
 
 @Singleton
 class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injRegistrationMongoRepository: RegistrationMongo,
-                                  injDESConnector: DESConnector) extends SubmissionSrv {
+                                  injDESConnector: DESConnector,
+                                  injIncorprorationInformationConnector: IncorporationInformationConnector) extends SubmissionSrv {
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
+  val incorporationInformationConnector = injIncorprorationInformationConnector
 }
 
 trait SubmissionSrv {
@@ -47,13 +54,22 @@ trait SubmissionSrv {
   val sequenceRepository: SequenceRepository
   val registrationRepository: RegistrationRepository
   val desConnector: DESConnect
+  val incorporationInformationConnector: IncorporationInformationConnect
 
-  def submitPartialToDES(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
+  private val REGIME = "paye"
+  private val SUBSCRIBER = "SCRS"
+  private val CALLBACK_URL = controllers.routes.RegistrationController.processIncorporationData().url
+
+  def submitToDes(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
     for {
-      ackRef        <- assertOrGenerateAcknowledgementReference(regId)
-      desSubmission <- buildPartialDesSubmission(regId)
-      _             <- desConnector.submitToDES(desSubmission)
-      _             <- processSuccessfulDESResponse(regId, PAYEStatus.held)
+      ackRef      <- assertOrGenerateAcknowledgementReference(regId)
+      incStatus   <- checkIncorpStatus(regId)
+      submission  <- buildADesSubmission(regId, incStatus)
+      desResponse <- desConnector.submitToDES(submission)
+      _           <- incStatus match {
+        case Some(_) => processSuccessfulDESResponse(regId, PAYEStatus.submitted)
+        case None    => processSuccessfulDESResponse(regId, PAYEStatus.held)
+      }
     } yield ackRef
   }
 
@@ -63,6 +79,21 @@ trait SubmissionSrv {
       _             <- desConnector.submitToDES(desSubmission)
       status        <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
     } yield status
+  }
+
+  def checkIncorpStatus(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
+    for {
+      txId      <- registrationRepository.retrieveTransactionId(regId)
+      incStatus <- incorporationInformationConnector.checkStatus(txId, REGIME, SUBSCRIBER, CALLBACK_URL)
+    } yield incStatus
+  }
+
+  def buildADesSubmission(regId: String, incorporationStatus: Option[IncorpStatusUpdate]): Future[DESSubmission  ] = {
+    incorporationStatus match {
+      case Some(IncorpStatusUpdate(_, "accepted", Some(_), _, _, _))  => buildPartialOrFullDesSubmission(regId, incorporationStatus)
+      case Some(_)                                                    => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
+      case None                                                       => buildPartialOrFullDesSubmission(regId, None)
+    }
   }
 
   private[services] def assertOrGenerateAcknowledgementReference(regId: String): Future[String]= {
@@ -81,9 +112,16 @@ trait SubmissionSrv {
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildPartialDesSubmission(regId: String): Future[PartialDESSubmission] = {
+  private[services] def buildPartialOrFullDesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate]): Future[DESSubmissionModel] = {
     registrationRepository.retrieveRegistration(regId) map {
-      case Some(payeReg) if payeReg.status == PAYEStatus.draft => payeReg2PartialDESSubmission(payeReg)
+      case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
+        case Some(statusUpdate) =>
+          Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a full DES submission")
+          payeReg2DESSubmission(payeReg, statusUpdate.crn)
+        case None =>
+          Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a partial DES submission")
+          payeReg2DESSubmission(payeReg, None)
+      }
       case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
       case None =>
         Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]:  building des top submission failed, there was no registration document present for regId $regId")
@@ -113,13 +151,14 @@ trait SubmissionSrv {
     } yield status
   }
 
-  private[services] def payeReg2PartialDESSubmission(payeReg: PAYERegistration): PartialDESSubmission = {
+  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String]): DESSubmissionModel = {
     val companyDetails = payeReg.companyDetails.getOrElse{throw new CompanyDetailsNotDefinedException}
-    PartialDESSubmission(
+    DESSubmissionModel(
       acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
         Logger.warn(s"[SubmissionService] - [payeReg2PartialDESSubmission]: Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
+      crn = incorpUpdateCrn,
       company = buildDESCompanyDetails(companyDetails),
       directors = buildDESDirectors(payeReg.directors),
       payeContact = buildDESPAYEContact(payeReg.payeContact),

@@ -44,9 +44,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "microservice.services.auth.port" -> s"$mockPort",
     "microservice.services.des-stub.port" -> s"$mockPort",
     "microservice.services.des-stub.url" -> s"$mockHost",
-    "microservice.services.des-service.port" -> s"$mockPort",
     "microservice.services.des-service.url" -> s"$mockHost",
-    "application.router" -> "testOnlyDoNotUseInAppConf.Routes"
+    "microservice.services.des-service.port" -> s"$mockPort",
+    "application.router" -> "testOnlyDoNotUseInAppConf.Routes",
+    "microservice.services.incorporation-information.host" -> s"$mockHost",
+    "microservice.services.incorporation-information.port" -> s"$mockPort"
   )
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
@@ -54,6 +56,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     .build()
 
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/$path").withFollowRedirects(false)
+
+  private val regime = "paye"
+  private val subscriber = "SCRS"
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
@@ -77,6 +82,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     transactionID,
     intId,
     Some("testAckRef"),
+    None,
     Some(EmpRefNotification(
       Some("testEmpRef"),
       "2017-01-01T12:00:00Z",
@@ -138,6 +144,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     transactionID,
     intId,
     Some("testAckRef"),
+    None,
     Some(EmpRefNotification(
       Some("testEmpRef"),
       "2017-01-01T12:00:00Z",
@@ -159,6 +166,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     transactionID,
     intId,
     Some("testAckRef"),
+    None,
     Some(EmpRefNotification(
       Some("testEmpRef"),
       "2017-01-01T12:00:00Z",
@@ -175,38 +183,92 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Nil
   )
 
-  val crn = "12345"
+  val crn = "OC123456"
 
   val jsonIncorpStatusUpdate = Json.parse(
     s"""
        |{
-       |  "IncorpSubscriptionKey" : {
-       |    "subscriber" : "SCRS",
-       |    "discriminator" : "PAYE",
-       |    "transactionId" : "$transactionID"
-       |  },
-       |  "SCRSIncorpSubscription" : {
+       |  "SCRSIncorpStatus": {
+       |    "IncorpSubscriptionKey" : {
+       |      "subscriber" : "SCRS",
+       |      "discriminator" : "PAYE",
+       |      "transactionId" : "$transactionID"
+       |    },
+       |    "SCRSIncorpSubscription" : {
        |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
-       |  },
-       |  "IncorpStatusEvent": {
+       |    },
+       |    "IncorpStatusEvent": {
        |      "status": "accepted",
        |      "crn":"$crn",
        |      "incorporationDate":"2000-12-12",
        |      "timestamp" : "2017-12-21T10:13:09.429Z"
+       |    }
        |  }
        |}
         """.stripMargin)
 
   "submit-registration" should {
-    "return a 200 with an ack ref when DES submission completes successfully" in new Setup {
+    "return a 200 with an ack ref when a partial DES submission completes successfully" in new Setup {
+      setupSimpleAuthMocks()
 
+      val regime = "paye"
+      val subscriber = "SCRS"
 
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(200)
+        )
+      )
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
+
+      await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson("testAckRef")
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+    }
+
+    "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
       setupSimpleAuthMocks()
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
           aResponse().
             withStatus(200)
+        )
+      )
+
+      stubFor(post(urlMatching(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              s"""
+                 |{
+                 |  "SCRSIncorpStatus": {
+                 |    "IncorpSubscriptionKey" : {
+                 |      "subscriber" : "SCRS",
+                 |      "discriminator" : "PAYE",
+                 |      "transactionId" : "$transactionID"
+                 |    },
+                 |    "SCRSIncorpSubscription" : {
+                 |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+                 |    },
+                 |    "IncorpStatusEvent": {
+                 |      "status": "accepted",
+                 |      "crn":"$crn",
+                 |      "incorporationDate":"2016-01-01",
+                 |      "timestamp" : "2017-12-21T10:13:09.429Z"
+                 |    }
+                 |  }
+                 |}
+        """.stripMargin
+            )
         )
       )
 
@@ -217,7 +279,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+      await(repository.retrieveRegistration(regId)).get.status shouldBe PAYEStatus.submitted
     }
 
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
@@ -231,6 +293,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
             .withBody("""{"acknowledgement_reference" : "testAckRef"}""")
         )
       )
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.insert(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
@@ -252,6 +316,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
+
       await(repository.insert(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
@@ -270,6 +336,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
             withStatus(533)
         )
       )
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.insert(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
@@ -290,6 +358,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
+
       await(repository.insert(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
@@ -301,6 +371,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
     "return a 500 status when registration has already been cleared post-submission in mongo" in new Setup {
       setupSimpleAuthMocks()
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.insert(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())

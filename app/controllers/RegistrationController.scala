@@ -322,7 +322,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          submissionService.submitPartialToDES(regID) map (ackRef => Ok(Json.toJson(ackRef)))
+          submissionService.submitToDes(regID) map (ackRef => Ok(Json.toJson(ackRef)))
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [submitPAYERegistration] User not logged in")
           Future.successful(Forbidden)

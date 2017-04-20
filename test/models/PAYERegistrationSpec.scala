@@ -135,6 +135,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         transactionID = "NNASD9789F",
         internalID = "09876",
         acknowledgementReference = None,
+        crn = None,
         formCreationTimestamp = "2016-05-31",
         eligibility = Some(Eligibility(
           companyEligibility = false,
@@ -218,6 +219,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         transactionID = "NNASD9789F",
         internalID = "09876",
         acknowledgementReference = None,
+        crn = None,
         registrationConfirmation = None,
         formCreationTimestamp = "2016-05-31",
         eligibility = None,

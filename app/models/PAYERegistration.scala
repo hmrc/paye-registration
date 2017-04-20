@@ -20,20 +20,21 @@ import enums.PAYEStatus
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{OFormat, __}
 
-case class PAYERegistration (registrationID: String,
-                             transactionID: String,
-                             internalID : String,
-                             acknowledgementReference: Option[String],
-                             registrationConfirmation: Option[EmpRefNotification],
-                             formCreationTimestamp: String,
-                             eligibility: Option[Eligibility],
-                             status: PAYEStatus.Value,
-                             completionCapacity: Option[String],
-                             companyDetails: Option[CompanyDetails],
-                             directors: Seq[Director],
-                             payeContact: Option[PAYEContact],
-                             employment: Option[Employment],
-                             sicCodes: Seq[SICCode])
+case class PAYERegistration(registrationID: String,
+                            transactionID: String,
+                            internalID : String,
+                            acknowledgementReference: Option[String],
+                            crn: Option[String],
+                            registrationConfirmation: Option[EmpRefNotification],
+                            formCreationTimestamp: String,
+                            eligibility: Option[Eligibility],
+                            status: PAYEStatus.Value,
+                            completionCapacity: Option[String],
+                            companyDetails: Option[CompanyDetails],
+                            directors: Seq[Director],
+                            payeContact: Option[PAYEContact],
+                            employment: Option[Employment],
+                            sicCodes: Seq[SICCode])
 
 object PAYERegistration extends {
 
@@ -42,6 +43,7 @@ object PAYERegistration extends {
     (__ \ "transactionID").format[String] and
     (__ \ "internalID").format[String] and
     (__ \ "acknowledgementReference").formatNullable[String] and
+    (__ \ "crn").formatNullable[String] and
     (__ \ "registrationConfirmation").formatNullable[EmpRefNotification] and
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "eligibility").formatNullable[Eligibility] and

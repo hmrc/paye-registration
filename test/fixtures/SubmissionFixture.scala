@@ -73,8 +73,9 @@ trait SubmissionFixture {
     correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
-  val validPartialDESSubmissionModel = PartialDESSubmission(
+  val validPartialDESSubmissionModel = DESSubmissionModel(
     acknowledgementReference = "ackRef",
+    crn = None,
     company = validDESCompanyDetails,
     directors = validDESDirectors,
     payeContact = validDESPAYEContact,
