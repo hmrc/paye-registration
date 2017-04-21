@@ -233,6 +233,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
        |}
         """.stripMargin
   }
+
   val jsonIncorpStatusUpdate = Json.parse(incorpUpdate(accepted))
 
   "submit-registration" should {
