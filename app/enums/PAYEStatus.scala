@@ -25,6 +25,7 @@ object PAYEStatus extends Enumeration {
   val invalid = Value
   val acknowledged = Value
   val rejected = Value
+  val cancelled = Value
 
   implicit val format = Format(Reads.enumNameReads(PAYEStatus), Writes.enumNameWrites)
 }

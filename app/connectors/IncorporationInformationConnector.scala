@@ -48,7 +48,7 @@ trait IncorporationInformationConnect {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
   }
 
-  def checkStatus(transactionId: String, regime: String, subscriber: String, callbackUrl: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
+  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, callbackUrl: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> callbackUrl))
     http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
       resp.status match {

@@ -161,6 +161,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Nil
   )
 
+  val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
+
   val processedTopUpSubmission = PAYERegistration(
     regId,
     transactionID,
@@ -184,8 +186,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
   )
 
   val crn = "OC123456"
+  val accepted = "accepted"
+  val rejected = "rejected"
 
-  val jsonIncorpStatusUpdate = Json.parse(
+  def incorpUpdate(status: String) = {
     s"""
        |{
        |  "SCRSIncorpStatus": {
@@ -198,14 +202,38 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
        |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
        |    },
        |    "IncorpStatusEvent": {
-       |      "status": "accepted",
+       |      "status": "$status",
        |      "crn":"$crn",
        |      "incorporationDate":"2000-12-12",
        |      "timestamp" : "2017-12-21T10:13:09.429Z"
        |    }
        |  }
        |}
-        """.stripMargin)
+        """.stripMargin
+  }
+
+  def incorpUpdateNoCRN(status: String) = {
+    s"""
+       |{
+       |  "SCRSIncorpStatus": {
+       |    "IncorpSubscriptionKey" : {
+       |      "subscriber" : "SCRS",
+       |      "discriminator" : "PAYE",
+       |      "transactionId" : "$transactionID"
+       |    },
+       |    "SCRSIncorpSubscription" : {
+       |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+       |    },
+       |    "IncorpStatusEvent": {
+       |      "status": "$status",
+       |      "incorporationDate":"2000-12-12",
+       |      "timestamp" : "2017-12-21T10:13:09.429Z"
+       |    }
+       |  }
+       |}
+        """.stripMargin
+  }
+  val jsonIncorpStatusUpdate = Json.parse(incorpUpdate(accepted))
 
   "submit-registration" should {
     "return a 200 with an ack ref when a partial DES submission completes successfully" in new Setup {
@@ -248,26 +276,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
           aResponse()
             .withStatus(200)
             .withBody(
-              s"""
-                 |{
-                 |  "SCRSIncorpStatus": {
-                 |    "IncorpSubscriptionKey" : {
-                 |      "subscriber" : "SCRS",
-                 |      "discriminator" : "PAYE",
-                 |      "transactionId" : "$transactionID"
-                 |    },
-                 |    "SCRSIncorpSubscription" : {
-                 |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
-                 |    },
-                 |    "IncorpStatusEvent": {
-                 |      "status": "accepted",
-                 |      "crn":"$crn",
-                 |      "incorporationDate":"2016-01-01",
-                 |      "timestamp" : "2017-12-21T10:13:09.429Z"
-                 |    }
-                 |  }
-                 |}
-        """.stripMargin
+              incorpUpdate(accepted)
             )
         )
       )
@@ -304,6 +313,19 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       response.json shouldBe Json.toJson("testAckRef")
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+    }
+
+    "return a 204 status when Incorporation was rejected at PAYE Submission" in new Setup {
+      setupSimpleAuthMocks()
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 200, incorpUpdate(rejected))
+
+      await(repository.insert(submission))
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 204
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(rejectedSubmission)
     }
 
     "return a 502 status when DES returns a 499" in new Setup {
@@ -483,6 +505,28 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       response.json shouldBe Json.toJson(crn)
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+    }
+
+    "return a 200 when Incorporation is rejected" in new Setup {
+
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(200)
+        )
+      )
+
+      await(repository.insert(processedSubmission))
+      await(client(s"test-only/feature-flag/desServiceFeature/false").get())
+
+      val response = client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))).futureValue
+      response.status shouldBe 200
+      val none: Option[String] = None
+      response.json shouldBe Json.toJson(none)
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled))
     }
   }
 

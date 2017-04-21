@@ -69,18 +69,20 @@ trait SubmissionSrv {
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
   private val CALLBACK_URL = controllers.routes.RegistrationController.processIncorporationData().url
+  private val rejected = "rejected"
 
   def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     for {
       ackRef      <- assertOrGenerateAcknowledgementReference(regId)
-      incStatus   <- checkIncorpStatus(regId)
-      submission  <- buildADesSubmission(regId, incStatus)
-      desResponse <- desConnector.submitToDES(submission)
-      _           <- auditDESSubmission(regId, incStatus.fold("partial")(_ => "full"), Json.toJson(submission).as[JsObject])
-      _           <- incStatus match {
-        case Some(_) => processSuccessfulDESResponse(regId, PAYEStatus.submitted)
-        case None    => processSuccessfulDESResponse(regId, PAYEStatus.held)
+      incUpdate   <- getIncorporationUpdate(regId) recover {
+        case ex: RejectedIncorporationException =>
+          updatePAYERegistrationDocument(regId, PAYEStatus.cancelled)
+          throw ex
       }
+      submission  <- buildADesSubmission(regId, incUpdate)
+      _           <- desConnector.submitToDES(submission)
+      updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
+      _           <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield ackRef
   }
 
@@ -88,23 +90,19 @@ trait SubmissionSrv {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
-      status        <- processSuccessfulDESResponse(regId, PAYEStatus.submitted)
+      updatedStatus = if(incorpStatusUpdate.status == rejected) PAYEStatus.cancelled else PAYEStatus.submitted
+      status        <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield status
   }
 
-  def checkIncorpStatus(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
+  def getIncorporationUpdate(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     for {
       txId      <- registrationRepository.retrieveTransactionId(regId)
-      incStatus <- incorporationInformationConnector.checkStatus(txId, REGIME, SUBSCRIBER, CALLBACK_URL)
+      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, CALLBACK_URL) map {
+        case Some(update) if update.status == rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
+        case response => response
+      }
     } yield incStatus
-  }
-
-  def buildADesSubmission(regId: String, incorporationStatus: Option[IncorpStatusUpdate]): Future[DESSubmission  ] = {
-    incorporationStatus match {
-      case Some(IncorpStatusUpdate(_, "accepted", Some(_), _, _, _))  => buildPartialOrFullDesSubmission(regId, incorporationStatus)
-      case Some(_)                                                    => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
-      case None                                                       => buildPartialOrFullDesSubmission(regId, None)
-    }
   }
 
   private[services] def assertOrGenerateAcknowledgementReference(regId: String): Future[String]= {
@@ -123,7 +121,7 @@ trait SubmissionSrv {
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildPartialOrFullDesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate]): Future[DESSubmissionModel] = {
+  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate]): Future[DESSubmissionModel] = {
     registrationRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
@@ -155,11 +153,11 @@ trait SubmissionSrv {
     }
   }
 
-  private def processSuccessfulDESResponse(regId: String, newStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
-    for {
-      status <- registrationRepository.updateRegistrationStatus(regId, newStatus)
-      _ <- registrationRepository.cleardownRegistration(regId)
-    } yield status
+  private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
+    registrationRepository.updateRegistrationStatus(regId, newStatus) map {
+      _ => if(!newStatus.equals(PAYEStatus.cancelled)) {registrationRepository.cleardownRegistration(regId)}
+        newStatus
+    }
   }
 
   private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String]): DESSubmissionModel = {
