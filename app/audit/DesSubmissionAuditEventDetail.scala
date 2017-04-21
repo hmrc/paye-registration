@@ -28,14 +28,14 @@ case class DesSubmissionAuditEventDetail(externalId: String,
 
 object DesSubmissionAuditEventDetail {
 
-  import RegistrationAuditEvent.{EXTERNAL_USER_ID, AUTH_PROVIDER_ID, JOURNEY_ID, ACK_REF, REG_METADATA, PAYE, DES_SUBMISSION_STATE}
+  import RegistrationAuditEvent.{EXTERNAL_ID, AUTH_PROVIDER_ID, JOURNEY_ID, ACK_REF, REG_METADATA, PAYE, DES_SUBMISSION_STATE}
 
   implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
       val regMetadata = Json.obj("businessType" -> "Limited company")
 
       Json.obj(
-        EXTERNAL_USER_ID -> detail.externalId,
+        EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
         ACK_REF -> (detail.jsSubmission \ "acknowledgementReference").as[JsString],

@@ -50,7 +50,7 @@ abstract class RegistrationAuditEvent(auditType: String, transactionName : Optio
 
 object RegistrationAuditEvent {
 
-  val EXTERNAL_USER_ID = "externalUserId"
+  val EXTERNAL_ID = "externalId"
   val AUTH_PROVIDER_ID = "authProviderId"
   val JOURNEY_ID = "journeyId"
   val ACK_REF = "acknowledgementReference"

@@ -86,7 +86,7 @@ trait WiremockHelper {
                       |"confidenceLevel" : 50,
                       |"credentialStrength": "strong",
                       |"legacyOid":"1234567890",
-                      |"userDetailsLink":"xxx3",
+                      |"userDetailsLink":"http://localhost:11111/auth/userDetails",
                       |"ids":"/auth/ids"
                       |}""".stripMargin)
       )
@@ -97,6 +97,22 @@ trait WiremockHelper {
         aResponse().
           withStatus(200).
           withBody("""{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
+      )
+    )
+
+    stubFor(get(urlMatching("/auth/userDetails"))
+      .willReturn(
+        aResponse().
+          withStatus(200).
+          withBody("""
+                      |{
+                      |   "name":"xxx",
+                      |   "email":"xxx",
+                      |   "affinityGroup":"xxx",
+                      |   "authProviderId":"123456789",
+                      |   "authProviderType":"xxx"
+                      |}
+                   """.stripMargin)
       )
     )
   }

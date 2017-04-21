@@ -29,6 +29,8 @@ import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import play.api.test.FakeRequest
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
@@ -37,8 +39,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val mockDESConnector = mock[DESConnector]
   val mockIIConnector = mock[IncorporationInformationConnector]
+  val mockAuditConnector = mock[AuditConnector]
 
   implicit val hc = HeaderCarrier()
+  implicit val req = FakeRequest("GET", "/test-path")
 
   class Setup {
     val service = new SubmissionSrv{
@@ -46,6 +50,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val registrationRepository = mockRegistrationRepository
       override val desConnector = mockDESConnector
       override val incorporationInformationConnector = mockIIConnector
+      override val authConnector = mockAuthConnector
+      override val auditConnector = mockAuditConnector
     }
   }
 

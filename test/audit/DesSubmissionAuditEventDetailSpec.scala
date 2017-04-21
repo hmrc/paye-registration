@@ -18,9 +18,8 @@ package audit
 
 import java.time.LocalDate
 
-import fixtures.RegistrationFixture
 import models.Address
-import models.submission.{DESBusinessContact, DESCompanyDetails, DESCompletionCapacity, DESDirector, DESEmployment, DESPAYEContact, DESSICCode, DESSubmission, PartialDESSubmission}
+import models.submission.{DESBusinessContact, DESCompanyDetails, DESCompletionCapacity, DESDirector, DESEmployment, DESPAYEContact, DESSICCode, DESSubmission, DESSubmissionModel}
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -28,7 +27,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
 
   "DesSubmissionAuditEventDetail" should {
 
-    val externalId = "Ext-123456789"
+    val externalUserId = "Ext-123456789"
     val authProviderId = "apid001"
     val regId = "123456789"
     val desSubmissionState = "partial"
@@ -83,8 +82,9 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         firstPaymentDate = LocalDate.of(2016, 12, 20)
       )
 
-      val validPartialDESSubmissionModel = PartialDESSubmission(
+      val validPartialDESSubmissionModel = DESSubmissionModel(
         acknowledgementReference = "ackRef",
+        crn = None,
         company = validDESCompanyDetails,
         directors = validDESDirectors,
         payeContact = validDESPAYEContact,
@@ -97,7 +97,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
       val expected = Json.parse(
         s"""
           |{
-          |   "externalUserId": "$externalId",
+          |   "externalId": "$externalUserId",
           |   "authProviderId": "$authProviderId",
           |   "journeyId": "$regId",
           |   "acknowledgementReference": "ackRef",
@@ -176,7 +176,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         """.stripMargin)
 
       val testModel = DesSubmissionAuditEventDetail(
-        externalId,
+        externalUserId,
         authProviderId,
         regId,
         desSubmissionState,

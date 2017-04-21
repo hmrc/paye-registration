@@ -18,16 +18,21 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
+import audit.{DesSubmissionAuditEventDetail, DesSubmissionEvent}
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import connectors.{DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
+import config.MicroserviceAuditConnector
+import connectors.{AuthConnect, AuthConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
 import enums.PAYEStatus
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
 import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.{AnyContent, Request}
 import repositories._
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -42,11 +47,14 @@ class RejectedIncorporationException(msg: String) extends NoStackTrace {
 class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injRegistrationMongoRepository: RegistrationMongo,
                                   injDESConnector: DESConnector,
-                                  injIncorprorationInformationConnector: IncorporationInformationConnector) extends SubmissionSrv {
+                                  injIncorprorationInformationConnector: IncorporationInformationConnector,
+                                  injAuthConnector: AuthConnector) extends SubmissionSrv {
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
   val incorporationInformationConnector = injIncorprorationInformationConnector
+  val authConnector = injAuthConnector
+  val auditConnector = MicroserviceAuditConnector
 }
 
 trait SubmissionSrv {
@@ -55,17 +63,20 @@ trait SubmissionSrv {
   val registrationRepository: RegistrationRepository
   val desConnector: DESConnect
   val incorporationInformationConnector: IncorporationInformationConnect
+  val authConnector: AuthConnect
+  val auditConnector: AuditConnector
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
   private val CALLBACK_URL = controllers.routes.RegistrationController.processIncorporationData().url
 
-  def submitToDes(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
+  def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     for {
       ackRef      <- assertOrGenerateAcknowledgementReference(regId)
       incStatus   <- checkIncorpStatus(regId)
       submission  <- buildADesSubmission(regId, incStatus)
       desResponse <- desConnector.submitToDES(submission)
+      _           <- auditDESSubmission(regId, incStatus.fold("partial")(_ => "full"), Json.toJson(submission).as[JsObject])
       _           <- incStatus match {
         case Some(_) => processSuccessfulDESResponse(regId, PAYEStatus.submitted)
         case None    => processSuccessfulDESResponse(regId, PAYEStatus.held)
@@ -256,5 +267,16 @@ trait SubmissionSrv {
       }.getOrElse{
         throw new CompletionCapacityNotDefinedException
       }
+  }
+
+  private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
+    for {
+      authority <- authConnector.getCurrentAuthority
+      userDetails <- authConnector.getUserDetails
+      authProviderId = userDetails.get.authProviderId
+    } yield {
+      val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, desSubmissionState, jsSubmission))
+      auditConnector.sendEvent(event)
+    }
   }
 }
