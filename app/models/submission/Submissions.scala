@@ -44,15 +44,15 @@ case class DESSubmissionModel(acknowledgementReference: String,
 object DESSubmissionModel {
   implicit val writes: Writes[DESSubmissionModel] =
     (
-      (__ \ "acknowledgement-reference").write[String] and
+      (__ \ "acknowledgementReference").write[String] and
       (__ \ "crn").writeNullable[String] and
-      (__ \ "company").write[DESCompanyDetails] and
+      (__ \ "companyDetails").write[DESCompanyDetails] and
       (__ \ "directors").write[Seq[DESDirector]] and
-      (__ \ "paye-contact").write[DESPAYEContact] and
-      (__ \ "business-contact").write[DESBusinessContact] and
-      (__ \ "sic-codes").write[Seq[DESSICCode]] and
+      (__ \ "payeContact").write[DESPAYEContact] and
+      (__ \ "businessContactDetails").write[DESBusinessContact] and
+      (__ \ "sicCodes").write[Seq[DESSICCode]] and
       (__ \ "employment").write[DESEmployment] and
-      (__ \ "completion-capacity").write[DESCompletionCapacity]
+      (__ \ "completionCapacity").write[DESCompletionCapacity]
       )(unlift(DESSubmissionModel.unapply))
 }
 
