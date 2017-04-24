@@ -22,6 +22,7 @@ import enums.PAYEStatus
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import play.api.Logger
+import play.api.libs.json.{JsObject, Json}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -122,5 +123,11 @@ trait RegistrationSrv {
 
   def updateEligibility(regID: String, eligibility: Eligibility): Future[Eligibility] = {
     registrationRepository.upsertEligibility(regID, eligibility)
+  }
+
+  def getStatus(regID: String): Future[JsObject] = {
+    registrationRepository.retrieveRegistrationStatus(regID) map {
+      status => Json.obj("status" -> status)
+    }
   }
 }

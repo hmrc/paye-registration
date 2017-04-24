@@ -423,4 +423,14 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         }
       }
   }
+
+  def getDocumentStatus(regId: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      registrationService.getStatus(regId) map { status =>
+        Ok(Json.toJson(status))
+      } recover {
+        case missing: MissingRegDocument => NotFound
+        case _ => InternalServerError
+      }
+  }
 }

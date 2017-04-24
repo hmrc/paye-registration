@@ -23,6 +23,7 @@ import helpers.PAYERegSpec
 import models._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.Mockito._
+import play.api.libs.json.JsObject
 
 import scala.concurrent.Future
 
@@ -454,6 +455,32 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
         val result = await(service.updateEligibility("testRegId", Eligibility(false, false)))
         result shouldBe Eligibility(false, false)
+      }
+    }
+  }
+
+  "getStatus" should {
+    "return valid status" when {
+      "given a valid regId" in new Setup {
+        when(mockRegistrationRepository.retrieveRegistrationStatus(ArgumentMatchers.any[String]()))
+          .thenReturn(Future.successful(PAYEStatus.draft),
+                      Future.successful(PAYEStatus.held),
+                      Future.successful(PAYEStatus.submitted),
+                      Future.successful(PAYEStatus.acknowledged),
+                      Future.successful(PAYEStatus.invalid),
+                      Future.successful(PAYEStatus.cancelled),
+                      Future.successful(PAYEStatus.rejected))
+
+        def result = await(service.getStatus("testRegId"))
+        def getStatus(json: JsObject) = (json \ "status").as[String]
+
+        getStatus(result) shouldBe "draft"
+        getStatus(result) shouldBe "held"
+        getStatus(result) shouldBe "submitted"
+        getStatus(result) shouldBe "acknowledged"
+        getStatus(result) shouldBe "invalid"
+        getStatus(result) shouldBe "cancelled"
+        getStatus(result) shouldBe "rejected"
       }
     }
   }

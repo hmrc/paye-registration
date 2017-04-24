@@ -21,6 +21,7 @@ import java.time.LocalDate
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import common.exceptions.DBExceptions.MissingRegDocument
+import enums.PAYEStatus
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
@@ -28,7 +29,7 @@ import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import repositories.RegistrationMongoRepository
 import services._
@@ -1237,6 +1238,39 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
         val result = controller.updateRegistrationWithEmpRef("testAckRef")(request)
         status(result) shouldBe Status.OK
+      }
+    }
+  }
+
+  "getDocumentStatus" should {
+    "return an OK" when {
+      "the reg doc has a valid status" in new Setup {
+        val json = Json.parse("""{"status":"draft"}""").as[JsObject]
+
+        when(mockRegistrationService.getStatus(ArgumentMatchers.anyString()))
+          .thenReturn(Future.successful(json))
+
+        val result = await(controller.getDocumentStatus("testRegId")(FakeRequest()))
+        status(result) shouldBe Status.OK
+        jsonBodyOf(result) shouldBe json
+      }
+    }
+    "return a NOT_FOUND" when {
+      "no reg document can be found" in new Setup {
+        when(mockRegistrationService.getStatus(ArgumentMatchers.anyString()))
+          .thenReturn(Future.failed(new MissingRegDocument("")))
+
+        val result = await(controller.getDocumentStatus("testRegId")(FakeRequest()))
+        status(result) shouldBe Status.NOT_FOUND
+      }
+    }
+    "return an INTERNAL_SERVER_ERROR" when {
+      "an exception is thrown" in new Setup {
+        when(mockRegistrationService.getStatus(ArgumentMatchers.anyString()))
+          .thenReturn(Future.failed(new RuntimeException("")))
+
+        val result = await(controller.getDocumentStatus("testRegId")(FakeRequest()))
+        status(result) shouldBe Status.INTERNAL_SERVER_ERROR
       }
     }
   }

@@ -31,3 +31,5 @@ GET        /:regID/eligibility                      controllers.RegistrationCont
 PATCH      /:regID/eligibility                      controllers.RegistrationController.updateEligibility(regID)
 
 POST       /registration-processed-confirmation     controllers.RegistrationController.updateRegistrationWithEmpRef(ackref: String)
+
+GET        /:regID/status                           controllers.RegistrationController.getDocumentStatus(regID)
