@@ -31,6 +31,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.test.FakeRequest
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
@@ -373,7 +374,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   "Calling submitTopUpToDES" should {
-    "return the acknowledgement reference" in new Setup {
+    "return the PAYE status" in new Setup {
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some("ackRef")))
 
@@ -382,6 +383,9 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
       when(mockDESConnector.submitToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(200)))
+
+      when(mockAuditConnector.sendEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Success))
 
       when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PAYEStatus.submitted))

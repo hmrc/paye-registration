@@ -57,6 +57,8 @@ object RegistrationAuditEvent {
   val REG_METADATA = "registrationMetadata"
   val DES_SUBMISSION_STATE = "desSubmissionState"
   val PAYE = "paye"
+  val INCORP_STATUS = "incorporationStatus"
+  val CRN = "crn"
   val PATH = "path"
 
   def buildTags(transactionName: String, tagSet: TagSet)(implicit hc: HeaderCarrier, optReq: Option[Request[AnyContent]]) = {

@@ -63,8 +63,8 @@ case class TopUpDESSubmission(acknowledgementReference: String,
 object TopUpDESSubmission {
   implicit val writes: Writes[TopUpDESSubmission] =
     (
-      (__ \ "acknowledgement-reference").write[String] and
-      (__ \ "status").write[String] and
+      (__ \ "acknowledgementReference").write[String] and
+      (__ \ "incorporationStatus").write[String] and
       (__ \ "crn").writeNullable[String]
     )(unlift(TopUpDESSubmission.unapply))
 }

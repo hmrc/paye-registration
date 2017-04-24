@@ -16,7 +16,6 @@
 
 package audit
 
-import models.submission.DESCompletionCapacity
 import play.api.libs.json.{JsObject, JsString, Json, Writes}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
