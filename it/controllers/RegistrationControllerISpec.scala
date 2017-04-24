@@ -23,7 +23,7 @@ import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.WS
 import play.api.{Application, Play}
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
@@ -556,6 +556,63 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
         await(repository.retrieveRegistrationByAckRef("invalidackref")) shouldBe None
       }
+    }
+  }
+
+  "getStatus" should {
+    "return an OK with the correct statuses" in new Setup {
+      await(repository.drop)
+      await(repository.ensureIndexes)
+
+      setupSimpleAuthMocks()
+
+      def newSubmission(id: String, status: PAYEStatus.Value) = {
+        submission.copy(registrationID = id, transactionID = id, status = status)
+      }
+
+      await(repository.insert(newSubmission("11111", PAYEStatus.draft)))
+      await(repository.insert(newSubmission("22222", PAYEStatus.held)))
+      await(repository.insert(newSubmission("33333", PAYEStatus.submitted)))
+      await(repository.insert(newSubmission("44444", PAYEStatus.acknowledged)))
+      await(repository.insert(newSubmission("55555", PAYEStatus.invalid)))
+      await(repository.insert(newSubmission("66666", PAYEStatus.cancelled)))
+      await(repository.insert(newSubmission("77777", PAYEStatus.rejected)))
+
+      def getStatus(id: String) = client(s"$id/status").get().futureValue
+
+      val draft = getStatus("11111")
+      val held = getStatus("22222")
+      val submitted = getStatus("33333")
+      val acknowledged = getStatus("44444")
+      val invalid = getStatus("55555")
+      val cancelled = getStatus("66666")
+      val rejected = getStatus("77777")
+      val missing = getStatus("88888")
+
+      def status(s: String) = Json.parse(s"""{"status":"$s"}""").as[JsObject]
+
+      draft.status shouldBe 200
+      draft.json shouldBe status("draft")
+
+      held.status shouldBe 200
+      held.json shouldBe status("held")
+
+      submitted.status shouldBe 200
+      submitted.json shouldBe status("submitted")
+
+      acknowledged.status shouldBe 200
+      acknowledged.json shouldBe status("acknowledged")
+
+      invalid.status shouldBe 200
+      invalid.json shouldBe status("invalid")
+
+      cancelled.status shouldBe 200
+      cancelled.json shouldBe status("cancelled")
+
+      rejected.status shouldBe 200
+      rejected.json shouldBe status("rejected")
+
+      missing.status shouldBe 404
     }
   }
 }

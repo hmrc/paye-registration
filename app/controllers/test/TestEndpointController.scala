@@ -18,8 +18,10 @@ package controllers.test
 
 import auth.{Authenticated, LoggedIn, NotLoggedIn}
 import javax.inject.{Inject, Singleton}
+
 import connectors.AuthConnector
-import models.PAYERegistration
+import enums.PAYEStatus
+import models._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
@@ -78,4 +80,26 @@ trait TestEndpointCtrl extends BaseController with Authenticated {
           }
   }
 
+  def newStatus(regId: String, status: String): Action[AnyContent] = Action.async {
+    implicit request =>
+        val payeStatus = status match {
+           case "draft"        => PAYEStatus.draft
+           case "held"         => PAYEStatus.held
+           case "submitted"    => PAYEStatus.submitted
+           case "acknowledged" => PAYEStatus.acknowledged
+           case "invalid"      => PAYEStatus.invalid
+           case "cancelled"    => PAYEStatus.cancelled
+           case "rejected"     => PAYEStatus.rejected
+           case _              => PAYEStatus.draft
+        }
+
+        registrationRepository.createNewRegistration(regId, regId, "XXXXXX") flatMap { _ =>
+          registrationRepository.updateRegistrationStatus(regId, payeStatus) map {
+            _ => Ok
+          }
+        } recover {
+          case e => InternalServerError(e.getMessage)
+        }
+
+    }
 }
