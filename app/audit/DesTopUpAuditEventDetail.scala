@@ -28,12 +28,15 @@ object DesTopUpAuditEventDetail {
   implicit val writes = new Writes[DesTopUpAuditEventDetail] {
     def writes(detail: DesTopUpAuditEventDetail) = {
 
+      val crn = (detail.jsSubmission \ "crn").asOpt[JsString].fold(Json.obj()) {
+        crn => Json.obj(CRN -> crn)
+      }
+
       Json.obj(
         JOURNEY_ID -> detail.regId,
         ACK_REF -> (detail.jsSubmission \ "acknowledgementReference").as[JsString],
-        INCORP_STATUS -> (detail.jsSubmission \ "incorporationStatus").as[JsString],
-        CRN -> (detail.jsSubmission \ "crn").as[JsString]
-      )
+        INCORP_STATUS -> (detail.jsSubmission \ "incorporationStatus").as[JsString]
+      ).++(crn)
     }
   }
 }

@@ -18,7 +18,7 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import audit.{DesSubmissionAuditEventDetail, DesSubmissionEvent}
+import audit.{DesSubmissionAuditEventDetail, DesSubmissionEvent, DesTopUpAuditEventDetail, DesTopUpEvent}
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
@@ -29,7 +29,7 @@ import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -81,6 +81,7 @@ trait SubmissionSrv {
       }
       submission  <- buildADesSubmission(regId, incUpdate)
       _           <- desConnector.submitToDES(submission)
+      _           <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject])
       updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
       _           <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield ackRef
@@ -90,6 +91,7 @@ trait SubmissionSrv {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
+      _             <- auditDESTopUp(regId, Json.toJson[DESSubmission](desSubmission).as[JsObject])
       updatedStatus = if(incorpStatusUpdate.status == rejected) PAYEStatus.cancelled else PAYEStatus.submitted
       status        <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield status
@@ -276,5 +278,10 @@ trait SubmissionSrv {
       val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, desSubmissionState, jsSubmission))
       auditConnector.sendEvent(event)
     }
+  }
+
+  private[services] def auditDESTopUp(regId: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier) = {
+    val event = new DesTopUpEvent(DesTopUpAuditEventDetail(regId, jsSubmission))
+    auditConnector.sendEvent(event)
   }
 }
