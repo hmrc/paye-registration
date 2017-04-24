@@ -16,6 +16,8 @@
 
 package controllers.test
 
+import akka.stream.ActorMaterializer
+import enums.PAYEStatus
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models.PAYERegistration
@@ -23,8 +25,10 @@ import play.api.libs.json.Json
 import repositories.RegistrationMongoRepository
 import play.api.test.FakeRequest
 import play.api.http.Status
-import org.mockito.{ArgumentMatchers, Matchers}
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, Matchers}
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -110,6 +114,29 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.FORBIDDEN
+    }
+  }
+
+  "newStatus" should {
+    "return a 200 response for success" in new Setup {
+      when(mockRepo.createNewRegistration(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(validRegistration))
+
+      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(PAYEStatus.draft))
+
+      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC654321"), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new RuntimeException("")))
+
+      def newstatus(s: String) = await(controller.newStatus("AC123456", s)(FakeRequest()))
+      status(newstatus("draft")) shouldBe Status.OK
+      status(newstatus("held")) shouldBe Status.OK
+      status(newstatus("submitted")) shouldBe Status.OK
+      status(newstatus("acknowledged")) shouldBe Status.OK
+      status(newstatus("invalid")) shouldBe Status.OK
+      status(newstatus("cancelled")) shouldBe Status.OK
+      status(newstatus("rejected")) shouldBe Status.OK
+      status(await(controller.newStatus("AC654321", "bananaFruitcake")(FakeRequest()))) shouldBe Status.INTERNAL_SERVER_ERROR
     }
   }
 
