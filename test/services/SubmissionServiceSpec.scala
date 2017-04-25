@@ -254,7 +254,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
                                               crn = Some("123456"),
                                               incorporationDate = Some(LocalDate.of(2000, 12, 12)),
                                               description = None,
-                                              timestamp = "2017-12-21T10:13:09.429Z")
+                                              timestamp = LocalDate.of(2017, 12, 21))
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",

@@ -205,7 +205,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
        |      "status": "$status",
        |      "crn":"$crn",
        |      "incorporationDate":"2000-12-12",
-       |      "timestamp" : "2017-12-21T10:13:09.429Z"
+       |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
        |    }
        |  }
        |}
@@ -227,7 +227,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
        |    "IncorpStatusEvent": {
        |      "status": "$status",
        |      "incorporationDate":"2000-12-12",
-       |      "timestamp" : "2017-12-21T10:13:09.429Z"
+       |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
        |    }
        |  }
        |}
@@ -445,7 +445,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
            |      "status": "accepted",
            |      "crn":"$crn",
            |      "incorporationDate":"2000-12-12",
-           |      "timestamp" : "2017-12-21T10:13:09.429Z"
+           |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
            |  }
            |}
         """.stripMargin)

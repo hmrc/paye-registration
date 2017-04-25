@@ -42,7 +42,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
            |      "status": "accepted",
            |      "crn":"1",
            |      "incorporationDate":"2000-12-12",
-           |      "timestamp" : "2017-12-21T10:13:09.429Z"
+           |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
            |    }
            |  }
            |}
@@ -54,7 +54,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
         crn = Some("1"),
         incorporationDate = Some(LocalDate.of(2000, 12, 12)),
         description = None,
-        timestamp = "2017-12-21T10:13:09.429Z"
+        timestamp = LocalDate.of(2017, 12, 21)
       )
 
       Json.fromJson[IncorpStatusUpdate](json) shouldBe JsSuccess(tstIncorpStatusUpdate)
@@ -76,7 +76,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
            |    "IncorpStatusEvent": {
            |      "crn":"1",
            |      "incorporationDate":"2000-12-12",
-           |      "timestamp" : "2017-12-21T10:13:09.429Z"
+           |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
            |    }
            |  }
            |}
