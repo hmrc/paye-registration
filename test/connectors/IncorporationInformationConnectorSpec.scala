@@ -16,6 +16,8 @@
 
 package connectors
 
+import java.time.LocalDate
+
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -32,7 +34,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
   val mockHttp = mock[WSHttp]
 
   val testJson = Json.parse(
-    """
+    s"""
       |{
       |   "SCRSIncorpStatus" : {
       |     "IncorpSubscriptionKey" : {
@@ -46,7 +48,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       |     "IncorpStatusEvent" : {
       |       "status" : "accepted",
       |       "crn" : "OC123456",
-      |       "timestamp" : "2016-01-01T12:00:00Z"
+      |       "timestamp" : ${Json.toJson(LocalDate.of(2016, 1, 1))}
       |     }
       |   }
       |}

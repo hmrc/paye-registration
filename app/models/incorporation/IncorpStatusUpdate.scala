@@ -27,7 +27,7 @@ case class IncorpStatusUpdate(transactionId: String,
                               crn: Option[String],
                               incorporationDate: Option[LocalDate],
                               description: Option[String],
-                              timestamp: String)
+                              timestamp: LocalDate)
 
 object IncorpStatusUpdate extends IncorporationValidator {
   implicit val reads: Reads[IncorpStatusUpdate] = (
@@ -36,6 +36,6 @@ object IncorpStatusUpdate extends IncorporationValidator {
     (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](crnValidator) and
     (__ \\ "IncorpStatusEvent"     \ "incorporationDate").readNullable[LocalDate] and
     (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
-    (__ \\ "IncorpStatusEvent"     \ "timestamp").read[String]
+    (__ \\ "IncorpStatusEvent"     \ "timestamp").read[LocalDate]
   )(IncorpStatusUpdate.apply _)
 }
