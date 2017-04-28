@@ -53,11 +53,7 @@ object RegistrationAuditEvent {
   val EXTERNAL_ID = "externalId"
   val AUTH_PROVIDER_ID = "authProviderId"
   val JOURNEY_ID = "journeyId"
-  val ACK_REF = "acknowledgementReference"
-  val REG_METADATA = "registrationMetadata"
   val DES_SUBMISSION_STATE = "desSubmissionState"
-  val PAYE = "paye"
-  val INCORP_STATUS = "incorporationStatus"
   val CRN = "crn"
   val PATH = "path"
 

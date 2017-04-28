@@ -18,43 +18,91 @@ package models.submission
 
 import java.time.LocalDate
 
-import models.Address
+import models.{Address, DigitalContactDetails, Director}
+import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.format.ISODateTimeFormat
 import play.api.libs.json.Writes
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-case class DESCompanyDetails(companyName: String,
-                             tradingName: Option[String],
-                             ppob: Address,
-                             regAddress: Address)
+object DesFormats {
 
-object DESCompanyDetails {
+  private val datetime = ISODateTimeFormat.dateTime()
 
-  implicit val writes: Writes[DESCompanyDetails] =
-    (
-      (__ \ "companyName").write[String] and
-        (__ \ "tradingName").writeNullable[String] and
-        (__ \ "ppobAddress").write[Address] and
-        (__ \ "registeredOfficeAddress").write[Address]
-      )(unlift(DESCompanyDetails.unapply))
+  def formatTimestamp(ts: DateTime): String = datetime.print(ts)
+
 }
 
-case class DESDirector(forename: Option[String],
-                        surname: Option[String],
-                        otherForenames: Option[String],
-                        title: Option[String],
-                        nino: Option[String]
-)
+object BusinessType {
+  val LimitedCompany = "Limited company"
+}
 
-object DESDirector {
-  implicit val writes: Writes[DESDirector] =
-    (
-      (__ \ "forename").writeNullable[String] and
-        (__ \ "surname").writeNullable[String] and
-        (__ \ "otherForenames").writeNullable[String] and
-        (__ \ "title").writeNullable[String] and
-        (__ \ "nino").writeNullable[String]
-      )(unlift(DESDirector.unapply))
+case class DESMetaData(sessionId: String,
+                       credId: String,
+                       language: String,
+                       submissionTs: DateTime,
+                       completionCapacity: DESCompletionCapacity)
+
+object DESMetaData {
+  import DesFormats._
+
+  implicit val writes = new Writes[DESMetaData] {
+    def writes(m: DESMetaData) = {
+      Json.obj(
+        "businessType" -> BusinessType.LimitedCompany,
+        "submissionFromAgent" -> false,
+        "declareAccurateAndComplete" -> true,
+        "sessionID" -> m.sessionId,
+        "credentialID" -> m.credId,
+        "language" -> m.language,
+        "formCreationTimestamp" -> formatTimestamp(m.submissionTs)
+      ) ++ Json.toJson(m.completionCapacity).as[JsObject]
+    }
+  }
+}
+
+case class DESLimitedCompany(companyUTR: Option[String],
+                             companiesHouseCompanyName: String,
+                             nameOfBusiness: Option[String],
+                             businessAddress: Address,
+                             businessContactDetails: DigitalContactDetails,
+                             natureOfBusiness: String,
+                             crn: Option[String],
+                             directors: Seq[Director],
+                             registeredOfficeAddress: Address,
+                             operatingOccPensionScheme: Option[Boolean])
+
+object DESLimitedCompany {
+  implicit val writes: Writes[DESLimitedCompany] = (
+    (__ \ "companyUTR").writeNullable[String] and
+    (__ \ "companiesHouseCompanyName").write[String] and
+    (__ \ "nameOfBusiness").writeNullable[String] and
+    (__ \ "businessAddress").write[Address](Address.writesDES) and
+    (__ \ "businessContactDetails").write[DigitalContactDetails] and
+    (__ \ "natureOfBusiness").write[String] and
+    (__ \ "crn").writeNullable[String] and
+    (__ \ "directors").write[Seq[Director]](Director.seqWritesDES) and
+    (__ \ "registeredOfficeAddress").write[Address](Address.writesDES) and
+    (__ \ "operatingOccPensionScheme").writeNullable[Boolean]
+  )(unlift(DESLimitedCompany.unapply))
+}
+
+case class DESEmployingPeople(dateOfFirstEXBForEmployees: LocalDate,
+                              numberOfEmployeesExpectedThisYear: String,
+                              engageSubcontractors: Boolean,
+                              correspondenceName: String,
+                              correspondenceContactDetails: DigitalContactDetails,
+                              payeCorrespondenceAddress: Address)
+
+object DESEmployingPeople {
+  implicit val writes: Writes[DESEmployingPeople] = (
+    (__ \ "dateOfFirstEXBForEmployees").write[LocalDate] and
+    (__ \ "numberOfEmployeesExpectedThisYear").write[String] and
+    (__ \ "engageSubcontractors").write[Boolean] and
+    (__ \ "correspondenceName").write[String] and
+    (__ \ "correspondenceContactDetails").write[DigitalContactDetails] and
+    (__ \ "payeCorrespondenceAddress").write[Address](Address.writesDES)
+  )(unlift(DESEmployingPeople.unapply))
 }
 
 case class DESPAYEContact(name: String,
@@ -72,45 +120,6 @@ object DESPAYEContact {
         (__ \ "mobile").writeNullable[String] and
         (__ \ "correspondenceAddress").write[Address]
       )(unlift(DESPAYEContact.unapply))
-}
-
-case class DESBusinessContact(email: Option[String],
-                              tel: Option[String],
-                              mobile: Option[String])
-
-object DESBusinessContact {
-  implicit val writes: Writes[DESBusinessContact] =
-  (
-      (__ \ "email").writeNullable[String] and
-      (__ \ "phoneNumber").writeNullable[String] and
-      (__ \ "mobileNumber").writeNullable[String]
-    )(unlift(DESBusinessContact.unapply))
-}
-
-case class DESSICCode(code: Option[String],
-                       description: Option[String])
-
-object DESSICCode {
-  implicit val writes: Writes[DESSICCode] =
-    (
-      (__ \ "code").writeNullable[String] and
-      (__ \ "description").writeNullable[String]
-    )(unlift(DESSICCode.unapply))
-}
-
-case class DESEmployment(employees: Boolean,
-                    ocpn: Option[Boolean],
-                    cis: Boolean,
-                    firstPaymentDate: LocalDate)
-
-object DESEmployment {
-  implicit val writes: Writes[DESEmployment] =
-    (
-      (__ \ "employees").write[Boolean] and
-      (__ \ "ocpn").writeNullable[Boolean] and
-      (__ \ "cis").write[Boolean] and
-      (__ \ "firstPaymentDate").write[LocalDate]
-    )(unlift(DESEmployment.unapply))
 }
 
 case class DESCompletionCapacity(capacity: String,

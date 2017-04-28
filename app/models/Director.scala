@@ -19,34 +19,56 @@ package models
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-case class Director(
-                     name: Name,
-                     nino: Option[String]
-                   )
+case class Director(name: Name,
+                    nino: Option[String])
 
-case class Name(
-                 forename: Option[String],
-                 otherForenames: Option[String],
-                 surname: Option[String],
-                 title: Option[String]
-               )
+case class Name(forename: Option[String],
+                otherForenames: Option[String],
+                surname: Option[String],
+                title: Option[String])
 
 object Name {
   implicit val format: Format[Name] =
     (
       (__ \ "forename").formatNullable[String] and
-        (__ \ "other_forenames").formatNullable[String] and
-        (__ \ "surname").formatNullable[String] and
-        (__ \ "title").formatNullable[String]
-      )(Name.apply, unlift(Name.unapply)
-    )
+      (__ \ "other_forenames").formatNullable[String] and
+      (__ \ "surname").formatNullable[String] and
+      (__ \ "title").formatNullable[String]
+    )(Name.apply, unlift(Name.unapply))
+
+  val writesDES: Writes[Name] = new Writes[Name] {
+    override def writes(name: Name): JsValue = {
+      val successWrites = (
+        (__ \ "firstName").writeNullable[String] and
+        (__ \ "middleName").writeNullable[String] and
+        (__ \ "lastName").writeNullable[String] and
+        (__ \ "title").writeNullable[String]
+      )(unlift(Name.unapply))
+
+      Json.toJson(name)(successWrites).as[JsObject]
+    }
+  }
 }
 
 object Director extends DirectorValidator {
   implicit val format: Format[Director] =
     (
       (__ \ "director").format[Name] and
-        (__ \ "nino").formatNullable[String](ninoValidator)
-      )(Director.apply, unlift(Director.unapply)
-    )
+      (__ \ "nino").formatNullable[String](ninoValidator)
+    )(Director.apply, unlift(Director.unapply))
+
+  val writesDES: Writes[Director] = new Writes[Director] {
+    override def writes(director: Director): JsValue = {
+      val successWrites = (
+        (__ \ "directorName").write[Name](Name.writesDES) and
+        (__ \ "directorNINO").writeNullable[String](ninoValidator)
+      )(unlift(Director.unapply))
+
+      Json.toJson(director)(successWrites).as[JsObject]
+    }
+  }
+
+  val seqWritesDES: Writes[Seq[Director]] = new Writes[Seq[Director]] {
+    override def writes(directors: Seq[Director]): JsValue = Json.toJson(directors map (d => Json.toJson(d)(writesDES)))
+  }
 }

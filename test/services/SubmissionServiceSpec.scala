@@ -21,17 +21,20 @@ import java.time.LocalDate
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import connectors.{DESConnector, IncorporationInformationConnector}
+import connectors.{Authority, BusinessRegistrationConnector, DESConnector, IncorporationInformationConnector, UserIds}
 import enums.PAYEStatus
 import models._
 import models.submission._
 import helpers.PAYERegSpec
+import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
+import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.test.FakeRequest
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
+import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
@@ -41,8 +44,9 @@ class SubmissionServiceSpec extends PAYERegSpec {
   val mockDESConnector = mock[DESConnector]
   val mockIIConnector = mock[IncorporationInformationConnector]
   val mockAuditConnector = mock[AuditConnector]
+  val mockBusinessRegistrationConnector = mock[BusinessRegistrationConnector]
 
-  implicit val hc = HeaderCarrier()
+  implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
   implicit val req = FakeRequest("GET", "/test-path")
 
   class Setup {
@@ -53,6 +57,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val incorporationInformationConnector = mockIIConnector
       override val authConnector = mockAuthConnector
       override val auditConnector = mockAuditConnector
+      override val businessRegistrationConnector = mockBusinessRegistrationConnector
     }
   }
 
@@ -79,30 +84,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
     DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
-  val validDESCompanyDetails = DESCompanyDetails(
-    companyName = "Test Company Name",
-    tradingName = Some("Test Trading Name"),
-    ppob = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-    regAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
-  )
-
-  val validDESBusinessContact = DESBusinessContact(
-    email = Some("test@email.com"),
-    tel = Some("012345"),
-    mobile = Some("543210")
-  )
-
   val validEmployment = Employment(
     employees = true,
     companyPension = Some(true),
     subcontractors = true,
-    firstPaymentDate = LocalDate.of(2016, 12, 20)
-  )
-
-  val validDESEmployment = DESEmployment(
-    employees = true,
-    ocpn = Some(true),
-    cis = true,
     firstPaymentDate = LocalDate.of(2016, 12, 20)
   )
 
@@ -127,29 +112,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
     )
   )
 
-  val validDESDirectors = Seq(
-    DESDirector(
-      forename = Some("Thierry"),
-      otherForenames = Some("Dominique"),
-      surname = Some("Henry"),
-      title = Some("Sir"),
-      nino = Some("SR123456C")
-    ),
-    DESDirector(
-      forename = Some("David"),
-      otherForenames = Some("Jesus"),
-      surname = Some("Trezeguet"),
-      title = Some("Mr"),
-      nino = Some("SR000009C")
-    )
-  )
-
   val validSICCodes = Seq(
     SICCode(code = None, description = Some("consulting"))
-  )
-
-  val validDESSICCodes = Seq(
-    DESSICCode(code = None, description = Some("consulting"))
   )
 
   val validPAYEContact = PAYEContact(
@@ -161,14 +125,6 @@ class SubmissionServiceSpec extends PAYERegSpec {
         Some("543210")
       )
     ),
-    correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
-  )
-
-  val validDESPAYEContact = DESPAYEContact(
-    name = "Toto Tata",
-    email = Some("test@email.com"),
-    tel = Some("012345"),
-    mobile = Some("543210"),
     correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
@@ -237,16 +193,50 @@ class SubmissionServiceSpec extends PAYERegSpec {
     sicCodes = Seq.empty
   )
 
+  val validDESCompletionCapacity = DESCompletionCapacity(
+    capacity = "director",
+    otherCapacity = None
+  )
+
+  val validDESMetaData = DESMetaData(
+    sessionId = "session-123",
+    credId = "cred-123",
+    language = "en",
+    submissionTs = DateTime.parse("2017-01-01"),
+    completionCapacity = validDESCompletionCapacity
+  )
+
+  val validDESLimitedCompanyWithoutCRN = DESLimitedCompany(
+    companyUTR = None,
+    companiesHouseCompanyName = "Test Company Name",
+    nameOfBusiness = Some("Test Trading Name"),
+    businessAddress = validCompanyDetails.ppobAddress,
+    businessContactDetails = validCompanyDetails.businessContactDetails,
+    natureOfBusiness = "consulting",
+    crn = None,
+    directors = validDirectors,
+    registeredOfficeAddress = validCompanyDetails.roAddress,
+    operatingOccPensionScheme = validEmployment.companyPension
+  )
+
+  val validDESEmployingPeople = DESEmployingPeople(
+    dateOfFirstEXBForEmployees = LocalDate.of(2016, 12, 20),
+    numberOfEmployeesExpectedThisYear = "1",
+    engageSubcontractors = true,
+    correspondenceName = "Toto Tata",
+    correspondenceContactDetails = DigitalContactDetails(
+      Some("test@email.com"),
+      Some("012345"),
+      Some("543210")
+    ),
+    payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+  )
+
   val validPartialDESSubmissionModel = DESSubmissionModel(
     acknowledgementReference = "ackRef",
-    crn = None,
-    company = validDESCompanyDetails,
-    directors = validDESDirectors,
-    payeContact = validDESPAYEContact,
-    businessContact = validDESBusinessContact,
-    sicCodes = validDESSICCodes,
-    employment = validDESEmployment,
-    completionCapacity = DESCompletionCapacity("director", None)
+    metaData = validDESMetaData,
+    limitedCompany = validDESLimitedCompanyWithoutCRN,
+    employingPeople = validDESEmployingPeople
   )
 
   val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
@@ -274,25 +264,37 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "payeReg2DESSubmission" should {
     "return a DESSubmission model" when {
       "a valid PAYE reg doc is passed to it" in new Setup {
-        val result = service.payeReg2DESSubmission(validRegistration, None)
+        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
+
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
+
+        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), None))
         result shouldBe validPartialDESSubmissionModel
       }
 
       "a valid paye reg doc with a crn is passed to it" in new Setup {
-        val result = service.payeReg2DESSubmission(validRegistration, Some("OC123456"))
-        result shouldBe validPartialDESSubmissionModel.copy(crn = Some("OC123456"))
+        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
+
+        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
+
+        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), Some("OC123456")))
+        result shouldBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
       }
     }
 
     "throw a CompanyDetailsNotDefinedException" when {
       "a paye reg doc is passed in that doesn't have a company details block" in new Setup {
-        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), None))
+        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), DateTime.parse("2017-01-01"), None))
       }
     }
 
     "throw a AcknowledgementReferenceNotExistsException" when {
       "the paye reg doc is missing an ack ref" in new Setup {
-        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), None))
+        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), DateTime.parse("2017-01-01"), None))
       }
     }
   }
@@ -314,6 +316,22 @@ class SubmissionServiceSpec extends PAYERegSpec {
       .thenReturn(Future.successful("BRPY00000001234"))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "BRPY00000001234"
+    }
+  }
+
+  "Calling buildADesSubmission" should {
+    "throw the correct exception when the registration is invalid" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
+
+      intercept[InvalidRegistrationException](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate))))
+    }
+
+    "throw the correct exception when there is no registration in mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(None))
+
+      intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate))))
     }
   }
 
@@ -340,15 +358,24 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
   }
 
-  "Calling build functions with undefined options" should {
-    "throw the correct exception for PAYE Contact" in new Setup {
-      intercept[PAYEContactNotDefinedException](service.buildDESPAYEContact(None))
+  "Building DES Limited Company" should {
+    "throw the correct exception for SIC Code when missing" in new Setup {
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, Seq.empty, Some(validEmployment)))
     }
-    "throw the correct exception for Employment Details" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESEmploymentDetails(None))
+    "throw the correct exception for Employment when missing" in new Setup {
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, None))
     }
-    "throw the correct exception for Completion Capacity" in new Setup {
-      intercept[CompletionCapacityNotDefinedException](service.buildDESCompletionCapacity(None))
+  }
+
+  "Building DES Employing People" should {
+    "throw the correct exception for PAYE Contact when missing" in new Setup {
+      intercept[PAYEContactNotDefinedException](service.buildDESEmployingPeople("regId", Some(validEmployment), None))
+    }
+    "throw the correct exception for Employment Details when missing" in new Setup {
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESEmployingPeople("regId", None, Some(validPAYEContact)))
+    }
+    "return the correct DES Employing People model" in new Setup {
+      service.buildDESEmployingPeople("regId", Some(validEmployment.copy(employees = false)), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
     }
   }
 
@@ -362,9 +389,24 @@ class SubmissionServiceSpec extends PAYERegSpec {
     "succeed for 'high priestess'" in new Setup {
       service.buildDESCompletionCapacity(Some("high priestess")) shouldBe DESCompletionCapacity("other", Some("high priestess"))
     }
+    "throw the correct exception for Completion Capacity when missing" in new Setup {
+      intercept[CompletionCapacityNotDefinedException](service.buildDESCompletionCapacity(None))
+    }
   }
 
-  "Building a Top Up DES Submission" should {
+  "Building DES Nature Of Business" should {
+    "succeed for agent" in new Setup {
+      service.buildNatureOfBusiness(Seq(SICCode(None, Some("consulting")))) shouldBe "consulting"
+    }
+    "throw the correct exception for SIC Code when missing" in new Setup {
+      intercept[SICCodeNotDefinedException](service.buildNatureOfBusiness(Seq.empty))
+    }
+    "throw the correct exception for SIC Code when description is missing" in new Setup {
+      intercept[SICCodeNotDefinedException](service.buildNatureOfBusiness(Seq(SICCode(None, None))))
+    }
+  }
+
+  "payeReg2TopUpDESSubmission" should {
     "throw the correct error when acknowledgement reference is not present" in new Setup{
       intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
     }
@@ -394,6 +436,30 @@ class SubmissionServiceSpec extends PAYERegSpec {
         .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
       await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
+    }
+  }
+
+  "Calling retrieveCredId" should {
+    "return the correct exception when credential ID is missing" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
+
+      a[service.FailedToGetCredId] shouldBe thrownBy(await(service.retrieveCredId))
+    }
+  }
+
+  "Calling retrieveLanguage" should {
+    "return the correct exception for language" in new Setup {
+      when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
+
+      a[service.FailedToGetLanguage] shouldBe thrownBy(await(service.retrieveLanguage("testRegId")))
+    }
+  }
+
+  "Calling retrieveSessionID" should {
+    "return the correct exception when session ID is missing" in new Setup {
+      intercept[service.SessionIDNotExists](service.retrieveSessionID(HeaderCarrier()))
     }
   }
 }

@@ -23,25 +23,49 @@ import uk.gov.hmrc.play.test.UnitSpec
 class DesTopUpAuditEventDetailSpec extends UnitSpec {
   "DesTopUpAuditEventDetail" should {
     val regId = "123456789"
+    val ackRef = "ackRef"
 
-    "construct full json as per definition" in {
-      val validTopUpDESSubmission = TopUpDESSubmission("ackRef", "accepted", Some("AA123456"))
+    "construct full json as per definition" when {
+      "incorporation is accepted" in {
+        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, "accepted", Some("AA123456"))
 
-      val expected = Json.parse(
-        s"""
-           |{
-           |   "journeyId": "$regId",
-           |   "acknowledgementReference": "ackRef",
-           |   "incorporationStatus": "accepted",
-           |   "crn": "AA123456"
-           |}
-        """.stripMargin)
+        val expected = Json.parse(
+          s"""
+             |{
+             |   "journeyId": "$regId",
+             |   "acknowledgementReference": "$ackRef",
+             |   "status": "accepted",
+             |   "payAsYouEarn": {
+             |     "crn": "AA123456"
+             |   }
+             |}
+          """.stripMargin)
 
-      val testModel = DesTopUpAuditEventDetail(
-        regId,
-        Json.toJson[DESSubmission](validTopUpDESSubmission).as[JsObject]
-      )
-      Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
+        val testModel = DesTopUpAuditEventDetail(
+          regId,
+          Json.toJson[DESSubmission](validTopUpDESSubmission).as[JsObject]
+        )
+        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
+      }
+
+      "incorporation is rejected" in {
+        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, "rejected", None)
+
+        val expected = Json.parse(
+          s"""
+             |{
+             |   "journeyId": "$regId",
+             |   "acknowledgementReference": "$ackRef",
+             |   "status": "rejected"
+             |}
+          """.stripMargin)
+
+        val testModel = DesTopUpAuditEventDetail(
+          regId,
+          Json.toJson[DESSubmission](validTopUpDESSubmission).as[JsObject]
+        )
+        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
+      }
     }
   }
 }

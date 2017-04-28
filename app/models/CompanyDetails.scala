@@ -17,7 +17,7 @@
 package models
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, Json, __}
+import play.api.libs.json.{Format, JsObject, JsValue, Json, Writes, __}
 
 case class CompanyDetails(companyName: String,
                           tradingName: Option[String],
@@ -34,6 +34,21 @@ case class Address(line1: String,
 
 object Address {
   implicit val format = Json.format[Address]
+
+  val writesDES: Writes[Address] = new Writes[Address] {
+    override def writes(address: Address): JsValue = {
+      val successWrites = (
+        (__ \ "addressLine1").write[String] and
+        (__ \ "addressLine2").write[String] and
+        (__ \ "addressLine3").writeNullable[String] and
+        (__ \ "addressLine4").writeNullable[String] and
+        (__ \ "postcode").writeNullable[String] and
+        (__ \ "country").writeNullable[String]
+      )(unlift(Address.unapply))
+
+      Json.toJson(address)(successWrites).as[JsObject]
+    }
+  }
 }
 
 object CompanyDetails extends CompanyDetailsValidator {

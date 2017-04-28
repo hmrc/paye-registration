@@ -23,20 +23,13 @@ case class DesTopUpAuditEventDetail(regId: String,
                                     jsSubmission: JsObject)
 
 object DesTopUpAuditEventDetail {
-  import RegistrationAuditEvent.{JOURNEY_ID, ACK_REF, INCORP_STATUS, CRN}
+  import RegistrationAuditEvent.{JOURNEY_ID, CRN}
 
   implicit val writes = new Writes[DesTopUpAuditEventDetail] {
     def writes(detail: DesTopUpAuditEventDetail) = {
-
-      val crn = (detail.jsSubmission \ "crn").asOpt[JsString].fold(Json.obj()) {
-        crn => Json.obj(CRN -> crn)
-      }
-
       Json.obj(
-        JOURNEY_ID -> detail.regId,
-        ACK_REF -> (detail.jsSubmission \ "acknowledgementReference").as[JsString],
-        INCORP_STATUS -> (detail.jsSubmission \ "incorporationStatus").as[JsString]
-      ).++(crn)
+        JOURNEY_ID -> detail.regId
+      ) ++ detail.jsSubmission
     }
   }
 }

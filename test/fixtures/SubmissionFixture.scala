@@ -18,71 +18,96 @@ package fixtures
 
 import java.time.LocalDate
 
-import models.Address
+import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name, SICCode}
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
+import org.joda.time.DateTime
 
 trait SubmissionFixture {
-
-  val validDESCompanyDetails = DESCompanyDetails(
+  val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
-    ppob = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-    regAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+    Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+    DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
-  val validDESBusinessContact = DESBusinessContact(
-    email = Some("test@email.com"),
-    tel = Some("012345"),
-    mobile = Some("543210")
-  )
-
-  val validDESEmployment = DESEmployment(
+  val validEmployment = Employment(
     employees = true,
-    ocpn = Some(true),
-    cis = true,
+    companyPension = Some(true),
+    subcontractors = true,
     firstPaymentDate = LocalDate.of(2016, 12, 20)
   )
 
-  val validDESDirectors = Seq(
-    DESDirector(
-      forename = Some("Thierry"),
-      otherForenames = Some("Dominique"),
-      surname = Some("Henry"),
-      title = Some("Sir"),
-      nino = Some("SR123456C")
+  val validDESCompletionCapacity = DESCompletionCapacity(
+    capacity = "other",
+    otherCapacity = Some("friend")
+  )
+
+  val validDirectors = Seq(
+    Director(
+      Name(
+        forename = Some("Thierry"),
+        otherForenames = Some("Dominique"),
+        surname = Some("Henry"),
+        title = Some("Sir")
+      ),
+      Some("SR123456C")
     ),
-    DESDirector(
-      forename = Some("David"),
-      otherForenames = Some("Jesus"),
-      surname = Some("Trezeguet"),
-      title = Some("Mr"),
-      nino = Some("SR000009C")
+    Director(
+      Name(
+        forename = Some("David"),
+        otherForenames = Some("Jesus"),
+        surname = Some("Trezeguet"),
+        title = Some("Mr")
+      ),
+      Some("SR000009C")
     )
   )
 
-  val validDESSICCodes = Seq(
-    DESSICCode(code = None, description = Some("consulting"))
+  val validSICCodes = Seq(
+    SICCode(code = None, description = Some("consulting"))
   )
 
-  val validDESPAYEContact = DESPAYEContact(
-    name = "Toto Tata",
-    email = Some("test@email.com"),
-    tel = Some("012345"),
-    mobile = Some("543210"),
-    correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+  val validDESMetaData = DESMetaData(
+    sessionId = "session-123",
+    credId = "cred-123",
+    language = "en",
+    submissionTs = DateTime.parse("2017-01-01"),
+    completionCapacity = validDESCompletionCapacity
+  )
+
+  val validDESLimitedCompanyWithoutCRN = DESLimitedCompany(
+    companyUTR = None,
+    companiesHouseCompanyName = "TESTLTD",
+    nameOfBusiness = Some("TEST Business"),
+    businessAddress = validCompanyDetails.ppobAddress,
+    businessContactDetails = validCompanyDetails.businessContactDetails,
+    natureOfBusiness = "consulting",
+    crn = None,
+    directors = validDirectors,
+    registeredOfficeAddress = validCompanyDetails.roAddress,
+    operatingOccPensionScheme = validEmployment.companyPension
+  )
+
+  val validDESEmployingPeople = DESEmployingPeople(
+    dateOfFirstEXBForEmployees = LocalDate.of(2016, 12, 20),
+    numberOfEmployeesExpectedThisYear = "1",
+    engageSubcontractors = true,
+    correspondenceName = "Toto Tata",
+    correspondenceContactDetails = DigitalContactDetails(
+      Some("test@email.com"),
+      Some("012345"),
+      Some("543210")
+    ),
+    payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
   val validPartialDESSubmissionModel = DESSubmissionModel(
     acknowledgementReference = "ackRef",
-    crn = None,
-    company = validDESCompanyDetails,
-    directors = validDESDirectors,
-    payeContact = validDESPAYEContact,
-    businessContact = validDESBusinessContact,
-    sicCodes = validDESSICCodes,
-    employment = validDESEmployment,
-    completionCapacity = DESCompletionCapacity("director", None)
+    metaData = validDESMetaData,
+    limitedCompany = validDESLimitedCompanyWithoutCRN,
+    employingPeople = validDESEmployingPeople
   )
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(

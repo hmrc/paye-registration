@@ -32,27 +32,17 @@ object DESSubmission {
 }
 
 case class DESSubmissionModel(acknowledgementReference: String,
-                              crn: Option[String],
-                              company: DESCompanyDetails,
-                              directors: Seq[DESDirector],
-                              payeContact: DESPAYEContact,
-                              businessContact: DESBusinessContact,
-                              sicCodes: Seq[DESSICCode],
-                              employment: DESEmployment,
-                              completionCapacity: DESCompletionCapacity) extends DESSubmission
+                              metaData: DESMetaData,
+                              limitedCompany: DESLimitedCompany,
+                              employingPeople: DESEmployingPeople) extends DESSubmission
 
 object DESSubmissionModel {
   implicit val writes: Writes[DESSubmissionModel] =
     (
       (__ \ "acknowledgementReference").write[String] and
-      (__ \ "crn").writeNullable[String] and
-      (__ \ "companyDetails").write[DESCompanyDetails] and
-      (__ \ "directors").write[Seq[DESDirector]] and
-      (__ \ "payeContact").write[DESPAYEContact] and
-      (__ \ "businessContactDetails").write[DESBusinessContact] and
-      (__ \ "sicCodes").write[Seq[DESSICCode]] and
-      (__ \ "employment").write[DESEmployment] and
-      (__ \ "completionCapacity").write[DESCompletionCapacity]
+      (__ \ "metaData").write[DESMetaData] and
+      (__ \ "payAsYouEarn" \ "limitedCompany").write[DESLimitedCompany] and
+      (__ \ "payAsYouEarn" \ "employingPeople").write[DESEmployingPeople]
       )(unlift(DESSubmissionModel.unapply))
 }
 
@@ -64,7 +54,7 @@ object TopUpDESSubmission {
   implicit val writes: Writes[TopUpDESSubmission] =
     (
       (__ \ "acknowledgementReference").write[String] and
-      (__ \ "incorporationStatus").write[String] and
-      (__ \ "crn").writeNullable[String]
+      (__ \ "status").write[String] and
+      (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
     )(unlift(TopUpDESSubmission.unapply))
 }
