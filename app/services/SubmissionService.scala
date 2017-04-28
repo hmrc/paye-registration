@@ -23,11 +23,12 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import config.MicroserviceAuditConnector
-import connectors.{AuthConnect, AuthConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
+import connectors.{AuthConnect, AuthConnector, BusinessRegistrationConnect, BusinessRegistrationConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
 import enums.PAYEStatus
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AnyContent, Request}
@@ -48,13 +49,15 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injRegistrationMongoRepository: RegistrationMongo,
                                   injDESConnector: DESConnector,
                                   injIncorprorationInformationConnector: IncorporationInformationConnector,
-                                  injAuthConnector: AuthConnector) extends SubmissionSrv {
+                                  injAuthConnector: AuthConnector,
+                                  injBusinessRegistrationConnector: BusinessRegistrationConnector) extends SubmissionSrv {
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
   val incorporationInformationConnector = injIncorprorationInformationConnector
   val authConnector = injAuthConnector
   val auditConnector = MicroserviceAuditConnector
+  val businessRegistrationConnector = injBusinessRegistrationConnector
 }
 
 trait SubmissionSrv {
@@ -65,6 +68,7 @@ trait SubmissionSrv {
   val incorporationInformationConnector: IncorporationInformationConnect
   val authConnector: AuthConnect
   val auditConnector: AuditConnector
+  val businessRegistrationConnector: BusinessRegistrationConnect
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
@@ -123,15 +127,15 @@ trait SubmissionSrv {
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate]): Future[DESSubmissionModel] = {
-    registrationRepository.retrieveRegistration(regId) map {
+  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
+    registrationRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a full DES submission")
-          payeReg2DESSubmission(payeReg, statusUpdate.crn)
+          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), statusUpdate.crn)
         case None =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a partial DES submission")
-          payeReg2DESSubmission(payeReg, None)
+          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), None)
       }
       case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
       case None =>
@@ -162,22 +166,26 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String]): DESSubmissionModel = {
-    val companyDetails = payeReg.companyDetails.getOrElse{throw new CompanyDetailsNotDefinedException}
-    DESSubmissionModel(
-      acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
-        Logger.warn(s"[SubmissionService] - [payeReg2PartialDESSubmission]: Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
-        throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
-      },
-      crn = incorpUpdateCrn,
-      company = buildDESCompanyDetails(companyDetails),
-      directors = buildDESDirectors(payeReg.directors),
-      payeContact = buildDESPAYEContact(payeReg.payeContact),
-      businessContact = buildDESBusinessContact(companyDetails.businessContactDetails),
-      sicCodes = buildDESSicCodes(payeReg.sicCodes),
-      employment = buildDESEmploymentDetails(payeReg.employment),
-      completionCapacity = buildDESCompletionCapacity(payeReg.completionCapacity)
-    )
+  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, timestamp: DateTime, incorpUpdateCrn: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
+    val companyDetails = payeReg.companyDetails.getOrElse {
+      throw new CompanyDetailsNotDefinedException
+    }
+
+    val ackRef = payeReg.acknowledgementReference.getOrElse {
+      Logger.warn(s"[SubmissionService] - [payeReg2PartialDESSubmission]: Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
+      throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
+    }
+
+    buildDESMetaData(payeReg.registrationID, timestamp, payeReg.completionCapacity) map {
+      desMetaData => {
+        DESSubmissionModel(
+          acknowledgementReference = ackRef,
+          metaData = desMetaData,
+          limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, payeReg.employment),
+          employingPeople = buildDESEmployingPeople(payeReg.registrationID, payeReg.employment, payeReg.payeContact)
+        )
+      }
+    }
   }
 
   private[services] def payeReg2TopUpDESSubmission(payeReg: PAYERegistration, incorpStatusUpdate: IncorpStatusUpdate): TopUpDESSubmission = {
@@ -191,68 +199,10 @@ trait SubmissionSrv {
     )
   }
 
-  private def buildDESCompanyDetails(details: CompanyDetails): DESCompanyDetails = {
-    DESCompanyDetails(
-      companyName = details.companyName,
-      tradingName = details.tradingName,
-      ppob = details.ppobAddress,
-      regAddress = details.roAddress
-    )
-  }
-
-  private def buildDESDirectors(directors: Seq[Director]): Seq[DESDirector] = {
-    directors.map(dir => {
-      DESDirector(
-        forename = dir.name.forename,
-        surname = dir.name.surname,
-        otherForenames = dir.name.otherForenames,
-        title = dir.name.title,
-        nino = dir.nino
-      )
-    })
-  }
-
-  private[services] def buildDESPAYEContact(payeContact: Option[PAYEContact]): DESPAYEContact = {
-    payeContact match {
-      case Some(contact) =>
-        DESPAYEContact(
-          name = contact.contactDetails.name,
-          email = contact.contactDetails.digitalContactDetails.email,
-          tel = contact.contactDetails.digitalContactDetails.phoneNumber,
-          mobile = contact.contactDetails.digitalContactDetails.mobileNumber,
-          correspondenceAddress = contact.correspondenceAddress
-        )
-      case None => throw new PAYEContactNotDefinedException
-    }
-  }
-
-  private def buildDESBusinessContact(businessContactDetails: DigitalContactDetails): DESBusinessContact = {
-    DESBusinessContact(
-      email = businessContactDetails.email,
-      tel = businessContactDetails.phoneNumber,
-      mobile = businessContactDetails.mobileNumber
-    )
-  }
-
-  private def buildDESSicCodes(sicsCodeSeq: Seq[SICCode]): List[DESSICCode] = {
-    sicsCodeSeq.toList map { list =>
-      DESSICCode(
-        code = list.code,
-        description = list.description
-      )
-    }
-  }
-
-  private[services] def buildDESEmploymentDetails(employment: Option[Employment]): DESEmployment = {
-    employment match {
-      case Some(details) =>
-        DESEmployment(
-          employees = details.employees,
-          ocpn = details.companyPension,
-          cis = details.subcontractors,
-          firstPaymentDate = details.firstPaymentDate
-        )
-      case None => throw new EmploymentDetailsNotDefinedException
+  private[services] def buildNatureOfBusiness(sicCodes: Seq[SICCode]): String = {
+    sicCodes match {
+      case s if s == Seq.empty => throw new SICCodeNotDefinedException
+      case s => s.head.description.getOrElse(throw new SICCodeNotDefinedException)
     }
   }
 
@@ -269,6 +219,49 @@ trait SubmissionSrv {
       }
   }
 
+  private[services] def buildDESMetaData(regId: String, timestamp: DateTime, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
+    for {
+      language <- retrieveLanguage(regId)
+      credId <- retrieveCredId
+      sessionId = retrieveSessionID(hc)
+    } yield {
+      DESMetaData(sessionId, credId, language, timestamp, buildDESCompletionCapacity(completionCapacity))
+    }
+  }
+
+  private[services] def buildDESLimitedCompany(companyDetails: CompanyDetails,
+                                               sicCodes: Seq[SICCode],
+                                               incorpUpdateCrn: Option[String],
+                                               directors: Seq[Director],
+                                               employment: Option[Employment]): DESLimitedCompany = {
+    DESLimitedCompany(
+      companyUTR = None,
+      companiesHouseCompanyName = companyDetails.companyName,
+      nameOfBusiness = companyDetails.tradingName,
+      businessAddress = companyDetails.ppobAddress,
+      businessContactDetails = companyDetails.businessContactDetails,
+      natureOfBusiness = buildNatureOfBusiness(sicCodes),
+      crn = incorpUpdateCrn,
+      directors = directors,
+      registeredOfficeAddress = companyDetails.roAddress,
+      operatingOccPensionScheme = employment.getOrElse(throw new EmploymentDetailsNotDefinedException).companyPension
+    )
+  }
+
+  private[services] def buildDESEmployingPeople(regId: String, employment: Option[Employment], payeContact: Option[PAYEContact]): DESEmployingPeople = {
+    val employmentDetails = employment.getOrElse(throw new EmploymentDetailsNotDefinedException)
+    val payeContactDetails = payeContact.getOrElse(throw new PAYEContactNotDefinedException)
+
+    DESEmployingPeople(
+      dateOfFirstEXBForEmployees = employmentDetails.firstPaymentDate,
+      numberOfEmployeesExpectedThisYear = if( employmentDetails.employees ) "1" else "0",
+      engageSubcontractors = employmentDetails.subcontractors,
+      correspondenceName = payeContactDetails.contactDetails.name,
+      correspondenceContactDetails = payeContactDetails.contactDetails.digitalContactDetails,
+      payeCorrespondenceAddress = payeContactDetails.correspondenceAddress
+    )
+  }
+
   private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
     for {
       authority <- authConnector.getCurrentAuthority
@@ -283,5 +276,27 @@ trait SubmissionSrv {
   private[services] def auditDESTopUp(regId: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier) = {
     val event = new DesTopUpEvent(DesTopUpAuditEventDetail(regId, jsSubmission))
     auditConnector.sendEvent(event)
+  }
+
+  private[services] class FailedToGetCredId extends NoStackTrace
+  private[services] def retrieveCredId(implicit hc: HeaderCarrier): Future[String] = {
+    authConnector.getCurrentAuthority flatMap {
+      case Some(a) => Future.successful(a.gatewayId)
+      case _ => Future.failed(new FailedToGetCredId)
+    }
+  }
+
+  private[services] class FailedToGetLanguage extends NoStackTrace
+  private[services] def retrieveLanguage(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
+    businessRegistrationConnector.retrieveCurrentProfile flatMap {
+      case businessProfile if businessProfile.registrationID == regId => Future.successful(businessProfile.language)
+      case _ => Future.failed(new FailedToGetLanguage)
+    }
+  }
+
+  private[services] class SessionIDNotExists extends NoStackTrace
+  private[services] def retrieveSessionID(hc: HeaderCarrier): String = {
+    val s = hc.headers.collect{case ("X-Session-ID", x) => x}
+    if( s.nonEmpty ) s.head else throw new SessionIDNotExists
   }
 }

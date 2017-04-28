@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
+import models.external.BusinessProfile
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.WS
@@ -48,14 +49,18 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "microservice.services.des-service.port" -> s"$mockPort",
     "application.router" -> "testOnlyDoNotUseInAppConf.Routes",
     "microservice.services.incorporation-information.host" -> s"$mockHost",
-    "microservice.services.incorporation-information.port" -> s"$mockPort"
+    "microservice.services.incorporation-information.port" -> s"$mockPort",
+    "microservice.services.business-registration.host" -> s"$mockHost",
+    "microservice.services.business-registration.port" -> s"$mockPort"
   )
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
     .build()
 
-  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/$path").withFollowRedirects(false)
+  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/$path")
+                                        .withFollowRedirects(false)
+                                        .withHeaders(("X-Session-ID","session-12345"))
 
   private val regime = "paye"
   private val subscriber = "SCRS"
@@ -185,6 +190,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Nil
   )
 
+  val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
+
   val crn = "OC123456"
   val accepted = "accepted"
   val rejected = "rejected"
@@ -249,6 +256,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
+      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.toJson(businessProfile).toString)
+        )
+      )
+
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.insert(submission))
@@ -268,6 +284,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         .willReturn(
           aResponse().
             withStatus(200)
+        )
+      )
+
+      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.toJson(businessProfile).toString)
         )
       )
 
@@ -300,6 +325,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
             .withStatus(409)
             .withHeader("Content-Type", "application/json")
             .withBody("""{"acknowledgement_reference" : "testAckRef"}""")
+        )
+      )
+
+      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.toJson(businessProfile).toString)
         )
       )
 
@@ -338,6 +372,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
+      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.toJson(businessProfile).toString)
+        )
+      )
+
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.insert(submission))
@@ -359,6 +402,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
+      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.toJson(businessProfile).toString)
+        )
+      )
+
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.insert(submission))
@@ -377,6 +429,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         .willReturn(
           aResponse().
             withStatus(433)
+        )
+      )
+
+      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.toJson(businessProfile).toString)
         )
       )
 

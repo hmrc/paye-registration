@@ -27,7 +27,7 @@ case class DesSubmissionAuditEventDetail(externalId: String,
 
 object DesSubmissionAuditEventDetail {
 
-  import RegistrationAuditEvent.{EXTERNAL_ID, AUTH_PROVIDER_ID, JOURNEY_ID, ACK_REF, REG_METADATA, PAYE, DES_SUBMISSION_STATE}
+  import RegistrationAuditEvent.{EXTERNAL_ID, AUTH_PROVIDER_ID, JOURNEY_ID, DES_SUBMISSION_STATE}
 
   implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
@@ -37,11 +37,8 @@ object DesSubmissionAuditEventDetail {
         EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
-        ACK_REF -> (detail.jsSubmission \ "acknowledgementReference").as[JsString],
-        DES_SUBMISSION_STATE -> detail.desSubmissionState,
-        REG_METADATA -> regMetadata.++((detail.jsSubmission \ "completionCapacity").as[JsObject]),
-        PAYE -> detail.jsSubmission.-("acknowledgementReference").-("completionCapacity")
-      )
+        DES_SUBMISSION_STATE -> detail.desSubmissionState
+      ) ++ detail.jsSubmission
     }
   }
 }

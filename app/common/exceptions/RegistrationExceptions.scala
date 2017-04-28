@@ -29,4 +29,5 @@ trait RegistrationExceptions {
   class PAYEContactNotDefinedException extends NoStackTrace
   class EmploymentDetailsNotDefinedException extends NoStackTrace
   class CompletionCapacityNotDefinedException extends NoStackTrace
+  class SICCodeNotDefinedException extends NoStackTrace
 }

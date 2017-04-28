@@ -18,8 +18,9 @@ package audit
 
 import java.time.LocalDate
 
-import models.Address
-import models.submission.{DESBusinessContact, DESCompanyDetails, DESCompletionCapacity, DESDirector, DESEmployment, DESPAYEContact, DESSICCode, DESSubmission, DESSubmissionModel}
+import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name}
+import models.submission._
+import org.joda.time.DateTime
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -27,156 +28,185 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
 
   "DesSubmissionAuditEventDetail" should {
 
-    val externalUserId = "Ext-123456789"
+    val externalId = "Ext-123456789"
     val authProviderId = "apid001"
     val regId = "123456789"
     val desSubmissionState = "partial"
 
     "construct full json as per definition" in {
-      val validDESCompanyDetails = DESCompanyDetails(
+      val validCompanyDetails = CompanyDetails(
         companyName = "Test Company Name",
         tradingName = Some("Test Trading Name"),
-        ppob = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-        regAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+        DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
 
-      val validDESDirectors = Seq(
-        DESDirector(
-          forename = Some("Thierry"),
-          otherForenames = Some("Dominique"),
-          surname = Some("Henry"),
-          title = Some("Sir"),
-          nino = Some("SR123456C")
+      val validDirectors = Seq(
+        Director(
+          Name(
+            forename = Some("Thierry"),
+            otherForenames = Some("Dominique"),
+            surname = Some("Henry"),
+            title = Some("Sir")
+          ),
+          Some("SR123456C")
         ),
-        DESDirector(
-          forename = Some("David"),
-          otherForenames = Some("Jesus"),
-          surname = Some("Trezeguet"),
-          title = Some("Mr"),
-          nino = Some("SR000009C")
+        Director(
+          Name(
+            forename = Some("David"),
+            otherForenames = Some("Jesus"),
+            surname = Some("Trezeguet"),
+            title = Some("Mr")
+          ),
+          Some("SR000009C")
         )
       )
 
-      val validDESPAYEContact = DESPAYEContact(
-        name = "Toto Tata",
-        email = Some("test@email.com"),
-        tel = Some("012345"),
-        mobile = Some("543210"),
-        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
-      )
-
-      val validDESBusinessContact = DESBusinessContact(
-        email = Some("test@email.com"),
-        tel = Some("012345"),
-        mobile = Some("543210")
-      )
-
-      val validDESSICCodes = Seq(
-        DESSICCode(code = None, description = Some("consulting"))
-      )
-
-      val validDESEmployment = DESEmployment(
+      val validEmployment = Employment(
         employees = true,
-        ocpn = Some(true),
-        cis = true,
+        companyPension = Some(true),
+        subcontractors = true,
         firstPaymentDate = LocalDate.of(2016, 12, 20)
+      )
+
+      val validDESCompletionCapacity = DESCompletionCapacity(
+        capacity = "other",
+        otherCapacity = Some("friend")
+      )
+
+      val validDESMetaData = DESMetaData(
+        sessionId = "session-123",
+        credId = "cred-123",
+        language = "en",
+        submissionTs = DateTime.parse("2017-01-01"),
+        completionCapacity = validDESCompletionCapacity
+      )
+
+      val validDESLimitedCompanyWithoutCRN = DESLimitedCompany(
+        companyUTR = None,
+        companiesHouseCompanyName = "Test Company Name",
+        nameOfBusiness = Some("Test Trading Name"),
+        businessAddress = validCompanyDetails.ppobAddress,
+        businessContactDetails = validCompanyDetails.businessContactDetails,
+        natureOfBusiness = "consulting",
+        crn = None,
+        directors = validDirectors,
+        registeredOfficeAddress = validCompanyDetails.roAddress,
+        operatingOccPensionScheme = validEmployment.companyPension
+      )
+
+      val validDESEmployingPeople = DESEmployingPeople(
+        dateOfFirstEXBForEmployees = LocalDate.of(2016, 12, 20),
+        numberOfEmployeesExpectedThisYear = "1",
+        engageSubcontractors = true,
+        correspondenceName = "Toto Tata",
+        correspondenceContactDetails = DigitalContactDetails(
+          Some("test@email.com"),
+          Some("012345"),
+          Some("543210")
+        ),
+        payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
       )
 
       val validPartialDESSubmissionModel = DESSubmissionModel(
         acknowledgementReference = "ackRef",
-        crn = None,
-        company = validDESCompanyDetails,
-        directors = validDESDirectors,
-        payeContact = validDESPAYEContact,
-        businessContact = validDESBusinessContact,
-        sicCodes = validDESSICCodes,
-        employment = validDESEmployment,
-        completionCapacity = DESCompletionCapacity("other", Some("friend"))
+        metaData = validDESMetaData,
+        limitedCompany = validDESLimitedCompanyWithoutCRN,
+        employingPeople = validDESEmployingPeople
       )
 
       val expected = Json.parse(
         s"""
           |{
-          |   "externalId": "$externalUserId",
+          |   "externalId": "$externalId",
           |   "authProviderId": "$authProviderId",
           |   "journeyId": "$regId",
-          |   "acknowledgementReference": "ackRef",
           |   "desSubmissionState": "$desSubmissionState",
-          |   "registrationMetadata": {
+          |   "acknowledgementReference": "ackRef",
+          |   "metaData": {
           |     "businessType": "Limited company",
+          |     "sessionID": "session-123",
+          |     "credentialID": "cred-123",
+          |     "formCreationTimestamp": ${Json.toJson(DateTime.parse("2017-01-01").toString)},
+          |     "language": "en",
+          |     "submissionFromAgent": false,
           |     "completionCapacity": "other",
-          |     "completionCapacityOther": "friend"
+          |     "completionCapacityOther": "friend",
+          |     "declareAccurateAndComplete": true
           |   },
-          |   "paye": {
-          |     "companyDetails" : {
-          |       "companyName" : "Test Company Name",
-          |       "tradingName" : "Test Trading Name",
-          |       "ppobAddress" : {
-          |         "line1" : "15 St Walk",
-          |         "line2" : "Testley",
-          |         "line3" : "Testford",
-          |         "line4" : "Testshire",
-          |         "postCode" : "TE4 1ST",
+          |   "payAsYouEarn": {
+          |     "limitedCompany" : {
+          |       "companiesHouseCompanyName" : "Test Company Name",
+          |       "nameOfBusiness" : "Test Trading Name",
+          |       "businessAddress" : {
+          |         "addressLine1" : "15 St Walk",
+          |         "addressLine2" : "Testley",
+          |         "addressLine3" : "Testford",
+          |         "addressLine4" : "Testshire",
+          |         "postcode" : "TE4 1ST",
           |         "country" : "UK"
           |       },
+          |       "businessContactDetails": {
+          |         "email" : "test@email.com",
+          |         "phoneNumber" : "012345",
+          |         "mobileNumber" : "543210"
+          |       },
+          |       "natureOfBusiness": "consulting",
+          |       "directors" : [
+          |         {
+          |           "directorName": {
+          |             "firstName" : "Thierry",
+          |             "lastName" : "Henry",
+          |             "middleName" : "Dominique",
+          |             "title" : "Sir"
+          |           },
+          |           "directorNINO" : "SR123456C"
+          |         }, {
+          |           "directorName": {
+          |             "firstName" : "David",
+          |             "lastName" : "Trezeguet",
+          |             "middleName" : "Jesus",
+          |             "title" : "Mr"
+          |           },
+          |           "directorNINO" : "SR000009C"
+          |         }
+          |       ],
           |       "registeredOfficeAddress" : {
-          |         "line1" : "14 St Test Walk",
-          |         "line2" : "Testley",
-          |         "line3" : "Testford",
-          |         "line4" : "Testshire",
-          |         "postCode" : "TE1 1ST",
+          |         "addressLine1" : "14 St Test Walk",
+          |         "addressLine2" : "Testley",
+          |         "addressLine3" : "Testford",
+          |         "addressLine4" : "Testshire",
+          |         "postcode" : "TE1 1ST",
+          |         "country" : "UK"
+          |       },
+          |       "operatingOccPensionScheme": true
+          |     },
+          |     "employingPeople": {
+          |       "dateOfFirstEXBForEmployees": "2016-12-20",
+          |       "numberOfEmployeesExpectedThisYear": "1",
+          |       "engageSubcontractors": true,
+          |       "correspondenceName": "Toto Tata",
+          |       "correspondenceContactDetails": {
+          |         "email": "test@email.com",
+          |         "phoneNumber": "012345",
+          |         "mobileNumber": "543210"
+          |       },
+          |       "payeCorrespondenceAddress": {
+          |         "addressLine1" : "19 St Walk",
+          |         "addressLine2" : "Testley CA",
+          |         "addressLine3" : "Testford",
+          |         "addressLine4" : "Testshire",
+          |         "postcode" : "TE4 1ST",
           |         "country" : "UK"
           |       }
-          |     },
-          |     "directors" : [
-          |       {
-          |         "forename" : "Thierry",
-          |         "surname" : "Henry",
-          |         "otherForenames" : "Dominique",
-          |         "title" : "Sir",
-          |         "nino" : "SR123456C"
-          |       }, {
-          |         "forename" : "David",
-          |         "surname" : "Trezeguet",
-          |         "otherForenames" : "Jesus",
-          |         "title" : "Mr",
-          |         "nino" : "SR000009C"
-          |       }
-          |     ],
-          |     "payeContact" : {
-          |       "name" : "Toto Tata",
-          |       "email" : "test@email.com",
-          |       "tel" : "012345",
-          |       "mobile" : "543210",
-          |       "correspondenceAddress" : {
-          |         "line1" : "19 St Walk",
-          |         "line2" : "Testley CA",
-          |         "line3" : "Testford",
-          |         "line4" : "Testshire",
-          |         "postCode" : "TE4 1ST",
-          |         "country" : "UK"
-          |       }
-          |     },
-          |     "businessContactDetails" : {
-          |       "email" : "test@email.com",
-          |       "phoneNumber" : "012345",
-          |       "mobileNumber" : "543210"
-          |     },
-          |     "sicCodes" : [ {
-          |       "description" : "consulting"
-          |     } ],
-          |     "employment" : {
-          |       "employees" : true,
-          |       "ocpn" : true,
-          |       "cis" : true,
-          |       "firstPaymentDate" : "2016-12-20"
           |     }
           |   }
           |}
         """.stripMargin)
 
       val testModel = DesSubmissionAuditEventDetail(
-        externalUserId,
+        externalId,
         authProviderId,
         regId,
         desSubmissionState,
