@@ -17,6 +17,7 @@
 package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
+import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
@@ -381,11 +382,23 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   "Calling upsertCompletionCapacity" should {
 
-    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+    "throw a MissingRegDocument when there is no registration in mongo with the user's ID" in new Setup {
       when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.eq(regId), ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
       intercept[MissingRegDocument] { await(service.upsertCompletionCapacity(regId, "Agent")) }
+    }
+
+    "throw a RegistrationFormatException when the completion capacity is incorrectly formatted" in new Setup {
+      intercept[RegistrationFormatException] { await(service.upsertCompletionCapacity(regId, "&&&&&")) }
+    }
+
+    "throw a RegistrationFormatException when the completion capacity is too long" in new Setup {
+      intercept[RegistrationFormatException] { await(service.upsertCompletionCapacity(regId, List.fill(101)('a').mkString)) }
+    }
+
+    "throw a RegistrationFormatException when the completion capacity is too short" in new Setup {
+      intercept[RegistrationFormatException] { await(service.upsertCompletionCapacity(regId, "")) }
     }
 
     "return a DBSuccess response when the paye contact are successfully updated" in new Setup {
@@ -393,7 +406,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.eq(regId), ArgumentMatchers.any()))
         .thenReturn(Future.successful("Agent"))
 
-      val actual = await(service.upsertCompletionCapacity(regId, "Agent"))
+      val actual = await(service.upsertCompletionCapacity(regId, List.fill(100)('a').mkString))
       actual shouldBe "Agent"
     }
   }

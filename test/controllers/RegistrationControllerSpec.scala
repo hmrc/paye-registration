@@ -21,6 +21,7 @@ import java.time.LocalDate
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import common.exceptions.DBExceptions.MissingRegDocument
+import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import enums.PAYEStatus
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
@@ -951,6 +952,21 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director")))
 
       status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return a Bad Request response if there is no PAYE Registration for the user's ID" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new RegistrationFormatException("errMessage")))
+
+      val response = controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director")))
+
+      status(response) shouldBe Status.BAD_REQUEST
     }
 
     "return an OK response for a valid upsert" in new Setup {

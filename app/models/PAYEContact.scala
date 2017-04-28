@@ -16,6 +16,7 @@
 
 package models
 
+import helpers.PAYEContactDetailsValidator
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Json, __}
 
@@ -34,6 +35,7 @@ object PAYEContactDetails extends PAYEContactDetailsValidator {
 
 object PAYEContact {
   implicit val payeContactDetails = PAYEContactDetails.format
-  implicit val addressFormat = Address.format
+  implicit val addressReads = Address.reads
+  implicit val addressWrites = Address.writes
   implicit val format = Json.format[PAYEContact]
 }

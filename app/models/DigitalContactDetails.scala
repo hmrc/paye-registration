@@ -16,12 +16,26 @@
 
 package models
 
-import play.api.libs.json.Json
+import helpers.Validation
+import play.api.data.validation.ValidationError
+import play.api.libs.json.{Reads, Json, __}
+import play.api.libs.functional.syntax._
 
 case class DigitalContactDetails(email: Option[String],
                                  phoneNumber: Option[String],
                                  mobileNumber: Option[String])
 
 object DigitalContactDetails {
-  implicit val format = Json.format[DigitalContactDetails]
+  private val phoneNumberValidate = Reads.StringReads.filter(ValidationError("invalid phone number pattern"))(_.matches(Validation.phoneNumberRegex))
+  private val emailValidate = Reads.StringReads
+    .filter(ValidationError("invalid email pattern"))(_.matches(Validation.emailRegex))
+    .filter(ValidationError("email too long"))(_.length <= Validation.maxEmailLength)
+
+  implicit val writes = Json.writes[DigitalContactDetails]
+
+  implicit val reads: Reads[DigitalContactDetails] = (
+      (__ \ "email").readNullable[String](emailValidate) and
+      (__ \ "phoneNumber").readNullable[String](phoneNumberValidate) and
+      (__ \ "mobileNumber").readNullable[String](phoneNumberValidate)
+    )(DigitalContactDetails.apply _)
 }

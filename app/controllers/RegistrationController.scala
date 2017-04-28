@@ -16,6 +16,7 @@
 
 package controllers
 
+import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import common.exceptions.SubmissionExceptions.InvalidRegistrationException
 import connectors.{AuthConnect, AuthConnector}
 import enums.PAYEStatus
@@ -306,6 +307,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(capacityResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
+              case format  : RegistrationFormatException => BadRequest(s"Incorrect completion capacity format for regId $regID")
             }
           }
         case NotLoggedInOrAuthorised =>

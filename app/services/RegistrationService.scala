@@ -19,8 +19,10 @@ package services
 import javax.inject.{Inject, Singleton}
 
 import enums.PAYEStatus
+import helpers.PAYEBaseValidator
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
+import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 
@@ -32,7 +34,7 @@ class RegistrationService @Inject()(injRegistrationMongoRepository: Registration
   val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
 }
 
-trait RegistrationSrv {
+trait RegistrationSrv extends PAYEBaseValidator {
 
   val registrationRepository : RegistrationRepository
 
@@ -110,7 +112,8 @@ trait RegistrationSrv {
   }
 
   def upsertCompletionCapacity(regID: String, capacity: String): Future[String] = {
-    registrationRepository.upsertCompletionCapacity(regID, capacity)
+    if(validCompletionCapacity(capacity)) registrationRepository.upsertCompletionCapacity(regID, capacity)
+    else throw new RegistrationFormatException(s"Invalid completion capacity submitted for reg ID $regID")
   }
 
   def getAcknowledgementReference(regID: String) : Future[Option[String]] = {

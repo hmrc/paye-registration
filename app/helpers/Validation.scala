@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package models
+package helpers
 
 import play.api.data.validation.ValidationError
-import play.api.libs.json._
-import Reads.{maxLength, minLength, pattern}
 import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads.{maxLength, minLength, pattern}
+import play.api.libs.json._
 
 
 object Validation {
@@ -37,13 +37,28 @@ object Validation {
   def withFilter[A](fmt: Format[A], error: ValidationError)(f: (A) => Boolean): Format[A] = {
     Format(fmt.filter(error)(f), fmt)
   }
+
+  val addressLineRegex = """^[a-zA-Z0-9,.\(\)/&'\"\-\\]{1}[a-zA-Z0-9, .\(\)/&'\"\-\\]{0,26}$"""
+  val postcodeRegex = """^[A-Z]{1,2}[0-9][0-9A-Z]? [0-9][A-Z]{2}$"""
+  val countryRegex = """^[A-Za-z0-9]{1}[A-Za-z 0-9]{0,19}$"""
+
+  val phoneNumberRegex = """^[0-9 ]{1,20}$"""
+  val emailRegex = """^([A-Za-z0-9\-_.]+)@([A-Za-z0-9\-_.]+)\.[A-Za-z0-9\-_.]{2,3}$"""
+  val maxEmailLength = 70
+
+  val completionCapacityRegex = """^[A-Za-z0-9 '\-]{1,100}$"""
+
+  val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
+  val tradingNameRegex = """^[A-Za-z0-9\-,.()/&'!][A-Za-z 0-9\-,.()/&'!]{0,34}$"""
+  val natureOfBusinessRegex = """^[A-Za-z 0-9\-,/&']{1,100}$"""
 }
 
 trait CompanyDetailsValidator {
 
   import Validation._
 
-  val companyNameValidator: Format[String] = readToFmt(pattern("^[A-Za-z 0-9\\-,.()/'&amp;&quot;!%*_+:@&lt;&gt;?=;]{1,160}$".r))
+  val companyNameValidator: Format[String] = readToFmt(pattern(companyNameRegex.r))
+  val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }
 
 trait PAYEContactDetailsValidator {
@@ -73,4 +88,11 @@ trait IncorporationValidator {
 
   val crnValidator: Format[String] =
     readToFmt(pattern("^(\\d{1,8}|([AaFfIiOoRrSsZz][Cc]|[Cc][Uu]|[Ss][AaEeFfIiRrZz]|[Ee][Ss])\\d{1,6}|([IiSs][Pp]|[Nn][AaFfIiOoPpRrVvZz]|[Rr][Oo])[\\da-zA-Z]{1,6})$".r))
+}
+
+trait PAYEBaseValidator {
+  import Validation._
+
+  def validCompletionCapacity(cap: String): Boolean = cap.matches(completionCapacityRegex)
+
 }
