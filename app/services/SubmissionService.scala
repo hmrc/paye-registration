@@ -23,7 +23,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import config.MicroserviceAuditConnector
-import connectors.{AuthConnect, AuthConnector, BusinessRegistrationConnect, BusinessRegistrationConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
+import connectors._
 import enums.PAYEStatus
 import models._
 import models.incorporation.IncorpStatusUpdate
@@ -38,6 +38,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 
 class RejectedIncorporationException(msg: String) extends NoStackTrace {
@@ -50,7 +51,8 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injDESConnector: DESConnector,
                                   injIncorprorationInformationConnector: IncorporationInformationConnector,
                                   injAuthConnector: AuthConnector,
-                                  injBusinessRegistrationConnector: BusinessRegistrationConnector) extends SubmissionSrv {
+                                  injBusinessRegistrationConnector: BusinessRegistrationConnector,
+                                  injCompanyRegistrationConnector: CompanyRegistrationConnector) extends SubmissionSrv {
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
@@ -58,6 +60,7 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
   val authConnector = injAuthConnector
   val auditConnector = MicroserviceAuditConnector
   val businessRegistrationConnector = injBusinessRegistrationConnector
+  val companyRegistrationConnector = injCompanyRegistrationConnector
 }
 
 trait SubmissionSrv {
@@ -69,6 +72,7 @@ trait SubmissionSrv {
   val authConnector: AuthConnect
   val auditConnector: AuditConnector
   val businessRegistrationConnector: BusinessRegistrationConnect
+  val companyRegistrationConnector: CompanyRegistrationConnect
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
@@ -297,5 +301,14 @@ trait SubmissionSrv {
   private[services] def retrieveSessionID(hc: HeaderCarrier): String = {
     val s = hc.headers.collect{case ("X-Session-ID", x) => x}
     if( s.nonEmpty ) s.head else throw new SessionIDNotExists
+  }
+
+  private[services] def fetchCtUtr(regId: String)(implicit hc: HeaderCarrier): Future[Option[String]] = {
+    companyRegistrationConnector.fetchCompanyRegistrationDocument(regId) map { response =>
+      Try((response.json \ "acknowledgementReferences" \  "ctUtr").as[String]) match {
+        case Success(ctutr) => Some(ctutr)
+        case Failure(_)     => None
+      }
+    }
   }
 }

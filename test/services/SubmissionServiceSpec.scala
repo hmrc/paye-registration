@@ -21,7 +21,7 @@ import java.time.LocalDate
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import connectors.{Authority, BusinessRegistrationConnector, DESConnector, IncorporationInformationConnector, UserIds}
+import connectors._
 import enums.PAYEStatus
 import models._
 import models.submission._
@@ -31,7 +31,9 @@ import models.incorporation.IncorpStatusUpdate
 import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.http.logging.SessionId
@@ -45,6 +47,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   val mockIIConnector = mock[IncorporationInformationConnector]
   val mockAuditConnector = mock[AuditConnector]
   val mockBusinessRegistrationConnector = mock[BusinessRegistrationConnector]
+  val mockCompanyRegistrationConnector = mock[CompanyRegistrationConnector]
 
   implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
   implicit val req = FakeRequest("GET", "/test-path")
@@ -58,6 +61,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val authConnector = mockAuthConnector
       override val auditConnector = mockAuditConnector
       override val businessRegistrationConnector = mockBusinessRegistrationConnector
+      override val companyRegistrationConnector = mockCompanyRegistrationConnector
     }
   }
 
@@ -460,6 +464,58 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "Calling retrieveSessionID" should {
     "return the correct exception when session ID is missing" in new Setup {
       intercept[service.SessionIDNotExists](service.retrieveSessionID(HeaderCarrier()))
+    }
+  }
+
+  "fetchCtUtr" should {
+    "return some ctutr" when {
+      "the ctutr is part of the CR doc" in new Setup {
+        val testJson = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences": {
+            |   "ctUtr" : "testCtUtr"
+            | }
+            |}
+          """.stripMargin
+        )
+
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
+          override def json: JsValue = testJson
+        }
+
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
+
+        val result = await(service.fetchCtUtr("testRegId"))
+        result shouldBe Some("testCtUtr")
+      }
+    }
+
+    "return none" when {
+      "the ctutr isn't part of the CR doc" in new Setup {
+        val testJson = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences": {
+            |   "invalidKey" : "testCtUtr"
+            | }
+            |}
+          """.stripMargin
+        )
+
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
+          override def json: JsValue = testJson
+        }
+
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
+
+        val result = await(service.fetchCtUtr("testRegId"))
+        result shouldBe None
+      }
     }
   }
 }
