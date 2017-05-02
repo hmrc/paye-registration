@@ -16,6 +16,7 @@
 
 package controllers
 
+import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import common.exceptions.SubmissionExceptions.InvalidRegistrationException
 import connectors.{AuthConnect, AuthConnector}
 import enums.PAYEStatus
@@ -110,7 +111,8 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
             } recover {
-              case missing : MissingRegDocument => NotFound
+              case missing   : MissingRegDocument => NotFound
+              case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>
@@ -189,6 +191,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(directorsResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
+              case noNinos : RegistrationFormatException => BadRequest(noNinos.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>
@@ -267,6 +270,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(payeContactResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
+              case format  : RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>
@@ -306,6 +310,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(capacityResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
+              case format  : RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>

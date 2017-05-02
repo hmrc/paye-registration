@@ -16,8 +16,10 @@
 
 package models
 
+import helpers.{CompanyDetailsValidator, Validation}
+import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsObject, JsValue, Json, Writes, __}
+import play.api.libs.json._
 
 case class CompanyDetails(companyName: String,
                           tradingName: Option[String],
@@ -33,7 +35,6 @@ case class Address(line1: String,
                    country: Option[String] = None)
 
 object Address {
-  implicit val format = Json.format[Address]
 
   val writesDES: Writes[Address] = new Writes[Address] {
     override def writes(address: Address): JsValue = {
@@ -49,13 +50,31 @@ object Address {
       Json.toJson(address)(successWrites).as[JsObject]
     }
   }
+  val addressLineValidate = Reads.StringReads.filter(ValidationError("invalid address line pattern"))(_.matches(Validation.addressLineRegex))
+  val postcodeValidate = Reads.StringReads.filter(ValidationError("invalid postcode"))(_.matches(Validation.postcodeRegex))
+  val countryValidate = Reads.StringReads.filter(ValidationError("invalid country"))(_.matches(Validation.countryRegex))
+
+  implicit val writes = Json.writes[Address]
+
+  implicit val reads: Reads[Address] = (
+    (__ \ "line1").read[String](addressLineValidate) and
+    (__ \ "line2").read[String](addressLineValidate) and
+    (__ \ "line3").readNullable[String](addressLineValidate) and
+    (__ \ "line4").readNullable[String](addressLineValidate) and
+    (__ \ "postCode").readNullable[String](postcodeValidate) and
+    (__ \ "country").readNullable[String](countryValidate)
+  )(Address.apply _).filter(ValidationError("neither postcode nor country was completed")) {
+    addr => addr.postCode.isDefined || addr.country.isDefined
+  }.filter(ValidationError("both postcode and country were completed")) {
+    addr => !(addr.postCode.isDefined && addr.country.isDefined)
+  }
 }
 
 object CompanyDetails extends CompanyDetailsValidator {
 
   implicit val format: Format[CompanyDetails] = (
       (__ \ "companyName").format[String](companyNameValidator) and
-      (__ \ "tradingName").formatNullable[String](companyNameValidator) and
+      (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
       (__ \ "roAddress").format[Address] and
       (__ \ "ppobAddress").format[Address] and
       (__ \ "businessContactDetails").format[DigitalContactDetails]

@@ -66,8 +66,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     val validCompanyDetails = new CompanyDetails(
       companyName = "Test Company Name",
       tradingName = Some("Test Trading Name"),
-      roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-      ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+      roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+      ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
       businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
     )
 

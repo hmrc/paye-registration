@@ -17,8 +17,7 @@
 package models.incorporation
 
 import java.time.LocalDate
-
-import models.IncorporationValidator
+import helpers.IncorporationValidator
 import play.api.libs.json.{Reads, __}
 import play.api.libs.functional.syntax._
 

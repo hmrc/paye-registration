@@ -30,4 +30,8 @@ trait RegistrationExceptions {
   class EmploymentDetailsNotDefinedException extends NoStackTrace
   class CompletionCapacityNotDefinedException extends NoStackTrace
   class SICCodeNotDefinedException extends NoStackTrace
+
+  class RegistrationFormatException(message: String) extends NoStackTrace {
+    override def getMessage = message
+  }
 }

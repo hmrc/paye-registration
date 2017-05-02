@@ -37,8 +37,8 @@ class RegistrationMongoRepositoryISpec
   extends UnitSpec with MongoSpecSupport with BeforeAndAfterEach with ScalaFutures with Eventually with WithFakeApplication {
 
   private val date = LocalDate.of(2016, 12, 20)
-  private val address = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
-  private val ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+  private val address = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None)
+  private val ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"))
   private val businessContact = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   private val companyDetails: CompanyDetails = CompanyDetails(companyName = "tstCcompany", tradingName = Some("tstTradingName"), roAddress = address, ppobAddress = ppobAddress, businessContactDetails = businessContact)
   private val employmentDetails: Employment = Employment(employees = false, companyPension = None, subcontractors = false, date)
@@ -98,7 +98,7 @@ class RegistrationMongoRepositoryISpec
         Some("09876")
       )
     ),
-    correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+    correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"))
   )
   private val regUpdatedPAYEContact = PAYERegistration(registrationID = "AC123456", transactionID = "NN1234", internalID = "09876", acknowledgementReference = Some("testAckRef"), crn = None, registrationConfirmation = Some(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "testStatus")), formCreationTimestamp = "timestamp", eligibility = Some(Eligibility(false, false)), status = PAYEStatus.draft, completionCapacity = None, companyDetails = Some(companyDetails), directors = Seq.empty, payeContact = Some(payeContact), None, sicCodes = Seq.empty)
 

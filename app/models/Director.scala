@@ -16,6 +16,7 @@
 
 package models
 
+import helpers.DirectorValidator
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -27,13 +28,13 @@ case class Name(forename: Option[String],
                 surname: Option[String],
                 title: Option[String])
 
-object Name {
+object Name extends DirectorValidator {
   implicit val format: Format[Name] =
     (
-      (__ \ "forename").formatNullable[String] and
-      (__ \ "other_forenames").formatNullable[String] and
-      (__ \ "surname").formatNullable[String] and
-      (__ \ "title").formatNullable[String]
+      (__ \ "forename").formatNullable[String](nameValidator) and
+      (__ \ "other_forenames").formatNullable[String](nameValidator) and
+      (__ \ "surname").formatNullable[String](nameValidator) and
+      (__ \ "title").formatNullable[String](titleValidator)
     )(Name.apply, unlift(Name.unapply))
 
   val writesDES: Writes[Name] = new Writes[Name] {
