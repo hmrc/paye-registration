@@ -26,8 +26,8 @@ trait RegistrationFixture {
   val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
-    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-    Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
+    Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None),
     DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
@@ -73,7 +73,7 @@ trait RegistrationFixture {
         Some("543210")
       )
     ),
-    correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+    correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"))
   )
 
   val validRegistration = PAYERegistration(

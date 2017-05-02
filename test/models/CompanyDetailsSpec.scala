@@ -54,8 +54,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val tstCompanyDetails = CompanyDetails(
         companyName = " Test Company",
         tradingName = Some("Test Trading Name"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST")),
-        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
         DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
 
@@ -91,8 +91,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val tstCompanyDetails = CompanyDetails(
         companyName = "Test-Company",
         tradingName = Some(".Test, (&') Trading/Name!"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("UK")),
-        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
         DigitalContactDetails(None, Some("012345"), None)
       )
 
@@ -207,7 +207,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", Some("Testford & Testershire"), Some("Testshire"), Some("UK"))
+      val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", Some("Testford & Testershire"), Some("Testshire"), None, Some("UK"))
 
       Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
     }
@@ -223,7 +223,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val tstAddress = Address("14 St Test & Walk", "Testley\\Testerley", Some("Testford"), None, Some("TE1 1ST"))
+      val tstAddress = Address("14 St Test & Walk", "Testley\\Testerley", Some("Testford"), None, Some("TE1 1ST"), None)
 
       Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
     }

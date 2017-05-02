@@ -101,8 +101,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       CompanyDetails(
         "testCompanyName",
         Some("test"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
         DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
     ),
@@ -127,7 +127,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
             Some("4358475")
           )
         ),
-        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
       )
     ),
     Some(

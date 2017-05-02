@@ -121,8 +121,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |    "line2":"Testley CA",
            |    "line3":"Testford",
            |    "line4":"Testshire",
-           |    "postCode":"TE4 1ST",
-           |    "country":"UK"
+           |    "postCode":"TE4 1ST"
            |  }
            |}
         """.stripMargin)
@@ -136,7 +135,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
             phoneNumber = Some("0123456789")
           )
         ),
-        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
       )
 
       Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
@@ -158,7 +157,6 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
            |    "line1":"19 St Walk",
            |    "line2":"Testley CA",
            |    "line4":"Testshire",
-           |    "postCode":"TE4 1ST",
            |    "country":"UK"
            |  }
            |}
@@ -173,7 +171,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
             phoneNumber = Some("0123456789")
           )
         ),
-        correspondenceAddress = Address("19 St Walk", "Testley CA", None, Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+        correspondenceAddress = Address("19 St Walk", "Testley CA", None, Some("Testshire"), None, Some("UK"))
       )
 
       Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
