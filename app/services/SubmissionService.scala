@@ -72,7 +72,6 @@ trait SubmissionSrv {
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
-  private val CALLBACK_URL = controllers.routes.RegistrationController.processIncorporationData().url
   private val rejected = "rejected"
 
   def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
@@ -104,7 +103,7 @@ trait SubmissionSrv {
   def getIncorporationUpdate(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     for {
       txId      <- registrationRepository.retrieveTransactionId(regId)
-      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, CALLBACK_URL) map {
+      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER) map {
         case Some(update) if update.status == rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
         case response => response
       }

@@ -37,19 +37,21 @@ class IncorporationInformationResponseException(msg: String) extends NoStackTrac
 @Singleton
 class IncorporationInformationConnector @Inject()() extends IncorporationInformationConnect with ServicesConfig {
   val http = WSHttp
-  val incorporationInformationUri: String = baseUrl("incorporation-information")
+  lazy val incorporationInformationUri: String = baseUrl("incorporation-information")
+  lazy val payeRegUri: String = baseUrl("paye-registration")
 }
 
 trait IncorporationInformationConnect {
   val http: WSPost
   val incorporationInformationUri: String
+  val payeRegUri: String
 
   private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String = {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
   }
 
-  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, callbackUrl: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
-    val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> callbackUrl))
+  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
+    val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> s"$payeRegUri/incorporation-data"))
     http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
       resp.status match {
         case OK => Some(resp.json.as[IncorpStatusUpdate])
