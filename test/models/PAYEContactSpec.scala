@@ -51,7 +51,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
       val json = Json.parse(
         s"""
            |{
-           |  "name":"Luis Fernandez",
+           |  "name":"Luis-Fernandez",
            |  "digitalContactDetails" : {
            |    "email":"test@test.com",
            |    "phoneNumber":"0123456789"
@@ -60,7 +60,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val tstPAYEContactDetails = PAYEContactDetails(
-        name = "Luis Fernandez",
+        name = "Luis-Fernandez",
         digitalContactDetails = DigitalContactDetails(
           email = Some("test@test.com"),
           mobileNumber = None,
@@ -71,20 +71,35 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
       Json.fromJson[PAYEContactDetails](json) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
-    "fail from Json with invalid paye contact name" in {
-      val json = Json.parse(
+    "fail" when {
+      def contact(name: String) = Json.parse(
         s"""
            |{
-           |  "name":"Luis@Fernandez",
+           |  "name":"$name",
            |  "digitalContactDetails" : {
            |    "email":"test@test.com",
            |    "phoneNumber":"0123456789"
            |  }
            |}
         """.stripMargin)
+      "contact name is invalid" in {
+        val json = contact("Luis@Fernandez")
 
-      val result = Json.fromJson[PAYEContactDetails](json)
-      shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+        val result = Json.fromJson[PAYEContactDetails](json)
+        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+      }
+      "contact name is too long" in {
+        val json = contact(List.fill(101)('a').mkString)
+
+        val result = Json.fromJson[PAYEContactDetails](json)
+        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+      }
+      "contact name is too short" in {
+        val json = contact("")
+
+        val result = Json.fromJson[PAYEContactDetails](json)
+        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+      }
     }
   }
 

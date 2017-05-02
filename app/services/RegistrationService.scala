@@ -60,7 +60,8 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[CompanyDetails] = {
-    registrationRepository.upsertCompanyDetails(regID, companyDetails)
+    if(validDigitalContactDetails(companyDetails.businessContactDetails)) registrationRepository.upsertCompanyDetails(regID, companyDetails)
+    else throw new RegistrationFormatException(s"No business contact method submitted for regID $regID")
   }
 
   def getEmployment(regID: String): Future[Option[Employment]] = {
@@ -88,7 +89,8 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertDirectors(regID: String, directors: Seq[Director]): Future[Seq[Director]] = {
-    registrationRepository.upsertDirectors(regID, directors)
+    if(directors.exists(_.nino.isDefined)) registrationRepository.upsertDirectors(regID, directors)
+    else throw new RegistrationFormatException(s"No director NINOs completed for reg ID $regID")
   }
 
   def getSICCodes(regID: String): Future[Seq[SICCode]] = {
@@ -104,7 +106,8 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertPAYEContact(regID: String, payeContact: PAYEContact): Future[PAYEContact] = {
-    registrationRepository.upsertPAYEContact(regID, payeContact)
+    if(validPAYEContact(payeContact)) registrationRepository.upsertPAYEContact(regID, payeContact)
+    else throw new RegistrationFormatException(s"No PAYE contact method submitted for regID $regID")
   }
 
   def getCompletionCapacity(regID: String): Future[Option[String]] = {

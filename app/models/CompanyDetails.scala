@@ -63,7 +63,11 @@ object Address {
     (__ \ "line4").readNullable[String](addressLineValidate) and
     (__ \ "postCode").readNullable[String](postcodeValidate) and
     (__ \ "country").readNullable[String](countryValidate)
-  )(Address.apply _)
+  )(Address.apply _).filter(ValidationError("neither postcode nor country was completed")) {
+    addr => addr.postCode.isDefined || addr.country.isDefined
+  }.filter(ValidationError("both postcode and country were completed")) {
+    addr => !(addr.postCode.isDefined && addr.country.isDefined)
+  }
 }
 
 object CompanyDetails extends CompanyDetailsValidator {

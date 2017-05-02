@@ -16,6 +16,7 @@
 
 package helpers
 
+import models.{DigitalContactDetails, PAYEContact}
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads.{maxLength, minLength, pattern}
@@ -51,6 +52,9 @@ object Validation {
   val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
   val tradingNameRegex = """^[A-Za-z0-9\-,.()/&'!][A-Za-z 0-9\-,.()/&'!]{0,34}$"""
   val natureOfBusinessRegex = """^[A-Za-z 0-9\-,/&']{1,100}$"""
+
+  val nameRegex = """^[A-Za-z 0-9\-';]{1,100}$"""
+  val titleRegex = """^[A-Za-z]{1,20}$"""
 }
 
 trait CompanyDetailsValidator {
@@ -65,7 +69,7 @@ trait PAYEContactDetailsValidator {
   import Validation._
 
   val nameValidator: Format[String] =
-    readToFmt(pattern("^[A-Za-z 0-9\\-']{1,100}$".r))
+    readToFmt(pattern("""^[A-Za-z 0-9\-']{1,100}$""".r))
 }
 
 trait DirectorValidator {
@@ -75,6 +79,12 @@ trait DirectorValidator {
     readToFmt(Reads.StringReads.filter(ValidationError("error.pattern"))(nino => {
       isValidNino(nino)
     }))
+
+  val titleValidator: Format[String] =
+    readToFmt(Reads.StringReads.filter(ValidationError("error.pattern"))(_.matches(titleRegex)))
+
+  val nameValidator: Format[String] =
+    readToFmt(Reads.StringReads.filter(ValidationError("error.pattern"))(_.matches(nameRegex)))
 
   private val validNinoFormat = "[[A-Z]&&[^DFIQUV]][[A-Z]&&[^DFIQUVO]]\\d{2}\\d{2}\\d{2}[A-D]{1}"
   private val invalidPrefixes = List("BG", "GB", "NK", "KN", "TN", "NT", "ZZ")
@@ -94,5 +104,10 @@ trait PAYEBaseValidator {
   import Validation._
 
   def validCompletionCapacity(cap: String): Boolean = cap.matches(completionCapacityRegex)
+
+  def validPAYEContact(contact: PAYEContact): Boolean = validDigitalContactDetails(contact.contactDetails.digitalContactDetails)
+
+  def validDigitalContactDetails(deets: DigitalContactDetails): Boolean =
+    deets.email.isDefined || deets.phoneNumber.isDefined || deets.mobileNumber.isDefined
 
 }

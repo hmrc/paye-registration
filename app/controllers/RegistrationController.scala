@@ -111,7 +111,8 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
             } recover {
-              case missing : MissingRegDocument => NotFound
+              case missing   : MissingRegDocument => NotFound
+              case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>
@@ -190,6 +191,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(directorsResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
+              case noNinos : RegistrationFormatException => BadRequest(noNinos.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>
@@ -268,6 +270,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(payeContactResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
+              case format  : RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>
@@ -307,7 +310,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               Ok(Json.toJson(capacityResponse))
             } recover {
               case missing : MissingRegDocument => NotFound
-              case format  : RegistrationFormatException => BadRequest(s"Incorrect completion capacity format for regId $regID")
+              case format  : RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
         case NotLoggedInOrAuthorised =>

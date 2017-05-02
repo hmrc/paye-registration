@@ -269,6 +269,22 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.NOT_FOUND
     }
 
+    "return a Bad Request response if the Company Details are badly formatted" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]()))
+        .thenReturn(Future.failed(new RegistrationFormatException("tstMessage")))
+
+      val response = await(controller.upsertCompanyDetails("AC123456")(FakeRequest().withBody(Json.toJson[CompanyDetails](validCompanyDetails))))
+
+      status(response) shouldBe Status.BAD_REQUEST
+      bodyOf(response) shouldBe "tstMessage"
+    }
+
     "return an OK response for a valid upsert" in new Setup {
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
@@ -546,6 +562,23 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.NOT_FOUND
     }
 
+    "return a Bad Request response if there are no NINOs completed in the directors list" in new Setup {
+
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+        .thenReturn(Future.failed(new RegistrationFormatException("test message")))
+
+      val response = await(controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors))))
+
+      status(response) shouldBe Status.BAD_REQUEST
+      bodyOf(response) shouldBe "test message"
+    }
+
     "return an OK response for a valid upsert" in new Setup {
 
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
@@ -820,6 +853,22 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.NOT_FOUND
     }
 
+    "return a Bad Request response if there is no contact method provided in the request" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+        .thenReturn(Future.failed(new RegistrationFormatException("contact exception msg")))
+
+      val response = await(controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact))))
+
+      status(response) shouldBe Status.BAD_REQUEST
+      bodyOf(response) shouldBe "contact exception msg"
+    }
+
     "return an OK response for a valid upsert" in new Setup {
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
@@ -954,7 +1003,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.NOT_FOUND
     }
 
-    "return a Bad Request response if there is no PAYE Registration for the user's ID" in new Setup {
+    "return a Bad Request response if completion capacity is incorrectly formatted" in new Setup {
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
@@ -964,9 +1013,10 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RegistrationFormatException("errMessage")))
 
-      val response = controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director")))
+      val response = await(controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director"))))
 
       status(response) shouldBe Status.BAD_REQUEST
+      bodyOf(response) shouldBe "errMessage"
     }
 
     "return an OK response for a valid upsert" in new Setup {

@@ -34,15 +34,13 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |    "line2":"Testley",
           |    "line3":"Testford",
           |    "line4":"Testshire",
-          |    "postCode":"TE1 1ST",
-          |    "country":"UK"
+          |    "postCode":"TE1 1ST"
           |  },
           |  "ppobAddress": {
           |    "line1":"15 St Walk",
           |    "line2":"Testley",
           |    "line3":"Testford",
           |    "line4":"Testshire",
-          |    "postCode":"TE4 1ST",
           |    "country":"UK"
           |  },
           |  "businessContactDetails": {
@@ -56,8 +54,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val tstCompanyDetails = CompanyDetails(
         companyName = " Test Company",
         tradingName = Some("Test Trading Name"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("UK")),
         DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
 
@@ -75,7 +73,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "line2":"Testley",
            |    "line3":"Testford",
            |    "line4":"Testshire",
-           |    "postCode":"TE1 1ST",
            |    "country":"UK"
            |  },
            |  "ppobAddress": {
@@ -83,7 +80,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "line2":"Testley",
            |    "line3":"Testford",
            |    "line4":"Testshire",
-           |    "postCode":"TE4 1ST",
            |    "country":"UK"
            |  },
            |  "businessContactDetails": {
@@ -95,8 +91,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val tstCompanyDetails = CompanyDetails(
         companyName = "Test-Company",
         tradingName = Some(".Test, (&') Trading/Name!"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("UK")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("UK")),
         DigitalContactDetails(None, Some("012345"), None)
       )
 
@@ -113,14 +109,12 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "roAddress": {
            |    "line1":"14 St Test Walk",
            |    "line2":"Testley",
-           |    "postCode":"TE1 1ST",
-           |    "country":"UK"
+           |    "postCode":"TE1 1ST"
            |  },
            |  "ppobAddress": {
            |    "line1":"15 St Walk",
            |    "line2":"Testley",
-           |    "postCode":"TE4 1ST",
-           |    "country":"UK"
+           |    "postCode":"TE4 1ST"
            |  },
            |  "businessContactDetails": {
            |    "email":"email@test.co.uk"
@@ -159,13 +153,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "roAddress": {
            |    "line1":"14 St Test Walk",
            |    "line2":"Testley",
-           |    "postCode":"TE1 1ST",
-           |    "country":"UK"
+           |    "postCode":"TE1 1ST"
            |  },
            |  "ppobAddress": {
            |    "line1":"15 St Walk",
            |    "line2":"Testley",
-           |    "postCode":"TE4 1ST",
            |    "country":"UK"
            |  },
            |  "businessContactDetails": {
@@ -211,12 +203,11 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "line2":"Testley/Testerley",
            |  "line3":"Testford & Testershire",
            |  "line4":"Testshire",
-           |  "postCode":"TE1 1ST",
            |  "country":"UK"
            |}
         """.stripMargin)
 
-      val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", Some("Testford & Testershire"), Some("Testshire"), Some("TE1 1ST"), Some("UK"))
+      val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", Some("Testford & Testershire"), Some("Testshire"), Some("UK"))
 
       Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
     }
@@ -228,12 +219,39 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "line1":"14 St Test & Walk",
            |  "line2":"Testley\\Testerley",
            |  "line3":"Testford",
-           |  "postCode":"TE1 1ST",
+           |  "postCode":"TE1 1ST"
+           |}
+        """.stripMargin)
+
+      val tstAddress = Address("14 St Test & Walk", "Testley\\Testerley", Some("Testford"), None, Some("TE1 1ST"))
+
+      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+    }
+    "complete successfully from Json with no country" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "line1":"14 St. Test-Walk",
+           |  "line2":"Testley/Testerley",
+           |  "postCode":"TE1 1ST"
+           |}
+        """.stripMargin)
+
+      val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", None, None, Some("TE1 1ST"), None)
+
+      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+    }
+    "complete successfully from Json with no postcode" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "line1":"14 St. Test-Walk",
+           |  "line2":"Testley/Testerley",
            |  "country":"UK"
            |}
         """.stripMargin)
 
-      val tstAddress = Address("14 St Test & Walk", "Testley\\Testerley", Some("Testford"), None, Some("TE1 1ST"), Some("UK"))
+      val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", None, None, None, Some("UK"))
 
       Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
     }
@@ -245,7 +263,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |  "line2":"Testley",
            |  "line3":"Testford",
            |  "line4":"Testshire",
-           |  "postCode":"TE1 1ST",
            |  "country":"UK"
            |}
       """.stripMargin)
@@ -262,7 +279,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |  "line1":"14 St Test Walk",
              |  "line3":"Testford",
              |  "line4":"Testshire",
-             |  "postCode":"TE1 1ST",
              |  "country":"UK"
              |}
       """.stripMargin)
@@ -278,7 +294,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |  "line2":"1234567891123456789212345678",
              |  "line3":"1234567891123456789212345678",
              |  "line4":"1234567891123456789212345678",
-             |  "postCode":"TE1 1ST",
              |  "country":"UK"
              |}
         """.stripMargin)
@@ -301,7 +316,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |  "line2":" Testley",
              |  "line3":" Testford",
              |  "line4":" Testshire",
-             |  "postCode":"TE1 1ST",
              |  "country":"UK"
              |}
         """.stripMargin)
@@ -322,8 +336,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |{
              |  "line1":"14 St Test Walk",
              |  "line2":"Testley",
-             |  "postCode":"TE11ST",
-             |  "country":"UK"
+             |  "postCode":"TE11ST"
              |}
         """.stripMargin)
 
@@ -336,8 +349,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |{
              |  "line1":"14 St Test Walk",
              |  "line2":"Testley",
-             |  "postCode":"TES 1ST",
-             |  "country":"UK"
+             |  "postCode":"TES 1ST"
              |}
         """.stripMargin)
 
@@ -350,8 +362,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |{
              |  "line1":"14 St Test Walk",
              |  "line2":"Testley",
-             |  "postCode":"TE1 AST",
-             |  "country":"UK"
+             |  "postCode":"TE1 AST"
              |}
         """.stripMargin)
 
@@ -364,13 +375,78 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |{
              |  "line1":"14 St Test Walk",
              |  "line2":"Testley",
-             |  "postCode":"TE1 1S",
-             |  "country":"UK"
+             |  "postCode":"TE1 1S"
              |}
         """.stripMargin)
 
         val result = Json.fromJson[Address](json)
         shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+      }
+      "postcode is too short" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "line1":"14 St Test Walk",
+             |  "line2":"Testley",
+             |  "postCode":""
+             |}
+        """.stripMargin)
+
+        val result = Json.fromJson[Address](json)
+        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+      }
+      "country is too short" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "line1":"14 St Test Walk",
+             |  "line2":"Testley",
+             |  "country":""
+             |}
+        """.stripMargin)
+
+        val result = Json.fromJson[Address](json)
+        shouldHaveErrors(result, JsPath() \ "country", Seq(ValidationError("invalid country")))
+      }
+      "country is too long" in {
+        val country = List.fill(21)('a').mkString
+        val json = Json.parse(
+          s"""
+             |{
+             |  "line1":"14 St Test Walk",
+             |  "line2":"Testley",
+             |  "country":"$country"
+             |}
+        """.stripMargin)
+
+        val result = Json.fromJson[Address](json)
+        shouldHaveErrors(result, JsPath() \ "country", Seq(ValidationError("invalid country")))
+      }
+      "neither country nor postcode is defined" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "line1":"14 St Test Walk",
+             |  "line2":"Testley"
+             |}
+        """.stripMargin)
+
+        val result = Json.fromJson[Address](json)
+        shouldHaveErrors(result, JsPath(), Seq(ValidationError("neither postcode nor country was completed")))
+      }
+      "both country and postcode are defined" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "line1":"14 St Test Walk",
+             |  "line2":"Testley",
+             |  "postCode":"TE1 1ST",
+             |  "country":"UK"
+             |}
+        """.stripMargin)
+
+        val result = Json.fromJson[Address](json)
+        shouldHaveErrors(result, JsPath(), Seq(ValidationError("both postcode and country were completed")))
       }
     }
   }

@@ -31,5 +31,7 @@ trait RegistrationExceptions {
   class CompletionCapacityNotDefinedException extends NoStackTrace
   class SICCodeNotDefinedException extends NoStackTrace
 
-  class RegistrationFormatException(message: String) extends NoStackTrace
+  class RegistrationFormatException(message: String) extends NoStackTrace {
+    override def getMessage = message
+  }
 }

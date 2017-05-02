@@ -113,14 +113,19 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   "Calling upsertCompanyDetails" should {
 
-    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+    "throw a MissingRegDocument exception when there is no registration in mongo with the user's ID" in new Setup {
       when(mockRegistrationRepository.upsertCompanyDetails(ArgumentMatchers.eq(regId), ArgumentMatchers.any[CompanyDetails]()))
         .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
       intercept[MissingRegDocument] { await(service.upsertCompanyDetails(regId, validCompanyDetails)) }
     }
 
-    "return a DBSuccess response when the company details are successfully updated" in new Setup {
+    "throw a RegistrationFormatException when the PAYE Contact has no contact method defined" in new Setup {
+      val invalidCompanyDetails = validCompanyDetails.copy(businessContactDetails = DigitalContactDetails(None, None, None))
+      intercept[RegistrationFormatException] { await(service.upsertCompanyDetails(regId, invalidCompanyDetails)) }
+    }
+
+    "return a Company Details Model when the company details are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
       when(mockRegistrationRepository.upsertCompanyDetails(ArgumentMatchers.eq(regId), ArgumentMatchers.any[CompanyDetails]()))
         .thenReturn(Future.successful(validCompanyDetails))
@@ -244,15 +249,19 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   "Calling upsertDirectors" should {
 
-    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+    "throw a MissingRegDocument exception when there is no registration in mongo with the user's ID" in new Setup {
       when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Seq[Director]]()))
         .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
       intercept[MissingRegDocument] { await(service.upsertDirectors(regId, validDirectors)) }
     }
 
-    "return a DBSuccess response when the company details are successfully updated" in new Setup {
-      val exception = new RuntimeException("tst message")
+    "throw a RegistrationFormatException exception when there are no NINOs defined in the directors list" in new Setup {
+      val noNinosDirectors = validDirectors.map(_.copy(nino = None))
+      intercept[RegistrationFormatException] { await(service.upsertDirectors(regId, noNinosDirectors)) }
+    }
+
+    "return a list of directors when the director details are successfully updated" in new Setup {
       when(mockRegistrationRepository.upsertDirectors(ArgumentMatchers.eq(regId), ArgumentMatchers.any[Seq[Director]]()))
         .thenReturn(Future.successful(validDirectors))
 
@@ -336,14 +345,23 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   "Calling upsertPAYEContact" should {
 
-    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
+    "throw a missingRegDocument exception when there is no registration in mongo with the user's ID" in new Setup {
       when(mockRegistrationRepository.upsertPAYEContact(ArgumentMatchers.eq(regId), ArgumentMatchers.any[PAYEContact]()))
         .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
       intercept[MissingRegDocument] { await(service.upsertPAYEContact(regId, validPAYEContact)) }
     }
 
-    "return a DBSuccess response when the paye contact are successfully updated" in new Setup {
+    "throw a RegistrationFormatException when the PAYE Contact has no contact method defined" in new Setup {
+      val invalidPAYEContact = validPAYEContact.copy(
+        contactDetails = PAYEContactDetails(
+          name = "Name", digitalContactDetails = DigitalContactDetails(None, None, None)
+        )
+      )
+      intercept[RegistrationFormatException] { await(service.upsertPAYEContact(regId, invalidPAYEContact)) }
+    }
+
+    "return a PAYE Contact model when the paye contact are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
       when(mockRegistrationRepository.upsertPAYEContact(ArgumentMatchers.eq(regId), ArgumentMatchers.any[PAYEContact]()))
         .thenReturn(Future.successful(validPAYEContact))
