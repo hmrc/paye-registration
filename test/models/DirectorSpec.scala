@@ -24,16 +24,16 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
   "Name" should {
     val tstJson = Json.parse(
       s"""{
-         |  "forename":"Thierry",
-         |  "other_forenames":"Dominique",
-         |  "surname":"Henry",
+         |  "forename":"Thierry'",
+         |  "other_forenames":"Dominique;",
+         |  "surname":"Henr-01y",
          |  "title":"Sir"
          |}""".stripMargin)
 
     val tstModel = Name(
-      forename = Some("Thierry"),
-      otherForenames = Some("Dominique"),
-      surname = Some("Henry"),
+      forename = Some("Thierry'"),
+      otherForenames = Some("Dominique;"),
+      surname = Some("Henr-01y"),
       title = Some("Sir")
     )
 
@@ -53,6 +53,53 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
 
     "write to json with empty data" in {
       Json.toJson[Name](tstEmptyModel) shouldBe tstEmptyJson
+    }
+
+    "read successfully" when {
+      "all fields are at maximum length" in {
+        val maxName = List.fill(100)('a').mkString
+        val maxTitle = List.fill(20)('a').mkString
+        val nameJson = Json.parse(
+          s"""{
+             |  "forename":"$maxName",
+             |  "other_forenames":"$maxName",
+             |  "surname":"$maxName",
+             |  "title":"$maxTitle"
+             |}""".stripMargin)
+        val fullNameModel = Name(
+          forename = Some(maxName),
+          otherForenames = Some(maxName),
+          surname = Some(maxName),
+          title = Some(maxTitle)
+        )
+        Json.fromJson[Name](nameJson) shouldBe JsSuccess(fullNameModel)
+      }
+    }
+
+    "fail to read" when {
+      def testNameJson(name: String = "Name", title: String = "Title") = Json.parse(
+        s"""{
+           |  "forename":"$name",
+           |  "other_forenames":"Middle",
+           |  "surname":"Last",
+           |  "title":"$title"
+           |}""".stripMargin)
+      "name is too long" in {
+        val result = Json.fromJson[Name](testNameJson(name = List.fill(101)('a').mkString))
+        shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
+      }
+      "name is invalid" in {
+        val result = Json.fromJson[Name](testNameJson(name = "Name$$"))
+        shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
+      }
+      "title is too long" in {
+        val result = Json.fromJson[Name](testNameJson(title = List.fill(21)('a').mkString))
+        shouldHaveErrors(result, JsPath() \ "title", Seq(ValidationError("error.pattern")))
+      }
+      "title is invalid" in {
+        val result = Json.fromJson[Name](testNameJson(title = "Title1"))
+        shouldHaveErrors(result, JsPath() \ "title", Seq(ValidationError("error.pattern")))
+      }
     }
   }
 

@@ -16,7 +16,10 @@
 
 package models
 
-import play.api.libs.json.{Json}
+import helpers.Validation
+import play.api.data.validation.ValidationError
+import play.api.libs.json.{Reads, Json, __}
+import play.api.libs.functional.syntax._
 
 case class SICCode(
                   code: Option[String],
@@ -24,5 +27,12 @@ case class SICCode(
                   )
 
 object SICCode {
-  implicit val format = Json.format[SICCode]
+  private val natureOfBusinessValidate = Reads.StringReads.filter(ValidationError("Invalid nature of business"))(_.matches(Validation.natureOfBusinessRegex))
+
+  implicit val writes = Json.writes[SICCode]
+
+  implicit val reads: Reads[SICCode] = (
+    (__ \ "code").readNullable[String] and
+    (__ \ "description").readNullable[String](natureOfBusinessValidate)
+  )(SICCode.apply _)
 }
