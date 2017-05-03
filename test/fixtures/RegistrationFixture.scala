@@ -94,6 +94,6 @@ trait RegistrationFixture {
     directors = validDirectors,
     payeContact = Some(validPAYEContact),
     employment = Some(validEmployment),
-    validSICCodes
+    sicCodes = validSICCodes
   )
 }

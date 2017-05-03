@@ -21,15 +21,15 @@ import mocks.WSHTTPMock
 import models.external.BusinessProfile
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.play.http.{ForbiddenException, HeaderCarrier, HttpResponse, NotFoundException}
 import uk.gov.hmrc.play.http.ws.WSHttp
 import play.api.test.Helpers._
+import uk.gov.hmrc.play.test.WithFakeApplication
 
 import scala.concurrent.Future
 
-class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock with GuiceOneAppPerSuite {
+class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock with WithFakeApplication {
 
   val testJson = Json.parse(
     """
@@ -38,11 +38,6 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock with 
       |}
     """.stripMargin
   )
-
-  val okResponse = new HttpResponse {
-    override def status: Int = OK
-    override def json: JsValue = testJson
-  }
 
   implicit val hc = HeaderCarrier()
 
@@ -56,6 +51,11 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock with 
   "fetchCompanyRegistrationDocument" should {
     "return an OK with JSON body" when {
       "given a valid regId" in new Setup {
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
+          override def json: JsValue = testJson
+        }
+
         mockHttpGet[HttpResponse]("testUrl", okResponse)
 
         val result = await(connector.fetchCompanyRegistrationDocument("testRegId"))
