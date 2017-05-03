@@ -25,7 +25,6 @@ case class PAYERegistration(registrationID: String,
                             internalID : String,
                             acknowledgementReference: Option[String],
                             crn: Option[String],
-                            ctUtr: Option[String] = None,
                             registrationConfirmation: Option[EmpRefNotification],
                             formCreationTimestamp: String,
                             eligibility: Option[Eligibility],
@@ -45,7 +44,6 @@ object PAYERegistration extends {
     (__ \ "internalID").format[String] and
     (__ \ "acknowledgementReference").formatNullable[String] and
     (__ \ "crn").formatNullable[String] and
-    (__ \ "ctUtr").formatNullable[String] and
     (__ \ "registrationConfirmation").formatNullable[EmpRefNotification] and
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "eligibility").formatNullable[Eligibility] and

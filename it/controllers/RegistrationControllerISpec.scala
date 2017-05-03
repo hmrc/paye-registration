@@ -88,7 +88,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     None,
-    None,
     Some(EmpRefNotification(
       Some("testEmpRef"),
       "2017-01-01T12:00:00Z",
@@ -151,7 +150,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     None,
-    None,
     Some(EmpRefNotification(
       Some("testEmpRef"),
       "2017-01-01T12:00:00Z",
@@ -175,7 +173,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     transactionID,
     intId,
     Some("testAckRef"),
-    None,
     None,
     Some(EmpRefNotification(
       Some("testEmpRef"),

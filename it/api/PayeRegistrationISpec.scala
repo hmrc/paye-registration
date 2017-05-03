@@ -78,7 +78,6 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           Some(ackRef),
           None,
           None,
-          None,
           timestamp,
           None,
           PAYEStatus.draft,
@@ -118,7 +117,6 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           transactionID,
           intID,
           Some("testAckRef"),
-          None,
           None,
           Some(EmpRefNotification(
             Some("testEmpRef"),

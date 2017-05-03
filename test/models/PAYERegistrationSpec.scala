@@ -37,7 +37,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
-           |  "ctUtr" : "testctUtr",
            |  "registrationConfirmation" : {
            |    "empRef":"testEmpRef",
            |    "timestamp":"2017-01-01T12:00:00Z",
@@ -134,182 +133,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         acknowledgementReference = None,
         crn = None,
-        ctUtr = Some("testctUtr"),
-        formCreationTimestamp = "2016-05-31",
-        eligibility = Some(Eligibility(
-          companyEligibility = false,
-          directorEligibility = false
-        )),
-        registrationConfirmation = Some(EmpRefNotification(
-          empRef = Some("testEmpRef"),
-          timestamp = "2017-01-01T12:00:00Z",
-          status = "testStatus"
-        )),
-        status = PAYEStatus.draft,
-        completionCapacity = Some("Director"),
-        companyDetails = Some(
-          CompanyDetails(
-            companyName = "Test Company",
-            tradingName = Some("Test Trading Name"),
-            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-            Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
-            DigitalContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
-          )
-        ),
-        directors = Seq(
-          Director(
-            Name(
-              forename = Some("Thierry"),
-              otherForenames = Some("Dominique"),
-              surname = Some("Henry"),
-              title = Some("Sir")
-            ),
-            Some("SR123456C")
-          ),
-          Director(
-            Name(
-              forename = Some("David"),
-              otherForenames = Some("Jesus"),
-              surname = Some("Trezeguet"),
-              title = Some("Mr")
-            ),
-            Some("SR000009C")
-          )
-        ),
-        payeContact = Some(
-          PAYEContact(
-            contactDetails = PAYEContactDetails(
-              name = "toto tata",
-              digitalContactDetails = DigitalContactDetails(
-                Some("payeemail@test.co.uk"),
-                Some("654"),
-                Some("12345")
-              )
-            ),
-            correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
-          )
-        ),
-        employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),
-        sicCodes = Seq(
-          SICCode(code = Some("666"), description = Some("demolition")),
-          SICCode(code = None, description = Some("laundring"))
-        )
-      )
-
-      Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
-    }
-
-    "complete successfully from full Json except the ct utr" in {
-
-      val date = LocalDate.of(2016, 12, 20)
-
-      val json = Json.parse(
-        s"""
-           |{
-           |  "registrationID":"12345",
-           |  "transactionID" : "NNASD9789F",
-           |  "internalID" : "09876",
-           |  "formCreationTimestamp":"2016-05-31",
-           |  "registrationConfirmation" : {
-           |    "empRef":"testEmpRef",
-           |    "timestamp":"2017-01-01T12:00:00Z",
-           |    "status":"testStatus"
-           |  },
-           |  "eligibility" : {
-           |    "companyEligibility" : false,
-           |    "directorEligibility" : false
-           |  },
-           |  "status":"draft",
-           |  "completionCapacity":"Director",
-           |  "companyDetails":
-           |    {
-           |      "companyName":"Test Company",
-           |      "tradingName":"Test Trading Name",
-           |      "roAddress": {
-           |        "line1":"14 St Test Walk",
-           |        "line2":"Testley",
-           |        "line3":"Testford",
-           |        "line4":"Testshire",
-           |        "postCode":"TE1 1ST",
-           |        "country":"UK"
-           |      },
-           |      "ppobAddress": {
-           |        "line1":"15 St Walk",
-           |        "line2":"Testley",
-           |        "line3":"Testford",
-           |        "line4":"Testshire",
-           |        "postCode":"TE4 1ST",
-           |        "country":"UK"
-           |      },
-           |      "businessContactDetails": {
-           |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
-           |      }
-           |    },
-           |  "directors" : [
-           |    {
-           |      "nino":"SR123456C",
-           |      "director": {
-           |        "forename":"Thierry",
-           |        "other_forenames":"Dominique",
-           |        "surname":"Henry",
-           |        "title":"Sir"
-           |      }
-           |    },
-           |    {
-           |      "nino":"SR000009C",
-           |      "director": {
-           |        "forename":"David",
-           |        "other_forenames":"Jesus",
-           |        "surname":"Trezeguet",
-           |        "title":"Mr"
-           |      }
-           |    }
-           |  ],
-           |  "payeContact": {
-           |    "contactDetails": {
-           |      "name": "toto tata",
-           |      "digitalContactDetails": {
-           |        "email": "payeemail@test.co.uk",
-           |        "phoneNumber": "654",
-           |        "mobileNumber": "12345"
-           |      }
-           |    },
-           |    "correspondenceAddress": {
-           |      "line1":"19 St Walk",
-           |      "line2":"Testley CA",
-           |      "line3":"Testford",
-           |      "line4":"Testshire",
-           |      "postCode":"TE4 1ST",
-           |      "country":"UK"
-           |    }
-           |  },
-           |  "employment": {
-           |    "first-payment-date": "$date",
-           |    "cis": true,
-           |    "employees": true,
-           |    "ocpn": true
-           |  },
-           |  "sicCodes": [
-           |    {
-           |      "code":"666",
-           |      "description":"demolition"
-           |    },
-           |    {
-           |      "description":"laundring"
-           |    }
-           |  ]
-           |}
-        """.stripMargin)
-
-      val tstPAYERegistration = PAYERegistration(
-        registrationID = "12345",
-        transactionID = "NNASD9789F",
-        internalID = "09876",
-        acknowledgementReference = None,
-        crn = None,
-        ctUtr = None,
         formCreationTimestamp = "2016-05-31",
         eligibility = Some(Eligibility(
           companyEligibility = false,
@@ -394,7 +217,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         internalID = "09876",
         acknowledgementReference = None,
         crn = None,
-        ctUtr = None,
         registrationConfirmation = None,
         formCreationTimestamp = "2016-05-31",
         eligibility = None,
