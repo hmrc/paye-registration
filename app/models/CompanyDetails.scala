@@ -51,6 +51,7 @@ object Address {
     }
   }
   val addressLineValidate = Reads.StringReads.filter(ValidationError("invalid address line pattern"))(_.matches(Validation.addressLineRegex))
+  val addressLine4Validate = Reads.StringReads.filter(ValidationError("invalid address line 4 pattern"))(_.matches(Validation.addressLine4Regex))
   val postcodeValidate = Reads.StringReads.filter(ValidationError("invalid postcode"))(_.matches(Validation.postcodeRegex))
   val countryValidate = Reads.StringReads.filter(ValidationError("invalid country"))(_.matches(Validation.countryRegex))
 
@@ -60,7 +61,7 @@ object Address {
     (__ \ "line1").read[String](addressLineValidate) and
     (__ \ "line2").read[String](addressLineValidate) and
     (__ \ "line3").readNullable[String](addressLineValidate) and
-    (__ \ "line4").readNullable[String](addressLineValidate) and
+    (__ \ "line4").readNullable[String](addressLine4Validate) and
     (__ \ "postCode").readNullable[String](postcodeValidate) and
     (__ \ "country").readNullable[String](countryValidate)
   )(Address.apply _).filter(ValidationError("neither postcode nor country was completed")) {

@@ -67,7 +67,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
         name = "Thierry Henry",
         digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
       ),
-      correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+      correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
     )
 
     "Return a 200 when the user gets paye contact" in new Setup {

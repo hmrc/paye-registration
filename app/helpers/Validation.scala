@@ -40,6 +40,7 @@ object Validation {
   }
 
   val addressLineRegex = """^[a-zA-Z0-9,.\(\)/&'\"\-\\]{1}[a-zA-Z0-9, .\(\)/&'\"\-\\]{0,26}$"""
+  val addressLine4Regex = """^[a-zA-Z0-9,.\(\)/&'\"\-\\]{1}[a-zA-Z0-9, .\(\)/&'\"\-\\]{0,17}$"""
   val postcodeRegex = """^[A-Z]{1,2}[0-9][0-9A-Z]? [0-9][A-Z]{2}$"""
   val countryRegex = """^[A-Za-z0-9]{1}[A-Za-z 0-9]{0,19}$"""
 

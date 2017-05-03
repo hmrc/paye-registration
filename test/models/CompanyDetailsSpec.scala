@@ -293,7 +293,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |  "line1":"1234567891123456789212345678",
              |  "line2":"1234567891123456789212345678",
              |  "line3":"1234567891123456789212345678",
-             |  "line4":"1234567891123456789212345678",
+             |  "line4":"1234567891123456789",
              |  "country":"UK"
              |}
         """.stripMargin)
@@ -304,7 +304,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
             JsPath() \ "line1" -> Seq(ValidationError("invalid address line pattern")),
             JsPath() \ "line2" -> Seq(ValidationError("invalid address line pattern")),
             JsPath() \ "line3" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line4" -> Seq(ValidationError("invalid address line pattern"))
+            JsPath() \ "line4" -> Seq(ValidationError("invalid address line 4 pattern"))
           )
         )
       }
@@ -326,7 +326,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
             JsPath() \ "line1" -> Seq(ValidationError("invalid address line pattern")),
             JsPath() \ "line2" -> Seq(ValidationError("invalid address line pattern")),
             JsPath() \ "line3" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line4" -> Seq(ValidationError("invalid address line pattern"))
+            JsPath() \ "line4" -> Seq(ValidationError("invalid address line 4 pattern"))
           )
         )
       }
