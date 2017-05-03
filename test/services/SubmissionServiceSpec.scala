@@ -421,6 +421,22 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling submitTopUpToDES" should {
     "return the PAYE status" in new Setup {
+      val okResponse = new HttpResponse {
+        override def status: Int = OK
+        override def json: JsValue = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences" : {
+            |   "ctUtr" : "testCtUtr"
+            | }
+            |}
+          """.stripMargin
+        )
+      }
+
+      when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(okResponse))
+
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some("ackRef")))
 

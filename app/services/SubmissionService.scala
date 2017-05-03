@@ -86,6 +86,7 @@ trait SubmissionSrv {
           updatePAYERegistrationDocument(regId, PAYEStatus.cancelled)
           throw ex
       }
+      ctutr       =  if(incUpdate.isEmpty) fetchCtUtr(regId) else Future.successful(None)
       submission  <- buildADesSubmission(regId, incUpdate)
       _           <- desConnector.submitToDES(submission)
       _           <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject])
@@ -96,6 +97,7 @@ trait SubmissionSrv {
 
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
+      ctutr         <- fetchCtUtr(regId)
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
       _             <- auditDESTopUp(regId, Json.toJson[DESSubmission](desSubmission).as[JsObject])
