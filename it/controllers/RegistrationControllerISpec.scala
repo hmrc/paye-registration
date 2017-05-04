@@ -282,6 +282,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
       setupSimpleAuthMocks()
 
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
+
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
           aResponse().

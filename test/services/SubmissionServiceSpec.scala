@@ -274,7 +274,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), None))
+        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), None, None))
         result shouldBe validPartialDESSubmissionModel
       }
 
@@ -285,20 +285,20 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), Some("OC123456")))
+        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), Some("OC123456"), None))
         result shouldBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
       }
     }
 
     "throw a CompanyDetailsNotDefinedException" when {
       "a paye reg doc is passed in that doesn't have a company details block" in new Setup {
-        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), DateTime.parse("2017-01-01"), None))
+        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), DateTime.parse("2017-01-01"), None, None))
       }
     }
 
     "throw a AcknowledgementReferenceNotExistsException" when {
       "the paye reg doc is missing an ack ref" in new Setup {
-        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), DateTime.parse("2017-01-01"), None))
+        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), DateTime.parse("2017-01-01"), None, None))
       }
     }
   }
@@ -328,14 +328,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
-      intercept[InvalidRegistrationException](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate))))
+      intercept[InvalidRegistrationException](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
 
     "throw the correct exception when there is no registration in mongo" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
-      intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate))))
+      intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
   }
 
@@ -364,10 +364,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Building DES Limited Company" should {
     "throw the correct exception for SIC Code when missing" in new Setup {
-      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, Seq.empty, Some(validEmployment)))
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, Seq.empty, Some(validEmployment), None))
     }
     "throw the correct exception for Employment when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, None))
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, None, None))
     }
   }
 

@@ -22,6 +22,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 case class DesSubmissionAuditEventDetail(externalId: String,
                                          authProviderId: String,
                                          regId: String,
+                                         ctutr: Option[String],
                                          desSubmissionState: String,
                                          jsSubmission: JsObject)
 
@@ -32,13 +33,18 @@ object DesSubmissionAuditEventDetail {
   implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
       val regMetadata = Json.obj("businessType" -> "Limited company")
+      val ctutrTuple = detail.ctutr map( utr =>
+        Json.obj("ctutr" -> utr)
+      )
 
-      Json.obj(
+      val event = Json.obj(
         EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
         DES_SUBMISSION_STATE -> detail.desSubmissionState
       ) ++ detail.jsSubmission
+
+      if(ctutrTuple.isDefined) event ++ ctutrTuple.get else event
     }
   }
 }

@@ -86,10 +86,13 @@ trait SubmissionSrv {
           updatePAYERegistrationDocument(regId, PAYEStatus.cancelled)
           throw ex
       }
-      ctutr       =  if(incUpdate.isEmpty) fetchCtUtr(regId) else Future.successful(None)
-      submission  <- buildADesSubmission(regId, incUpdate)
+      ctutr       <-  incUpdate match {
+        case Some(_) => fetchCtUtr(regId)
+        case _       => Future.successful(None)
+      }
+      submission  <- buildADesSubmission(regId, incUpdate, ctutr)
       _           <- desConnector.submitToDES(submission)
-      _           <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject])
+      _           <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
       updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
       _           <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield ackRef
@@ -97,7 +100,6 @@ trait SubmissionSrv {
 
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
-      ctutr         <- fetchCtUtr(regId)
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitToDES(desSubmission)
       _             <- auditDESTopUp(regId, Json.toJson[DESSubmission](desSubmission).as[JsObject])
@@ -132,15 +134,15 @@ trait SubmissionSrv {
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
+  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
     registrationRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a full DES submission")
-          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), statusUpdate.crn)
+          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), statusUpdate.crn, ctutr)
         case None =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a partial DES submission")
-          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), None)
+          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), None, ctutr)
       }
       case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
       case None =>
@@ -171,7 +173,8 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, timestamp: DateTime, incorpUpdateCrn: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
+  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, timestamp: DateTime, incorpUpdateCrn: Option[String], ctutr: Option[String])
+                                             (implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
     val companyDetails = payeReg.companyDetails.getOrElse {
       throw new CompanyDetailsNotDefinedException
     }
@@ -186,7 +189,7 @@ trait SubmissionSrv {
         DESSubmissionModel(
           acknowledgementReference = ackRef,
           metaData = desMetaData,
-          limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, payeReg.employment),
+          limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, payeReg.employment, ctutr),
           employingPeople = buildDESEmployingPeople(payeReg.registrationID, payeReg.employment, payeReg.payeContact)
         )
       }
@@ -238,9 +241,10 @@ trait SubmissionSrv {
                                                sicCodes: Seq[SICCode],
                                                incorpUpdateCrn: Option[String],
                                                directors: Seq[Director],
-                                               employment: Option[Employment]): DESLimitedCompany = {
+                                               employment: Option[Employment],
+                                               ctutr: Option[String]): DESLimitedCompany = {
     DESLimitedCompany(
-      companyUTR = None,
+      companyUTR = ctutr,
       companiesHouseCompanyName = companyDetails.companyName,
       nameOfBusiness = companyDetails.tradingName,
       businessAddress = companyDetails.ppobAddress,
@@ -267,13 +271,13 @@ trait SubmissionSrv {
     )
   }
 
-  private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
+  private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
     for {
       authority <- authConnector.getCurrentAuthority
       userDetails <- authConnector.getUserDetails
       authProviderId = userDetails.get.authProviderId
     } yield {
-      val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, desSubmissionState, jsSubmission))
+      val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, ctutr, desSubmissionState, jsSubmission))
       auditConnector.sendEvent(event)
     }
   }
