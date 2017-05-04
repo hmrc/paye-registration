@@ -20,35 +20,25 @@ import play.api.libs.functional.syntax._
 import play.api.libs.functional.syntax.unlift
 import play.api.libs.json.{JsValue, Json, Writes, __}
 
-sealed trait DESSubmission
-object DESSubmission {
-  implicit val writes: Writes[DESSubmission] =
-    new Writes[DESSubmission] {
-      override def writes(o: DESSubmission): JsValue = o match {
-        case s: DESSubmissionModel => DESSubmissionModel.writes.writes(s)
-        case s: TopUpDESSubmission => TopUpDESSubmission.writes.writes(s)
-      }
-    }
-}
 
-case class DESSubmissionModel(acknowledgementReference: String,
+case class DESSubmission(acknowledgementReference: String,
                               metaData: DESMetaData,
                               limitedCompany: DESLimitedCompany,
-                              employingPeople: DESEmployingPeople) extends DESSubmission
+                              employingPeople: DESEmployingPeople)
 
-object DESSubmissionModel {
-  implicit val writes: Writes[DESSubmissionModel] =
+object DESSubmission {
+  implicit val writes: Writes[DESSubmission] =
     (
       (__ \ "acknowledgementReference").write[String] and
       (__ \ "metaData").write[DESMetaData] and
       (__ \ "payAsYouEarn" \ "limitedCompany").write[DESLimitedCompany] and
       (__ \ "payAsYouEarn" \ "employingPeople").write[DESEmployingPeople]
-      )(unlift(DESSubmissionModel.unapply))
+      )(unlift(DESSubmission.unapply))
 }
 
 case class TopUpDESSubmission(acknowledgementReference: String,
                               status: String,
-                              crn: Option[String]) extends DESSubmission
+                              crn: Option[String])
 
 object TopUpDESSubmission {
   implicit val writes: Writes[TopUpDESSubmission] =

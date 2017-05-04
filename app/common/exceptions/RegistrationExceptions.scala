@@ -20,18 +20,24 @@ import scala.util.control.NoStackTrace
 
 object RegistrationExceptions extends RegistrationExceptions
 
+sealed trait SubmissionMarshallingException extends NoStackTrace {
+  val msg: String
+  override def getMessage = msg
+}
+
 trait RegistrationExceptions {
   class AcknowledgementReferenceExistsException(regId: String) extends NoStackTrace
   class AcknowledgementReferenceNotExistsException(regId: String) extends NoStackTrace
-  class CRNNotExistsException(regId: String) extends NoStackTrace
 
-  class CompanyDetailsNotDefinedException extends NoStackTrace
-  class PAYEContactNotDefinedException extends NoStackTrace
-  class EmploymentDetailsNotDefinedException extends NoStackTrace
-  class CompletionCapacityNotDefinedException extends NoStackTrace
-  class SICCodeNotDefinedException extends NoStackTrace
+  class CompanyDetailsNotDefinedException(val msg: String)     extends SubmissionMarshallingException
+  class PAYEContactNotDefinedException(val msg: String)        extends SubmissionMarshallingException
+  class EmploymentDetailsNotDefinedException(val msg: String)  extends SubmissionMarshallingException
+  class CompletionCapacityNotDefinedException(val msg: String) extends SubmissionMarshallingException
+  class DirectorsNotCompletedException(val msg: String)        extends SubmissionMarshallingException
+  class SICCodeNotDefinedException(val msg: String)            extends SubmissionMarshallingException
 
   class RegistrationFormatException(message: String) extends NoStackTrace {
     override def getMessage = message
   }
 }
+

@@ -141,8 +141,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       )
     ),
     Seq(
-      SICCode(code = Some("123"), description = Some("consulting")),
-      SICCode(code = None, description = Some("something"))
+      SICCode(code = None, description = Some("consulting"))
     )
   )
 
@@ -244,266 +243,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
   }
   val jsonIncorpStatusUpdate = Json.parse(incorpUpdate(accepted))
 
-  "submit-registration" should {
-    "return a 200 with an ack ref when a partial DES submission completes successfully" in new Setup {
-      setupSimpleAuthMocks()
 
-      val regime = "paye"
-      val subscriber = "SCRS"
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
-        .willReturn(
-          aResponse().
-            withStatus(200)
-        )
-      )
-
-      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(Json.toJson(businessProfile).toString)
-        )
-      )
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
-
-      await(repository.insert(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
-    }
-
-    "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(
-              """{
-                | "acknowledgementReferences" : {
-                |   "ctUtr" : "testCtUtr"
-                | }
-                |}
-                |""".stripMargin
-            )
-        )
-      )
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
-        .willReturn(
-          aResponse().
-            withStatus(200)
-        )
-      )
-
-      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(Json.toJson(businessProfile).toString)
-        )
-      )
-
-      stubFor(post(urlMatching(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(
-              incorpUpdate(accepted)
-            )
-        )
-      )
-
-      await(repository.insert(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
-
-      await(repository.retrieveRegistration(regId)).get.status shouldBe PAYEStatus.submitted
-    }
-
-    "return a 200 status with an ackRef when DES returns a 409" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
-        .willReturn(
-          aResponse()
-            .withStatus(409)
-            .withHeader("Content-Type", "application/json")
-            .withBody("""{"acknowledgement_reference" : "testAckRef"}""")
-        )
-      )
-
-      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(Json.toJson(businessProfile).toString)
-        )
-      )
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
-
-      await(repository.insert(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
-    }
-
-    "return a 204 status when Incorporation was rejected at PAYE Submission" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 200, incorpUpdate(rejected))
-
-      await(repository.insert(submission))
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 204
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(rejectedSubmission)
-    }
-
-    "return a 502 status when DES returns a 499" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
-        .willReturn(
-          aResponse().
-            withStatus(499)
-        )
-      )
-
-      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(Json.toJson(businessProfile).toString)
-        )
-      )
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
-
-      await(repository.insert(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 502
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
-    }
-
-    "return a 502 status when DES returns a 5xx" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
-        .willReturn(
-          aResponse().
-            withStatus(533)
-        )
-      )
-
-      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(Json.toJson(businessProfile).toString)
-        )
-      )
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
-
-      await(repository.insert(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 502
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
-    }
-
-    "return a 400 status when DES returns a 4xx" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
-        .willReturn(
-          aResponse().
-            withStatus(433)
-        )
-      )
-
-      stubFor(get(urlMatching("/business-registration/business-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(Json.toJson(businessProfile).toString)
-        )
-      )
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
-
-      await(repository.insert(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 400
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
-    }
-
-    "return a 500 status when registration has already been cleared post-submission in mongo" in new Setup {
-      setupSimpleAuthMocks()
-
-      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
-
-      await(repository.insert(processedSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-
-      val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 500
-
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
-    }
-  }
 
   "incorporation-data" should {
     "return a 200 with a crn" in new Setup {
       setupSimpleAuthMocks()
 
-      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(
-              """{
-                | "acknowledgementReferences" : {
-                |   "ctUtr" : "testCtUtr"
-                | }
-                |}
-                |""".stripMargin
-            )
-        )
-      )
-
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching("/business-incorporation/pay-as-you-earn"))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -517,7 +263,54 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       response.status shouldBe 200
       response.json shouldBe Json.toJson(crn)
 
+      verify(postRequestedFor(urlEqualTo("/business-incorporation/pay-as-you-earn"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             | "acknowledgementReference": "testAckRef",
+             | "status": "Accepted",
+             | "payAsYouEarn": {
+             |  "crn": "OC123456"
+             | }
+             |}
+          """.stripMargin).toString())
+        )
+      )
+
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+    }
+
+    "return a 200 when Incorporation is rejected" in new Setup {
+
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-incorporation/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(200)
+        )
+      )
+
+      await(repository.insert(processedSubmission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))).futureValue
+      response.status shouldBe 200
+      val none: Option[String] = None
+      response.json shouldBe Json.toJson(none)
+
+      verify(postRequestedFor(urlEqualTo("/business-incorporation/pay-as-you-earn"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             | "acknowledgementReference": "testAckRef",
+             | "status": "Rejected"
+             |}
+          """.stripMargin).toString())
+        )
+      )
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled))
     }
 
     "return a 404 status when registration is not found" in new Setup {

@@ -18,6 +18,7 @@ package controllers
 
 import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import common.exceptions.SubmissionExceptions.InvalidRegistrationException
+import common.exceptions.SubmissionMarshallingException
 import connectors.{AuthConnect, AuthConnector}
 import enums.PAYEStatus
 import models._
@@ -329,6 +330,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case Authorised(_) =>
           submissionService.submitToDes(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
             case _: RejectedIncorporationException => NoContent
+            case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
           }
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [submitPAYERegistration] User not logged in")
