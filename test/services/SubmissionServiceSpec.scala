@@ -21,7 +21,7 @@ import java.time.LocalDate
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import connectors.{Authority, BusinessRegistrationConnector, DESConnector, IncorporationInformationConnector, UserIds}
+import connectors._
 import enums.PAYEStatus
 import models._
 import models.submission._
@@ -31,7 +31,9 @@ import models.incorporation.IncorpStatusUpdate
 import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.http.logging.SessionId
@@ -45,6 +47,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   val mockIIConnector = mock[IncorporationInformationConnector]
   val mockAuditConnector = mock[AuditConnector]
   val mockBusinessRegistrationConnector = mock[BusinessRegistrationConnector]
+  val mockCompanyRegistrationConnector = mock[CompanyRegistrationConnector]
 
   implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
   implicit val req = FakeRequest("GET", "/test-path")
@@ -58,6 +61,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val authConnector = mockAuthConnector
       override val auditConnector = mockAuditConnector
       override val businessRegistrationConnector = mockBusinessRegistrationConnector
+      override val companyRegistrationConnector = mockCompanyRegistrationConnector
     }
   }
 
@@ -270,7 +274,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), None))
+        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), None, None))
         result shouldBe validPartialDESSubmissionModel
       }
 
@@ -281,20 +285,20 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), Some("OC123456")))
+        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), Some("OC123456"), None))
         result shouldBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
       }
     }
 
     "throw a CompanyDetailsNotDefinedException" when {
       "a paye reg doc is passed in that doesn't have a company details block" in new Setup {
-        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), DateTime.parse("2017-01-01"), None))
+        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), DateTime.parse("2017-01-01"), None, None))
       }
     }
 
     "throw a AcknowledgementReferenceNotExistsException" when {
       "the paye reg doc is missing an ack ref" in new Setup {
-        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), DateTime.parse("2017-01-01"), None))
+        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), DateTime.parse("2017-01-01"), None, None))
       }
     }
   }
@@ -324,14 +328,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
-      intercept[InvalidRegistrationException](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate))))
+      intercept[InvalidRegistrationException](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
 
     "throw the correct exception when there is no registration in mongo" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
-      intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate))))
+      intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
   }
 
@@ -360,10 +364,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Building DES Limited Company" should {
     "throw the correct exception for SIC Code when missing" in new Setup {
-      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, Seq.empty, Some(validEmployment)))
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, Seq.empty, Some(validEmployment), None))
     }
     "throw the correct exception for Employment when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, None))
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, None, None))
     }
   }
 
@@ -417,6 +421,22 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling submitTopUpToDES" should {
     "return the PAYE status" in new Setup {
+      val okResponse = new HttpResponse {
+        override def status: Int = OK
+        override def json: JsValue = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences" : {
+            |   "ctUtr" : "testCtUtr"
+            | }
+            |}
+          """.stripMargin
+        )
+      }
+
+      when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(okResponse))
+
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some("ackRef")))
 
@@ -460,6 +480,58 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "Calling retrieveSessionID" should {
     "return the correct exception when session ID is missing" in new Setup {
       intercept[service.SessionIDNotExists](service.retrieveSessionID(HeaderCarrier()))
+    }
+  }
+
+  "fetchCtUtr" should {
+    "return some ctutr" when {
+      "the ctutr is part of the CR doc" in new Setup {
+        val testJson = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences": {
+            |   "ctUtr" : "testCtUtr"
+            | }
+            |}
+          """.stripMargin
+        )
+
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
+          override def json: JsValue = testJson
+        }
+
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
+
+        val result = await(service.fetchCtUtr("testRegId"))
+        result shouldBe Some("testCtUtr")
+      }
+    }
+
+    "return none" when {
+      "the ctutr isn't part of the CR doc" in new Setup {
+        val testJson = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences": {
+            |   "invalidKey" : "testCtUtr"
+            | }
+            |}
+          """.stripMargin
+        )
+
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
+          override def json: JsValue = testJson
+        }
+
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
+
+        val result = await(service.fetchCtUtr("testRegId"))
+        result shouldBe None
+      }
     }
   }
 }

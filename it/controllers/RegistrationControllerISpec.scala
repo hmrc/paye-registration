@@ -51,7 +51,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "microservice.services.incorporation-information.host" -> s"$mockHost",
     "microservice.services.incorporation-information.port" -> s"$mockPort",
     "microservice.services.business-registration.host" -> s"$mockHost",
-    "microservice.services.business-registration.port" -> s"$mockPort"
+    "microservice.services.business-registration.port" -> s"$mockPort",
+    "microservice.services.company-registration.host" -> s"$mockHost",
+    "microservice.services.company-registration.port" -> s"$mockPort"
   )
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
@@ -280,6 +282,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
       setupSimpleAuthMocks()
 
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
+
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
           aResponse().
@@ -471,6 +488,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "return a 200 with a crn" in new Setup {
       setupSimpleAuthMocks()
 
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
+
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
           aResponse().
@@ -490,6 +522,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
     "return a 404 status when registration is not found" in new Setup {
       setupSimpleAuthMocks()
+
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
 
       val jsonIncorpStatusUpdate2 = Json.parse(
         s"""
@@ -522,6 +569,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "return a 500 status when registration is already submitted" in new Setup {
       setupSimpleAuthMocks()
 
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
+
       await(repository.insert(processedTopUpSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
@@ -533,6 +595,22 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
     "return a 500 status when registration is not yet submitted with partial" in new Setup {
       setupSimpleAuthMocks()
+
+
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
 
       await(repository.insert(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
@@ -550,6 +628,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "return a 200 with an ack ref" in new Setup {
 
       setupSimpleAuthMocks()
+
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -571,6 +664,21 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     "return a 200 when Incorporation is rejected" in new Setup {
 
       setupSimpleAuthMocks()
+
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(

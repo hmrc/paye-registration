@@ -209,6 +209,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         externalId,
         authProviderId,
         regId,
+        None,
         desSubmissionState,
         Json.toJson[DESSubmission](validPartialDESSubmissionModel).as[JsObject]
       )
