@@ -44,7 +44,7 @@ class RegistrationMongoRepositoryISpec
     Some("Testford"),
     Some("Testshire"),
     Some("TE1 1ST"),
-    Some("UK")
+    None
   )
 
   private val ppobAddress = Address(
@@ -53,7 +53,7 @@ class RegistrationMongoRepositoryISpec
     Some("Testford"),
     Some("Testshire"),
     Some("TE4 1ST"),
-    Some("UK")
+    None
   )
   private val businessContact = DigitalContactDetails(
     Some("test@email.com"),
