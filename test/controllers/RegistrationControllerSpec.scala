@@ -16,16 +16,12 @@
 
 package controllers
 
-import java.time.LocalDate
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import common.exceptions.DBExceptions.MissingRegDocument
-import common.exceptions.RegistrationExceptions.RegistrationFormatException
-import enums.PAYEStatus
+import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException}
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
-import models.incorporation.{IncorpStatusUpdate, IncorpStatusUpdate$}
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -1070,6 +1066,22 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.submitPAYERegistration("AC123456")(FakeRequest())
 
       status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return a BadRequest response when the Submission Service can't make a DES submission" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockSubmissionService.submitToDes(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any[HeaderCarrier](), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new EmploymentDetailsNotDefinedException("tst message")))
+
+      val response = await(controller.submitPAYERegistration("AC123456")(FakeRequest()))
+
+      status(response) shouldBe Status.BAD_REQUEST
+      bodyOf(response) shouldBe "Registration was submitted without full data: tst message"
     }
 
     "return an Ok response with acknowledgement reference for a valid submit" in new Setup {

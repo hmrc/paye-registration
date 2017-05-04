@@ -19,7 +19,7 @@ package connectors
 import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
-import models.submission.DESSubmission
+import models.submission.{TopUpDESSubmission, DESSubmission}
 import play.api.Logger
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
@@ -33,8 +33,10 @@ class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESCon
   val featureSwitch = injFeatureSwitch
   lazy val desUrl = baseUrl("des-service")
   lazy val desURI = getConfString("des-service.uri", "")
+  lazy val desTopUpURI = getConfString("des-service.top-up-uri", "")
   lazy val desStubUrl = baseUrl("des-stub")
-  lazy val desStubURI = getConfString("des-service.uri", "")
+  lazy val desStubURI = getConfString("des-stub.uri", "")
+  lazy val desStubTopUpURI = getConfString("des-stub.top-up-uri", "")
   val http = WSHttp
 }
 
@@ -42,9 +44,11 @@ trait DESConnect extends HttpErrorFunctions {
 
   val desUrl: String
   val desURI: String
+  val desTopUpURI: String
 
   val desStubUrl: String
   val desStubURI: String
+  val desStubTopUpURI: String
 
   def http: HttpPost
   val featureSwitch: PAYEFeatureSwitches
@@ -75,6 +79,18 @@ trait DESConnect extends HttpErrorFunctions {
 
     http.POST[DESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
+      resp
+    }
+  }
+
+  def submitTopUpToDES(submission: TopUpDESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    val url = useDESStubFeature match {
+      case true  => s"$desStubUrl/$desStubTopUpURI"
+      case false => s"$desUrl/$desTopUpURI"
+    }
+
+    http.POST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
+      Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status}")
       resp
     }
   }

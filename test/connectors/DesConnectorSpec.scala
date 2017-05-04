@@ -17,7 +17,7 @@
 package connectors
 
 import fixtures.SubmissionFixture
-import models.submission.DESSubmission
+import models.submission.{TopUpDESSubmission, DESSubmission}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
@@ -41,10 +41,12 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override val featureSwitch = mockFeatureSwitch
       override def useDESStubFeature = withProxy
       override def http = mockHttp
-      override val desURI = "testURI"
-      override val desUrl = "desURL"
-      override val desStubURI = "testStubURI"
-      override val desStubUrl = "desStubURL"
+      override val desURI      = "testURI"
+      override val desTopUpURI = "desTopUpURI"
+      override val desUrl      = "desURL"
+      override val desStubTopUpURI = "desTopUpURI"
+      override val desStubURI      = "testStubURI"
+      override val desStubUrl      = "desStubURL"
     }
   }
 
@@ -69,9 +71,9 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Top Up DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200))
+      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", HttpResponse(200))
 
-      await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
+      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel)).status shouldBe 200
     }
   }
 
@@ -85,9 +87,9 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Top Up DES Submission Model - feature switch disabled" should {
     "successfully POST" in new SetupWithProxy(false) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200))
+      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desTopUpURI}", HttpResponse(200))
 
-      await(connector.submitToDES(validTopUpDESSubmissionModel)).status shouldBe 200
+      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel)).status shouldBe 200
     }
   }
 }

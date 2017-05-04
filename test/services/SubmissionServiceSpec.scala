@@ -28,7 +28,6 @@ import models.submission._
 import helpers.PAYERegSpec
 import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
-import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.libs.json.{JsValue, Json}
@@ -148,7 +147,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = PAYEStatus.draft,
     acknowledgementReference = Some("ackRef"),
     crn = None,
-    formCreationTimestamp = "the year of the rooster",
+    formCreationTimestamp = "2017-05-03T12:51:42.076",
     companyDetails = Some(validCompanyDetails),
     completionCapacity = Some("director"),
     directors = validDirectors,
@@ -166,7 +165,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = PAYEStatus.held,
     acknowledgementReference = Some("ackRef"),
     crn = None,
-    formCreationTimestamp = "the year of the rooster",
+    formCreationTimestamp = "2017-05-03T12:51:42.076",
     companyDetails = Some(validCompanyDetailsWithCRN),
     completionCapacity = None,
     directors = Seq.empty,
@@ -188,7 +187,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = PAYEStatus.submitted,
     acknowledgementReference = Some("ackRef"),
     crn = Some("OC123456"),
-    formCreationTimestamp = "the year of the rooster",
+    formCreationTimestamp = "2017-05-03T12:51:42.076",
     companyDetails = None,
     completionCapacity = None,
     directors = Seq.empty,
@@ -206,7 +205,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     sessionId = "session-123",
     credId = "cred-123",
     language = "en",
-    submissionTs = DateTime.parse("2017-01-01"),
+    submissionTs = "2017-05-03T12:51:42.076",
     completionCapacity = validDESCompletionCapacity
   )
 
@@ -236,7 +235,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
-  val validPartialDESSubmissionModel = DESSubmissionModel(
+  val validPartialDESSubmissionModel = DESSubmission(
     acknowledgementReference = "ackRef",
     metaData = validDESMetaData,
     limitedCompany = validDESLimitedCompanyWithoutCRN,
@@ -252,7 +251,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
-    status = "accepted",
+    status = "Accepted",
     crn = Some("123456")
   )
 
@@ -274,7 +273,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), None, None))
+        val result = await(service.payeReg2DESSubmission(validRegistration, None, None))
         result shouldBe validPartialDESSubmissionModel
       }
 
@@ -285,20 +284,20 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, DateTime.parse("2017-01-01"), Some("OC123456"), None))
+        val result = await(service.payeReg2DESSubmission(validRegistration, Some("OC123456"), None))
         result shouldBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
       }
     }
 
     "throw a CompanyDetailsNotDefinedException" when {
       "a paye reg doc is passed in that doesn't have a company details block" in new Setup {
-        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), DateTime.parse("2017-01-01"), None, None))
+        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), None, None))
       }
     }
 
     "throw a AcknowledgementReferenceNotExistsException" when {
       "the paye reg doc is missing an ack ref" in new Setup {
-        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), DateTime.parse("2017-01-01"), None, None))
+        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), None, None))
       }
     }
   }
@@ -337,6 +336,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
       intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
+
+    "throw the correct exception when PAYE status is in an incorrect state" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
+
+      intercept[RegistrationInvalidStatus](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
+    }
   }
 
   "Calling buildTopUpDESSubmission" should {
@@ -363,11 +369,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   "Building DES Limited Company" should {
+    "throw the correct exception when Directors list is empty" in new Setup {
+      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, Some(validEmployment), None))
+    }
     "throw the correct exception for SIC Code when missing" in new Setup {
-      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, Seq.empty, Some(validEmployment), None))
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, Some(validEmployment), None))
     }
     "throw the correct exception for Employment when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, None, None))
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, validDirectors, None, None))
     }
   }
 
@@ -443,7 +452,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-      when(mockDESConnector.submitToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(200)))
 
       when(mockAuditConnector.sendEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))

@@ -28,9 +28,8 @@ import enums.PAYEStatus
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
-import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -99,8 +98,8 @@ trait SubmissionSrv {
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
-      _             <- desConnector.submitToDES(desSubmission)
-      _             <- auditDESTopUp(regId, Json.toJson[DESSubmission](desSubmission).as[JsObject])
+      _             <- desConnector.submitTopUpToDES(desSubmission)
+      _             <- auditDESTopUp(regId, Json.toJson[TopUpDESSubmission](desSubmission).as[JsObject])
       updatedStatus = if(incorpStatusUpdate.status == rejected) PAYEStatus.cancelled else PAYEStatus.submitted
       status        <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield status
@@ -132,23 +131,23 @@ trait SubmissionSrv {
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
+  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
     registrationRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a full DES submission")
-          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), statusUpdate.crn, ctutr)
+          payeReg2DESSubmission(payeReg, statusUpdate.crn, ctutr)
         case None =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a partial DES submission")
-          payeReg2DESSubmission(payeReg, DateTime.now(DateTimeZone.UTC), None, ctutr)
+          payeReg2DESSubmission(payeReg, None, ctutr)
       }
       case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
+      case Some(payeReg) =>
+        Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]: The registration for regId $regId has incorrect statu of ${payeReg.status.toString}s")
+        throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case None =>
         Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]:  building des top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
-      case _ =>
-        Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]: The registration for regId $regId has already been submitted")
-        throw new RegistrationAlreadySubmitted(regId)
     }
   }
 
@@ -171,10 +170,9 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, timestamp: DateTime, incorpUpdateCrn: Option[String], ctutr: Option[String])
-                                             (implicit hc: HeaderCarrier): Future[DESSubmissionModel] = {
+  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
     val companyDetails = payeReg.companyDetails.getOrElse {
-      throw new CompanyDetailsNotDefinedException
+      throw new CompanyDetailsNotDefinedException("Company Details not defined")
     }
 
     val ackRef = payeReg.acknowledgementReference.getOrElse {
@@ -182,9 +180,9 @@ trait SubmissionSrv {
       throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
     }
 
-    buildDESMetaData(payeReg.registrationID, timestamp, payeReg.completionCapacity) map {
+    buildDESMetaData(payeReg.registrationID,payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
       desMetaData => {
-        DESSubmissionModel(
+        DESSubmission(
           acknowledgementReference = ackRef,
           metaData = desMetaData,
           limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, payeReg.employment, ctutr),
@@ -200,15 +198,15 @@ trait SubmissionSrv {
         Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
-      status = incorpStatusUpdate.status,
+      status = incorpStatusUpdate.status.capitalize,
       crn = incorpStatusUpdate.crn
     )
   }
 
   private[services] def buildNatureOfBusiness(sicCodes: Seq[SICCode]): String = {
     sicCodes match {
-      case s if s == Seq.empty => throw new SICCodeNotDefinedException
-      case s => s.head.description.getOrElse(throw new SICCodeNotDefinedException)
+      case s if s == Seq.empty => throw new SICCodeNotDefinedException("No SIC Codes provided")
+      case s => s.head.description.getOrElse(throw new SICCodeNotDefinedException("Empty description in first SIC Code"))
     }
   }
 
@@ -221,11 +219,11 @@ trait SubmissionSrv {
         case AGENT => DESCompletionCapacity(AGENT, None)
         case other => DESCompletionCapacity(OTHER, Some(other))
       }.getOrElse{
-        throw new CompletionCapacityNotDefinedException
+        throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
       }
   }
 
-  private[services] def buildDESMetaData(regId: String, timestamp: DateTime, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
+  private[services] def buildDESMetaData(regId: String, timestamp:String, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
     for {
       language <- retrieveLanguage(regId)
       credId <- retrieveCredId
@@ -241,23 +239,26 @@ trait SubmissionSrv {
                                                directors: Seq[Director],
                                                employment: Option[Employment],
                                                ctutr: Option[String]): DESLimitedCompany = {
-    DESLimitedCompany(
-      companyUTR = ctutr,
-      companiesHouseCompanyName = companyDetails.companyName,
-      nameOfBusiness = companyDetails.tradingName,
-      businessAddress = companyDetails.ppobAddress,
-      businessContactDetails = companyDetails.businessContactDetails,
-      natureOfBusiness = buildNatureOfBusiness(sicCodes),
-      crn = incorpUpdateCrn,
-      directors = directors,
-      registeredOfficeAddress = companyDetails.roAddress,
-      operatingOccPensionScheme = employment.getOrElse(throw new EmploymentDetailsNotDefinedException).companyPension
-    )
+    val EmploymentDetails = employment.getOrElse(throw new EmploymentDetailsNotDefinedException("Employment details not defined"))
+    if(directors.isEmpty) throw new DirectorsNotCompletedException("No director details provided") else {
+      DESLimitedCompany(
+        companyUTR = ctutr,
+        companiesHouseCompanyName = companyDetails.companyName,
+        nameOfBusiness = companyDetails.tradingName,
+        businessAddress = companyDetails.ppobAddress,
+        businessContactDetails = companyDetails.businessContactDetails,
+        natureOfBusiness = buildNatureOfBusiness(sicCodes),
+        crn = incorpUpdateCrn,
+        directors = directors,
+        registeredOfficeAddress = companyDetails.roAddress,
+        operatingOccPensionScheme = EmploymentDetails.companyPension
+      )
+    }
   }
 
   private[services] def buildDESEmployingPeople(regId: String, employment: Option[Employment], payeContact: Option[PAYEContact]): DESEmployingPeople = {
-    val employmentDetails = employment.getOrElse(throw new EmploymentDetailsNotDefinedException)
-    val payeContactDetails = payeContact.getOrElse(throw new PAYEContactNotDefinedException)
+    val employmentDetails = employment.getOrElse(throw new EmploymentDetailsNotDefinedException("Employment details not defined"))
+    val payeContactDetails = payeContact.getOrElse(throw new PAYEContactNotDefinedException("PAYE Contact not defined"))
 
     DESEmployingPeople(
       dateOfFirstEXBForEmployees = employmentDetails.firstPaymentDate,

@@ -18,6 +18,7 @@ package models.incorporation
 
 import java.time.LocalDate
 import helpers.IncorporationValidator
+import play.api.data.validation.ValidationError
 import play.api.libs.json.{Reads, __}
 import play.api.libs.functional.syntax._
 
@@ -37,4 +38,7 @@ object IncorpStatusUpdate extends IncorporationValidator {
     (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
     (__ \\ "IncorpStatusEvent"     \ "timestamp").read[LocalDate]
   )(IncorpStatusUpdate.apply _)
+    .filter(ValidationError("no CRN defined when expected"))(
+      update => update.status == "rejected" || update.crn.isDefined
+    )
 }

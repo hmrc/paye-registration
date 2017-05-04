@@ -16,7 +16,7 @@
 
 package audit
 
-import models.submission.{DESSubmission, TopUpDESSubmission}
+import models.submission.TopUpDESSubmission
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -43,7 +43,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
 
         val testModel = DesTopUpAuditEventDetail(
           regId,
-          Json.toJson[DESSubmission](validTopUpDESSubmission).as[JsObject]
+          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission).as[JsObject]
         )
         Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
       }
@@ -62,7 +62,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
 
         val testModel = DesTopUpAuditEventDetail(
           regId,
-          Json.toJson[DESSubmission](validTopUpDESSubmission).as[JsObject]
+          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission).as[JsObject]
         )
         Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
       }

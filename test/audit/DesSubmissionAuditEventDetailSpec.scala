@@ -20,7 +20,6 @@ import java.time.LocalDate
 
 import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name}
 import models.submission._
-import org.joda.time.DateTime
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -79,7 +78,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         sessionId = "session-123",
         credId = "cred-123",
         language = "en",
-        submissionTs = DateTime.parse("2017-01-01"),
+        submissionTs = "2017-05-03T12:51:42.076",
         completionCapacity = validDESCompletionCapacity
       )
 
@@ -109,7 +108,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
       )
 
-      val validPartialDESSubmissionModel = DESSubmissionModel(
+      val validPartialDESSubmissionModel = DESSubmission(
         acknowledgementReference = "ackRef",
         metaData = validDESMetaData,
         limitedCompany = validDESLimitedCompanyWithoutCRN,
@@ -128,7 +127,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
           |     "businessType": "Limited company",
           |     "sessionID": "session-123",
           |     "credentialID": "cred-123",
-          |     "formCreationTimestamp": ${Json.toJson(DateTime.parse("2017-01-01").toString)},
+          |     "formCreationTimestamp": "2017-05-03T12:51:42.076",
           |     "language": "en",
           |     "submissionFromAgent": false,
           |     "completionCapacity": "other",

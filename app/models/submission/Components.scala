@@ -19,19 +19,9 @@ package models.submission
 import java.time.LocalDate
 
 import models.{Address, DigitalContactDetails, Director}
-import org.joda.time.{DateTime, DateTimeZone}
-import org.joda.time.format.ISODateTimeFormat
 import play.api.libs.json.Writes
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-
-object DesFormats {
-
-  private val datetime = ISODateTimeFormat.dateTime()
-
-  def formatTimestamp(ts: DateTime): String = datetime.print(ts)
-
-}
 
 object BusinessType {
   val LimitedCompany = "Limited company"
@@ -40,11 +30,10 @@ object BusinessType {
 case class DESMetaData(sessionId: String,
                        credId: String,
                        language: String,
-                       submissionTs: DateTime,
+                       submissionTs: String,
                        completionCapacity: DESCompletionCapacity)
 
 object DESMetaData {
-  import DesFormats._
 
   implicit val writes = new Writes[DESMetaData] {
     def writes(m: DESMetaData) = {
@@ -55,7 +44,7 @@ object DESMetaData {
         "sessionID" -> m.sessionId,
         "credentialID" -> m.credId,
         "language" -> m.language,
-        "formCreationTimestamp" -> formatTimestamp(m.submissionTs)
+        "formCreationTimestamp" -> m.submissionTs
       ) ++ Json.toJson(m.completionCapacity).as[JsObject]
     }
   }

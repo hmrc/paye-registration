@@ -25,65 +25,129 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
   "Creating a IncorpStatusUpdate model from Json" should {
-    "complete successfully from full Json" in {
-      val json = Json.parse(
-        s"""
-           |{
-           |  "SCRSIncorpStatus": {
-           |    "IncorpSubscriptionKey" : {
-           |      "subscriber" : "SCRS",
-           |      "discriminator" : "PAYE",
-           |      "transactionId" : "NNASD9789F"
-           |    },
-           |    "SCRSIncorpSubscription" : {
-           |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
-           |    },
-           |    "IncorpStatusEvent": {
-           |      "status": "accepted",
-           |      "crn":"1",
-           |      "incorporationDate":"2000-12-12",
-           |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
-           |    }
-           |  }
-           |}
+    "succeed" when {
+      "provided with full json" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "SCRSIncorpStatus": {
+             |    "IncorpSubscriptionKey" : {
+             |      "subscriber" : "SCRS",
+             |      "discriminator" : "PAYE",
+             |      "transactionId" : "NNASD9789F"
+             |    },
+             |    "SCRSIncorpSubscription" : {
+             |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+             |    },
+             |    "IncorpStatusEvent": {
+             |      "status": "accepted",
+             |      "crn":"1",
+             |      "incorporationDate":"2000-12-12",
+             |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
+             |    }
+             |  }
+             |}
         """.stripMargin)
 
-      val tstIncorpStatusUpdate = IncorpStatusUpdate(
-        transactionId = "NNASD9789F",
-        status = "accepted",
-        crn = Some("1"),
-        incorporationDate = Some(LocalDate.of(2000, 12, 12)),
-        description = None,
-        timestamp = LocalDate.of(2017, 12, 21)
-      )
+        val tstIncorpStatusUpdate = IncorpStatusUpdate(
+          transactionId = "NNASD9789F",
+          status = "accepted",
+          crn = Some("1"),
+          incorporationDate = Some(LocalDate.of(2000, 12, 12)),
+          description = None,
+          timestamp = LocalDate.of(2017, 12, 21)
+        )
 
-      Json.fromJson[IncorpStatusUpdate](json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+        Json.fromJson[IncorpStatusUpdate](json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+      }
+      "there is no CRN in an update with rejected status" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "SCRSIncorpStatus": {
+             |    "IncorpSubscriptionKey" : {
+             |      "subscriber" : "SCRS",
+             |      "discriminator" : "PAYE",
+             |      "transactionId" : "NNASD9789F"
+             |    },
+             |    "SCRSIncorpSubscription" : {
+             |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+             |    },
+             |    "IncorpStatusEvent": {
+             |      "status": "rejected",
+             |      "incorporationDate":"2000-12-12",
+             |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
+             |    }
+             |  }
+             |}
+        """.stripMargin)
+
+        val tstIncorpStatusUpdate = IncorpStatusUpdate(
+          transactionId = "NNASD9789F",
+          status = "rejected",
+          crn = None,
+          incorporationDate = Some(LocalDate.of(2000, 12, 12)),
+          description = None,
+          timestamp = LocalDate.of(2017, 12, 21)
+        )
+
+        Json.fromJson[IncorpStatusUpdate](json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+      }
     }
 
-    "fail from Json without status" in {
-      val json = Json.parse(
-        s"""
-           |{
-           |  "SCRSIncorpStatus": {
-           |    "IncorpSubscriptionKey" : {
-           |      "subscriber" : "SCRS",
-           |      "discriminator" : "PAYE",
-           |      "transactionId" : "NNASD9789F"
-           |    },
-           |    "SCRSIncorpSubscription" : {
-           |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
-           |    },
-           |    "IncorpStatusEvent": {
-           |      "crn":"1",
-           |      "incorporationDate":"2000-12-12",
-           |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
-           |    }
-           |  }
-           |}
+    "fail" when {
+
+      "status is not defined" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "SCRSIncorpStatus": {
+             |    "IncorpSubscriptionKey" : {
+             |      "subscriber" : "SCRS",
+             |      "discriminator" : "PAYE",
+             |      "transactionId" : "NNASD9789F"
+             |    },
+             |    "SCRSIncorpSubscription" : {
+             |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+             |    },
+             |    "IncorpStatusEvent": {
+             |      "crn":"1",
+             |      "incorporationDate":"2000-12-12",
+             |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
+             |    }
+             |  }
+             |}
         """.stripMargin)
 
-      val result = Json.fromJson[IncorpStatusUpdate](json)
-      shouldHaveErrors(result, JsPath() \\ "IncorpStatusEvent" \ "status", Seq(ValidationError("error.path.missing")))
+        val result = Json.fromJson[IncorpStatusUpdate](json)
+        shouldHaveErrors(result, JsPath() \\ "IncorpStatusEvent" \ "status", Seq(ValidationError("error.path.missing")))
+      }
+
+      "accepted status and no CRN" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "SCRSIncorpStatus": {
+             |    "IncorpSubscriptionKey" : {
+             |      "subscriber" : "SCRS",
+             |      "discriminator" : "PAYE",
+             |      "transactionId" : "NNASD9789F"
+             |    },
+             |    "SCRSIncorpSubscription" : {
+             |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+             |    },
+             |    "IncorpStatusEvent": {
+             |      "status": "accepted",
+             |      "incorporationDate":"2000-12-12",
+             |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
+             |    }
+             |  }
+             |}
+        """.stripMargin)
+
+        val result = Json.fromJson[IncorpStatusUpdate](json)
+        shouldHaveErrors(result, JsPath(), Seq(ValidationError("no CRN defined when expected")))
+      }
     }
   }
 }
