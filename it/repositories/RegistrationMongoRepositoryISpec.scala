@@ -82,11 +82,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus")
-    ),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -103,11 +99,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus")
-    ),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.held,
@@ -126,11 +118,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus")
-    ),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -156,11 +144,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus")
-    ),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -179,11 +163,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus")
-    ),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -207,11 +187,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus")
-    ),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -230,11 +206,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -272,11 +244,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -295,11 +263,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -322,11 +286,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -345,11 +305,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -379,11 +335,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -402,11 +354,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -425,11 +373,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
@@ -448,11 +392,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.held,
@@ -883,11 +823,7 @@ class RegistrationMongoRepositoryISpec
     internalID = "09876",
     acknowledgementReference = Some("testAckRef"),
     crn = None,
-    registrationConfirmation = Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
     eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.held,

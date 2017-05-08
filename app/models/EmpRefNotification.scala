@@ -16,12 +16,23 @@
 
 package models
 
-import play.api.libs.json.Json
+import auth.Crypto
+import play.api.libs.json.{Format, Json, __}
+import play.api.libs.functional.syntax._
 
 case class EmpRefNotification(empRef: Option[String],
                               timestamp: String,
                               status: String)
 
 object EmpRefNotification {
-  implicit val format = Json.format[EmpRefNotification]
+
+  implicit val apiFormat = Json.format[EmpRefNotification]
+
+  private val empRefMongoFormat = Format[String](Crypto.rds, Crypto.wts)
+
+  val mongoFormat = (
+    (__ \ "empRef").formatNullable[String](empRefMongoFormat) and
+    (__ \ "timestamp").format[String] and
+    (__ \ "status").format[String]
+    )(EmpRefNotification.apply, unlift(EmpRefNotification.unapply _))
 }

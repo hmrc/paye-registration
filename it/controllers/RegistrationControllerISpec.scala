@@ -90,11 +90,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     None,
-    Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    None,
     timestamp,
     Some(Eligibility(false, false)),
     PAYEStatus.draft,
@@ -151,11 +147,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     None,
-    Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    None,
     timestamp,
     eligibility = Some(Eligibility(false, false)),
     PAYEStatus.held,
@@ -175,11 +167,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     intId,
     Some("testAckRef"),
     None,
-    Some(EmpRefNotification(
-      Some("testEmpRef"),
-      "2017-01-01T12:00:00Z",
-      "testStatus"
-    )),
+    None,
     timestamp,
     eligibility = Some(Eligibility(false, false)),
     PAYEStatus.submitted,

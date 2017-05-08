@@ -107,6 +107,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     )
   )
 
+  implicit val mongoFormat = PAYERegistration.payeRegistrationFormat(EmpRefNotification.mongoFormat)
+
   private[repositories] def registrationIDSelector(registrationID: String): BSONDocument = BSONDocument(
     "registrationID" -> BSONString(registrationID)
   )
