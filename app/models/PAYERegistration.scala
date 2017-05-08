@@ -18,7 +18,7 @@ package models
 
 import enums.PAYEStatus
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{OFormat, __}
+import play.api.libs.json.{Format, OFormat, __}
 
 case class PAYERegistration(registrationID: String,
                             transactionID: String,
@@ -44,7 +44,7 @@ object PAYERegistration extends {
     (__ \ "internalID").format[String] and
     (__ \ "acknowledgementReference").formatNullable[String] and
     (__ \ "crn").formatNullable[String] and
-    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification] and
+    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.apiFormat) and
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
@@ -55,5 +55,25 @@ object PAYERegistration extends {
     (__ \ "employment").formatNullable[Employment] and
     (__ \ "sicCodes").format[Seq[SICCode]]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
+
+  def payeRegistrationFormat(empRefFormat: Format[EmpRefNotification]): OFormat[PAYERegistration] = (
+    (__ \ "registrationID").format[String] and
+    (__ \ "transactionID").format[String] and
+    (__ \ "internalID").format[String] and
+    (__ \ "acknowledgementReference").formatNullable[String] and
+    (__ \ "crn").formatNullable[String] and
+    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](empRefFormat) and
+    (__ \ "formCreationTimestamp").format[String] and
+    (__ \ "eligibility").formatNullable[Eligibility] and
+    (__ \ "status").format[PAYEStatus.Value] and
+    (__ \ "completionCapacity").formatNullable[String] and
+    (__ \ "companyDetails").formatNullable[CompanyDetails] and
+    (__ \ "directors").format[Seq[Director]] and
+    (__ \ "payeContact").formatNullable[PAYEContact] and
+    (__ \ "employment").formatNullable[Employment] and
+    (__ \ "sicCodes").format[Seq[SICCode]]
+  )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
+
+
 
 }

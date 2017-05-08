@@ -84,11 +84,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
           intID,
           Some("testAckRef"),
           None,
-          Some(EmpRefNotification(
-            Some("testEmpRef"),
-            "2017-01-01T12:00:00Z",
-            "testStatus"
-          )),
+          None,
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,
@@ -120,11 +116,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
           intID,
           Some("testAckRef"),
           None,
-          Some(EmpRefNotification(
-            Some("testEmpRef"),
-            "2017-01-01T12:00:00Z",
-            "testStatus"
-          )),
+          None,
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,
@@ -164,11 +156,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
           intID,
           Some("testAckRef"),
           None,
-          Some(EmpRefNotification(
-            Some("testEmpRef"),
-            "2017-01-01T12:00:00Z",
-            "testStatus"
-          )),
+          None,
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,
@@ -199,11 +187,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
           intID,
           Some("testAckRef"),
           None,
-          Some(EmpRefNotification(
-            Some("testEmpRef"),
-            "2017-01-01T12:00:00Z",
-            "testStatus"
-          )),
+          None,
           timestamp,
           Some(Eligibility(false, false)),
           PAYEStatus.draft,

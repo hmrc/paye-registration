@@ -1342,14 +1342,5 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         status(result) shouldBe Status.NOT_FOUND
       }
     }
-    "return an INTERNAL_SERVER_ERROR" when {
-      "an exception is thrown" in new Setup {
-        when(mockRegistrationService.getStatus(ArgumentMatchers.anyString()))
-          .thenReturn(Future.failed(new RuntimeException("")))
-
-        val result = await(controller.getDocumentStatus("testRegId")(FakeRequest()))
-        status(result) shouldBe Status.INTERNAL_SERVER_ERROR
-      }
-    }
   }
 }

@@ -425,8 +425,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         notificationService.processNotification(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))
         } recover {
-          case missing: MissingRegDocument => NotFound
-          case _ => InternalServerError
+          case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for acknowledgement reference $ackref")
         }
       }
   }
@@ -436,8 +435,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       registrationService.getStatus(regId) map { status =>
         Ok(Json.toJson(status))
       } recover {
-        case missing: MissingRegDocument => NotFound
-        case _ => InternalServerError
+        case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
       }
   }
 }
