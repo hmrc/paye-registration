@@ -485,13 +485,23 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       "the emp ref has been updated" in new Setup {
         setupSimpleAuthMocks()
 
-        await(repository.insert(processedSubmission.copy(registrationConfirmation = None)))
+        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
 
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = client("registration-processed-confirmation?ackref=testAckRef").post(testNotification).futureValue
+        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
         response.status shouldBe 200
         response.json shouldBe testNotification
+
+        val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+        reg.registrationConfirmation shouldBe Some(
+          EmpRefNotification(
+            empRef = Some("testEmpRef"),
+            timestamp = "2017-01-01T12:00:00Z",
+            status = "04"
+          )
+        )
+        reg.status shouldBe PAYEStatus.acknowledged
       }
     }
 
