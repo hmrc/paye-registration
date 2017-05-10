@@ -35,4 +35,4 @@ object DesTopUpAuditEventDetail {
 }
 
 class DesTopUpEvent(details: DesTopUpAuditEventDetail)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("payeDesTopup", None, Json.toJson(details).as[JsObject])(hc)
+  extends RegistrationAuditEvent("payeRegistrationAdditionalData", None, Json.toJson(details).as[JsObject])(hc)

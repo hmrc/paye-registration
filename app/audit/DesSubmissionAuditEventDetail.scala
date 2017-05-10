@@ -50,4 +50,4 @@ object DesSubmissionAuditEventDetail {
 }
 
 class DesSubmissionEvent(details: DesSubmissionAuditEventDetail)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("desSubmission", None, Json.toJson(details).as[JsObject])(hc)
+  extends RegistrationAuditEvent("payeRegistrationSubmission", None, Json.toJson(details).as[JsObject])(hc)
