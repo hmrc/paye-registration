@@ -4,9 +4,15 @@
 
 Microservice supporting the paye registration aspects of the Streamlined Company Registration Legislation.
 
-### License
+## Running the Application
 
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
+In order to run the microservice, you must have SBT installed. You should then be able to start the application using: 
+
+```sbt "run {PORTNUM}"```
+
+To run the tests for the application, you can run: ```sbt test it:test``` 
+
+or ```sbt coverage test it:test coverageReport```
 
 ## API
 
@@ -57,3 +63,7 @@ The error scenarios will return an error document, for example :
     "message":"Could not find an existing PAYE Registration document with that Registration ID"
 }
 ```
+
+### License
+
+This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
