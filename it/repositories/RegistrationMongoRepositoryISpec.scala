@@ -21,6 +21,7 @@ import java.time.LocalDate
 import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
+import helpers.DateHelper
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -33,10 +34,15 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationMongoRepositoryISpec
-  extends UnitSpec with MongoSpecSupport with BeforeAndAfterEach with ScalaFutures with Eventually with WithFakeApplication {
+class RegistrationMongoRepositoryISpec extends UnitSpec
+                                        with MongoSpecSupport
+                                        with BeforeAndAfterEach
+                                        with ScalaFutures
+                                        with Eventually
+                                        with WithFakeApplication {
 
   private val date = LocalDate.of(2016, 12, 20)
+  private val lastUpdate = "2017-05-09T07:58:35Z"
 
   private val address = Address(
     "14 St Test Walk",
@@ -91,7 +97,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty)
+    sicCodes = Seq.empty,
+    lastUpdate)
 
   private val reg2 = PAYERegistration(
     registrationID = "AC234567",
@@ -108,7 +115,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   // Company Details
@@ -127,7 +135,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   private val companyDetails2: CompanyDetails = CompanyDetails(
@@ -153,7 +162,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   // Employment
@@ -172,7 +182,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
   private val employmentDetails2: Employment = Employment(
     employees = true,
@@ -196,7 +207,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = Some(employmentDetails2),
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   // Directors
@@ -215,7 +227,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   private val directors: Seq[Director] = Seq(
@@ -253,7 +266,8 @@ class RegistrationMongoRepositoryISpec
     directors = directors,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   //SIC Codes
@@ -272,7 +286,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   private val sicCodes: Seq[SICCode] = Seq(
@@ -295,7 +310,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = sicCodes
+    sicCodes = sicCodes,
+    lastUpdate
   )
 
   //PAYE Contact
@@ -314,7 +330,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   private val payeContact = PAYEContact(
@@ -344,7 +361,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = Some(payeContact),
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   //Completion Capacity
@@ -363,7 +381,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
   private val completionCapacity = "Director"
 
@@ -382,7 +401,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   //Registration Status
@@ -401,12 +421,16 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
-  class Setup {
+  class Setup(timestamp: String = lastUpdate) {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = new DateHelper {
+      override def getTimestampString: String = timestamp
+    }
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -832,7 +856,8 @@ class RegistrationMongoRepositoryISpec
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate
   )
 
   "Calling cleardownRegistration" should {

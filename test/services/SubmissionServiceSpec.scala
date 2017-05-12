@@ -16,7 +16,7 @@
 
 package services
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
@@ -25,7 +25,7 @@ import connectors._
 import enums.PAYEStatus
 import models._
 import models.submission._
-import helpers.PAYERegSpec
+import helpers.{DateHelper, PAYERegSpec}
 import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
 import org.mockito.ArgumentMatchers
@@ -70,6 +70,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     reset(mockDESConnector)
   }
 
+  val lastUpdate = "2017-05-09T07:58:35Z"
 
   val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
@@ -147,13 +148,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = PAYEStatus.draft,
     acknowledgementReference = Some("ackRef"),
     crn = None,
-    formCreationTimestamp = "2017-05-03T12:51:42.076",
+    formCreationTimestamp = "2017-05-03T12:51:42Z",
     companyDetails = Some(validCompanyDetails),
     completionCapacity = Some("director"),
     directors = validDirectors,
     payeContact = Some(validPAYEContact),
     employment = Some(validEmployment),
-    sicCodes = validSICCodes
+    sicCodes = validSICCodes,
+    lastUpdate = lastUpdate
   )
 
   val validRegistrationAfterPartialSubmission = PAYERegistration(
@@ -165,13 +167,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = PAYEStatus.held,
     acknowledgementReference = Some("ackRef"),
     crn = None,
-    formCreationTimestamp = "2017-05-03T12:51:42.076",
+    formCreationTimestamp = "2017-05-03T12:51:42Z",
     companyDetails = Some(validCompanyDetailsWithCRN),
     completionCapacity = None,
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate = lastUpdate
   )
 
   val validRegistrationAfterTopUpSubmission = PAYERegistration(
@@ -187,13 +190,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = PAYEStatus.submitted,
     acknowledgementReference = Some("ackRef"),
     crn = Some("OC123456"),
-    formCreationTimestamp = "2017-05-03T12:51:42.076",
+    formCreationTimestamp = "2017-05-03T12:51:42Z",
     companyDetails = None,
     completionCapacity = None,
     directors = Seq.empty,
     payeContact = None,
     employment = None,
-    sicCodes = Seq.empty
+    sicCodes = Seq.empty,
+    lastUpdate = lastUpdate
   )
 
   val validDESCompletionCapacity = DESCompletionCapacity(
@@ -205,7 +209,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     sessionId = "session-123",
     credId = "cred-123",
     language = "en",
-    submissionTs = "2017-05-03T12:51:42.076",
+    submissionTs = "2017-05-03T12:51:42Z",
     completionCapacity = validDESCompletionCapacity
   )
 

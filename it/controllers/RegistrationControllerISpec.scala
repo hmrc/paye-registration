@@ -16,11 +16,12 @@
 
 package controllers
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
-import itutil.{IntegrationSpecBase, WiremockHelper}
+import helpers.DateHelper
+import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -29,10 +30,13 @@ import play.api.libs.ws.WS
 import play.api.{Application, Play}
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
+import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationControllerISpec extends IntegrationSpecBase {
+class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper {
+
+  override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -69,7 +73,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = new DateHelper {
+      override def getTimestampString: String = timestamp
+    }
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -83,6 +90,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
   val transactionID = "NN1234"
   val intId = "Int-xxx"
   val timestamp = "2017-01-01T00:00:00"
+  val lastUpdate = "2017-05-09T07:58:35Z"
 
   val submission = PAYERegistration(
     regId,
@@ -138,7 +146,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     ),
     Seq(
       SICCode(code = None, description = Some("consulting"))
-    )
+    ),
+    lastUpdate
   )
 
   val processedSubmission = PAYERegistration(
@@ -156,7 +165,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Nil,
     None,
     None,
-    Nil
+    Nil,
+    lastUpdate
   )
 
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
@@ -176,7 +186,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
     Nil,
     None,
     None,
-    Nil
+    Nil,
+    lastUpdate
   )
 
   val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
@@ -265,7 +276,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
     "return a 200 when Incorporation is rejected" in new Setup {
@@ -298,7 +315,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
         )
       )
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled))
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
     "return a 404 status when registration is not found" in new Setup {
@@ -439,7 +462,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       response.status shouldBe 200
       response.json shouldBe Json.toJson(crn)
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
     "return a 200 when Incorporation is rejected" in new Setup {
@@ -476,7 +505,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
       val none: Option[String] = None
       response.json shouldBe Json.toJson(none)
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled))
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
   }
 
@@ -520,59 +555,45 @@ class RegistrationControllerISpec extends IntegrationSpecBase {
   }
 
   "getStatus" should {
-    "return an OK with the correct statuses" in new Setup {
-      await(repository.drop)
-      await(repository.ensureIndexes)
+    "return an OK with a full document status" in new Setup {
+      val json = Json.parse("""{
+                              |   "status": "acknowledged",
+                              |   "lastUpdate": "2017-05-09T07:58:35Z",
+                              |   "ackRef": "testAckRef",
+                              |   "empref": "testEmpRef"
+                              |}""".stripMargin)
 
       setupSimpleAuthMocks()
 
-      def newSubmission(id: String, status: PAYEStatus.Value) = {
-        submission.copy(registrationID = id, transactionID = id, status = status)
-      }
+      val testNotification = EmpRefNotification(Some(encrypt("testEmpRef")), "2017-01-01T12:00:00Z", "04")
 
-      await(repository.insert(newSubmission("11111", PAYEStatus.draft)))
-      await(repository.insert(newSubmission("22222", PAYEStatus.held)))
-      await(repository.insert(newSubmission("33333", PAYEStatus.submitted)))
-      await(repository.insert(newSubmission("44444", PAYEStatus.acknowledged)))
-      await(repository.insert(newSubmission("55555", PAYEStatus.invalid)))
-      await(repository.insert(newSubmission("66666", PAYEStatus.cancelled)))
-      await(repository.insert(newSubmission("77777", PAYEStatus.rejected)))
+      await(repository.insert(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification))))
 
-      def getStatus(id: String) = client(s"$id/status").get().futureValue
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
 
-      val draft = getStatus("11111")
-      val held = getStatus("22222")
-      val submitted = getStatus("33333")
-      val acknowledged = getStatus("44444")
-      val invalid = getStatus("55555")
-      val cancelled = getStatus("66666")
-      val rejected = getStatus("77777")
-      val missing = getStatus("88888")
+    "return an OK with a partial document status" in new Setup {
+      val json = Json.parse("""{
+                              |   "status": "draft",
+                              |   "lastUpdate": "2017-05-09T07:58:35Z"
+                              |}""".stripMargin)
 
-      def status(s: String) = Json.parse(s"""{"status":"$s"}""").as[JsObject]
+      setupSimpleAuthMocks()
 
-      draft.status shouldBe 200
-      draft.json shouldBe status("draft")
+      await(repository.insert(submission.copy(acknowledgementReference = None)))
 
-      held.status shouldBe 200
-      held.json shouldBe status("held")
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
 
-      submitted.status shouldBe 200
-      submitted.json shouldBe status("submitted")
+    "return a 404 error when the registration Id is invalid" in new Setup {
+      setupSimpleAuthMocks()
 
-      acknowledged.status shouldBe 200
-      acknowledged.json shouldBe status("acknowledged")
-
-      invalid.status shouldBe 200
-      invalid.json shouldBe status("invalid")
-
-      cancelled.status shouldBe 200
-      cancelled.json shouldBe status("cancelled")
-
-      rejected.status shouldBe 200
-      rejected.json shouldBe status("rejected")
-
-      missing.status shouldBe 404
+      val response = client(s"invalid234/status").get().futureValue
+      response.status shouldBe 404
     }
   }
 }

@@ -16,7 +16,8 @@
 
 package models
 
-import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime}
 
 import enums.PAYEStatus
 import play.api.data.validation.ValidationError
@@ -24,6 +25,8 @@ import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
+
+  val timestamp = "2017-05-09T07:58:35.000Z"
 
   "Creating a PAYERegistration model from Json" should {
     "complete successfully from full Json" in {
@@ -123,7 +126,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |    {
            |      "description":"laundring"
            |    }
-           |  ]
+           |  ],
+           |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
 
@@ -191,7 +195,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         sicCodes = Seq(
           SICCode(code = Some("666"), description = Some("demolition")),
           SICCode(code = None, description = Some("laundring"))
-        )
+        ),
+        lastUpdate = timestamp
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -207,7 +212,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "formCreationTimestamp":"2016-05-31",
            |  "status":"draft",
            |  "directors" : [],
-           |  "sicCodes" : []
+           |  "sicCodes" : [],
+           |  "lastUpdate" : "$timestamp"
            |}
         """.stripMargin)
 
@@ -226,7 +232,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         Seq.empty,
         None,
         None,
-        Seq.empty
+        Seq.empty,
+        lastUpdate = timestamp
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -274,7 +281,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      }
            |    },
            |  "directors": [],
-           |  "sicCodes": []
+           |  "sicCodes": [],
+           |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
 
@@ -324,7 +332,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      }
            |    },
            |  "directors": [],
-           |  "sicCodes": []
+           |  "sicCodes": [],
+           |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
 
@@ -375,12 +384,64 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      }
            |    },
            |  "directors": [],
-           |  "sicCodes": []
+           |  "sicCodes": [],
+           |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
 
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "status", Seq(ValidationError("error.expected.validenumvalue")))
+    }
+
+    "fail from json without lastUpdate" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "registrationID":"12345",
+           |  "transactionID" : "NNASD9789F",
+           |  "internalID" : "09876",
+           |  "formCreationTimestamp":"2016-05-31",
+           |  "eligibility" : {
+           |    "companyEligibility" : false,
+           |    "directorEligibility" : false
+           |  },
+           |  "registrationConfirmation": {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
+           |  },
+           |  "status" : "draft",
+           |  "companyDetails":
+           |    {
+           |      "companyName":"Test Company",
+           |      "tradingName":"Test Trading Name",
+           |      "roAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "country":"UK"
+           |      },
+           |      "ppobAddress": {
+           |        "line1":"15 St Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "country":"UK"
+           |      },
+           |      "businessContactDetails": {
+           |        "email":"email@test.co.uk",
+           |        "phoneNumber":"999",
+           |        "mobileNumber":"00000"
+           |      }
+           |    },
+           |  "directors": [],
+           |  "sicCodes": []
+           |}
+        """.stripMargin)
+
+      val result = Json.fromJson[PAYERegistration](json)
+      shouldHaveErrors(result, JsPath() \ "lastUpdate", Seq(ValidationError("error.path.missing")))
     }
   }
 }

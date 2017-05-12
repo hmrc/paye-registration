@@ -15,7 +15,11 @@
  */
 package api
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import enums.PAYEStatus
+import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, EmpRefNotification, PAYERegistration}
 import play.api.{Application, Play}
@@ -49,7 +53,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -57,6 +62,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
 
 
   "PAYE Registration API - PAYE Registration Document" should {
+    val lastUpdate = "2017-05-09T07:58:35Z"
+
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -70,6 +77,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val ackRef = "BRPY-xxx"
       val timestamp = "2017-01-01T00:00:00"
+
       repository.insert(
         PAYERegistration(
           regID,
@@ -86,7 +94,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate
         )
       )
 
@@ -100,7 +109,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
         "formCreationTimestamp" -> timestamp,
         "status" -> PAYEStatus.draft,
         "directors" -> Json.arr(),
-        "sicCodes" -> Json.arr()
+        "sicCodes" -> Json.arr(),
+        "lastUpdate" -> lastUpdate
       )
     }
 
@@ -127,7 +137,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate
         )
       )
 

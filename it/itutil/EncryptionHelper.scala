@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package helpers
+package itutil
 
-import javax.inject.Singleton
-import java.time.{ZoneId, ZonedDateTime}
-import java.time.format.DateTimeFormatter
+import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, PlainText}
 
-@Singleton
-class DateHelper {
-  val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
+trait EncryptionHelper {
+  def crypto: CompositeSymmetricCrypto
 
-  def formatTimestamp(timeStamp: ZonedDateTime) : String = {
-    format.format(timeStamp)
+  def encrypt(str: String): String = {
+
+    val crypted = crypto.encrypt(PlainText(str))
+    new String(crypted.toBase64)
   }
 
-  def getTimestamp: ZonedDateTime = ZonedDateTime.now(ZoneId.systemDefault)
-
-  def getTimestampString: String = formatTimestamp(getTimestamp)
-
-  def getDateFromTimestamp(timestamp: String): ZonedDateTime = ZonedDateTime.parse(timestamp, format)
 }

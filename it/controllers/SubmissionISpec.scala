@@ -20,14 +20,15 @@ import java.time.LocalDate
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
-import itutil.{WiremockHelper, IntegrationSpecBase}
+import helpers.DateHelper
+import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import play.api.{Play, Application}
+import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.WS
-import repositories.{SequenceMongoRepository, RegistrationMongoRepository, SequenceMongo, RegistrationMongo}
+import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -67,9 +68,12 @@ class SubmissionISpec extends IntegrationSpecBase {
   private val regime = "paye"
   private val subscriber = "SCRS"
 
+  val lastUpdate = "2017-05-09T07:58:35Z"
+
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -149,7 +153,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     ),
     Seq(
       SICCode(code = None, description = Some("consulting"))
-    )
+    ),
+    lastUpdate
   )
   val processedSubmission = PAYERegistration(
     regId,
@@ -166,7 +171,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     Nil,
     None,
     None,
-    Nil
+    Nil,
+    lastUpdate
   )
 
   val crn = "OC123456"
@@ -312,7 +318,13 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
     "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
@@ -470,7 +482,13 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
     "return a 204 status when Incorporation was rejected at PAYE Submission" in new Setup {
@@ -483,7 +501,13 @@ class SubmissionISpec extends IntegrationSpecBase {
       val response = client(s"$regId/submit-registration").put("").futureValue
       response.status shouldBe 204
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(rejectedSubmission)
+      val reg = await(repository.retrieveRegistration(regId))
+      reg shouldBe Some(rejectedSubmission.copy(lastUpdate = reg.get.lastUpdate))
+
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
+
+      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
     "return a 502 status when DES returns a 499" in new Setup {
