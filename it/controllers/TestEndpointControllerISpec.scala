@@ -16,9 +16,10 @@
 
 package controllers
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import enums.PAYEStatus
+import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.{Application, Play}
@@ -50,9 +51,12 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
 
   private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/test-only$path").withFollowRedirects(false)
 
+  val lastUpdate = "2017-05-09T07:58:35Z"
+
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -83,7 +87,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -103,7 +111,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -141,7 +153,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -161,7 +177,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -206,7 +226,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
       await(repository.count) shouldBe 1
@@ -267,7 +291,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq(
             SICCode(code = Some("123"), description = Some("consulting")),
             SICCode(code = None, description = Some("something"))
-          )
+          ),
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -299,7 +327,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
       await(repository.count) shouldBe 1

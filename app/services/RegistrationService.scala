@@ -25,6 +25,7 @@ import repositories.{RegistrationMongo, RegistrationMongoRepository, Registratio
 import common.exceptions.RegistrationExceptions.RegistrationFormatException
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
+import common.exceptions.DBExceptions.MissingRegDocument
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -132,8 +133,28 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def getStatus(regID: String): Future[JsObject] = {
-    registrationRepository.retrieveRegistrationStatus(regID) map {
-      status => Json.obj("status" -> status)
+    registrationRepository.retrieveRegistration(regID) flatMap {
+      case Some(registration) => {
+        val lastUpdate = registration.status match {
+          case PAYEStatus.held => registration.partialSubmissionTimestamp
+          case PAYEStatus.submitted => registration.fullSubmissionTimestamp
+          case PAYEStatus.cancelled => Some(registration.lastUpdate)
+          case _ @ (PAYEStatus.acknowledged | PAYEStatus.rejected) => registration.acknowledgedTimestamp
+          case _ => Some(registration.formCreationTimestamp)
+        }
+
+        val json = Json.obj("status" -> registration.status,
+                            "lastUpdate" -> lastUpdate.get)
+        val ackRef = registration.acknowledgementReference.fold(Json.obj())(ackRef => Json.obj("ackRef" -> ackRef))
+        val empRef = json ++ registration.registrationConfirmation.fold(Json.obj()) { empRefNotif =>
+          empRefNotif.empRef.fold(Json.obj())(empRef => Json.obj("empref" -> empRef))
+        }
+        Future.successful(json ++ ackRef ++ empRef)
+      }
+      case None => {
+        Logger.warn(s"[RegistrationService] [getStatus] No PAYE registration document found for registration ID $regID")
+        throw new MissingRegDocument(regID)
+      }
     }
   }
 }

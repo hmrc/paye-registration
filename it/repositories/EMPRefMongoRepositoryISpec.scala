@@ -16,7 +16,10 @@
 
 package repositories
 
+import java.time.LocalDateTime
+
 import enums.PAYEStatus
+import helpers.DateHelper
 import models.{Eligibility, EmpRefNotification, PAYERegistration}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -26,18 +29,23 @@ import reactivemongo.api.commands.WriteResult
 import reactivemongo.json.ImplicitBSONHandlers
 import services.MetricsService
 import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class EMPRefMongoRepositoryISpec
-  extends UnitSpec with MongoSpecSupport with BeforeAndAfterEach with ScalaFutures with Eventually with WithFakeApplication {
+class EMPRefMongoRepositoryISpec extends UnitSpec
+                                  with MongoSpecSupport
+                                  with BeforeAndAfterEach
+                                  with ScalaFutures
+                                  with Eventually
+                                  with WithFakeApplication {
 
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -52,6 +60,7 @@ class EMPRefMongoRepositoryISpec
     val ackRef = "BRCT12345678910"
     val empRef = "EMP123456789"
     val timeStamp = "2017-01-01T12:00:00.00Z"
+    val lastUpdate = "2017-05-09T07:58:35Z"
 
     val validEmpRefNotification = EmpRefNotification(
       empRef = Some(empRef),
@@ -74,7 +83,11 @@ class EMPRefMongoRepositoryISpec
       Nil,
       None,
       None,
-      Nil
+      Nil,
+      lastUpdate,
+      partialSubmissionTimestamp = None,
+      fullSubmissionTimestamp = None,
+      acknowledgedTimestamp = None
     )
 
     "store the plain EMP Ref in encrypted form" in new Setup {

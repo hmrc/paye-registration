@@ -17,9 +17,10 @@
 package fixtures
 
 import models._
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import enums.PAYEStatus
+import helpers.DateHelper
 
 trait RegistrationFixture {
 
@@ -94,6 +95,10 @@ trait RegistrationFixture {
     directors = validDirectors,
     payeContact = Some(validPAYEContact),
     employment = Some(validEmployment),
-    sicCodes = validSICCodes
+    sicCodes = validSICCodes,
+    lastUpdate = "2017-05-09T07:58:35Z",
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 }

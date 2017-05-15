@@ -51,8 +51,8 @@ A ```200``` success response:
 ```json
 {
     "status": "submitted",
-    "last_updated": "2222-12-12",
-    "acknowledgement_reference": "AAAA-1234567890",
+    "lastUpdate": "2017-05-09T07:58:35Z", // or "2017-05-09T07:58:35+01:00"
+    "ackRef": "AAAA-1234567890",
 }
 ```
 

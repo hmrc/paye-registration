@@ -34,10 +34,13 @@ case class PAYERegistration(registrationID: String,
                             directors: Seq[Director],
                             payeContact: Option[PAYEContact],
                             employment: Option[Employment],
-                            sicCodes: Seq[SICCode])
+                            sicCodes: Seq[SICCode],
+                            lastUpdate: String,
+                            partialSubmissionTimestamp: Option[String],
+                            fullSubmissionTimestamp: Option[String],
+                            acknowledgedTimestamp: Option[String])
 
-object PAYERegistration extends {
-
+object PAYERegistration {
   implicit val format: OFormat[PAYERegistration] = (
     (__ \ "registrationID").format[String] and
     (__ \ "transactionID").format[String] and
@@ -53,7 +56,11 @@ object PAYERegistration extends {
     (__ \ "directors").format[Seq[Director]] and
     (__ \ "payeContact").formatNullable[PAYEContact] and
     (__ \ "employment").formatNullable[Employment] and
-    (__ \ "sicCodes").format[Seq[SICCode]]
+    (__ \ "sicCodes").format[Seq[SICCode]] and
+    (__ \ "lastUpdate").format[String] and
+    (__ \ "partialSubmissionTimestamp").formatNullable[String] and
+    (__ \ "fullSubmissionTimestamp").formatNullable[String] and
+    (__ \ "acknowledgedTimestamp").formatNullable[String]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
   def payeRegistrationFormat(empRefFormat: Format[EmpRefNotification]): OFormat[PAYERegistration] = (
@@ -71,7 +78,11 @@ object PAYERegistration extends {
     (__ \ "directors").format[Seq[Director]] and
     (__ \ "payeContact").formatNullable[PAYEContact] and
     (__ \ "employment").formatNullable[Employment] and
-    (__ \ "sicCodes").format[Seq[SICCode]]
+    (__ \ "sicCodes").format[Seq[SICCode]] and
+    (__ \ "lastUpdate").format[String] and
+    (__ \ "partialSubmissionTimestamp").formatNullable[String] and
+    (__ \ "fullSubmissionTimestamp").formatNullable[String] and
+    (__ \ "acknowledgedTimestamp").formatNullable[String]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
 

@@ -15,16 +15,16 @@
  */
 package api
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import enums.PAYEStatus
+import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, EmpRefNotification, Employment, PAYERegistration}
+import models.{Eligibility, Employment, PAYERegistration}
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
-import play.api.test.FakeApplication
 import repositories.RegistrationMongo
 import services.MetricsService
 
@@ -51,7 +51,8 @@ class EmploymentISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -59,6 +60,8 @@ class EmploymentISpec extends IntegrationSpecBase {
 
 
   "PAYE Registration API - Employment" should {
+    val lastUpdate = "2017-05-09T07:58:35Z"
+
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -95,7 +98,11 @@ class EmploymentISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           Some(validEmployment),
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -127,7 +134,11 @@ class EmploymentISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -167,7 +178,11 @@ class EmploymentISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -198,7 +213,11 @@ class EmploymentISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 

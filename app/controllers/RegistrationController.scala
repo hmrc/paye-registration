@@ -432,10 +432,20 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
 
   def getDocumentStatus(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
-      registrationService.getStatus(regId) map { status =>
-        Ok(Json.toJson(status))
-      } recover {
-        case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
+      authorised(regId) {
+        case Authorised(_) =>
+          registrationService.getStatus(regId) map { status =>
+            Ok(Json.toJson(status))
+          } recover {
+            case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [getEligibility] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [getEligibility] User logged in but not authorised for resource $regId")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
       }
   }
 }

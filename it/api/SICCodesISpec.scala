@@ -16,7 +16,10 @@
 
 package api
 
+import java.time.LocalDateTime
+
 import enums.PAYEStatus
+import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, EmpRefNotification, PAYERegistration, SICCode}
 import play.api.{Application, Play}
@@ -48,13 +51,16 @@ class SICCodesISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }
 
   "PAYE Registration API - SIC Codes" should {
+    val lastUpdate = "2017-05-09T07:58:35Z"
+
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -89,7 +95,11 @@ class SICCodesISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          validSICCodes
+          validSICCodes,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -121,7 +131,11 @@ class SICCodesISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -161,7 +175,11 @@ class SICCodesISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -192,7 +210,11 @@ class SICCodesISpec extends IntegrationSpecBase {
           Seq.empty,
           None,
           None,
-          Seq.empty
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 

@@ -16,7 +16,7 @@
 
 package repositories
 
-import java.time.LocalDateTime
+import java.time.{ZoneId, ZonedDateTime}
 
 import auth.AuthorisationResource
 import javax.inject.{Inject, Singleton}
@@ -33,6 +33,7 @@ import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson._
 import reactivemongo.api.DB
+import reactivemongo.api.commands.UpdateWriteResult
 import reactivemongo.bson.BSONObjectID
 import services.MetricsService
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -43,9 +44,10 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService,
+                                  injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics)
+  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics, injDateHelper)
 }
 
 trait RegistrationRepository {
@@ -76,15 +78,18 @@ trait RegistrationRepository {
   def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
+
+  val dateHelper: DateHelper
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format
   ) with RegistrationRepository
-    with AuthorisationResource[String]
-    with DateHelper {
+    with AuthorisationResource[String] {
+
+  override val dateHelper: DateHelper = dh
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -125,7 +130,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     val newReg = newRegistrationObject(registrationID, transactionID, internalId)
     collection.insert[PAYERegistration](newReg) map {
-      res =>
+      _ =>
         mongoTimer.stop()
         newReg
     } recover {
@@ -193,9 +198,16 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
+    val timestamp = dateHelper.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
-        collection.update(registrationIDSelector(registrationID), regDoc.copy(status = payeStatus)) map {
+        val reg = payeStatus match {
+          case PAYEStatus.held => regDoc.copy(status = payeStatus, partialSubmissionTimestamp = Some(timestamp))
+          case PAYEStatus.submitted => regDoc.copy(status = payeStatus, fullSubmissionTimestamp = Some(timestamp))
+          case acknowledged @ (PAYEStatus.acknowledged | PAYEStatus.rejected) => regDoc.copy(status = acknowledged, acknowledgedTimestamp = Some(timestamp))
+          case _ => regDoc.copy(status = payeStatus)
+        }
+        updateRegistrationObject[PAYEStatus.Value](registrationIDSelector(registrationID), reg) {
           _ =>
             mongoTimer.stop()
             payeStatus
@@ -229,7 +241,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registrationDocument) =>
-        collection.update(registrationIDSelector(registrationID), registrationDocument.copy(eligibility = Some(eligibility))) map {
+        updateRegistrationObject[Eligibility](registrationIDSelector(registrationID), registrationDocument.copy(eligibility = Some(eligibility))) {
           _ =>
             mongoTimer.stop()
             eligibility
@@ -259,8 +271,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     retrieveRegistration(registrationID) flatMap  {
       case Some(registration) => registration.acknowledgementReference.isDefined match {
         case false =>
-          collection.update(registrationIDSelector(registrationID), registration.copy(acknowledgementReference = Some(ackRef))) map {
-            res => ackRef
+          updateRegistrationObject[String](registrationIDSelector(registrationID), registration.copy(acknowledgementReference = Some(ackRef))) {
+            _ => ackRef
           } recover {
             case e =>
               Logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to save acknowledgement reference for reg ID $registrationID, Error: ${e.getMessage}")
@@ -293,8 +305,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) =>
-        collection.update(registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) map {
-          res =>
+        updateRegistrationObject[CompanyDetails](registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) {
+          _ =>
             mongoTimer.stop()
             details
         } recover {
@@ -328,8 +340,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(employment = Some(details))) map {
-          res =>
+        updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), reg.copy(employment = Some(details))) {
+          _ =>
             mongoTimer.stop()
             reg
         } recover {
@@ -362,8 +374,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(directors = directors)) map {
-          res =>
+        updateRegistrationObject[Seq[Director]](registrationIDSelector(registrationID), reg.copy(directors = directors)) {
+          _ =>
             mongoTimer.stop()
             directors
         } recover {
@@ -396,8 +408,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(sicCodes = sicCodes)) map {
-          res =>
+        updateRegistrationObject[Seq[SICCode]](registrationIDSelector(registrationID), reg.copy(sicCodes = sicCodes)) {
+          _ =>
             mongoTimer.stop()
             sicCodes
         } recover {
@@ -430,8 +442,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(payeContact = Some(payeContact))) map {
-          res =>
+        updateRegistrationObject[PAYEContact](registrationIDSelector(registrationID), reg.copy(payeContact = Some(payeContact))) {
+          _ =>
             mongoTimer.stop()
             payeContact
         } recover {
@@ -464,8 +476,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
-        collection.update(registrationIDSelector(registrationID), reg.copy(completionCapacity = Some(capacity))) map {
-          res =>
+        updateRegistrationObject[String](registrationIDSelector(registrationID), reg.copy(completionCapacity = Some(capacity))) {
+          _ =>
             mongoTimer.stop()
             capacity
         } recover {
@@ -491,10 +503,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
                                        payeContact = None,
                                        employment = None,
                                        sicCodes = Nil)
-        collection.update(
-          registrationIDSelector(registrationID),
-          clearedDocument
-        ) map { _ =>
+        updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), clearedDocument) {
+          _ =>
             mongoTimer.stop()
             clearedDocument
         } recover {
@@ -514,8 +524,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     retrieveRegistrationByAckRef(ackRef) flatMap {
       case Some(regDoc) =>
-        collection.update(ackRefSelector(ackRef), regDoc.copy(registrationConfirmation = Some(etmpRefNotification), status = applicationStatus)) map {
-          res =>
+        updateRegistrationObject[EmpRefNotification](ackRefSelector(ackRef), regDoc.copy(registrationConfirmation = Some(etmpRefNotification), status = applicationStatus)) {
+          _ =>
             mongoTimer.stop()
             etmpRefNotification
         } recover {
@@ -566,7 +576,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     val mongoTimer = metricsService.mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.remove(selector) map {
-      res =>
+      _ =>
         mongoTimer.stop()
         true
     } recover {
@@ -579,7 +589,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   def updateRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     collection.findAndUpdate[BSONDocument, PAYERegistration](registrationIDSelector(payeReg.registrationID), payeReg, fetchNewObject = true, upsert = true) map {
-      res => {
+      _ => {
         mongoTimer.stop()
         payeReg
       }
@@ -591,7 +601,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
-    val timeStamp = formatTimestamp(LocalDateTime.now())
+    val timeStamp = dateHelper.getTimestampString
     PAYERegistration(
       registrationID = registrationID,
       transactionID = transactionID,
@@ -607,7 +617,15 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       directors = Seq.empty,
       payeContact = None,
       employment = None,
-      sicCodes = Seq.empty
+      sicCodes = Seq.empty,
+      lastUpdate = timeStamp,
+      partialSubmissionTimestamp = None,
+      fullSubmissionTimestamp = None,
+      acknowledgedTimestamp = None
     )
+  }
+
+  private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
+    collection.update(doc, reg.copy(lastUpdate = dateHelper.getTimestampString)).map(f)
   }
 }
