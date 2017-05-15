@@ -104,7 +104,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
-      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"regID":"invalid"}"""))))
+      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"formCreationTimestamp":"testTimestamp","regID":"invalid"}"""))))
       status(response) shouldBe Status.BAD_REQUEST
     }
 
