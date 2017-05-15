@@ -99,7 +99,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           None,
           Some(validEmployment),
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -132,7 +135,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -173,7 +179,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -205,7 +214,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 

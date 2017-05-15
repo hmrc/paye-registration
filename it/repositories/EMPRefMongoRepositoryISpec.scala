@@ -84,7 +84,10 @@ class EMPRefMongoRepositoryISpec extends UnitSpec
       None,
       None,
       Nil,
-      lastUpdate
+      lastUpdate,
+      partialSubmissionTimestamp = None,
+      fullSubmissionTimestamp = None,
+      acknowledgedTimestamp = None
     )
 
     "store the plain EMP Ref in encrypted form" in new Setup {

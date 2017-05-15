@@ -101,7 +101,10 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -134,7 +137,10 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -175,7 +181,10 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -207,7 +216,10 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 

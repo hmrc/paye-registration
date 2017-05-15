@@ -198,9 +198,16 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
+    val timestamp = dateHelper.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
-        updateRegistrationObject[PAYEStatus.Value](registrationIDSelector(registrationID), regDoc.copy(status = payeStatus)) {
+        val reg = payeStatus match {
+          case PAYEStatus.held => regDoc.copy(status = payeStatus, partialSubmissionTimestamp = Some(timestamp))
+          case PAYEStatus.submitted => regDoc.copy(status = payeStatus, fullSubmissionTimestamp = Some(timestamp))
+          case acknowledged @ (PAYEStatus.acknowledged | PAYEStatus.rejected) => regDoc.copy(status = acknowledged, acknowledgedTimestamp = Some(timestamp))
+          case _ => regDoc.copy(status = payeStatus)
+        }
+        updateRegistrationObject[PAYEStatus.Value](registrationIDSelector(registrationID), reg) {
           _ =>
             mongoTimer.stop()
             payeStatus
@@ -611,7 +618,10 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       payeContact = None,
       employment = None,
       sicCodes = Seq.empty,
-      lastUpdate = timeStamp
+      lastUpdate = timeStamp,
+      partialSubmissionTimestamp = None,
+      fullSubmissionTimestamp = None,
+      acknowledgedTimestamp = None
     )
   }
 

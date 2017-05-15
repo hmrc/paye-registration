@@ -135,8 +135,16 @@ trait RegistrationSrv extends PAYEBaseValidator {
   def getStatus(regID: String): Future[JsObject] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(registration) => {
+        val lastUpdate = registration.status match {
+          case PAYEStatus.held => registration.partialSubmissionTimestamp
+          case PAYEStatus.submitted => registration.fullSubmissionTimestamp
+          case PAYEStatus.cancelled => Some(registration.lastUpdate)
+          case _ @ (PAYEStatus.acknowledged | PAYEStatus.rejected) => registration.acknowledgedTimestamp
+          case _ => Some(registration.formCreationTimestamp)
+        }
+
         val json = Json.obj("status" -> registration.status,
-                            "lastUpdate" -> registration.lastUpdate)
+                            "lastUpdate" -> lastUpdate.get)
         val ackRef = registration.acknowledgementReference.fold(Json.obj())(ackRef => Json.obj("ackRef" -> ackRef))
         val empRef = json ++ registration.registrationConfirmation.fold(Json.obj()) { empRefNotif =>
           empRefNotif.empRef.fold(Json.obj())(empRef => Json.obj("empref" -> empRef))

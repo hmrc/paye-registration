@@ -96,6 +96,9 @@ trait RegistrationFixture {
     payeContact = Some(validPAYEContact),
     employment = Some(validEmployment),
     sicCodes = validSICCodes,
-    lastUpdate = "2017-05-09T07:58:35Z"
+    lastUpdate = "2017-05-09T07:58:35Z",
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 }

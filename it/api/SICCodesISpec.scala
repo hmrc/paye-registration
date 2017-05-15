@@ -96,7 +96,10 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           validSICCodes,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -129,7 +132,10 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -170,7 +176,10 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -202,7 +211,10 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 

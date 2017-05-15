@@ -196,7 +196,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
           SICCode(code = Some("666"), description = Some("demolition")),
           SICCode(code = None, description = Some("laundring"))
         ),
-        lastUpdate = timestamp
+        lastUpdate = timestamp,
+        partialSubmissionTimestamp = None,
+        fullSubmissionTimestamp = None,
+        acknowledgedTimestamp = None
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -233,7 +236,10 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         None,
         None,
         Seq.empty,
-        lastUpdate = timestamp
+        lastUpdate = timestamp,
+        partialSubmissionTimestamp = None,
+        fullSubmissionTimestamp = None,
+        acknowledgedTimestamp = None
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

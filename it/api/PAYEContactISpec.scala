@@ -100,7 +100,10 @@ class   PAYEContactISpec extends IntegrationSpecBase {
           Some(validPAYEContact),
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -133,7 +136,10 @@ class   PAYEContactISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -174,7 +180,10 @@ class   PAYEContactISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -206,7 +215,10 @@ class   PAYEContactISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 

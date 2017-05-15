@@ -98,7 +98,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate)
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None)
 
   private val reg2 = PAYERegistration(
     registrationID = "AC234567",
@@ -116,7 +119,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   // Company Details
@@ -136,7 +142,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   private val companyDetails2: CompanyDetails = CompanyDetails(
@@ -163,7 +172,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   // Employment
@@ -183,7 +195,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
   private val employmentDetails2: Employment = Employment(
     employees = true,
@@ -208,7 +223,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = Some(employmentDetails2),
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   // Directors
@@ -228,7 +246,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   private val directors: Seq[Director] = Seq(
@@ -267,7 +288,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   //SIC Codes
@@ -287,7 +311,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   private val sicCodes: Seq[SICCode] = Seq(
@@ -311,7 +338,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = sicCodes,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   //PAYE Contact
@@ -331,7 +361,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   private val payeContact = PAYEContact(
@@ -362,7 +395,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = Some(payeContact),
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   //Completion Capacity
@@ -382,7 +418,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
   private val completionCapacity = "Director"
 
@@ -402,7 +441,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   //Registration Status
@@ -422,7 +464,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = Some(lastUpdate),
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   class Setup(timestamp: String = lastUpdate) {
@@ -857,7 +902,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   "Calling cleardownRegistration" should {

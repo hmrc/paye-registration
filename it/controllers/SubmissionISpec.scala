@@ -154,7 +154,10 @@ class SubmissionISpec extends IntegrationSpecBase {
     Seq(
       SICCode(code = None, description = Some("consulting"))
     ),
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
   val processedSubmission = PAYERegistration(
     regId,
@@ -172,7 +175,10 @@ class SubmissionISpec extends IntegrationSpecBase {
     None,
     None,
     Nil,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   val crn = "OC123456"
@@ -319,12 +325,13 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.json shouldBe Json.toJson("testAckRef")
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate))
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg.get.partialSubmissionTimestamp.nonEmpty shouldBe true
     }
 
     "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
@@ -450,7 +457,10 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
 
-      await(repository.retrieveRegistration(regId)).get.status shouldBe PAYEStatus.submitted
+      val reg = await(repository.retrieveRegistration(regId))
+
+      reg.get.status shouldBe PAYEStatus.submitted
+      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
     }
 
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
@@ -483,12 +493,13 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.json shouldBe Json.toJson("testAckRef")
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate))
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg.get.partialSubmissionTimestamp.nonEmpty shouldBe true
     }
 
     "return a 204 status when Incorporation was rejected at PAYE Submission" in new Setup {

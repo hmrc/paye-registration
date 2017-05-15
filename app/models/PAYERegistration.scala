@@ -35,7 +35,10 @@ case class PAYERegistration(registrationID: String,
                             payeContact: Option[PAYEContact],
                             employment: Option[Employment],
                             sicCodes: Seq[SICCode],
-                            lastUpdate: String)
+                            lastUpdate: String,
+                            partialSubmissionTimestamp: Option[String],
+                            fullSubmissionTimestamp: Option[String],
+                            acknowledgedTimestamp: Option[String])
 
 object PAYERegistration {
   implicit val format: OFormat[PAYERegistration] = (
@@ -54,7 +57,10 @@ object PAYERegistration {
     (__ \ "payeContact").formatNullable[PAYEContact] and
     (__ \ "employment").formatNullable[Employment] and
     (__ \ "sicCodes").format[Seq[SICCode]] and
-    (__ \ "lastUpdate").format[String]
+    (__ \ "lastUpdate").format[String] and
+    (__ \ "partialSubmissionTimestamp").formatNullable[String] and
+    (__ \ "fullSubmissionTimestamp").formatNullable[String] and
+    (__ \ "acknowledgedTimestamp").formatNullable[String]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
   def payeRegistrationFormat(empRefFormat: Format[EmpRefNotification]): OFormat[PAYERegistration] = (
@@ -73,7 +79,10 @@ object PAYERegistration {
     (__ \ "payeContact").formatNullable[PAYEContact] and
     (__ \ "employment").formatNullable[Employment] and
     (__ \ "sicCodes").format[Seq[SICCode]] and
-    (__ \ "lastUpdate").format[String]
+    (__ \ "lastUpdate").format[String] and
+    (__ \ "partialSubmissionTimestamp").formatNullable[String] and
+    (__ \ "fullSubmissionTimestamp").formatNullable[String] and
+    (__ \ "acknowledgedTimestamp").formatNullable[String]
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
 

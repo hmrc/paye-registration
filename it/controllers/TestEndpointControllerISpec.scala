@@ -88,7 +88,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -109,7 +112,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -148,7 +154,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -169,7 +178,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
 
@@ -215,7 +227,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
       await(repository.count) shouldBe 1
@@ -277,7 +292,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
             SICCode(code = Some("123"), description = Some("consulting")),
             SICCode(code = None, description = Some("something"))
           ),
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       )
 
@@ -310,7 +328,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           None,
           Seq.empty,
-          lastUpdate
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
         )
       ))
       await(repository.count) shouldBe 1

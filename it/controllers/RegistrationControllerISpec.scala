@@ -91,6 +91,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
   val intId = "Int-xxx"
   val timestamp = "2017-01-01T00:00:00"
   val lastUpdate = "2017-05-09T07:58:35Z"
+  val partialSubmissionTimestamp = "2017-05-10T07:58:35Z"
+  val fullSubmissionTimestamp = "2017-05-11T07:58:35Z"
+  val acknowledgedTimestamp = "2017-05-15T07:58:35Z"
 
   val submission = PAYERegistration(
     regId,
@@ -147,7 +150,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     Seq(
       SICCode(code = None, description = Some("consulting"))
     ),
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   val processedSubmission = PAYERegistration(
@@ -166,7 +172,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     None,
     None,
     Nil,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
@@ -187,7 +196,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     None,
     None,
     Nil,
-    lastUpdate
+    lastUpdate,
+    partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
+    fullSubmissionTimestamp = Some(fullSubmissionTimestamp),
+    acknowledgedTimestamp = None
   )
 
   val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
@@ -277,12 +289,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       )
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate))
+      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
     }
 
     "return a 200 when Incorporation is rejected" in new Setup {
@@ -463,12 +476,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.json shouldBe Json.toJson(crn)
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate))
+      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
     }
 
     "return a 200 when Incorporation is rejected" in new Setup {
@@ -556,9 +570,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
   "getStatus" should {
     "return an OK with a full document status" in new Setup {
-      val json = Json.parse("""{
+      val json = Json.parse(s"""{
                               |   "status": "acknowledged",
-                              |   "lastUpdate": "2017-05-09T07:58:35Z",
+                              |   "lastUpdate": "$acknowledgedTimestamp",
                               |   "ackRef": "testAckRef",
                               |   "empref": "testEmpRef"
                               |}""".stripMargin)
@@ -567,22 +581,100 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
       val testNotification = EmpRefNotification(Some(encrypt("testEmpRef")), "2017-01-01T12:00:00Z", "04")
 
-      await(repository.insert(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification))))
+      await(repository.insert(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
       val response = client(s"$regId/status").get().futureValue
       response.status shouldBe 200
       response.json shouldBe json
     }
 
-    "return an OK with a partial document status" in new Setup {
-      val json = Json.parse("""{
-                              |   "status": "draft",
-                              |   "lastUpdate": "2017-05-09T07:58:35Z"
-                              |}""".stripMargin)
+    "return an OK with a partial document status when status is draft, lastUpdate returns formCreationTimestamp" in new Setup {
+      val json = Json.parse(s"""{
+                               |   "status": "draft",
+                               |   "lastUpdate": "$timestamp"
+                               |}""".stripMargin)
 
       setupSimpleAuthMocks()
 
       await(repository.insert(submission.copy(acknowledgementReference = None)))
+
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
+
+    "return an OK with a partial document status when status is invalid, lastUpdate returns formCreationTimestamp" in new Setup {
+      val json = Json.parse(s"""{
+                               |   "status": "invalid",
+                               |   "lastUpdate": "$timestamp"
+                               |}""".stripMargin)
+
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission.copy(acknowledgementReference = None, status = PAYEStatus.invalid)))
+
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
+
+    "return an OK with a partial document status when status is cancelled, lastUpdate returns formCreationTimestamp" in new Setup {
+      val json = Json.parse(s"""{
+                               |   "status": "cancelled",
+                               |   "lastUpdate": "$lastUpdate"
+                               |}""".stripMargin)
+
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission.copy(acknowledgementReference = None, status = PAYEStatus.cancelled)))
+
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
+
+    "return an OK with a partial document status when status is held, lastUpdate returns partialSubmissionTimestamp" in new Setup {
+      val json = Json.parse(s"""{
+                              |   "status": "held",
+                              |   "lastUpdate": "$partialSubmissionTimestamp",
+                              |   "ackRef": "testAckRef"
+                              |}""".stripMargin)
+
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedSubmission))
+
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
+
+    "return an OK with a partial document status when status is submitted, lastUpdate returns fullSubmissionTimestamp" in new Setup {
+      val json = Json.parse(s"""{
+                              |   "status": "submitted",
+                              |   "lastUpdate": "$fullSubmissionTimestamp",
+                              |   "ackRef": "testAckRef"
+                              |}""".stripMargin)
+
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedTopUpSubmission))
+
+      val response = client(s"$regId/status").get().futureValue
+      response.status shouldBe 200
+      response.json shouldBe json
+    }
+
+    "return an OK with a partial document status when status is rejected, lastUpdate returns acknowledgedTimestamp" in new Setup {
+      val json = Json.parse(s"""{
+                               |   "status": "rejected",
+                               |   "lastUpdate": "$acknowledgedTimestamp",
+                               |   "ackRef": "testAckRef"
+                               |}""".stripMargin)
+
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
       val response = client(s"$regId/status").get().futureValue
       response.status shouldBe 200

@@ -155,7 +155,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
     payeContact = Some(validPAYEContact),
     employment = Some(validEmployment),
     sicCodes = validSICCodes,
-    lastUpdate = lastUpdate
+    lastUpdate = lastUpdate,
+    partialSubmissionTimestamp = None,
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   val validRegistrationAfterPartialSubmission = PAYERegistration(
@@ -174,7 +177,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate = lastUpdate
+    lastUpdate = lastUpdate,
+    partialSubmissionTimestamp = Some(lastUpdate),
+    fullSubmissionTimestamp = None,
+    acknowledgedTimestamp = None
   )
 
   val validRegistrationAfterTopUpSubmission = PAYERegistration(
@@ -197,7 +203,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
     payeContact = None,
     employment = None,
     sicCodes = Seq.empty,
-    lastUpdate = lastUpdate
+    lastUpdate = lastUpdate,
+    partialSubmissionTimestamp = Some(lastUpdate),
+    fullSubmissionTimestamp = Some(lastUpdate),
+    acknowledgedTimestamp = None
   )
 
   val validDESCompletionCapacity = DESCompletionCapacity(
