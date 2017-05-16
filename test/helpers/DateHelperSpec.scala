@@ -28,28 +28,36 @@ class DateHelperSpec extends UnitSpec {
   "formatTimeStamp" should {
     "Correctly format a ZonedDateTime to a String" in {
       // date time of 12:35 on 20th Feb, 2017
-      val tstDate = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0), ZoneId.systemDefault)
+      val tstDate = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0), ZoneId.of("Z"))
 
       TestDateHelper.formatTimestamp(tstDate) shouldBe "2017-02-20T12:35:00Z"
     }
 
     "Correctly format a ZonedDateTime with nanoseconds to a String" in {
       // date time of 12:35.3 on 20th Feb, 2017
-      val tstDate = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0, 300000000), ZoneId.systemDefault)
+      val tstDate = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0, 300000000), ZoneId.of("Z"))
 
       TestDateHelper.formatTimestamp(tstDate) shouldBe "2017-02-20T12:35:00Z"
     }
   }
 
   "getDateFromTimestamp" should {
-    "Correctly returns a ZonedDateTime from a String which has the correct format" in {
+    "Correctly return a ZonedDateTime from a String which has the correct format" in {
       val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0), ZoneId.of("Z"))
 
       TestDateHelper.getDateFromTimestamp("2017-02-20T12:35:00Z") shouldBe timestamp
     }
 
-    "returns an Exception when the input String has NOT the correct format" in {
+    "return an Exception when the input String has NOT the correct format" in {
       a[DateTimeParseException] shouldBe thrownBy(TestDateHelper.getDateFromTimestamp("2017-02-20T12:35:00XXX"))
+    }
+  }
+
+  "DateHelper" should {
+    "parse and convert an Australian time" in {
+      val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0), ZoneId.of("Australia/Sydney"))
+
+      TestDateHelper.formatTimestamp(timestamp) shouldBe "2017-02-20T01:35:00Z"
     }
   }
 }

@@ -22,13 +22,14 @@ import java.time.format.DateTimeFormatter
 
 @Singleton
 class DateHelper {
-  val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
+  val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXX")
 
   def formatTimestamp(timeStamp: ZonedDateTime) : String = {
-    format.format(timeStamp)
+    val utcTimeStamp = timeStamp.withZoneSameInstant(ZoneId.of("Z"))
+    format.format(utcTimeStamp)
   }
 
-  def getTimestamp: ZonedDateTime = ZonedDateTime.now(ZoneId.systemDefault)
+  def getTimestamp: ZonedDateTime = ZonedDateTime.now(ZoneId.of("Z"))
 
   def getTimestampString: String = formatTimestamp(getTimestamp)
 
