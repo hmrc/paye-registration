@@ -47,6 +47,8 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override val desStubTopUpURI = "desTopUpURI"
       override val desStubURI      = "testStubURI"
       override val desStubUrl      = "desStubURL"
+      override val urlHeaderEnvironment   = "env"
+      override val urlHeaderAuthorization = "auth"
     }
   }
 

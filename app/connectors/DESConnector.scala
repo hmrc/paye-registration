@@ -21,8 +21,10 @@ import javax.inject.{Inject, Singleton}
 import config.WSHttp
 import models.submission.{TopUpDESSubmission, DESSubmission}
 import play.api.Logger
+import play.api.libs.json.Writes
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
+import uk.gov.hmrc.play.http.logging.Authorization
 import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
@@ -37,6 +39,9 @@ class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESCon
   lazy val desStubUrl = baseUrl("des-stub")
   lazy val desStubURI = getConfString("des-stub.uri", "")
   lazy val desStubTopUpURI = getConfString("des-stub.top-up-uri", "")
+  lazy val urlHeaderEnvironment: String = getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
+  lazy val urlHeaderAuthorization: String = s"Bearer ${getConfString("des-service.authorization-token",
+    throw new Exception("could not find config value for des-service.authorization-token"))}"
   val http = WSHttp
 }
 
@@ -52,6 +57,9 @@ trait DESConnect extends HttpErrorFunctions {
 
   def http: HttpPost
   val featureSwitch: PAYEFeatureSwitches
+
+  val urlHeaderEnvironment: String
+  val urlHeaderAuthorization: String
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse): HttpResponse = {
     response.status match {
@@ -77,7 +85,7 @@ trait DESConnect extends HttpErrorFunctions {
       case false => s"$desUrl/$desURI"
     }
 
-    http.POST[DESSubmission, HttpResponse](url, submission) map { resp =>
+    payePOST[DESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
       resp
     }
@@ -89,12 +97,21 @@ trait DESConnect extends HttpErrorFunctions {
       case false => s"$desUrl/$desTopUpURI"
     }
 
-    http.POST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
+    payePOST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status}")
       resp
     }
   }
 
+  @inline
+  private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
+    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
+
   private[connectors] def useDESStubFeature: Boolean = !featureSwitch.desService.enabled
 
+  private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
+    headerCarrier.
+      withExtraHeaders("Environment" -> urlHeaderEnvironment).
+      copy(authorization = Some(Authorization(urlHeaderAuthorization)))
+  }
 }

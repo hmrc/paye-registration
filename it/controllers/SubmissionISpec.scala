@@ -54,7 +54,9 @@ class SubmissionISpec extends IntegrationSpecBase {
     "microservice.services.business-registration.host" -> s"$mockHost",
     "microservice.services.business-registration.port" -> s"$mockPort",
     "microservice.services.company-registration.host" -> s"$mockHost",
-    "microservice.services.company-registration.port" -> s"$mockPort"
+    "microservice.services.company-registration.port" -> s"$mockPort",
+    "microservice.services.des-service.environment" -> "test-environment",
+    "microservice.services.des-service.authorization-token" -> "testAuthToken"
   )
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
@@ -238,6 +240,8 @@ class SubmissionISpec extends IntegrationSpecBase {
       val response = client(s"$regId/submit-registration").put("").futureValue
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
         .withRequestBody(equalToJson(Json.parse(
           s"""
              |{
@@ -377,6 +381,8 @@ class SubmissionISpec extends IntegrationSpecBase {
       val response = await(client(s"$regId/submit-registration").put(""))
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
         .withRequestBody(equalToJson(Json.parse(
           s"""
              |{
@@ -456,6 +462,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
+
 
       val reg = await(repository.retrieveRegistration(regId))
 
