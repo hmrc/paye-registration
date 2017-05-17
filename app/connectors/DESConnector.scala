@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @Singleton
 class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESConnect with ServicesConfig {
   val featureSwitch = injFeatureSwitch
-  lazy val desUrl = baseUrl("des-service")
+  lazy val desUrl = getConfString("des-service.url", "")
   lazy val desURI = getConfString("des-service.uri", "")
   lazy val desTopUpURI = getConfString("des-service.top-up-uri", "")
   lazy val desStubUrl = baseUrl("des-stub")
