@@ -253,7 +253,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |        "language": "en",
              |        "formCreationTimestamp": "$timestamp",
              |        "submissionFromAgent": false,
-             |        "completionCapacity": "director",
+             |        "completionCapacity": "Director",
              |        "declareAccurateAndComplete": true
              |    },
              |    "payAsYouEarn": {
@@ -394,7 +394,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |        "language": "en",
              |        "formCreationTimestamp": "$timestamp",
              |        "submissionFromAgent": false,
-             |        "completionCapacity": "director",
+             |        "completionCapacity": "Director",
              |        "declareAccurateAndComplete": true
              |    },
              |    "payAsYouEarn": {

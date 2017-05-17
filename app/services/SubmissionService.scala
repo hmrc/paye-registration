@@ -211,12 +211,12 @@ trait SubmissionSrv {
   }
 
   private[services] def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
-    val DIRECTOR = "director"
-    val AGENT = "agent"
-    val OTHER = "other"
+    val DIRECTOR = "Director"
+    val AGENT = "Agent"
+    val OTHER = "Other"
     capacity.map(_.trim.toLowerCase).map {
-        case DIRECTOR => DESCompletionCapacity(DIRECTOR, None)
-        case AGENT => DESCompletionCapacity(AGENT, None)
+        case d if d == DIRECTOR.toLowerCase => DESCompletionCapacity(DIRECTOR, None)
+        case a if a == AGENT.toLowerCase => DESCompletionCapacity(AGENT, None)
         case other => DESCompletionCapacity(OTHER, Some(other))
       }.getOrElse{
         throw new CompletionCapacityNotDefinedException("Completion capacity not defined")

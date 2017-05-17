@@ -130,7 +130,7 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
           |     "formCreationTimestamp": "2017-05-03T12:51:42.076",
           |     "language": "en",
           |     "submissionFromAgent": false,
-          |     "completionCapacity": "other",
+          |     "completionCapacity": "Other",
           |     "completionCapacityOther": "friend",
           |     "declareAccurateAndComplete": true
           |   },

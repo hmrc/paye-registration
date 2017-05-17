@@ -210,7 +210,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   )
 
   val validDESCompletionCapacity = DESCompletionCapacity(
-    capacity = "director",
+    capacity = "Director",
     otherCapacity = None
   )
 
@@ -407,13 +407,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Building DES Completion Capacity" should {
     "succeed for agent" in new Setup {
-      service.buildDESCompletionCapacity(Some("agent")) shouldBe DESCompletionCapacity("agent", None)
+      service.buildDESCompletionCapacity(Some("agent")) shouldBe DESCompletionCapacity("Agent", None)
     }
     "succeed for 'DiReCTOR  '" in new Setup {
-      service.buildDESCompletionCapacity(Some("DiReCTOR  ")) shouldBe DESCompletionCapacity("director", None)
+      service.buildDESCompletionCapacity(Some("DiReCTOR  ")) shouldBe DESCompletionCapacity("Director", None)
     }
     "succeed for 'high priestess'" in new Setup {
-      service.buildDESCompletionCapacity(Some("high priestess")) shouldBe DESCompletionCapacity("other", Some("high priestess"))
+      service.buildDESCompletionCapacity(Some("high priestess")) shouldBe DESCompletionCapacity("Other", Some("high priestess"))
     }
     "throw the correct exception for Completion Capacity when missing" in new Setup {
       intercept[CompletionCapacityNotDefinedException](service.buildDESCompletionCapacity(None))
