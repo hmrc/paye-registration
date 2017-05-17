@@ -115,9 +115,13 @@ case class DESCompletionCapacity(capacity: String,
                                 otherCapacity: Option[String])
 
 object DESCompletionCapacity {
+  val capitalizeWrites = new Writes[String] {
+    override def writes(o: String): JsValue = Json.toJson(o.capitalize)
+  }
+
   implicit val writes: Writes[DESCompletionCapacity] =
     (
-      (__ \ "completionCapacity").write[String] and
+      (__ \ "completionCapacity").write[String](capitalizeWrites) and
       (__ \ "completionCapacityOther").writeNullable[String]
     )(unlift(DESCompletionCapacity.unapply))
 }
