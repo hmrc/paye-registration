@@ -16,7 +16,7 @@
 
 package controllers
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
@@ -25,7 +25,7 @@ import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.libs.ws.WS
 import play.api.{Application, Play}
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
@@ -49,8 +49,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     "microservice.services.auth.port" -> s"$mockPort",
     "microservice.services.des-stub.port" -> s"$mockPort",
     "microservice.services.des-stub.url" -> s"$mockHost",
-    "microservice.services.des-service.url" -> s"$mockHost",
-    "microservice.services.des-service.port" -> s"$mockPort",
+    "microservice.services.des-service.url" -> s"$mockUrl",
+    "microservice.services.des-service.uri" -> "business-registration/pay-as-you-earn",
+    "microservice.services.des-service.top-up-uri" -> "business-incorporation/pay-as-you-earn",
     "application.router" -> "testOnlyDoNotUseInAppConf.Routes",
     "microservice.services.incorporation-information.host" -> s"$mockHost",
     "microservice.services.incorporation-information.port" -> s"$mockPort",
