@@ -18,12 +18,14 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
+import common.exceptions.DBExceptions.MissingRegDocument
 import enums.PAYEStatus
 import models.EmpRefNotification
 import play.api.Logger
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class NotificationService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends NotificationSrv{
@@ -69,6 +71,11 @@ trait NotificationSrv {
   }
 
   def processNotification(ackRef: String, notification: EmpRefNotification): Future[EmpRefNotification] = {
-    registrationRepo.updateRegistrationEmpRef(ackRef, getNewApplicationStatus(notification.status), notification)
+    for {
+      empRefNotification <- registrationRepo.updateRegistrationEmpRef(ackRef, getNewApplicationStatus(notification.status), notification)
+      oReg <- registrationRepo.retrieveRegistrationByAckRef(ackRef)
+      reg = oReg.getOrElse{throw new MissingRegDocument(s"No registration ID found for ack ref $ackRef when processing ETMP notification")}
+      _ <- registrationRepo.updateRegistrationStatus(reg.registrationID, getNewApplicationStatus(notification.status))
+    } yield empRefNotification
   }
 }
