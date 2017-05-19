@@ -17,6 +17,7 @@
 package services
 
 import enums.PAYEStatus
+import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models.EmpRefNotification
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
@@ -25,7 +26,7 @@ import org.mockito.ArgumentMatchers
 
 import scala.concurrent.Future
 
-class NotificationServiceSpec extends PAYERegSpec {
+class NotificationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   class Setup {
     val testService = new NotificationSrv {
@@ -81,6 +82,10 @@ class NotificationServiceSpec extends PAYERegSpec {
 
       when(mockRegistrationRepository.updateRegistrationEmpRef(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(testNotification))
+      when(mockRegistrationRepository.retrieveRegistrationByAckRef(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration)))
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(PAYEStatus.acknowledged))
 
       val result = await(testService.processNotification(testAckRef, testNotification))
       result shouldBe testNotification

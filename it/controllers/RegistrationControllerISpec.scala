@@ -532,7 +532,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
   "updateRegistrationWithEmpRef" should {
     "return an OK with a Json body" when {
-      "the emp ref has been updated" in new Setup {
+      "the emp ref has been updated as APPROVED" in new Setup {
         setupSimpleAuthMocks()
 
         await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
@@ -552,7 +552,146 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
           )
         )
         reg.status shouldBe PAYEStatus.acknowledged
+        reg.acknowledgedTimestamp.isDefined shouldBe true
       }
+
+      "the emp ref has been updated as APPROVED WITH CONDITIONS" in new Setup {
+        setupSimpleAuthMocks()
+
+        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+
+        val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "05"))
+
+        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
+        response.status shouldBe 200
+        response.json shouldBe testNotification
+
+        val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+        reg.registrationConfirmation shouldBe Some(
+          EmpRefNotification(
+            empRef = Some("testEmpRef"),
+            timestamp = "2017-01-01T12:00:00Z",
+            status = "05"
+          )
+        )
+        reg.status shouldBe PAYEStatus.acknowledged
+        reg.acknowledgedTimestamp.isDefined shouldBe true
+      }
+
+      "the emp ref has been updated as REJECTED" in new Setup {
+        setupSimpleAuthMocks()
+
+        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+
+        val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "06"))
+
+        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
+        response.status shouldBe 200
+        response.json shouldBe testNotification
+
+        val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+        reg.registrationConfirmation shouldBe Some(
+          EmpRefNotification(
+            empRef = Some("testEmpRef"),
+            timestamp = "2017-01-01T12:00:00Z",
+            status = "06"
+          )
+        )
+        reg.status shouldBe PAYEStatus.rejected
+        reg.acknowledgedTimestamp.isDefined shouldBe true
+      }
+
+      "the emp ref has been updated as REJECTED_UNDER_REVIEW_APPREAL" in new Setup {
+        setupSimpleAuthMocks()
+
+        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+
+        val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "07"))
+
+        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
+        response.status shouldBe 200
+        response.json shouldBe testNotification
+
+        val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+        reg.registrationConfirmation shouldBe Some(
+          EmpRefNotification(
+            empRef = Some("testEmpRef"),
+            timestamp = "2017-01-01T12:00:00Z",
+            status = "07"
+          )
+        )
+        reg.status shouldBe PAYEStatus.rejected
+        reg.acknowledgedTimestamp.isDefined shouldBe true
+      }
+    }
+
+    "the emp ref has been updated as REVOKED" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+
+      val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "08"))
+
+      val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
+      response.status shouldBe 200
+      response.json shouldBe testNotification
+
+      val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+      reg.registrationConfirmation shouldBe Some(
+        EmpRefNotification(
+          empRef = Some("testEmpRef"),
+          timestamp = "2017-01-01T12:00:00Z",
+          status = "08"
+        )
+      )
+      reg.status shouldBe PAYEStatus.rejected
+      reg.acknowledgedTimestamp.isDefined shouldBe true
+    }
+
+    "the emp ref has been updated as REVOKED_UNDER_REVIEW_APPREAL" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+
+      val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "09"))
+
+      val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
+      response.status shouldBe 200
+      response.json shouldBe testNotification
+
+      val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+      reg.registrationConfirmation shouldBe Some(
+        EmpRefNotification(
+          empRef = Some("testEmpRef"),
+          timestamp = "2017-01-01T12:00:00Z",
+          status = "09"
+        )
+      )
+      reg.status shouldBe PAYEStatus.rejected
+      reg.acknowledgedTimestamp.isDefined shouldBe true
+    }
+
+    "the emp ref has been updated as DEREGISTERED" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+
+      val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "10"))
+
+      val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
+      response.status shouldBe 200
+      response.json shouldBe testNotification
+
+      val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
+      reg.registrationConfirmation shouldBe Some(
+        EmpRefNotification(
+          empRef = Some("testEmpRef"),
+          timestamp = "2017-01-01T12:00:00Z",
+          status = "10"
+        )
+      )
+      reg.status shouldBe PAYEStatus.rejected
+      reg.acknowledgedTimestamp.isDefined shouldBe true
     }
 
     "return a not found" when {
