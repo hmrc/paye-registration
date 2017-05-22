@@ -22,7 +22,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
-import enums.PAYEStatus
+import enums.{AddressTypes, PAYEStatus}
 import models._
 import models.submission._
 import helpers.{DateHelper, PAYERegSpec}
@@ -75,7 +75,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
-    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
+    Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK"), Some("roAuditRef")),
     Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK")),
     DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
@@ -554,6 +554,21 @@ class SubmissionServiceSpec extends PAYERegSpec {
         val result = await(service.fetchCtUtr("testRegId"))
         result shouldBe None
       }
+    }
+  }
+
+  "Calling fetchAddressAuditRefs" should {
+    "return a map of enums to refs" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration)))
+
+      await(service.fetchAddressAuditRefs("regId")) shouldBe Map(AddressTypes.roAdddress -> "roAuditRef")
+    }
+    "throw a MissingRegDocument exception when there is no Registration object returned from mongo" in new Setup {
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
+
+      intercept[MissingRegDocument](await(service.fetchAddressAuditRefs("regId")))
     }
   }
 }

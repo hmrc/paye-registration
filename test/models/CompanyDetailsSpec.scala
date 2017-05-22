@@ -34,7 +34,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |    "line2":"Testley",
           |    "line3":"Testford",
           |    "line4":"Testshire",
-          |    "postCode":"TE1 1ST"
+          |    "postCode":"TE1 1ST",
+          |    "auditRef":"roAuditRef"
           |  },
           |  "ppobAddress": {
           |    "line1":"15 St Walk",
@@ -54,7 +55,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       val tstCompanyDetails = CompanyDetails(
         companyName = " Test Company",
         tradingName = Some("Test Trading Name"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
         Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
         DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
@@ -80,7 +81,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "line2":"Testley",
            |    "line3":"Testford",
            |    "line4":"Testshire",
-           |    "country":"UK"
+           |    "country":"UK",
+           |    "auditRef":"ppobAuditRef"
            |  },
            |  "businessContactDetails": {
            |    "phoneNumber":"012345"
@@ -92,7 +94,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         companyName = "Test-Company",
         tradingName = Some(".Test, (&') Trading/Name!"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
-        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
+        Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
         DigitalContactDetails(None, Some("012345"), None)
       )
 
@@ -448,6 +450,49 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         val result = Json.fromJson[Address](json)
         shouldHaveErrors(result, JsPath(), Seq(ValidationError("both postcode and country were completed")))
       }
+    }
+  }
+
+  "Writing an address" should {
+    val addr = Address(
+      line1 = "lineOne",
+      line2 = "lineTwo",
+      line3 = Some("lineThree"),
+      line4 = None,
+      postCode = Some("TE1 1ST"),
+      country = None,
+      auditRef = Some("auditReference")
+    )
+
+    "ignore audit ref to DES" in {
+      val json = Json.parse(
+      """
+        |{
+        |  "addressLine1":"lineOne",
+        |  "addressLine2":"lineTwo",
+        |  "addressLine3":"lineThree",
+        |  "postcode":"TE1 1ST"
+        |}
+      """.stripMargin
+      )
+
+      Json.toJson[Address](addr)(Address.writesDES) shouldBe json
+    }
+
+    "include audit ref by default" in {
+      val json = Json.parse(
+        """
+          |{
+          |  "line1":"lineOne",
+          |  "line2":"lineTwo",
+          |  "line3":"lineThree",
+          |  "postCode":"TE1 1ST",
+          |  "auditRef":"auditReference"
+          |}
+        """.stripMargin
+      )
+
+      Json.toJson[Address](addr) shouldBe json
     }
   }
 

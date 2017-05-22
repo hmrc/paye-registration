@@ -18,13 +18,15 @@ package audit
 
 import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.play.http.HeaderCarrier
+import enums.AddressTypes
 
 case class DesSubmissionAuditEventDetail(externalId: String,
                                          authProviderId: String,
                                          regId: String,
                                          ctutr: Option[String],
                                          desSubmissionState: String,
-                                         jsSubmission: JsObject)
+                                         jsSubmission: JsObject,
+                                         auditRefs: Map[AddressTypes.Value, String])
 
 object DesSubmissionAuditEventDetail {
 
@@ -32,7 +34,6 @@ object DesSubmissionAuditEventDetail {
 
   implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
-      val regMetadata = Json.obj("businessType" -> "Limited company")
       val ctutrTuple = detail.ctutr map( utr =>
         Json.obj("ctutr" -> utr)
       )
@@ -42,9 +43,36 @@ object DesSubmissionAuditEventDetail {
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
         DES_SUBMISSION_STATE -> detail.desSubmissionState
-      ) ++ detail.jsSubmission
+      ) ++ detail.jsSubmission.deepMerge(auditRefsJson(detail.auditRefs))
 
       if(ctutrTuple.isDefined) event ++ ctutrTuple.get else event
+    }
+
+    def auditRefsJson(refs: Map[AddressTypes.Value, String]): JsObject = {
+      refs.get(AddressTypes.roAdddress).map{ ro =>
+        Json.obj("payAsYouEarn" ->
+          Json.obj("limitedCompany" ->
+            Json.obj("registeredOfficeAddress" ->
+              Json.obj("auditRef" -> Json.toJson[String](ro))
+            )
+          )
+        )}.getOrElse(Json.obj()).deepMerge(
+      refs.get(AddressTypes.ppobAdddress).map{ ppob =>
+        Json.obj("payAsYouEarn" ->
+          Json.obj("limitedCompany" ->
+            Json.obj("businessAddress" ->
+              Json.obj("auditRef" -> Json.toJson[String](ppob))
+            )
+          )
+        )}.getOrElse(Json.obj())).deepMerge(
+      refs.get(AddressTypes.correspondenceAdddress).map{ corresp =>
+        Json.obj("payAsYouEarn" ->
+          Json.obj("employingPeople" ->
+            Json.obj("payeCorrespondenceAddress" ->
+              Json.obj("auditRef" -> Json.toJson[String](corresp))
+            )
+          )
+        )}.getOrElse(Json.obj()))
     }
   }
 }

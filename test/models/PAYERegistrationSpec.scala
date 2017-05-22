@@ -60,7 +60,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |        "line2":"Testley",
            |        "line3":"Testford",
            |        "line4":"Testshire",
-           |        "postCode":"TE1 1ST"
+           |        "postCode":"TE1 1ST",
+           |        "auditRef":"testAudit"
            |      },
            |      "ppobAddress": {
            |        "line1":"15 St Walk",
@@ -153,7 +154,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
           CompanyDetails(
             companyName = "Test Company",
             tradingName = Some("Test Trading Name"),
-            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("testAudit")),
             Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
             DigitalContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
           )

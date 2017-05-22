@@ -32,11 +32,15 @@ case class Address(line1: String,
                    line3: Option[String],
                    line4: Option[String],
                    postCode: Option[String],
-                   country: Option[String] = None)
+                   country: Option[String] = None,
+                   auditRef: Option[String] = None)
 
 object Address {
 
   val writesDES: Writes[Address] = new Writes[Address] {
+
+    val ignore = OWrites[Any](_ => Json.obj())
+
     override def writes(address: Address): JsValue = {
       val successWrites = (
         (__ \ "addressLine1").write[String] and
@@ -44,7 +48,8 @@ object Address {
         (__ \ "addressLine3").writeNullable[String] and
         (__ \ "addressLine4").writeNullable[String] and
         (__ \ "postcode").writeNullable[String] and
-        (__ \ "country").writeNullable[String]
+        (__ \ "country").writeNullable[String] and
+        ignore
       )(unlift(Address.unapply))
 
       Json.toJson(address)(successWrites).as[JsObject]
@@ -63,7 +68,8 @@ object Address {
     (__ \ "line3").readNullable[String](addressLineValidate) and
     (__ \ "line4").readNullable[String](addressLine4Validate) and
     (__ \ "postCode").readNullable[String](postcodeValidate) and
-    (__ \ "country").readNullable[String](countryValidate)
+    (__ \ "country").readNullable[String](countryValidate) and
+    (__ \ "auditRef").readNullable[String]
   )(Address.apply _).filter(ValidationError("neither postcode nor country was completed")) {
     addr => addr.postCode.isDefined || addr.country.isDefined
   }.filter(ValidationError("both postcode and country were completed")) {
