@@ -116,8 +116,8 @@ class SubmissionISpec extends IntegrationSpecBase {
       CompanyDetails(
         "testCompanyName",
         Some("test"),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
-        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
+        Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
         DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
       )
     ),
@@ -142,7 +142,7 @@ class SubmissionISpec extends IntegrationSpecBase {
             Some("4358475")
           )
         ),
-        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
+        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
       )
     ),
     Some(
@@ -213,7 +213,7 @@ class SubmissionISpec extends IntegrationSpecBase {
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
 
   "submit-registration" should {
-    "return a 200 with an ack ref when a partial DES submission completes successfully" in new Setup {
+    "return a 200 with an ack ref when a partial DES submission completes successfully with auditing" in new Setup {
       setupSimpleAuthMocks()
 
       val regime = "paye"
@@ -323,6 +323,97 @@ class SubmissionISpec extends IntegrationSpecBase {
              |}
           """.stripMargin).toString())
         )
+      )
+
+
+      verify(postRequestedFor(urlEqualTo("/write/audit"))
+        .withRequestBody(equalToJson(Json.parse(
+          """
+            |{
+            |  "detail" : {
+            |    "externalId" : "Ext-xxx",
+            |    "authProviderId" : "123456789",
+            |    "journeyId" : "12345",
+            |    "desSubmissionState" : "partial",
+            |    "acknowledgementReference" : "testAckRef",
+            |    "metaData" : {
+            |      "businessType" : "Limited company",
+            |      "submissionFromAgent" : false,
+            |      "declareAccurateAndComplete" : true,
+            |      "sessionID" : "session-12345",
+            |      "credentialID" : "xxx2",
+            |      "language" : "en",
+            |      "formCreationTimestamp" : "2017-01-01T00:00:00",
+            |      "completionCapacity" : "Director"
+            |    },
+            |    "payAsYouEarn" : {
+            |      "limitedCompany" : {
+            |        "companiesHouseCompanyName" : "testCompanyName",
+            |        "nameOfBusiness" : "test",
+            |        "businessAddress" : {
+            |          "addressLine1" : "14 St Test Walk",
+            |          "addressLine2" : "Testley",
+            |          "addressLine3" : "Testford",
+            |          "addressLine4" : "Testshire",
+            |          "country" : "UK",
+            |          "auditRef" : "ppobAuditRef"
+            |        },
+            |        "businessContactDetails" : {
+            |          "email" : "test@email.com",
+            |          "phoneNumber" : "012345",
+            |          "mobileNumber" : "543210"
+            |        },
+            |        "natureOfBusiness" : "consulting",
+            |        "directors" : [ {
+            |          "directorName" : {
+            |            "firstName" : "Thierry",
+            |            "middleName" : "Dominique",
+            |            "lastName" : "Henry",
+            |            "title" : "Sir"
+            |          },
+            |          "directorNINO" : "SR123456C"
+            |        }, {
+            |          "directorName" : {
+            |            "firstName" : "Malcolm",
+            |            "middleName" : "Testing",
+            |            "lastName" : "Test",
+            |            "title" : "Mr"
+            |          }
+            |        } ],
+            |        "registeredOfficeAddress" : {
+            |          "addressLine1" : "14 St Test Walk",
+            |          "addressLine2" : "Testley",
+            |          "addressLine3" : "Testford",
+            |          "addressLine4" : "Testshire",
+            |          "postcode" : "TE1 1ST",
+            |          "auditRef" : "roAuditRef"
+            |        },
+            |        "operatingOccPensionScheme" : true
+            |      },
+            |      "employingPeople" : {
+            |        "dateOfFirstEXBForEmployees" : "2016-12-20",
+            |        "numberOfEmployeesExpectedThisYear" : "1",
+            |        "engageSubcontractors" : true,
+            |        "correspondenceName" : "Thierry Henry",
+            |        "correspondenceContactDetails" : {
+            |          "email" : "test@test.com",
+            |          "phoneNumber" : "1234",
+            |          "mobileNumber" : "4358475"
+            |        },
+            |        "payeCorrespondenceAddress" : {
+            |          "addressLine1" : "19 St Walk",
+            |          "addressLine2" : "Testley CA",
+            |          "addressLine3" : "Testford",
+            |          "addressLine4" : "Testshire",
+            |          "country" : "UK",
+            |          "auditRef" : "correspondenceAuditRef"
+            |        }
+            |      }
+            |    }
+            |  }
+            |}
+          """.stripMargin
+        ).toString(), false, true))
       )
 
       response.status shouldBe 200

@@ -24,7 +24,7 @@ import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import config.MicroserviceAuditConnector
 import connectors._
-import enums.PAYEStatus
+import enums.{AddressTypes, PAYEStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -88,7 +88,8 @@ trait SubmissionSrv {
       ctutr         <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId))
       submission    <- buildADesSubmission(regId, incUpdate, ctutr)
       _             <- desConnector.submitToDES(submission)
-      _             <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
+      auditRefs     <- fetchAddressAuditRefs(regId)
+      _             <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr, auditRefs)
       updatedStatus =  incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
       _             <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield ackRef
@@ -270,14 +271,26 @@ trait SubmissionSrv {
     )
   }
 
-  private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
+  private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String], auditRefs: Map[AddressTypes.Value, String])(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
     for {
       authority <- authConnector.getCurrentAuthority
       userDetails <- authConnector.getUserDetails
       authProviderId = userDetails.get.authProviderId
     } yield {
-      val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, ctutr, desSubmissionState, jsSubmission))
+      val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs))
       auditConnector.sendEvent(event)
+    }
+  }
+
+  private[services] def fetchAddressAuditRefs(regId: String): Future[Map[AddressTypes.Value, String]] = {
+    registrationRepository.retrieveRegistration(regId) map { oReg =>
+      oReg.map { reg =>
+        List(
+          reg.companyDetails.flatMap(_.roAddress.auditRef).map( AddressTypes.roAdddress -> _ ),
+          reg.companyDetails.flatMap(_.ppobAddress.auditRef).map( AddressTypes.ppobAdddress -> _ ),
+          reg.payeContact.flatMap(_.correspondenceAddress.auditRef).map( AddressTypes.correspondenceAdddress -> _ )
+        ).flatten.toMap
+      }.getOrElse{ throw new MissingRegDocument(s"No registration found when fetching address audit refs for regID $regId") }
     }
   }
 

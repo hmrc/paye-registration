@@ -210,7 +210,8 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         regId,
         None,
         desSubmissionState,
-        Json.toJson[DESSubmission](validPartialDESSubmissionModel).as[JsObject]
+        Json.toJson[DESSubmission](validPartialDESSubmissionModel).as[JsObject],
+        Map.empty
       )
       Json.toJson(testModel)(DesSubmissionAuditEventDetail.writes) shouldBe expected
     }

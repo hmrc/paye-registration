@@ -59,7 +59,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     Some("Testford"),
     Some("Testshire"),
     Some("TE4 1ST"),
-    None
+    None,
+    Some("auditRef")
   )
   private val businessContact = DigitalContactDetails(
     Some("test@email.com"),
