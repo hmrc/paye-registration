@@ -253,6 +253,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
        |}
         """.stripMargin
   }
+
   val jsonIncorpStatusUpdate = Json.parse(incorpUpdate(accepted))
 
 
