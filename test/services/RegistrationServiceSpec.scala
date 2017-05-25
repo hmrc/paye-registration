@@ -489,4 +489,25 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       }
     }
   }
+
+  "deletePAYERegistration" should {
+    "return true" when {
+      "the PAYE Registration document is deleted" in new Setup {
+        when(mockRegistrationRepository.deleteRegistration(ArgumentMatchers.any[String]()))
+          .thenReturn(Future.successful(true))
+
+        val result = await(service.deletePAYERegistration("testRegId"))
+        result shouldBe true
+      }
+    }
+
+    "return a MissingRegDocument exception" when {
+      "trying deleting a non existing PAYE Registration document" in new Setup {
+        when(mockRegistrationRepository.deleteRegistration(ArgumentMatchers.any[String]()))
+          .thenReturn(Future.successful(false))
+
+        a[MissingRegDocument] shouldBe thrownBy(await(service.deletePAYERegistration("testRegId")))
+      }
+    }
+  }
 }

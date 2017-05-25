@@ -157,4 +157,11 @@ trait RegistrationSrv extends PAYEBaseValidator {
       }
     }
   }
+
+  def deletePAYERegistration(regID: String): Future[Boolean] = {
+    registrationRepository.deleteRegistration(regID) map {
+      case true => true
+      case false => throw new MissingRegDocument(regID)
+    }
+  }
 }

@@ -828,4 +828,26 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.status shouldBe 404
     }
   }
+
+  "deletePAYERegistration" should {
+    "return an OK after deleting the document" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+
+      val response = client(s"$regId/delete").delete().futureValue
+      response.status shouldBe 200
+
+      await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
+    }
+
+    "return a NotFound trying deleting a non existing document" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+
+      val response = client(s"invalidRegId/delete").delete().futureValue
+      response.status shouldBe 404
+    }
+  }
 }

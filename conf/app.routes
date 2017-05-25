@@ -33,3 +33,5 @@ PATCH      /:regID/eligibility                      controllers.RegistrationCont
 POST       /registration-processed-confirmation     controllers.RegistrationController.updateRegistrationWithEmpRef(ackref: String)
 
 GET        /:regID/status                           controllers.RegistrationController.getDocumentStatus(regID)
+
+DELETE     /:regID/delete                           controllers.RegistrationController.deletePAYERegistration(regID)

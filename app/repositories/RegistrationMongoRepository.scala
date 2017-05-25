@@ -16,8 +16,6 @@
 
 package repositories
 
-import java.time.{ZoneId, ZonedDateTime}
-
 import auth.AuthorisationResource
 import javax.inject.{Inject, Singleton}
 
@@ -78,6 +76,7 @@ trait RegistrationRepository {
   def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
+  def deleteRegistration(registrationID: String): Future[Boolean]
 
   val dateHelper: DateHelper
 }
@@ -565,25 +564,25 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     }
   }
 
-  // TODO - rename the test repo methods
-  // Test endpoints
-
-  override def dropCollection: Future[Unit] = {
-    collection.drop()
-  }
-
-  def deleteRegistration(registrationID: String): Future[Boolean] = {
+  override def deleteRegistration(registrationID: String): Future[Boolean] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.remove(selector) map {
-      _ =>
+      wr =>
         mongoTimer.stop()
-        true
+        wr.n == 1
     } recover {
       case e =>
         mongoTimer.stop()
         throw new DeleteFailed(registrationID, e.getMessage)
     }
+  }
+
+  // TODO - rename the test repo methods
+  // Test endpoints
+
+  override def dropCollection: Future[Unit] = {
+    collection.drop()
   }
 
   def updateRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
