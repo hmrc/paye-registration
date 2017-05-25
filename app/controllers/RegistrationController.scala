@@ -410,10 +410,10 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
             }
           }
         case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getEligibility] User not logged in")
+          Logger.info(s"[RegistrationController] [updateEligibility] User not logged in")
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getEligibility] User logged in but not authorised for resource $regId")
+          Logger.info(s"[RegistrationController] [updateEligibility] User logged in but not authorised for resource $regId")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }
@@ -440,10 +440,29 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
             case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
           }
         case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getEligibility] User not logged in")
+          Logger.info(s"[RegistrationController] [getDocumentStatus] User not logged in")
           Future.successful(Forbidden)
         case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getEligibility] User logged in but not authorised for resource $regId")
+          Logger.info(s"[RegistrationController] [getDocumentStatus] User logged in but not authorised for resource $regId")
+          Future.successful(Forbidden)
+        case AuthResourceNotFound(_) => Future.successful(NotFound)
+      }
+  }
+
+  def deletePAYERegistration(regId: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(regId) {
+        case Authorised(_) =>
+          registrationService.deletePAYERegistration(regId) map { _ =>
+            Ok
+          } recover {
+            case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
+          }
+        case NotLoggedInOrAuthorised =>
+          Logger.info(s"[RegistrationController] [deletePAYERegistration] User not logged in")
+          Future.successful(Forbidden)
+        case NotAuthorised(_) =>
+          Logger.info(s"[RegistrationController] [deletePAYERegistration] User logged in but not authorised for resource $regId")
           Future.successful(Forbidden)
         case AuthResourceNotFound(_) => Future.successful(NotFound)
       }

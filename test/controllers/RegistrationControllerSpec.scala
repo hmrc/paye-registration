@@ -1371,4 +1371,56 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.NOT_FOUND
     }
   }
+
+  "Calling deletePAYERegistration" should {
+    "return a Forbidden response if the user is not logged in" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Forbidden response if the user is not authorised" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
+
+      val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.FORBIDDEN
+    }
+
+    "return a Not Found response if there is no authored resource" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(None))
+
+      val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+
+    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+
+      val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+  }
 }

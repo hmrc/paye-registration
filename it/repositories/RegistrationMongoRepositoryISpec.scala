@@ -18,7 +18,7 @@ package repositories
 
 import java.time.LocalDate
 
-import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
+import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument, DeleteFailed}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -985,6 +985,21 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
         val testEmpRefNotif = EmpRefNotification(Some("testEmpRef"), "2017-01-01T21:00:00Z", "04")
         intercept[MissingRegDocument](await(repository.updateRegistrationEmpRef("AC123456", PAYEStatus.submitted, testEmpRefNotif)))
       }
+    }
+  }
+
+  "Calling deleteRegistration" should {
+    "returns true after deleting the registration from the collection" in new Setup {
+      await(setupCollection(repository, reg.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some("2017-01-01T21:00:00Z"))))
+
+      await(repository.deleteRegistration(reg.registrationID)) shouldBe true
+      await(repository.retrieveRegistration(reg.registrationID)) shouldBe None
+    }
+
+    "returns false after trying deleting a none existing PAYE reg" in new Setup {
+      await(setupCollection(repository, reg))
+
+      await(repository.deleteRegistration("dgdfgdfg")) shouldBe false
     }
   }
 }
