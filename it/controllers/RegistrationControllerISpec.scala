@@ -841,6 +841,17 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
     }
 
+    "return a PreconditionFailed response if the document status is not 'rejected'" in new Setup {
+      setupSimpleAuthMocks()
+
+      await(repository.insert(submission))
+
+      val response = client(s"$regId/delete").delete().futureValue
+      response.status shouldBe 412
+
+      await(repository.retrieveRegistration(submission.registrationID)) shouldBe Some(submission)
+    }
+
     "return a NotFound trying deleting a non existing document" in new Setup {
       setupSimpleAuthMocks()
 
