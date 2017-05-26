@@ -39,5 +39,7 @@ trait RegistrationExceptions {
   class RegistrationFormatException(message: String) extends NoStackTrace {
     override def getMessage = message
   }
+
+  class StatusNotRejectedException extends Exception
 }
 

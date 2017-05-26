@@ -17,14 +17,13 @@
 package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
-import common.exceptions.RegistrationExceptions.RegistrationFormatException
+import common.exceptions.RegistrationExceptions._
 import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.Mockito._
-import play.api.libs.json.{JsObject, Json}
 
 import scala.concurrent.Future
 
@@ -492,21 +491,33 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   "deletePAYERegistration" should {
     "return true" when {
-      "the PAYE Registration document is deleted" in new Setup {
-        when(mockRegistrationRepository.deleteRegistration(ArgumentMatchers.any[String]()))
+      "the document has been deleted as the users document was rejected" in new Setup {
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.rejected))))
+
+        when(mockRegistrationRepository.deleteRegistration(ArgumentMatchers.any()))
           .thenReturn(Future.successful(true))
 
-        val result = await(service.deletePAYERegistration("testRegId"))
+        val result = await(service.deletePAYERegistration(validRegistration.registrationID))
         result shouldBe true
       }
     }
 
-    "return a MissingRegDocument exception" when {
-      "trying deleting a non existing PAYE Registration document" in new Setup {
-        when(mockRegistrationRepository.deleteRegistration(ArgumentMatchers.any[String]()))
-          .thenReturn(Future.successful(false))
+    "throw a StatusNotRejectedException" when {
+      "the document status is not rejected" in new Setup {
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
 
-        a[MissingRegDocument] shouldBe thrownBy(await(service.deletePAYERegistration("testRegId")))
+        intercept[StatusNotRejectedException](await(service.deletePAYERegistration(validRegistration.registrationID)))
+      }
+    }
+
+    "throw a MissingRegDocument" when {
+      "the document was not found against the regId" in new Setup {
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+
+        intercept[MissingRegDocument](await(service.deletePAYERegistration(validRegistration.registrationID)))
       }
     }
   }

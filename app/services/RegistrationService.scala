@@ -18,11 +18,12 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
+import akka.io.Tcp.Register
 import enums.PAYEStatus
 import helpers.PAYEBaseValidator
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
-import common.exceptions.RegistrationExceptions.RegistrationFormatException
+import common.exceptions.RegistrationExceptions.{RegistrationFormatException, StatusNotRejectedException}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import common.exceptions.DBExceptions.MissingRegDocument
@@ -159,9 +160,14 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def deletePAYERegistration(regID: String): Future[Boolean] = {
-    registrationRepository.deleteRegistration(regID) map {
-      case true => true
-      case false => throw new MissingRegDocument(regID)
+    registrationRepository.retrieveRegistration(regID) flatMap {
+      case Some(document) => document.status match {
+        case PAYEStatus.rejected => registrationRepository.deleteRegistration(regID)
+        case _ =>
+          Logger.warn(s"[RegistrationService] - [deletePAYERegistration] PAYE Reg document for regId $regID was not deleted as the document status was ${document.status}")
+          throw new StatusNotRejectedException
+      }
+      case None => throw new MissingRegDocument(regID)
     }
   }
 }

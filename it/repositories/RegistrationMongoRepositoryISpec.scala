@@ -995,11 +995,5 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
       await(repository.deleteRegistration(reg.registrationID)) shouldBe true
       await(repository.retrieveRegistration(reg.registrationID)) shouldBe None
     }
-
-    "returns false after trying deleting a none existing PAYE reg" in new Setup {
-      await(setupCollection(repository, reg))
-
-      await(repository.deleteRegistration("dgdfgdfg")) shouldBe false
-    }
   }
 }

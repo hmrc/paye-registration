@@ -31,7 +31,7 @@ import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson._
 import reactivemongo.api.DB
-import reactivemongo.api.commands.UpdateWriteResult
+import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
 import services.MetricsService
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -567,14 +567,10 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   override def deleteRegistration(registrationID: String): Future[Boolean] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
-    collection.remove(selector) map {
-      wr =>
-        mongoTimer.stop()
-        wr.n == 1
-    } recover {
-      case e =>
-        mongoTimer.stop()
-        throw new DeleteFailed(registrationID, e.getMessage)
+    collection.remove(selector) map { writeResult =>
+      mongoTimer.stop()
+      if(!writeResult.ok) {Logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${writeResult.message}")}
+      writeResult.ok
     }
   }
 
