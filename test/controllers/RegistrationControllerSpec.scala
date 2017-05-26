@@ -19,7 +19,7 @@ package controllers
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import common.exceptions.DBExceptions.MissingRegDocument
-import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException}
+import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, StatusNotRejectedException}
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models._
@@ -1397,7 +1397,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.FORBIDDEN
     }
 
-    "return a Not Found response if there is no authored resource" in new Setup {
+    "return a Not Found response if there is no auth resource" in new Setup {
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
@@ -1409,18 +1409,49 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.NOT_FOUND
     }
 
-    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
+    "return an Ok response if the document has been deleted" in new Setup {
       when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some(validAuthority)))
 
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) shouldBe Status.OK
+    }
+
+    "return an InternalServerError response if there was a mongo problem" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(false))
+
+      val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+
+    "return a Pre condition failed response if the document status is not rejected" in new Setup {
+      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some(validAuthority)))
+
+      when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
+
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new StatusNotRejectedException))
+
+      val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
+
+      status(response) shouldBe Status.PRECONDITION_FAILED
     }
   }
 }
