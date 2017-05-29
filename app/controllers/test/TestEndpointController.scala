@@ -83,24 +83,34 @@ trait TestEndpointCtrl extends BaseController with Authenticated {
 
   def newStatus(regId: String, status: String): Action[AnyContent] = Action.async {
     implicit request =>
-        val payeStatus = status match {
-           case "draft"        => PAYEStatus.draft
-           case "held"         => PAYEStatus.held
-           case "submitted"    => PAYEStatus.submitted
-           case "acknowledged" => PAYEStatus.acknowledged
-           case "invalid"      => PAYEStatus.invalid
-           case "cancelled"    => PAYEStatus.cancelled
-           case "rejected"     => PAYEStatus.rejected
-           case _              => PAYEStatus.draft
+      registrationRepository.createNewRegistration(regId, regId, "XXXXXX") flatMap { _ =>
+        registrationRepository.updateRegistrationStatus(regId, createPAYEStatus(status)) map {
+          _ => Ok
         }
+      } recover {
+        case e => InternalServerError(e.getMessage)
+      }
 
-        registrationRepository.createNewRegistration(regId, regId, "XXXXXX") flatMap { _ =>
-          registrationRepository.updateRegistrationStatus(regId, payeStatus) map {
-            _ => Ok
-          }
-        } recover {
-          case e => InternalServerError(e.getMessage)
-        }
+  }
 
+  def updateStatus(regId: String, status: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      registrationRepository.updateRegistrationStatus(regId, createPAYEStatus(status)) map {
+        _ => Ok(s"Status of registration $regId updated to $status")
+      }
+  }
+
+
+  private def createPAYEStatus(status: String):PAYEStatus.Value = {
+    status.toLowerCase match {
+      case "draft"        => PAYEStatus.draft
+      case "held"         => PAYEStatus.held
+      case "submitted"    => PAYEStatus.submitted
+      case "acknowledged" => PAYEStatus.acknowledged
+      case "invalid"      => PAYEStatus.invalid
+      case "cancelled"    => PAYEStatus.cancelled
+      case "rejected"     => PAYEStatus.rejected
+      case _              => PAYEStatus.draft
     }
+  }
 }
