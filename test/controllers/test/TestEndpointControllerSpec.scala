@@ -16,7 +16,6 @@
 
 package controllers.test
 
-import akka.stream.ActorMaterializer
 import enums.PAYEStatus
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
@@ -25,10 +24,8 @@ import play.api.libs.json.Json
 import repositories.RegistrationMongoRepository
 import play.api.test.FakeRequest
 import play.api.http.Status
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, Matchers}
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -137,6 +134,16 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(newstatus("cancelled")) shouldBe Status.OK
       status(newstatus("rejected")) shouldBe Status.OK
       status(await(controller.newStatus("AC654321", "bananaFruitcake")(FakeRequest()))) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+  }
+
+  "updateStatus" should {
+    "return a 200 response for success" in new Setup {
+
+      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(PAYEStatus.draft))
+
+      status(await(controller.updateStatus("AC123456", "submitted")(FakeRequest()))) shouldBe Status.OK
     }
   }
 

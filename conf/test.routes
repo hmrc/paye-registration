@@ -4,5 +4,6 @@ GET        /delete-registration/:regID                   controllers.test.TestEn
 POST       /update-registration/:regID                   controllers.test.TestEndpointController.updateRegistration(regID)
 
 POST       /document-with-status/:regID/:status          controllers.test.TestEndpointController.newStatus(regID, status)
+POST       /update-status/:regID/:status                 controllers.test.TestEndpointController.updateStatus(regID, status)
 
 GET        /feature-flag/:featureName/:featureStatus     controllers.test.FeatureSwitchController.switch(featureName: String, featureStatus: String)
