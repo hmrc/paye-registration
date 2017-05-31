@@ -67,7 +67,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     "successfully POST with proxy" in new SetupWithProxy(true) {
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200))
 
-      await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
+      await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
   }
 
@@ -75,7 +75,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     "successfully POST with proxy" in new SetupWithProxy(true) {
       mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", HttpResponse(200))
 
-      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel)).status shouldBe 200
+      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
     }
   }
 
@@ -83,7 +83,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     "successfully POST" in new SetupWithProxy(false) {
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200))
 
-      await(connector.submitToDES(validPartialDESSubmissionModel)).status shouldBe 200
+      await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
   }
 
@@ -91,7 +91,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     "successfully POST" in new SetupWithProxy(false) {
       mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desTopUpURI}", HttpResponse(200))
 
-      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel)).status shouldBe 200
+      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
     }
   }
 }

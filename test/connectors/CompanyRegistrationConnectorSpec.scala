@@ -57,7 +57,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
 
         mockHttpGet[HttpResponse]("testUrl", okResponse)
 
-        val result = await(connector.fetchCompanyRegistrationDocument("testRegId"))
+        val result = await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
         result shouldBe okResponse
       }
     }
@@ -67,7 +67,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
         when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new NotFoundException("Bad request")))
 
-        intercept[NotFoundException](await(connector.fetchCompanyRegistrationDocument("testRegId")))
+        intercept[NotFoundException](await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
       }
     }
 
@@ -76,7 +76,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
         when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new ForbiddenException("Forbidden")))
 
-        intercept[ForbiddenException](await(connector.fetchCompanyRegistrationDocument("testRegId")))
+        intercept[ForbiddenException](await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
       }
     }
 
@@ -85,7 +85,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
         when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new RuntimeException("Runtime Exception")))
 
-        intercept[Throwable](await(connector.fetchCompanyRegistrationDocument("testRegId")))
+        intercept[Throwable](await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
       }
     }
   }

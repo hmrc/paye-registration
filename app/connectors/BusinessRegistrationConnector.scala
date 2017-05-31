@@ -39,16 +39,16 @@ trait BusinessRegistrationConnect {
   val businessRegUrl: String
   val http: WSHttp
 
-  def retrieveCurrentProfile(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
+  def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
     http.GET[BusinessProfile](s"$businessRegUrl/business-registration/business-tax-registration") recover {
       case e: NotFoundException =>
-        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a NotFound status code when expecting current profile from Business-Registration")
+        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
         throw e
       case e: ForbiddenException =>
-        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a Forbidden status code when expecting current profile from Business-Registration")
+        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a Forbidden status code when expecting current profile from Business-Registration for regId: $regId")
         throw e
       case e: Exception =>
-        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received error when expecting current profile from Business-Registration - Error ${e.getMessage}")
+        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received error when expecting current profile from Business-Registration for regId: $regId - Error ${e.getMessage}")
         throw e
     }
   }
