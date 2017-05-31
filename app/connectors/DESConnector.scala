@@ -19,7 +19,8 @@ package connectors
 import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
-import models.submission.{TopUpDESSubmission, DESSubmission}
+import models.incorporation.IncorpStatusUpdate
+import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logger
 import play.api.libs.json.Writes
 import uk.gov.hmrc.play.config.ServicesConfig
@@ -79,26 +80,26 @@ trait DESConnect extends HttpErrorFunctions {
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
   }
 
-  def submitToDES(submission: DESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitToDES(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val url = useDESStubFeature match {
       case true  => s"$desStubUrl/$desStubURI"
       case false => s"$desUrl/$desURI"
     }
 
     payePOST[DESSubmission, HttpResponse](url, submission) map { resp =>
-      Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status}")
+      Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
     }
   }
 
-  def submitTopUpToDES(submission: TopUpDESSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitTopUpToDES(submission: TopUpDESSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val url = useDESStubFeature match {
       case true  => s"$desStubUrl/$desStubTopUpURI"
       case false => s"$desUrl/$desTopUpURI"
     }
 
     payePOST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
-      Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status}")
+      Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
     }
   }

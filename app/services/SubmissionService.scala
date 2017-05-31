@@ -85,9 +85,9 @@ trait SubmissionSrv {
                             updatePAYERegistrationDocument(regId, PAYEStatus.cancelled)
                             throw ex
                         }
-      ctutr         <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId))
+      ctutr         <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
       submission    <- buildADesSubmission(regId, incUpdate, ctutr)
-      _             <- desConnector.submitToDES(submission)
+      _             <- desConnector.submitToDES(submission, regId, incUpdate)
       auditRefs     <- fetchAddressAuditRefs(regId)
       _             <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr, auditRefs)
       updatedStatus =  incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
@@ -99,7 +99,7 @@ trait SubmissionSrv {
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
-      _             <- desConnector.submitTopUpToDES(desSubmission)
+      _             <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
       _             <- auditDESTopUp(regId, Json.toJson[TopUpDESSubmission](desSubmission).as[JsObject])
       updatedStatus = if(incorpStatusUpdate.status == rejected) PAYEStatus.cancelled else PAYEStatus.submitted
       status        <- updatePAYERegistrationDocument(regId, updatedStatus)
@@ -109,7 +109,7 @@ trait SubmissionSrv {
   def getIncorporationUpdate(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     for {
       txId      <- registrationRepository.retrieveTransactionId(regId)
-      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER) map {
+      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, regId) map {
         case Some(update) if update.status == rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
         case response => response
       }
@@ -309,7 +309,7 @@ trait SubmissionSrv {
 
   private[services] class FailedToGetLanguage extends NoStackTrace
   private[services] def retrieveLanguage(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
-    businessRegistrationConnector.retrieveCurrentProfile flatMap {
+    businessRegistrationConnector.retrieveCurrentProfile(regId) flatMap {
       case businessProfile if businessProfile.registrationID == regId => Future.successful(businessProfile.language)
       case _ => Future.failed(new FailedToGetLanguage)
     }
@@ -321,8 +321,9 @@ trait SubmissionSrv {
     if( s.nonEmpty ) s.head else throw new SessionIDNotExists
   }
 
-  private[services] def fetchCtUtr(regId: String)(implicit hc: HeaderCarrier): Future[Option[String]] = {
-    companyRegistrationConnector.fetchCompanyRegistrationDocument(regId) map { response =>
+  private[services] def fetchCtUtr(regId: String, incorpUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[Option[String]] = {
+    val txId = incorpUpdate.map(_.transactionId)
+    companyRegistrationConnector.fetchCompanyRegistrationDocument(regId, txId) map { response =>
       Try((response.json \ "acknowledgementReferences" \  "ctUtr").as[String]) match {
         case Success(ctutr) => Some(ctutr)
         case Failure(_)     => None

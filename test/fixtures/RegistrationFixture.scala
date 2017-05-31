@@ -101,4 +101,6 @@ trait RegistrationFixture {
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None
   )
+
+
 }

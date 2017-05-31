@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
 import models.incorporation.IncorpStatusUpdate
+import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.http.Status.{ACCEPTED, OK}
 import uk.gov.hmrc.play.config.ServicesConfig
@@ -50,13 +51,15 @@ trait IncorporationInformationConnect {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
   }
 
-  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
+  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> s"$payeRegUri/paye-registration/incorporation-data"))
     http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
       resp.status match {
         case OK => Some(resp.json.as[IncorpStatusUpdate])
         case ACCEPTED => None
-        case _ => throw new IncorporationInformationResponseException(s"Calling II on ${constructIncorporationInfoUri(transactionId, regime, subscriber)} returned a ${resp.status}")
+        case _ =>
+          Logger.error(s"[IncorporationInformationConnect] - [getIncorporationUpdate] returned a ${resp.status} response code for regId: $regId and txId: $transactionId")
+          throw new IncorporationInformationResponseException(s"Calling II on ${constructIncorporationInfoUri(transactionId, regime, subscriber)} returned a ${resp.status}")
       }
     }
   }

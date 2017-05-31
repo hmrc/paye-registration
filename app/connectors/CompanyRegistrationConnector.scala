@@ -37,16 +37,16 @@ trait CompanyRegistrationConnect {
   val compRegUrl: String
   val http: WSHttp
 
-  def fetchCompanyRegistrationDocument(regId: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def fetchCompanyRegistrationDocument(regId: String, txId: Option[String])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     http.GET[HttpResponse](s"$compRegUrl/company-registration/corporation-tax-registration/$regId/corporation-tax-registration") recover {
       case e: NotFoundException =>
-        Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a NotFound status code when expecting reg document from Company-Registration")
+        Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a NotFound status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
         throw e
       case e: ForbiddenException =>
-        Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a Forbidden status code when expecting reg document from Company-Registration")
+        Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a Forbidden status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
         throw e
       case e: Exception =>
-        Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received error when expecting reg document from Company-Registration - Error ${e.getMessage}")
+        Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received error when expecting reg document from Company-Registration for regId: $regId and txId: $txId - Error ${e.getMessage}")
         throw e
     }
   }

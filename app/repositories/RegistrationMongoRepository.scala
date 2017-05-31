@@ -134,7 +134,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
         newReg
     } recover {
       case e =>
-        Logger.error(s"Unable to insert new PAYE Registration for reg ID $registrationID, Error: ${e.getMessage}")
+        Logger.error(s"Unable to insert new PAYE Registration for reg ID $registrationID and txId $transactionID Error: ${e.getMessage}")
         mongoTimer.stop()
         throw new InsertFailed(registrationID, "PAYERegistration")
     }

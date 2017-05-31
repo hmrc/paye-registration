@@ -280,7 +280,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "payeReg2DESSubmission" should {
     "return a DESSubmission model" when {
       "a valid PAYE reg doc is passed to it" in new Setup {
-        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
@@ -291,7 +291,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       }
 
       "a valid paye reg doc with a crn is passed to it" in new Setup {
-        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
         when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
@@ -456,7 +456,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         )
       }
 
-      when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(okResponse))
 
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
@@ -465,7 +465,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-      when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(200)))
 
       when(mockAuditConnector.sendEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -492,7 +492,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling retrieveLanguage" should {
     "return the correct exception for language" in new Setup {
-      when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
       a[service.FailedToGetLanguage] shouldBe thrownBy(await(service.retrieveLanguage("testRegId")))
@@ -523,10 +523,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
           override def json: JsValue = testJson
         }
 
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
 
-        val result = await(service.fetchCtUtr("testRegId"))
+        val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
         result shouldBe Some("testCtUtr")
       }
     }
@@ -548,10 +548,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
           override def json: JsValue = testJson
         }
 
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
 
-        val result = await(service.fetchCtUtr("testRegId"))
+        val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
         result shouldBe None
       }
     }

@@ -47,28 +47,28 @@ class BusinessRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
     "return a a CurrentProfile response if one is found in business registration micro-service" in new Setup {
     mockHttpGet[BusinessProfile]("testUrl", validBusinessRegistrationResponse)
 
-    await(connector.retrieveCurrentProfile) shouldBe validBusinessRegistrationResponse
+    await(connector.retrieveCurrentProfile("12345")) shouldBe validBusinessRegistrationResponse
   }
 
     "return a Not Found response when a CurrentProfile record can not be found" in new Setup {
     when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
     .thenReturn(Future.failed(new NotFoundException("Bad request")))
 
-    intercept[NotFoundException](await(connector.retrieveCurrentProfile))
+    intercept[NotFoundException](await(connector.retrieveCurrentProfile("12345")))
   }
 
     "return a Forbidden response when a CurrentProfile record can not be accessed by the user" in new Setup {
     when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
     .thenReturn(Future.failed(new ForbiddenException("Forbidden")))
 
-    intercept[ForbiddenException](await(connector.retrieveCurrentProfile))
+    intercept[ForbiddenException](await(connector.retrieveCurrentProfile("12345")))
   }
 
     "return an Exception response when an unspecified error has occurred" in new Setup {
     when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
     .thenReturn(Future.failed(new RuntimeException("Runtime Exception")))
 
-    intercept[RuntimeException](await(connector.retrieveCurrentProfile))
+    intercept[RuntimeException](await(connector.retrieveCurrentProfile("12345")))
   }
   }
 }
