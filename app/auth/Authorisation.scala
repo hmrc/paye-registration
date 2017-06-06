@@ -54,11 +54,11 @@ trait Authorisation[I] {
       case Some(context) => {
         resource match {
           case None =>
-            Logger.warn("[Authorisation] - [mapToAuthResult]: No auth resource was found the current user")
+            Logger.info("[Authorisation] - [mapToAuthResult]: No auth resource was found the current user")
             AuthResourceNotFound(context)
           case Some((_, context.ids.internalId)) => Authorised(context)
           case Some((_, _)) =>
-            Logger.warn("[Authorisation] - [mapToAuthResult]: The current user is authorised to access this resource")
+            Logger.warn("[Authorisation] - [mapToAuthResult]: The current user is not authorised to access this resource")
             NotAuthorised (context)
         }
       }
