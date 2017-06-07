@@ -86,6 +86,7 @@ trait DESConnect extends HttpErrorFunctions {
       case false => s"$desUrl/$desURI"
     }
 
+    Logger.info(s"[DESConnector] - [submitToDES]: Submission to DES for regId: $regId, ackRef ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
     payePOST[DESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
@@ -98,6 +99,7 @@ trait DESConnect extends HttpErrorFunctions {
       case false => s"$desUrl/$desTopUpURI"
     }
 
+    Logger.info(s"[DESConnector] - [submitTopUpToDES]: Top Up to DES for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
     payePOST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
