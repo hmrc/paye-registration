@@ -72,7 +72,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       employees = true,
       companyPension = Some(true),
       subcontractors = true,
-      firstPaymentDate = LocalDate.of(2016, 12, 20)
+      firstPaymentDate = LocalDate.of(1900, 1, 1)
     )
 
     "Return a 200 when the user gets employment" in new Setup {
@@ -232,6 +232,56 @@ class EmploymentISpec extends IntegrationSpecBase {
 
       val response = client(s"/12345").get.futureValue
       response.status shouldBe 404
+    }
+
+    "Return a 400 when upsert employment with a too early date" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val transactionID = "NN1234"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          None,
+          None,
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None
+        )
+      )
+
+      val getResponse1 = client(s"/${regID}/employment").get.futureValue
+      getResponse1.status shouldBe 404
+
+      val wrongEmploymentEarlyDate = Employment(
+        employees = true,
+        companyPension = Some(true),
+        subcontractors = true,
+        firstPaymentDate = LocalDate.of(1899, 12, 31)
+      )
+
+      val patchResponse = client(s"/${regID}/employment")
+        .patch[JsValue](Json.toJson(wrongEmploymentEarlyDate))
+        .futureValue
+      patchResponse.status shouldBe 400
+
+      val getResponse2 = client(s"/${regID}/employment").get.futureValue
+      getResponse2.status shouldBe 404
     }
   }
 }
