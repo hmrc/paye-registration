@@ -16,6 +16,8 @@
 
 package helpers
 
+import java.time.LocalDate
+
 import models.{DigitalContactDetails, PAYEContact}
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
@@ -44,6 +46,8 @@ object Validation {
 
   val nameRegex = """^[A-Za-z 0-9\-';]{1,100}$"""
   val titleRegex = """^[A-Za-z]{1,20}$"""
+
+  val minDate = LocalDate.of(1900,1,1)
 }
 
 trait CompanyDetailsValidator {
@@ -99,4 +103,20 @@ trait PAYEBaseValidator {
   def validDigitalContactDetails(deets: DigitalContactDetails): Boolean =
     deets.email.isDefined || deets.phoneNumber.isDefined || deets.mobileNumber.isDefined
 
+}
+
+trait EmploymentValidator {
+  import Validation._
+
+  val firstPaymentDateValidator: Format[LocalDate] = {
+    val rds = Reads.DefaultLocalDateReads.filter(ValidationError("invalid date - too early"))(date => {
+      !beforeMinDate(date)
+    })
+
+    Format(rds, Writes.DefaultLocalDateWrites)
+  }
+
+  private def beforeMinDate(date: LocalDate): Boolean = {
+    date.isBefore(minDate)
+  }
 }

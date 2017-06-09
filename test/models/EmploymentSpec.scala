@@ -26,7 +26,7 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
 
   "Creating a Employment model from Json" should {
 
-    val date = LocalDate.of(2016, 12, 20)
+    val date = LocalDate.of(1900, 1, 1)
 
     "complete successfully from full Json" in {
       val json = Json.parse(
@@ -71,8 +71,25 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val result = Json.fromJson[Employment](json)
-      shouldHaveErrors(result, JsPath() \ "first-payment" \ "payment-date", Seq(ValidationError(
+      shouldHaveErrors(result, JsPath() \ "first-payment-date", Seq(ValidationError(
         "error.expected.date.isoformat")))
+    }
+
+    "fail from Json with invalid early date" in {
+      val earlyDate = LocalDate.of(1899, 12, 31)
+      val json = Json.parse(
+        s"""
+           |{
+           |  "first-payment-date": "$earlyDate",
+           |  "cis": true,
+           |  "employees": true,
+           |  "ocpn": true
+           |}
+        """.stripMargin)
+
+      val result = Json.fromJson[Employment](json)
+      shouldHaveErrors(result, JsPath() \ "first-payment-date", Seq(ValidationError(
+        "invalid date - too early")))
     }
   }
 }

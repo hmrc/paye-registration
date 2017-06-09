@@ -18,6 +18,7 @@ package models
 
 import java.time.LocalDate
 
+import helpers.EmploymentValidator
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -26,14 +27,14 @@ case class Employment(employees: Boolean,
                       subcontractors: Boolean,
                       firstPaymentDate: LocalDate)
 
-object Employment {
+object Employment extends EmploymentValidator {
 
   implicit val format: OFormat[Employment] =
       (
         (__ \ "employees").format[Boolean] and
         (__ \ "ocpn").formatNullable[Boolean] and
         (__ \ "cis").format[Boolean] and
-        (__ \ "first-payment-date").format[LocalDate]
+        (__ \ "first-payment-date").format[LocalDate](firstPaymentDateValidator)
       )(Employment.apply, unlift(Employment.unapply))
 
 }
