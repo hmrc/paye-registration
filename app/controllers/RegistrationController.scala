@@ -16,7 +16,7 @@
 
 package controllers
 
-import common.exceptions.RegistrationExceptions.{RegistrationFormatException, StatusNotRejectedException}
+import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.InvalidRegistrationException
 import common.exceptions.SubmissionMarshallingException
 import connectors.{AuthConnect, AuthConnector}
@@ -453,10 +453,10 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regId) {
         case Authorised(_) =>
-          registrationService.deletePAYERegistration(regId) map { deleted =>
+          registrationService.deletePAYERegistration(regId, PAYEStatus.rejected) map { deleted =>
             if(deleted) Ok else InternalServerError
           } recover {
-            case _: StatusNotRejectedException => PreconditionFailed
+            case _: UnmatchedStatusException => PreconditionFailed
           }
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [deletePAYERegistration] User not logged in")

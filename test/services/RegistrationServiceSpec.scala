@@ -498,7 +498,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         when(mockRegistrationRepository.deleteRegistration(ArgumentMatchers.any()))
           .thenReturn(Future.successful(true))
 
-        val result = await(service.deletePAYERegistration(validRegistration.registrationID))
+        val result = await(service.deletePAYERegistration(validRegistration.registrationID, PAYEStatus.rejected))
         result shouldBe true
       }
     }
@@ -508,7 +508,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
 
-        intercept[StatusNotRejectedException](await(service.deletePAYERegistration(validRegistration.registrationID)))
+        intercept[UnmatchedStatusException](await(service.deletePAYERegistration(validRegistration.registrationID)))
       }
     }
 

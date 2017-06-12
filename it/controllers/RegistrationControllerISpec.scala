@@ -442,7 +442,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
   "submitting a top up registration with DES stubbed out" should {
 
-
     "return a 200 with an ack ref" in new Setup {
 
       setupSimpleAuthMocks()

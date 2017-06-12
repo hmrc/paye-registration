@@ -40,6 +40,6 @@ trait RegistrationExceptions {
     override def getMessage = message
   }
 
-  class StatusNotRejectedException extends Exception
+  class UnmatchedStatusException extends Exception
 }
 
