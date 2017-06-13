@@ -162,7 +162,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   def deletePAYERegistration(regID: String, validStatuses: PAYEStatus.Value*): Future[Boolean] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(document) => document.status match {
-        case docmentStatus if validStatuses.contains(docmentStatus) => registrationRepository.deleteRegistration(regID)
+        case documentStatus if validStatuses.contains(documentStatus) => registrationRepository.deleteRegistration(regID)
         case _ =>
           Logger.warn(s"[RegistrationService] - [deletePAYERegistration] PAYE Reg document for regId $regID was not deleted as the document status was ${document.status}, not ${validStatuses.toString}")
           throw new UnmatchedStatusException
