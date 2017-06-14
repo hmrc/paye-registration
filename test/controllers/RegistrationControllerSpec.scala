@@ -19,14 +19,14 @@ package controllers
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import common.exceptions.DBExceptions.MissingRegDocument
-import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, StatusNotRejectedException}
+import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, UnmatchedStatusException}
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import repositories.RegistrationMongoRepository
 import services._
@@ -1416,7 +1416,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any()))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
@@ -1431,7 +1431,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any()))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(false))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
@@ -1446,8 +1446,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any()))
-        .thenReturn(Future.failed(new StatusNotRejectedException))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new UnmatchedStatusException))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
 

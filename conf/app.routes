@@ -34,4 +34,6 @@ POST       /registration-processed-confirmation     controllers.RegistrationCont
 
 GET        /:regID/status                           controllers.RegistrationController.getDocumentStatus(regID)
 
+DELETE     /:regID/delete-in-progress               controllers.RepositoryController.deleteRegistrationFromDashboard(regID)
+
 DELETE     /:regID/delete                           controllers.RegistrationController.deletePAYERegistration(regID)

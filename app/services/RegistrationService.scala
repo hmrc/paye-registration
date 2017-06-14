@@ -23,7 +23,7 @@ import enums.PAYEStatus
 import helpers.PAYEBaseValidator
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
-import common.exceptions.RegistrationExceptions.{RegistrationFormatException, StatusNotRejectedException}
+import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import common.exceptions.DBExceptions.MissingRegDocument
@@ -159,13 +159,13 @@ trait RegistrationSrv extends PAYEBaseValidator {
     }
   }
 
-  def deletePAYERegistration(regID: String): Future[Boolean] = {
+  def deletePAYERegistration(regID: String, validStatuses: PAYEStatus.Value*): Future[Boolean] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(document) => document.status match {
-        case PAYEStatus.rejected => registrationRepository.deleteRegistration(regID)
+        case documentStatus if validStatuses.contains(documentStatus) => registrationRepository.deleteRegistration(regID)
         case _ =>
-          Logger.warn(s"[RegistrationService] - [deletePAYERegistration] PAYE Reg document for regId $regID was not deleted as the document status was ${document.status}")
-          throw new StatusNotRejectedException
+          Logger.warn(s"[RegistrationService] - [deletePAYERegistration] PAYE Reg document for regId $regID was not deleted as the document status was ${document.status}, not ${validStatuses.toString}")
+          throw new UnmatchedStatusException
       }
       case None => throw new MissingRegDocument(regID)
     }
