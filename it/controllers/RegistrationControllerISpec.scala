@@ -804,11 +804,12 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.json shouldBe json
     }
 
-    "return an OK with a partial document status when status is rejected, lastUpdate returns acknowledgedTimestamp" in new Setup {
+    "return an OK with a partial document status with restartURI when status is rejected, lastUpdate returns acknowledgedTimestamp" in new Setup {
       val json = Json.parse(s"""{
                                |   "status": "rejected",
                                |   "lastUpdate": "$acknowledgedTimestamp",
-                               |   "ackRef": "testAckRef"
+                               |   "ackRef": "testAckRef",
+                               |   "restartURI": "/re-register-as-an-employer"
                                |}""".stripMargin)
 
       setupSimpleAuthMocks()

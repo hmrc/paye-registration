@@ -150,7 +150,8 @@ trait RegistrationSrv extends PAYEBaseValidator {
         val empRef = json ++ registration.registrationConfirmation.fold(Json.obj()) { empRefNotif =>
           empRefNotif.empRef.fold(Json.obj())(empRef => Json.obj("empref" -> empRef))
         }
-        Future.successful(json ++ ackRef ++ empRef)
+        val restartURI = if(registration.status.equals(PAYEStatus.rejected)) Json.obj("restartURI" -> "/re-register-as-an-employer") else Json.obj()
+        Future.successful(json ++ ackRef ++ empRef ++ restartURI)
       }
       case None => {
         Logger.warn(s"[RegistrationService] [getStatus] No PAYE registration document found for registration ID $regID")
