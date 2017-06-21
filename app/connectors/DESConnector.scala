@@ -18,11 +18,13 @@ package connectors
 
 import javax.inject.{Inject, Singleton}
 
-import config.WSHttp
+import audit.FailedDesSubmissionEvent
+import config.{MicroserviceAuditConnector, WSHttp}
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logger
 import play.api.libs.json.Writes
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -44,6 +46,7 @@ class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESCon
   lazy val urlHeaderAuthorization: String = s"Bearer ${getConfString("des-service.authorization-token",
     throw new Exception("could not find config value for des-service.authorization-token"))}"
   val http = WSHttp
+  val auditConnector = MicroserviceAuditConnector
 }
 
 trait DESConnect extends HttpErrorFunctions {
@@ -61,6 +64,8 @@ trait DESConnect extends HttpErrorFunctions {
 
   val urlHeaderEnvironment: String
   val urlHeaderAuthorization: String
+
+  val auditConnector : AuditConnector
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse): HttpResponse = {
     response.status match {
@@ -81,6 +86,7 @@ trait DESConnect extends HttpErrorFunctions {
   }
 
   def submitToDES(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+
     val url = useDESStubFeature match {
       case true  => s"$desStubUrl/$desStubURI"
       case false => s"$desUrl/$desURI"
@@ -90,6 +96,11 @@ trait DESConnect extends HttpErrorFunctions {
     payePOST[DESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
+    } recoverWith {
+      case e: Upstream4xxResponse =>
+        val event = new FailedDesSubmissionEvent(regId, submission)
+        auditConnector.sendEvent(event)
+        Future.failed(e)
     }
   }
 
