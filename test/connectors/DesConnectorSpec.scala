@@ -17,13 +17,14 @@
 package connectors
 
 import fixtures.SubmissionFixture
-import models.submission.{TopUpDESSubmission, DESSubmission}
+import models.submission.{DESSubmission, TopUpDESSubmission}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
 import helpers.PAYERegSpec
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.http._
 import utils.PAYEFeatureSwitch
@@ -35,6 +36,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   implicit val hc = HeaderCarrier()
   val mockHttp = mock[WSHttp]
   val mockFeatureSwitch = mock[PAYEFeatureSwitch]
+  val mockAuditConnector= mock[AuditConnector]
 
   class SetupWithProxy(withProxy: Boolean) {
     val connector = new DESConnect {
@@ -49,6 +51,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override val desStubUrl      = "desStubURL"
       override val urlHeaderEnvironment   = "env"
       override val urlHeaderAuthorization = "auth"
+      override val auditConnector = mockAuditConnector
     }
   }
 
