@@ -32,6 +32,8 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   class Setup {
     val service = new RegistrationSrv {
       override val registrationRepository = mockRegistrationRepository
+      override val payeRestartURL: String = "testRestartURL"
+      override val payeCancelURL: String = "testCancelURL"
     }
   }
 

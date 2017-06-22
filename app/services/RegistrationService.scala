@@ -18,27 +18,31 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import akka.io.Tcp.Register
 import enums.PAYEStatus
 import helpers.PAYEBaseValidator
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
-import play.api.Logger
+import play.api.{Logger, Play}
 import play.api.libs.json.{JsObject, Json}
 import common.exceptions.DBExceptions.MissingRegDocument
+import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends RegistrationSrv {
+class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends RegistrationSrv with ServicesConfig {
   val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
+  lazy val payeRestartURL = getString("api.payeRestartURL")
+  lazy val payeCancelURL = getString("api.payeCancelURL")
 }
 
 trait RegistrationSrv extends PAYEBaseValidator {
 
   val registrationRepository : RegistrationRepository
+  val payeRestartURL : String
+  val payeCancelURL : String
 
   def createNewPAYERegistration(regID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
@@ -150,8 +154,10 @@ trait RegistrationSrv extends PAYEBaseValidator {
         val empRef = json ++ registration.registrationConfirmation.fold(Json.obj()) { empRefNotif =>
           empRefNotif.empRef.fold(Json.obj())(empRef => Json.obj("empref" -> empRef))
         }
-        val restartURI = if(registration.status.equals(PAYEStatus.rejected)) Json.obj("restartURI" -> "/re-register-as-an-employer") else Json.obj()
-        Future.successful(json ++ ackRef ++ empRef ++ restartURI)
+        val restartURL = if(registration.status.equals(PAYEStatus.rejected)) Json.obj("restartURL" -> payeRestartURL) else Json.obj()
+        val cancelURL = if(Seq(PAYEStatus.draft, PAYEStatus.invalid).contains(registration.status)) Json.obj("cancelURL" -> payeCancelURL.replace(":regID", regID)) else Json.obj()
+
+        Future.successful(json ++ ackRef ++ empRef ++ restartURL ++ cancelURL)
       }
       case None => {
         Logger.warn(s"[RegistrationService] [getStatus] No PAYE registration document found for registration ID $regID")
