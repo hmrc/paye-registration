@@ -58,7 +58,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     "microservice.services.business-registration.host" -> s"$mockHost",
     "microservice.services.business-registration.port" -> s"$mockPort",
     "microservice.services.company-registration.host" -> s"$mockHost",
-    "microservice.services.company-registration.port" -> s"$mockPort"
+    "microservice.services.company-registration.port" -> s"$mockPort",
+    "api.payeRestartURL" -> "testRestartURL",
+    "api.payeCancelURL" -> "testCancelURL/:regID/del"
   )
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
@@ -727,10 +729,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.json shouldBe json
     }
 
-    "return an OK with a partial document status when status is draft, lastUpdate returns formCreationTimestamp" in new Setup {
+    "return an OK with a partial document status with cancelURL when status is draft, lastUpdate returns formCreationTimestamp" in new Setup {
       val json = Json.parse(s"""{
                                |   "status": "draft",
-                               |   "lastUpdate": "$timestamp"
+                               |   "lastUpdate": "$timestamp",
+                               |   "cancelURL": "testCancelURL/$regId/del"
                                |}""".stripMargin)
 
       setupSimpleAuthMocks()
@@ -742,10 +745,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.json shouldBe json
     }
 
-    "return an OK with a partial document status when status is invalid, lastUpdate returns formCreationTimestamp" in new Setup {
+    "return an OK with a partial document status with cancelURL when status is invalid, lastUpdate returns formCreationTimestamp" in new Setup {
       val json = Json.parse(s"""{
                                |   "status": "invalid",
-                               |   "lastUpdate": "$timestamp"
+                               |   "lastUpdate": "$timestamp",
+                               |   "cancelURL": "testCancelURL/$regId/del"
                                |}""".stripMargin)
 
       setupSimpleAuthMocks()
@@ -804,11 +808,12 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.json shouldBe json
     }
 
-    "return an OK with a partial document status when status is rejected, lastUpdate returns acknowledgedTimestamp" in new Setup {
+    "return an OK with a partial document status with restartURL when status is rejected, lastUpdate returns acknowledgedTimestamp" in new Setup {
       val json = Json.parse(s"""{
                                |   "status": "rejected",
                                |   "lastUpdate": "$acknowledgedTimestamp",
-                               |   "ackRef": "testAckRef"
+                               |   "ackRef": "testAckRef",
+                               |   "restartURL": "testRestartURL"
                                |}""".stripMargin)
 
       setupSimpleAuthMocks()

@@ -52,8 +52,30 @@ A ```200``` success response:
 ```json
 {
     "status": "submitted",
-    "lastUpdate": "2017-05-09T07:58:35Z", // or "2017-05-09T07:58:35+01:00"
+    "lastUpdate": "2017-05-09T07:58:35Z",
     "ackRef": "AAAA-1234567890",
+}
+```
+
+A ```200``` success response with a restartURL (use GET verb) when status is ```rejected```:
+
+```json
+{
+   "status": "rejected",
+   "lastUpdate": "2017-05-09T07:58:35Z",
+   "ackRef": "AAAA-1234567890",
+   "restartURL": "http://server:port/uriToRestart"
+}
+```
+
+A ```200``` success response with a cancelURL (use DELETE verb) when status is ```draft``` or ```invalid```:
+
+```json
+{
+   "status": "draft",
+   "lastUpdate": "2017-05-09T07:58:35Z",
+   "ackRef": "AAAA-1234567890",
+   "cancelURL": "http://server:port/uriToCancel"
 }
 ```
 
