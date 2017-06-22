@@ -57,7 +57,7 @@ A ```200``` success response:
 }
 ```
 
-A ```200``` success response with a restartURL when status is ```rejected```:
+A ```200``` success response with a restartURL (use GET verb) when status is ```rejected```:
 
 ```json
 {
@@ -68,14 +68,14 @@ A ```200``` success response with a restartURL when status is ```rejected```:
 }
 ```
 
-A ```200``` success response with a cancelURL when status is ```draft``` or ```invalid```:
+A ```200``` success response with a cancelURL (use DELETE verb) when status is ```draft``` or ```invalid```:
 
 ```json
 {
    "status": "draft",
    "lastUpdate": "2017-05-09T07:58:35Z",
    "ackRef": "AAAA-1234567890",
-   "restartURL": "http://server:port/uriToCancel"
+   "cancelURL": "http://server:port/uriToCancel"
 }
 ```
 
