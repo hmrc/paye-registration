@@ -23,7 +23,7 @@ import helpers.PAYEBaseValidator
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
-import play.api.{Logger, Play}
+import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import common.exceptions.DBExceptions.MissingRegDocument
 import uk.gov.hmrc.play.config.ServicesConfig
