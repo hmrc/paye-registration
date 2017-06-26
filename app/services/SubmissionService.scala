@@ -18,10 +18,11 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import audit.{DesSubmissionAuditEventDetail, DesSubmissionEvent, DesTopUpAuditEventDetail, DesTopUpEvent}
+import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
+import common.constants.ETMPStatusCodes
 import config.MicroserviceAuditConnector
 import connectors._
 import enums.{AddressTypes, PAYEStatus}
@@ -62,7 +63,7 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
   val companyRegistrationConnector = injCompanyRegistrationConnector
 }
 
-trait SubmissionSrv {
+trait SubmissionSrv extends ETMPStatusCodes {
 
   val sequenceRepository: SequenceRepository
   val registrationRepository: RegistrationRepository
@@ -100,7 +101,7 @@ trait SubmissionSrv {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _             <- auditDESTopUp(regId, Json.toJson[TopUpDESSubmission](desSubmission).as[JsObject])
+      _             <- auditDESTopUp(regId, desSubmission)
       updatedStatus = if(incorpStatusUpdate.status == rejected) PAYEStatus.cancelled else PAYEStatus.submitted
       status        <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield status
@@ -294,8 +295,11 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def auditDESTopUp(regId: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier) = {
-    val event = new DesTopUpEvent(DesTopUpAuditEventDetail(regId, jsSubmission))
+  private[services] def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
+    val event: RegistrationAuditEvent = topUpDESSubmission.status match {
+      case APPROVED | APPROVED_WITH_CONDITIONS => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission).as[JsObject]))
+      case _                                   => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
+    }
     auditConnector.sendEvent(event)
   }
 

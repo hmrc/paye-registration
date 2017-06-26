@@ -179,7 +179,9 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case NotAuthorised(_) =>
           Logger.info(s"[RegistrationController] [getDirectors] User logged in but not authorised for resource $regID")
           Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        case AuthResourceNotFound(_) =>
+          Logger.info(s"[RegistrationController] [getDirectors] Auth resource not found for $regID")
+          Future.successful(NotFound)
       }
   }
 

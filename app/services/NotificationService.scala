@@ -19,6 +19,7 @@ package services
 import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.MissingRegDocument
+import common.constants.ETMPStatusCodes
 import enums.PAYEStatus
 import models.EmpRefNotification
 import play.api.Logger
@@ -32,17 +33,9 @@ class NotificationService @Inject()(injRegistrationMongoRepository: Registration
   val registrationRepo: RegistrationMongoRepository = injRegistrationMongoRepository.store
 }
 
-trait NotificationSrv {
+trait NotificationSrv extends ETMPStatusCodes {
 
   val registrationRepo: RegistrationMongoRepository
-
-  private val APPROVED                      = "04"
-  private val APPROVED_WITH_CONDITIONS      = "05"
-  private val REJECTED                      = "06"
-  private val REJECTED_UNDER_REVIEW_APPREAL = "07"
-  private val REVOKED                       = "08"
-  private val REVOKED_UNDER_REVIEW_APPREAL  = "09"
-  private val DEREGISTERED                  = "10"
 
   private[services] def getNewApplicationStatus(status: String): PAYEStatus.Value = {
     status match {
@@ -55,14 +48,14 @@ trait NotificationSrv {
       case REJECTED =>
         Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED - Application has been rejected")
         PAYEStatus.rejected
-      case REJECTED_UNDER_REVIEW_APPREAL =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED_UNDER_REVIEW_APPREAL - Application has been rejected even after a review or appeal")
+      case REJECTED_UNDER_REVIEW_APPEAL =>
+        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED_UNDER_REVIEW_APPEAL - Application has been rejected even after a review or appeal")
         PAYEStatus.rejected
       case REVOKED =>
         Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED - Application has been revoked")
         PAYEStatus.rejected
-      case REVOKED_UNDER_REVIEW_APPREAL =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED_UNDER_REVIEW_APPREAL - Application has been revoked even after a review or appeal")
+      case REVOKED_UNDER_REVIEW_APPEAL =>
+        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED_UNDER_REVIEW_APPEAL - Application has been revoked even after a review or appeal")
         PAYEStatus.rejected
       case DEREGISTERED =>
         Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $DEREGISTERED - Application has been de registered")
