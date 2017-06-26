@@ -17,7 +17,7 @@
 package audit
 
 import audit.RegistrationAuditEvent.buildTags
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -51,6 +51,7 @@ abstract class RegistrationAuditEvent(auditType: String, transactionName : Optio
 object RegistrationAuditEvent {
 
   val EXTERNAL_ID = "externalId"
+  val EXTERNAL_USER_ID = "externalUserId"
   val AUTH_PROVIDER_ID = "authProviderId"
   val JOURNEY_ID = "journeyId"
   val DES_SUBMISSION_STATE = "desSubmissionState"
@@ -90,3 +91,6 @@ object RegistrationAuditEvent {
     }
   }
 }
+
+class AmendCompletionCapacityEvent(regId: String, details: JsObject)(implicit hc: HeaderCarrier)
+  extends RegistrationAuditEvent("completionCapacityAmendment", None, details.++(Json.obj(RegistrationAuditEvent.JOURNEY_ID -> regId)))(hc)

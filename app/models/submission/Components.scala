@@ -22,6 +22,7 @@ import models.{Address, DigitalContactDetails, Director}
 import play.api.libs.json.Writes
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import common.exceptions.RegistrationExceptions.CompletionCapacityNotDefinedException
 
 object BusinessType {
   val LimitedCompany = "Limited company"
@@ -124,4 +125,39 @@ object DESCompletionCapacity {
       (__ \ "completionCapacity").write[String](capitalizeWrites) and
       (__ \ "completionCapacityOther").writeNullable[String]
     )(unlift(DESCompletionCapacity.unapply))
+
+  val writesPreviousCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {
+    override def writes(cc: DESCompletionCapacity): JsValue = {
+      val successWrites = (
+        (__ \ "previousCompletionCapacity").write[String](capitalizeWrites) and
+        (__ \ "previousCompletionCapacityOther").writeNullable[String]
+      )(unlift(DESCompletionCapacity.unapply))
+
+      Json.toJson(cc)(successWrites).as[JsObject]
+    }
+  }
+
+  val writesNewCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {
+    override def writes(cc: DESCompletionCapacity): JsValue = {
+      val successWrites = (
+        (__ \ "newCompletionCapacity").write[String](capitalizeWrites) and
+        (__ \ "newCompletionCapacityOther").writeNullable[String]
+      )(unlift(DESCompletionCapacity.unapply))
+
+      Json.toJson(cc)(successWrites).as[JsObject]
+    }
+  }
+
+  def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
+    val DIRECTOR = "Director"
+    val AGENT = "Agent"
+    val OTHER = "Other"
+    capacity.map(_.trim.toLowerCase).map {
+      case d if d == DIRECTOR.toLowerCase => DESCompletionCapacity(DIRECTOR, None)
+      case a if a == AGENT.toLowerCase => DESCompletionCapacity(AGENT, None)
+      case other => DESCompletionCapacity(OTHER, Some(other))
+    }.getOrElse{
+      throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
+    }
+  }
 }

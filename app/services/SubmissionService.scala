@@ -211,18 +211,18 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
-    val DIRECTOR = "Director"
-    val AGENT = "Agent"
-    val OTHER = "Other"
-    capacity.map(_.trim.toLowerCase).map {
-        case d if d == DIRECTOR.toLowerCase => DESCompletionCapacity(DIRECTOR, None)
-        case a if a == AGENT.toLowerCase => DESCompletionCapacity(AGENT, None)
-        case other => DESCompletionCapacity(OTHER, Some(other))
-      }.getOrElse{
-        throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
-      }
-  }
+  //private[services] def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
+  //  val DIRECTOR = "Director"
+  //  val AGENT = "Agent"
+  //  val OTHER = "Other"
+  //  capacity.map(_.trim.toLowerCase).map {
+  //      case d if d == DIRECTOR.toLowerCase => DESCompletionCapacity(DIRECTOR, None)
+  //      case a if a == AGENT.toLowerCase => DESCompletionCapacity(AGENT, None)
+  //      case other => DESCompletionCapacity(OTHER, Some(other))
+  //    }.getOrElse{
+  //      throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
+  //    }
+  //}
 
   private[services] def buildDESMetaData(regId: String, timestamp:String, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
     for {
@@ -230,7 +230,7 @@ trait SubmissionSrv {
       credId <- retrieveCredId
       sessionId = retrieveSessionID(hc)
     } yield {
-      DESMetaData(sessionId, credId, language, timestamp, buildDESCompletionCapacity(completionCapacity))
+      DESMetaData(sessionId, credId, language, timestamp, DESCompletionCapacity.buildDESCompletionCapacity(completionCapacity))
     }
   }
 

@@ -407,16 +407,16 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Building DES Completion Capacity" should {
     "succeed for agent" in new Setup {
-      service.buildDESCompletionCapacity(Some("agent")) shouldBe DESCompletionCapacity("Agent", None)
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("agent")) shouldBe DESCompletionCapacity("Agent", None)
     }
     "succeed for 'DiReCTOR  '" in new Setup {
-      service.buildDESCompletionCapacity(Some("DiReCTOR  ")) shouldBe DESCompletionCapacity("Director", None)
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("DiReCTOR  ")) shouldBe DESCompletionCapacity("Director", None)
     }
     "succeed for 'high priestess'" in new Setup {
-      service.buildDESCompletionCapacity(Some("high priestess")) shouldBe DESCompletionCapacity("Other", Some("high priestess"))
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("high priestess")) shouldBe DESCompletionCapacity("Other", Some("high priestess"))
     }
     "throw the correct exception for Completion Capacity when missing" in new Setup {
-      intercept[CompletionCapacityNotDefinedException](service.buildDESCompletionCapacity(None))
+      intercept[CompletionCapacityNotDefinedException](DESCompletionCapacity.buildDESCompletionCapacity(None))
     }
   }
 
