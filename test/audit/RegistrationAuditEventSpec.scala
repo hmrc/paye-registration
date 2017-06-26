@@ -16,6 +16,7 @@
 
 package audit
 
+import models.submission.DESCompletionCapacity
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -130,6 +131,119 @@ class RegistrationAuditEventSpec extends UnitSpec {
       (result \ "auditType").as[String] shouldBe auditType
 
       (result \ "detail").as[JsObject] shouldBe Json.obj()
+    }
+  }
+
+  "AmendCompletionCapacityEvent" should {
+    implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
+
+    val auditType = "completionCapacityAmendment"
+    val regId = "123456"
+    val externalUserId = "testExternalId"
+    val authProviderId = "testAuthProviderId"
+    val detailAuth = Json.obj(
+      RegistrationAuditEvent.EXTERNAL_USER_ID -> externalUserId,
+      RegistrationAuditEvent.AUTH_PROVIDER_ID -> authProviderId
+    )
+
+    "have the correct result when the new completion capacity is director" in {
+      val jsPreviousCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("oldCC")))(DESCompletionCapacity.writesPreviousCC)
+      val jsNewCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("director")))(DESCompletionCapacity.writesNewCC)
+
+      val detail = detailAuth ++ jsPreviousCC.as[JsObject] ++ jsNewCC.as[JsObject]
+
+      val expectedDetail = Json.parse(
+        s"""{
+          |    "externalUserId": "$externalUserId",
+          |    "authProviderId": "$authProviderId",
+          |    "previousCompletionCapacity": "Other",
+          |    "previousCompletionCapacityOther": "oldcc",
+          |    "newCompletionCapacity": "Director",
+          |    "journeyId": "$regId"
+          | }
+        """.stripMargin)
+
+      val event = new AmendCompletionCapacityEvent(regId, detail)
+      val result = Json.toJson[ExtendedDataEvent](event)
+
+      (result \ "auditSource").as[String] shouldBe "paye-registration"
+      (result \ "auditType").as[String] shouldBe auditType
+      (result \ "detail").as[JsObject] shouldBe expectedDetail
+    }
+
+    "have the correct result when the new completion capacity is agent" in {
+      val jsPreviousCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("director")))(DESCompletionCapacity.writesPreviousCC)
+      val jsNewCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("agent")))(DESCompletionCapacity.writesNewCC)
+
+      val detail = detailAuth ++ jsPreviousCC.as[JsObject] ++ jsNewCC.as[JsObject]
+
+      val expectedDetail = Json.parse(
+        s"""{
+          |    "externalUserId": "$externalUserId",
+          |    "authProviderId": "$authProviderId",
+          |    "previousCompletionCapacity": "Director",
+          |    "newCompletionCapacity": "Agent",
+          |    "journeyId": "$regId"
+          | }
+        """.stripMargin)
+
+      val event = new AmendCompletionCapacityEvent(regId, detail)
+      val result = Json.toJson[ExtendedDataEvent](event)
+
+      (result \ "auditSource").as[String] shouldBe "paye-registration"
+      (result \ "auditType").as[String] shouldBe auditType
+      (result \ "detail").as[JsObject] shouldBe expectedDetail
+    }
+
+    "have the correct result when the new completion capacity is other" in {
+      val jsPreviousCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("director")))(DESCompletionCapacity.writesPreviousCC)
+      val jsNewCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("newCC")))(DESCompletionCapacity.writesNewCC)
+
+      val detail = detailAuth ++ jsPreviousCC.as[JsObject] ++ jsNewCC.as[JsObject]
+
+      val expectedDetail = Json.parse(
+        s"""{
+          |    "externalUserId": "$externalUserId",
+          |    "authProviderId": "$authProviderId",
+          |    "journeyId": "$regId",
+          |    "previousCompletionCapacity": "Director",
+          |    "newCompletionCapacity": "Other",
+          |    "newCompletionCapacityOther": "newcc"
+          | }
+        """.stripMargin)
+
+      val event = new AmendCompletionCapacityEvent(regId, detail)
+      val result = Json.toJson[ExtendedDataEvent](event)
+
+      (result \ "auditSource").as[String] shouldBe "paye-registration"
+      (result \ "auditType").as[String] shouldBe auditType
+      (result \ "detail").as[JsObject] shouldBe expectedDetail
+    }
+
+    "have the correct result when the new completion capacity is other and previous value was other" in {
+      val jsPreviousCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("oldCC")))(DESCompletionCapacity.writesPreviousCC)
+      val jsNewCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some("newCC")))(DESCompletionCapacity.writesNewCC)
+
+      val detail = detailAuth ++ jsPreviousCC.as[JsObject] ++ jsNewCC.as[JsObject]
+
+      val expectedDetail = Json.parse(
+        s"""{
+          |    "externalUserId": "$externalUserId",
+          |    "authProviderId": "$authProviderId",
+          |    "journeyId": "$regId",
+          |    "previousCompletionCapacity": "Other",
+          |    "previousCompletionCapacityOther": "oldcc",
+          |    "newCompletionCapacity": "Other",
+          |    "newCompletionCapacityOther": "newcc"
+          | }
+        """.stripMargin)
+
+      val event = new AmendCompletionCapacityEvent(regId, detail)
+      val result = Json.toJson[ExtendedDataEvent](event)
+
+      (result \ "auditSource").as[String] shouldBe "paye-registration"
+      (result \ "auditType").as[String] shouldBe auditType
+      (result \ "detail").as[JsObject] shouldBe expectedDetail
     }
   }
 }

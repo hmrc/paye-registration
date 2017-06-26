@@ -991,7 +991,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director")))
@@ -1006,7 +1006,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RegistrationFormatException("errMessage")))
 
       val response = await(controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director"))))
@@ -1022,7 +1022,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any()))
+      when(mockRegistrationService.upsertCompletionCapacity(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful("Director"))
 
       val response = controller.upsertCompletionCapacity("AC123456")(FakeRequest().withBody(Json.toJson[String]("Director")))

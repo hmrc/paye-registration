@@ -18,6 +18,7 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
+import audit.{AmendCompletionCapacityEvent, RegistrationAuditEvent}
 import enums.PAYEStatus
 import helpers.PAYEBaseValidator
 import models._
@@ -26,16 +27,24 @@ import common.exceptions.RegistrationExceptions.{RegistrationFormatException, Un
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import common.exceptions.DBExceptions.MissingRegDocument
+import config.MicroserviceAuditConnector
+import connectors.{AuthConnect, AuthConnector}
+import models.submission.DESCompletionCapacity
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends RegistrationSrv with ServicesConfig {
+class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo,
+                                    injAuthConnector: AuthConnector) extends RegistrationSrv with ServicesConfig {
   val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
   lazy val payeRestartURL = getString("api.payeRestartURL")
   lazy val payeCancelURL = getString("api.payeCancelURL")
+  val authConnector = injAuthConnector
+  val auditConnector = MicroserviceAuditConnector
 }
 
 trait RegistrationSrv extends PAYEBaseValidator {
@@ -43,6 +52,8 @@ trait RegistrationSrv extends PAYEBaseValidator {
   val registrationRepository : RegistrationRepository
   val payeRestartURL : String
   val payeCancelURL : String
+  val authConnector : AuthConnect
+  val auditConnector : AuditConnector
 
   def createNewPAYERegistration(regID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
@@ -120,9 +131,44 @@ trait RegistrationSrv extends PAYEBaseValidator {
     registrationRepository.retrieveCompletionCapacity(regID)
   }
 
-  def upsertCompletionCapacity(regID: String, capacity: String): Future[String] = {
-    if(validCompletionCapacity(capacity)) registrationRepository.upsertCompletionCapacity(regID, capacity)
-    else throw new RegistrationFormatException(s"Invalid completion capacity submitted for reg ID $regID")
+  def upsertCompletionCapacity(regID: String, capacity: String)(implicit hc: HeaderCarrier): Future[String] = {
+    if(validCompletionCapacity(capacity)) {
+      registrationRepository.retrieveRegistration(regID) flatMap {
+        case Some(reg) =>
+          if( reg.completionCapacity.nonEmpty && !reg.completionCapacity.get.equals(capacity) ) {
+            auditCompletionCapacity(regID, reg.completionCapacity.get, capacity)
+          }
+          registrationRepository.upsertCompletionCapacity(regID, capacity)
+        case None =>
+          Logger.warn(s"Unable to update Completion Capacity for reg ID $regID, Error: Couldn't retrieve an existing registration with that ID")
+          throw new MissingRegDocument(regID)
+      }
+    } else {
+      throw new RegistrationFormatException(s"Invalid completion capacity submitted for reg ID $regID")
+    }
+  }
+
+  private[services] def auditCompletionCapacity(regID: String, previousCC: String, newCC: String)(implicit hc: HeaderCarrier) = {
+    for {
+      authority <- authConnector.getCurrentAuthority
+      userDetails <- authConnector.getUserDetails
+      authProviderId = userDetails.get.authProviderId
+    } yield {
+      val jsPreviousCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some(previousCC)))(DESCompletionCapacity.writesPreviousCC)
+      val jsNewCC = Json.toJson(DESCompletionCapacity.buildDESCompletionCapacity(Some(newCC)))(DESCompletionCapacity.writesNewCC)
+
+      val detail = Json.obj(
+        RegistrationAuditEvent.EXTERNAL_USER_ID -> authority.get.ids.externalId,
+        RegistrationAuditEvent.AUTH_PROVIDER_ID -> authProviderId
+      )
+      .++(jsPreviousCC.as[JsObject])
+      .++(jsNewCC.as[JsObject])
+
+      val event = new AmendCompletionCapacityEvent(regID, detail)
+      auditConnector.sendEvent(event)
+
+      event
+    }
   }
 
   def getAcknowledgementReference(regID: String) : Future[Option[String]] = {
