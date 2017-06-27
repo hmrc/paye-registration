@@ -18,6 +18,7 @@ package fixtures
 
 import java.time.LocalDate
 
+import enums.IncorporationStatus
 import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name, SICCode}
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -116,7 +117,7 @@ trait SubmissionFixture {
   )
 
   val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
-                                     status = "accepted",
+                                     status = IncorporationStatus.accepted,
                                      crn = Some("123456"),
                                      incorporationDate = Some(LocalDate.of(2000, 12, 12)),
                                      description = None,

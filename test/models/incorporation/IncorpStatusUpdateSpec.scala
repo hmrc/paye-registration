@@ -18,6 +18,7 @@ package models.incorporation
 
 import java.time.LocalDate
 
+import enums.IncorporationStatus
 import models.JsonFormatValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
@@ -51,7 +52,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
 
         val tstIncorpStatusUpdate = IncorpStatusUpdate(
           transactionId = "NNASD9789F",
-          status = "accepted",
+          status = IncorporationStatus.accepted,
           crn = Some("1"),
           incorporationDate = Some(LocalDate.of(2000, 12, 12)),
           description = None,
@@ -84,7 +85,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
 
         val tstIncorpStatusUpdate = IncorpStatusUpdate(
           transactionId = "NNASD9789F",
-          status = "rejected",
+          status = IncorporationStatus.rejected,
           crn = None,
           incorporationDate = Some(LocalDate.of(2000, 12, 12)),
           description = None,

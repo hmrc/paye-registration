@@ -22,7 +22,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
-import enums.{AddressTypes, PAYEStatus}
+import enums.{AddressTypes, IncorporationStatus, PAYEStatus}
 import models._
 import models.submission._
 import helpers.{DateHelper, PAYERegSpec}
@@ -256,7 +256,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   )
 
   val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
-                                              status = "accepted",
+                                              status = IncorporationStatus.accepted,
                                               crn = Some("123456"),
                                               incorporationDate = Some(LocalDate.of(2000, 12, 12)),
                                               description = None,
