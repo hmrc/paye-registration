@@ -45,6 +45,8 @@ class RejectedIncorporationException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
 }
 
+class UnknownIncorporationInformationStatus(msg: String) extends Exception
+
 @Singleton
 class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injRegistrationMongoRepository: RegistrationMongo,
@@ -296,9 +298,10 @@ trait SubmissionSrv extends ETMPStatusCodes {
   }
 
   private[services] def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
-    val event: RegistrationAuditEvent = topUpDESSubmission.status match {
-      case APPROVED | APPROVED_WITH_CONDITIONS => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission).as[JsObject]))
-      case _                                   => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
+    val event: RegistrationAuditEvent = topUpDESSubmission.status.toLowerCase match {
+      case "accepted" => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission).as[JsObject]))
+      case "rejected" => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
+      case _          => throw new UnknownIncorporationInformationStatus(s"Recieved an ")
     }
     auditConnector.sendEvent(event)
   }

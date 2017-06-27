@@ -291,6 +291,33 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
         )
       )
 
+      verify(postRequestedFor(urlEqualTo("/write/audit"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             |  "auditSource" : "paye-registration",
+             |  "auditType" : "payeRegistrationAdditionalData",
+             |  "detail" : {
+             |    "journeyId" : "$regId",
+             |    "acknowledgementReference" : "testAckRef",
+             |    "status" : "Accepted",
+             |    "payAsYouEarn" : {
+             |       "crn" : "OC123456"
+             |     }
+             |  },
+             |  "tags" : {
+             |     "clientIP" : "-",
+             |     "X-Session-ID" : "session-12345",
+             |     "X-Request-ID" : "-",
+             |     "clientPort" : "-",
+             |     "Authorization" : "-",
+             |     "transactionName" : "payeRegistrationAdditionalData"
+             |  }
+             |}
+          """.stripMargin).toString(), true, true)
+        )
+      )
+
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
@@ -328,6 +355,30 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
              | "status": "Rejected"
              |}
           """.stripMargin).toString())
+        )
+      )
+
+      verify(postRequestedFor(urlEqualTo("/write/audit"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             |  "auditSource" : "paye-registration",
+             |  "auditType" : "incorporationFailure",
+             |  "detail" : {
+             |    "journeyId" : "$regId",
+             |    "acknowledgementReference" : "testAckRef",
+             |    "incorporationStatus" : "rejected"
+             |  },
+             |  "tags" : {
+             |     "clientIP" : "-",
+             |     "X-Session-ID" : "session-12345",
+             |     "X-Request-ID" : "-",
+             |     "clientPort" : "-",
+             |     "Authorization" : "-",
+             |     "transactionName" : "incorporationFailure"
+             |   }
+             |}
+          """.stripMargin).toString(), true, true)
         )
       )
 
