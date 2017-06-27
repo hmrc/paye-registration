@@ -199,7 +199,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
         Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
-      status = incorpStatusUpdate.status.toString.capitalize,
+      status = incorpStatusUpdate.status,
       crn = incorpStatusUpdate.crn
     )
   }
@@ -282,9 +282,9 @@ trait SubmissionSrv extends ETMPStatusCodes {
   }
 
   private[services] def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
-    val event: RegistrationAuditEvent = topUpDESSubmission.status.toLowerCase match {
-      case "accepted" => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission).as[JsObject]))
-      case "rejected" => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
+    val event: RegistrationAuditEvent = topUpDESSubmission.status match {
+      case IncorporationStatus.accepted => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission).as[JsObject]))
+      case IncorporationStatus.rejected => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
     }
     auditConnector.sendEvent(event)
   }

@@ -264,7 +264,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
-    status = "Accepted",
+    status = IncorporationStatus.accepted,
     crn = Some("123456")
   )
 

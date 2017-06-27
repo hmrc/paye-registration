@@ -282,7 +282,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
-             | "status": "Accepted",
+             | "status": "accepted",
              | "payAsYouEarn": {
              |  "crn": "OC123456"
              | }
@@ -300,7 +300,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
              |  "detail" : {
              |    "journeyId" : "$regId",
              |    "acknowledgementReference" : "testAckRef",
-             |    "status" : "Accepted",
+             |    "status" : "accepted",
              |    "payAsYouEarn" : {
              |       "crn" : "OC123456"
              |     }
@@ -352,7 +352,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
-             | "status": "Rejected"
+             | "status": "rejected"
              |}
           """.stripMargin).toString())
         )

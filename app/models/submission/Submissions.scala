@@ -16,6 +16,7 @@
 
 package models.submission
 
+import enums.IncorporationStatus
 import play.api.libs.functional.syntax._
 import play.api.libs.functional.syntax.unlift
 import play.api.libs.json.{JsValue, Json, Writes, __}
@@ -37,14 +38,14 @@ object DESSubmission {
 }
 
 case class TopUpDESSubmission(acknowledgementReference: String,
-                              status: String,
+                              status: IncorporationStatus.Value,
                               crn: Option[String])
 
 object TopUpDESSubmission {
   implicit val writes: Writes[TopUpDESSubmission] =
     (
       (__ \ "acknowledgementReference").write[String] and
-      (__ \ "status").write[String] and
+      (__ \ "status").write[IncorporationStatus.Value] and
       (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
     )(unlift(TopUpDESSubmission.unapply))
 }
