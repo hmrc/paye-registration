@@ -282,7 +282,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
-             | "status": "accepted",
+             | "status": "Accepted",
              | "payAsYouEarn": {
              |  "crn": "OC123456"
              | }
@@ -352,7 +352,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
-             | "status": "rejected"
+             | "status": "Rejected"
              |}
           """.stripMargin).toString())
         )

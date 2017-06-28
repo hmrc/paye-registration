@@ -16,11 +16,15 @@
 
 package enums
 
-import play.api.libs.json.{Format, Reads, Writes}
+import play.api.libs.json._
 
 object IncorporationStatus extends Enumeration {
   val accepted = Value
   val rejected = Value
 
   implicit val format = Format(Reads.enumNameReads(IncorporationStatus), Writes.enumNameWrites)
+
+  val desWrites: Writes[IncorporationStatus.Value] = new Writes[IncorporationStatus.Value] {
+    override def writes(o: IncorporationStatus.Value) = JsString(o.toString.capitalize)
+  }
 }

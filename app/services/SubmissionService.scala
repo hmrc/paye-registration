@@ -283,7 +283,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
 
   private[services] def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
     val event: RegistrationAuditEvent = topUpDESSubmission.status match {
-      case IncorporationStatus.accepted => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission).as[JsObject]))
+      case IncorporationStatus.accepted => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]))
       case IncorporationStatus.rejected => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
     }
     auditConnector.sendEvent(event)

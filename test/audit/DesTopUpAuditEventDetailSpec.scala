@@ -35,7 +35,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
              |{
              |   "journeyId": "$regId",
              |   "acknowledgementReference": "$ackRef",
-             |   "status": "accepted",
+             |   "status": "Accepted",
              |   "payAsYouEarn": {
              |     "crn": "AA123456"
              |   }
@@ -57,7 +57,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
              |{
              |   "journeyId": "$regId",
              |   "acknowledgementReference": "$ackRef",
-             |   "status": "rejected"
+             |   "status": "Rejected"
              |}
           """.stripMargin)
 

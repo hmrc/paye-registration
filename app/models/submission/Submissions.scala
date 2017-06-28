@@ -42,10 +42,13 @@ case class TopUpDESSubmission(acknowledgementReference: String,
                               crn: Option[String])
 
 object TopUpDESSubmission {
-  implicit val writes: Writes[TopUpDESSubmission] =
-    (
-      (__ \ "acknowledgementReference").write[String] and
-      (__ \ "status").write[IncorporationStatus.Value] and
-      (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
-    )(unlift(TopUpDESSubmission.unapply))
+  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.desWrites)
+
+  val auditWrites: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.format)
+
+  private def genericTopDesSubmissionWrites(incorporationStatusWrites: Writes[IncorporationStatus.Value]) = (
+    (__ \ "acknowledgementReference").write[String] and
+    (__ \ "status").write[IncorporationStatus.Value](incorporationStatusWrites) and
+    (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
+  )(unlift(TopUpDESSubmission.unapply))
 }
