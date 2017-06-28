@@ -23,7 +23,7 @@ case class DesTopUpAuditEventDetail(regId: String,
                                     jsSubmission: JsObject)
 
 object DesTopUpAuditEventDetail {
-  import RegistrationAuditEvent.{JOURNEY_ID, CRN}
+  import RegistrationAuditEvent.JOURNEY_ID
 
   implicit val writes = new Writes[DesTopUpAuditEventDetail] {
     def writes(detail: DesTopUpAuditEventDetail) = {

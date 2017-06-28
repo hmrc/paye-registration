@@ -16,6 +16,7 @@
 
 package audit
 
+import enums.IncorporationStatus
 import models.submission.TopUpDESSubmission
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -27,7 +28,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
 
     "construct full json as per definition" when {
       "incorporation is accepted" in {
-        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, "accepted", Some("AA123456"))
+        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, IncorporationStatus.accepted, Some("AA123456"))
 
         val expected = Json.parse(
           s"""
@@ -43,13 +44,13 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
 
         val testModel = DesTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission).as[JsObject]
+          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
         Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
       }
 
       "incorporation is rejected" in {
-        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, "rejected", None)
+        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, IncorporationStatus.rejected, None)
 
         val expected = Json.parse(
           s"""
@@ -62,7 +63,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
 
         val testModel = DesTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission).as[JsObject]
+          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
         Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
       }

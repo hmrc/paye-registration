@@ -18,13 +18,14 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import audit.{DesSubmissionAuditEventDetail, DesSubmissionEvent, DesTopUpAuditEventDetail, DesTopUpEvent}
+import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
+import common.constants.ETMPStatusCodes
 import config.MicroserviceAuditConnector
 import connectors._
-import enums.{AddressTypes, PAYEStatus}
+import enums.{AddressTypes, IncorporationStatus, PAYEStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -48,21 +49,21 @@ class RejectedIncorporationException(msg: String) extends NoStackTrace {
 class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injRegistrationMongoRepository: RegistrationMongo,
                                   injDESConnector: DESConnector,
-                                  injIncorprorationInformationConnector: IncorporationInformationConnector,
+                                  injIncorporationInformationConnector: IncorporationInformationConnector,
                                   injAuthConnector: AuthConnector,
                                   injBusinessRegistrationConnector: BusinessRegistrationConnector,
                                   injCompanyRegistrationConnector: CompanyRegistrationConnector) extends SubmissionSrv {
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
-  val incorporationInformationConnector = injIncorprorationInformationConnector
+  val incorporationInformationConnector = injIncorporationInformationConnector
   val authConnector = injAuthConnector
   val auditConnector = MicroserviceAuditConnector
   val businessRegistrationConnector = injBusinessRegistrationConnector
   val companyRegistrationConnector = injCompanyRegistrationConnector
 }
 
-trait SubmissionSrv {
+trait SubmissionSrv extends ETMPStatusCodes {
 
   val sequenceRepository: SequenceRepository
   val registrationRepository: RegistrationRepository
@@ -75,7 +76,6 @@ trait SubmissionSrv {
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
-  private val rejected = "rejected"
 
   def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     for {
@@ -100,8 +100,8 @@ trait SubmissionSrv {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _             <- auditDESTopUp(regId, Json.toJson[TopUpDESSubmission](desSubmission).as[JsObject])
-      updatedStatus = if(incorpStatusUpdate.status == rejected) PAYEStatus.cancelled else PAYEStatus.submitted
+      _             <- auditDESTopUp(regId, desSubmission)
+      updatedStatus = if(incorpStatusUpdate.status == IncorporationStatus.rejected) PAYEStatus.cancelled else PAYEStatus.submitted
       status        <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield status
   }
@@ -110,7 +110,7 @@ trait SubmissionSrv {
     for {
       txId      <- registrationRepository.retrieveTransactionId(regId)
       incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, regId) map {
-        case Some(update) if update.status == rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
+        case Some(update) if update.status == IncorporationStatus.rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
         case response => response
       }
     } yield incStatus
@@ -199,7 +199,7 @@ trait SubmissionSrv {
         Logger.warn(s"[SubmissionService] - [payeReg2TopUpDESSubmission]: Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
-      status = incorpStatusUpdate.status.capitalize,
+      status = incorpStatusUpdate.status,
       crn = incorpStatusUpdate.crn
     )
   }
@@ -210,19 +210,6 @@ trait SubmissionSrv {
       case s => s.head.description.getOrElse(throw new SICCodeNotDefinedException("Empty description in first SIC Code"))
     }
   }
-
-  //private[services] def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
-  //  val DIRECTOR = "Director"
-  //  val AGENT = "Agent"
-  //  val OTHER = "Other"
-  //  capacity.map(_.trim.toLowerCase).map {
-  //      case d if d == DIRECTOR.toLowerCase => DESCompletionCapacity(DIRECTOR, None)
-  //      case a if a == AGENT.toLowerCase => DESCompletionCapacity(AGENT, None)
-  //      case other => DESCompletionCapacity(OTHER, Some(other))
-  //    }.getOrElse{
-  //      throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
-  //    }
-  //}
 
   private[services] def buildDESMetaData(regId: String, timestamp:String, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
     for {
@@ -294,8 +281,11 @@ trait SubmissionSrv {
     }
   }
 
-  private[services] def auditDESTopUp(regId: String, jsSubmission: JsObject)(implicit hc: HeaderCarrier) = {
-    val event = new DesTopUpEvent(DesTopUpAuditEventDetail(regId, jsSubmission))
+  private[services] def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
+    val event: RegistrationAuditEvent = topUpDESSubmission.status match {
+      case IncorporationStatus.accepted => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]))
+      case IncorporationStatus.rejected => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
+    }
     auditConnector.sendEvent(event)
   }
 

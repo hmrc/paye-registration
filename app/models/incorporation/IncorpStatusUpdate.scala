@@ -17,28 +17,33 @@
 package models.incorporation
 
 import java.time.LocalDate
+
+import enums.IncorporationStatus
 import helpers.IncorporationValidator
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{Reads, __}
 import play.api.libs.functional.syntax._
 
 case class IncorpStatusUpdate(transactionId: String,
-                              status: String,
+                              status: IncorporationStatus.Value,
                               crn: Option[String],
                               incorporationDate: Option[LocalDate],
                               description: Option[String],
                               timestamp: LocalDate)
 
 object IncorpStatusUpdate extends IncorporationValidator {
+
+
+
   implicit val reads: Reads[IncorpStatusUpdate] = (
     (__ \\ "IncorpSubscriptionKey" \ "transactionId").read[String] and
-    (__ \\ "IncorpStatusEvent"     \ "status").read[String] and
+    (__ \\ "IncorpStatusEvent"     \ "status").read[IncorporationStatus.Value] and
     (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](crnValidator) and
     (__ \\ "IncorpStatusEvent"     \ "incorporationDate").readNullable[LocalDate] and
     (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
     (__ \\ "IncorpStatusEvent"     \ "timestamp").read[LocalDate]
   )(IncorpStatusUpdate.apply _)
     .filter(ValidationError("no CRN defined when expected"))(
-      update => update.status == "rejected" || update.crn.isDefined
+      update => update.status == IncorporationStatus.rejected || update.crn.isDefined
     )
 }
