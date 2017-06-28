@@ -35,7 +35,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
              |{
              |   "journeyId": "$regId",
              |   "acknowledgementReference": "$ackRef",
-             |   "status": "Accepted",
+             |   "status": "accepted",
              |   "payAsYouEarn": {
              |     "crn": "AA123456"
              |   }
@@ -44,7 +44,7 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
 
         val testModel = DesTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission).as[JsObject]
+          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
         Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
       }
@@ -57,13 +57,13 @@ class DesTopUpAuditEventDetailSpec extends UnitSpec {
              |{
              |   "journeyId": "$regId",
              |   "acknowledgementReference": "$ackRef",
-             |   "status": "Rejected"
+             |   "status": "rejected"
              |}
           """.stripMargin)
 
         val testModel = DesTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission).as[JsObject]
+          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
         Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
       }
