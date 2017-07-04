@@ -47,11 +47,11 @@ class EmploymentISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
+  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup {
-    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)

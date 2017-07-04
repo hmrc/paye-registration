@@ -19,6 +19,8 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import org.scalatestplus.play.BaseOneServerPerSuite
+import play.api.libs.ws.WSClient
 
 object WiremockHelper {
   val wiremockPort = 11111
@@ -27,8 +29,11 @@ object WiremockHelper {
 }
 
 trait WiremockHelper {
+  self: BaseOneServerPerSuite =>
 
   import WiremockHelper._
+
+  lazy val ws = app.injector.instanceOf(classOf[WSClient])
 
   val wmConfig = wireMockConfig().port(wiremockPort)
   val wireMockServer = new WireMockServer(wmConfig)

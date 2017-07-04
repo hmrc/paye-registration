@@ -43,8 +43,8 @@ class EMPRefMongoRepositoryISpec extends UnitSpec
 
 
   class Setup {
-    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
+    lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)

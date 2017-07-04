@@ -67,7 +67,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     .configure(additionalConfiguration)
     .build()
 
-  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/$path")
+  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
                                         .withFollowRedirects(false)
                                         .withHeaders(("X-Session-ID","session-12345"))
 
@@ -75,7 +75,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
   private val subscriber = "SCRS"
 
   class Setup {
-    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
     }
