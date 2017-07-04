@@ -41,7 +41,6 @@ trait Authorisation[I] {
       resource <- resourceConn.getInternalId(id)
       result <- f(mapToAuthResult(authority, resource))
     } yield {
-      Logger.debug(s"Got authority = $authority")
       result
     }
   }
@@ -54,7 +53,7 @@ trait Authorisation[I] {
       case Some(context) => {
         resource match {
           case None =>
-            Logger.info("[Authorisation] - [mapToAuthResult]: No auth resource was found the current user")
+            Logger.info("[Authorisation] - [mapToAuthResult]: No auth resource was found for the current user")
             AuthResourceNotFound(context)
           case Some((_, context.ids.internalId)) => Authorised(context)
           case Some((_, _)) =>

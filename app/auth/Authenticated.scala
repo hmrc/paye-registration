@@ -37,7 +37,6 @@ trait Authenticated {
       authority <- auth.getCurrentAuthority()
       result <- f(mapToAuthResult(authority))
     } yield {
-      Logger.debug(s"Got authority = $authority")
       result
     }
   }
@@ -48,7 +47,6 @@ trait Authenticated {
         Logger.warn("[Authenticated] - [mapToAuthResult] : No user present; FORBIDDEN")
         NotLoggedIn
       case Some(context) =>
-        Logger.debug(s"[Authenticated] - [mapToAuthResult] : current user is ${context.ids.internalId}")
         LoggedIn(context)
     }
   }
