@@ -49,13 +49,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/test-only$path").withFollowRedirects(false)
+  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/test-only$path").withFollowRedirects(false)
 
   val lastUpdate = "2017-05-09T07:58:35Z"
 
   class Setup {
-    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)

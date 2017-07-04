@@ -63,7 +63,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build()
 
-  private def client(path: String) = WS.url(s"http://localhost:$port/paye-registration/$path")
+  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
     .withFollowRedirects(false)
     .withHeaders(("X-Session-ID","session-12345"))
 
@@ -73,8 +73,8 @@ class SubmissionISpec extends IntegrationSpecBase {
   val lastUpdate = "2017-05-09T07:58:35Z"
 
   class Setup {
-    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = Play.current.injector.instanceOf[DateHelper]
+    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store

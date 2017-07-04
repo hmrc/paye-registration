@@ -472,7 +472,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
   )
 
   class Setup(timestamp: String = lastUpdate) {
-    lazy val mockMetrics = Play.current.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
     }
