@@ -42,10 +42,9 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService,
-                                  injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics, injDateHelper)
+  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics)
 }
 
 trait RegistrationRepository {
@@ -78,17 +77,16 @@ trait RegistrationRepository {
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
 
-  val dateHelper: DateHelper
+
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format
   ) with RegistrationRepository
     with AuthorisationResource[String] {
 
-  override val dateHelper: DateHelper = dh
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -197,7 +195,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
-    val timestamp = dateHelper.getTimestampString
+    val timestamp = DateHelper.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
         val reg = payeStatus match {
@@ -596,7 +594,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
-    val timeStamp = dateHelper.getTimestampString
+    val timeStamp = DateHelper.getTimestampString
     PAYERegistration(
       registrationID = registrationID,
       transactionID = transactionID,
@@ -616,11 +614,12 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       lastUpdate = timeStamp,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
-      acknowledgedTimestamp = None
+      acknowledgedTimestamp = None,
+      lastAction = Some(DateHelper.getTimestamp)
     )
   }
 
   private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
-    collection.update(doc, reg.copy(lastUpdate = dateHelper.getTimestampString)).map(f)
+    collection.update(doc, reg.copy(lastUpdate = DateHelper.getTimestampString)).map(f)
   }
 }

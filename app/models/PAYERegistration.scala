@@ -17,8 +17,11 @@
 package models
 
 import enums.PAYEStatus
+import java.time.ZonedDateTime
+
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, OFormat, __}
+import play.api.libs.json._
+import utils.DateFormatter
 
 case class PAYERegistration(registrationID: String,
                             transactionID: String,
@@ -38,9 +41,10 @@ case class PAYERegistration(registrationID: String,
                             lastUpdate: String,
                             partialSubmissionTimestamp: Option[String],
                             fullSubmissionTimestamp: Option[String],
-                            acknowledgedTimestamp: Option[String])
+                            acknowledgedTimestamp: Option[String],
+                           lastAction:Option[ZonedDateTime])
 
-object PAYERegistration {
+object PAYERegistration extends DateFormatter{
   implicit val format: OFormat[PAYERegistration] = (
     (__ \ "registrationID").format[String] and
     (__ \ "transactionID").format[String] and
@@ -60,8 +64,11 @@ object PAYERegistration {
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
-    (__ \ "acknowledgedTimestamp").formatNullable[String]
+    (__ \ "acknowledgedTimestamp").formatNullable[String] and
+      ( __ \ "lastAction").formatNullable[ZonedDateTime](apiFormat)
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
+
+
 
   def payeRegistrationFormat(empRefFormat: Format[EmpRefNotification]): OFormat[PAYERegistration] = (
     (__ \ "registrationID").format[String] and
@@ -82,7 +89,8 @@ object PAYERegistration {
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
-    (__ \ "acknowledgedTimestamp").formatNullable[String]
+    (__ \ "acknowledgedTimestamp").formatNullable[String] and
+      (__ \ "lastAction").formatNullable[ZonedDateTime](mongoFormat)
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
 

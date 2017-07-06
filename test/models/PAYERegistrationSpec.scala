@@ -16,8 +16,8 @@
 
 package models
 
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime}
+
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import play.api.data.validation.ValidationError
@@ -27,7 +27,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
   val timestamp = "2017-05-09T07:58:35.000Z"
-
+  val zDtNow = ZonedDateTime.of(LocalDateTime.of(1,1,1,1,1),ZoneOffset.UTC)
   "Creating a PAYERegistration model from Json" should {
     "complete successfully from full Json" in {
 
@@ -200,7 +200,9 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         lastUpdate = timestamp,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
-        acknowledgedTimestamp = None
+        acknowledgedTimestamp = None,
+        lastAction = Some(zDtNow)
+
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
@@ -240,7 +242,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         lastUpdate = timestamp,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
-        acknowledgedTimestamp = None
+        acknowledgedTimestamp = None,
+        lastAction = Some(zDtNow)
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
