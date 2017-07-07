@@ -44,8 +44,7 @@ class EMPRefMongoRepositoryISpec extends UnitSpec
 
   class Setup {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -87,7 +86,8 @@ class EMPRefMongoRepositoryISpec extends UnitSpec
       lastUpdate,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
-      acknowledgedTimestamp = None
+      acknowledgedTimestamp = None,
+      lastAction = None
     )
 
     "store the plain EMP Ref in encrypted form" in new Setup {

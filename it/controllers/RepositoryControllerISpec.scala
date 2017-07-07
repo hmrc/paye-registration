@@ -59,10 +59,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = new DateHelper {
-      override def getTimestampString: String = timestamp
-    }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+
+    val mongo = new RegistrationMongo(mockMetrics)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -130,7 +128,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   "deletePAYERegistration" should {

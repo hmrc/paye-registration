@@ -16,7 +16,7 @@
 package api
 
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -24,8 +24,9 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.libs.ws.WS
+import reactivemongo.bson.BSONObjectID
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import services.MetricsService
 
@@ -50,11 +51,12 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
-  class Setup {
+  class Setup  {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
-    val repository: RegistrationMongoRepository = mongo.store
+
+    val mongo = new RegistrationMongo(mockMetrics){
+      override val registrationFormat: Format[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.mongoFormat)    }
+     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
   }
@@ -62,7 +64,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
   "PAYE Registration API - Company Details" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-
+    val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -104,7 +106,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 
@@ -120,7 +123,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.insert(
         PAYERegistration(
           regID,
           transactionID,
@@ -140,9 +143,11 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt))
         )
       )
+
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue
       getResponse1.status shouldBe 404
@@ -184,7 +189,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 
@@ -219,7 +225,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 

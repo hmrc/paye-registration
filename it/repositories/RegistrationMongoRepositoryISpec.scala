@@ -102,7 +102,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None)
+    acknowledgedTimestamp = None,
+    lastAction = None)
 
   private val reg2 = PAYERegistration(
     registrationID = "AC234567",
@@ -123,7 +124,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   // Company Details
@@ -146,7 +148,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   private val companyDetails2: CompanyDetails = CompanyDetails(
@@ -176,7 +179,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   // Employment
@@ -199,7 +203,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
   private val employmentDetails2: Employment = Employment(
     employees = true,
@@ -227,7 +232,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   // Directors
@@ -250,7 +256,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   private val directors: Seq[Director] = Seq(
@@ -292,7 +299,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   //SIC Codes
@@ -315,7 +323,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   private val sicCodes: Seq[SICCode] = Seq(
@@ -342,7 +351,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   //PAYE Contact
@@ -365,7 +375,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   private val payeContact = PAYEContact(
@@ -399,7 +410,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   //Completion Capacity
@@ -422,7 +434,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
   private val completionCapacity = "Director"
 
@@ -445,7 +458,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   //Registration Status
@@ -468,15 +482,14 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = Some(lastUpdate),
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   class Setup(timestamp: String = lastUpdate) {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = new DateHelper {
-      override def getTimestampString: String = timestamp
-    }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -906,7 +919,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   "Calling cleardownRegistration" should {

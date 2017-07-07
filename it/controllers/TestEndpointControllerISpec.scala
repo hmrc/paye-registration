@@ -55,8 +55,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -91,7 +90,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -115,7 +115,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -157,7 +158,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -181,7 +183,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -230,7 +233,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
       await(repository.count) shouldBe 1
@@ -295,7 +299,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       )
 
@@ -331,7 +336,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
       await(repository.count) shouldBe 1

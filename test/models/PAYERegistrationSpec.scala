@@ -27,7 +27,8 @@ import uk.gov.hmrc.play.test.UnitSpec
 class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
   val timestamp = "2017-05-09T07:58:35.000Z"
-  val zDtNow = ZonedDateTime.of(LocalDateTime.of(1,1,1,1,1),ZoneOffset.UTC)
+
+  val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
   "Creating a PAYERegistration model from Json" should {
     "complete successfully from full Json" in {
 
@@ -128,7 +129,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "description":"laundring"
            |    }
            |  ],
-           |  "lastUpdate": "$timestamp"
+           |  "lastUpdate": "$timestamp",
+           |  "lastAction": "2000-01-20T16:00:00Z"
            |}
         """.stripMargin)
 
@@ -243,7 +245,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = Some(zDtNow)
+        lastAction = None
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

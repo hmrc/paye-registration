@@ -16,13 +16,9 @@
 
 package helpers
 
-import javax.inject.Singleton
+
 import java.time.{ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
-
-import org.joda.time.DateTimeZone
-import play.api.libs.json._
-
 
 object DateHelper {
   val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXX")
@@ -39,6 +35,4 @@ object DateHelper {
   def getTimestampString: String = formatTimestamp(getTimestamp)
 
   def getDateFromTimestamp(timestamp: String): ZonedDateTime = ZonedDateTime.parse(timestamp, format)
-
-
 }

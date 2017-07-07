@@ -35,8 +35,25 @@ class DateFormatterSpec extends UnitSpec with DateFormatter with JsonFormatValid
     val result = Json.fromJson[ZonedDateTime](timeStamp)(dateTimeReadApi)
     result shouldBe JsSuccess(dt)
   }
+  "read jsValue String timestamp from different zone and return ZoneDateTime" in {
+    val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
+    val timeStamp = JsString("2000-01-20T18:01:00+0200")
+    val result = Json.fromJson[ZonedDateTime](timeStamp)(dateTimeReadApi)
+    result shouldBe JsSuccess(dt)
+  }
+  "return Jserror if the datetimeReadApi fails to convert timestamp" in {
+    val timeStamp = JsString("2000-01-20T16:01:00ZAA")
+    val result = Json.fromJson[ZonedDateTime](timeStamp)(dateTimeReadApi)
+    shouldHaveErrors(result,JsPath(),Seq(ValidationError("Text '2000-01-20T16:01:00ZAA' could not be parsed, unparsed text found at index 20")))
+  }
 }
 
+  "dateTimeWriteApi" should {
+    "return a valid ZoneDateTime in timestamp format" in {
+      val res = Json.toJson[ZonedDateTime](ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC))(dateTimeWriteApi)
+      res shouldBe JsString("2000-01-20T16:01:00Z")
+    }
+  }
 
   "dateTimeWriteMongo" should {
     "return a valid ZoneDateTime" in {
@@ -57,7 +74,7 @@ class DateFormatterSpec extends UnitSpec with DateFormatter with JsonFormatValid
        """.stripMargin)
       Json.fromJson[ZonedDateTime](json)(dateTimeReadMongo) shouldBe res
     }
-    "return JSFailure" in {
+    "return JSFailure if date is a string" in {
       val json = Json.parse("""
                               |{
                               |"$date" : "475092060000A"

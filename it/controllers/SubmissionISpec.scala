@@ -74,8 +74,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -159,7 +158,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
   val processedSubmission = PAYERegistration(
     regId,
@@ -180,7 +180,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val crn = "OC123456"
@@ -422,8 +423,8 @@ class SubmissionISpec extends IntegrationSpecBase {
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(submission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
       reg.get.partialSubmissionTimestamp.nonEmpty shouldBe true
@@ -593,8 +594,8 @@ class SubmissionISpec extends IntegrationSpecBase {
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(submission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
       reg.get.partialSubmissionTimestamp.nonEmpty shouldBe true
@@ -613,8 +614,8 @@ class SubmissionISpec extends IntegrationSpecBase {
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(rejectedSubmission.copy(lastUpdate = reg.get.lastUpdate))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(submission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }

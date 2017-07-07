@@ -15,7 +15,7 @@
  */
 package api
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
 import enums.PAYEStatus
@@ -53,8 +53,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -77,6 +77,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val ackRef = "BRPY-xxx"
       val timestamp = "2017-01-01T00:00:00"
+      val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
 
       repository.insert(
         PAYERegistration(
@@ -98,7 +99,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 
@@ -124,6 +126,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
+      val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
       repository.insert(
         PAYERegistration(
           regID,
@@ -144,7 +147,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 

@@ -76,10 +76,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = new DateHelper {
-      override def getTimestampString: String = timestamp
-    }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+
+    val mongo = new RegistrationMongo(mockMetrics)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -156,7 +154,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val processedSubmission = PAYERegistration(
@@ -178,7 +177,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lastUpdate,
     partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
@@ -202,7 +202,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lastUpdate,
     partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
     fullSubmissionTimestamp = Some(fullSubmissionTimestamp),
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
@@ -321,8 +322,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
@@ -385,8 +386,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
@@ -531,8 +532,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
@@ -575,8 +576,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate))
 
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }

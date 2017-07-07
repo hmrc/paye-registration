@@ -16,7 +16,7 @@
 
 package api
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -51,8 +51,7 @@ class DirectorsISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -60,7 +59,7 @@ class DirectorsISpec extends IntegrationSpecBase {
 
   "PAYE Registration API - Directors" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-
+    val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -115,7 +114,8 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 
@@ -151,7 +151,8 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 
@@ -195,7 +196,8 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         ))
 
 
@@ -230,7 +232,8 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
       )
 
