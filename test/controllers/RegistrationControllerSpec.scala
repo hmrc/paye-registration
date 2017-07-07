@@ -16,10 +16,14 @@
 
 package controllers
 
+import java.time.LocalDate
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import common.exceptions.DBExceptions.MissingRegDocument
+import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
+import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, UnmatchedStatusException}
+import enums.PAYEStatus
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models._
@@ -1452,6 +1456,97 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
 
       status(response) shouldBe Status.PRECONDITION_FAILED
+    }
+  }
+
+  "Calling processIncorporationData" should {
+    def incorpUpdate(status: String) = {
+      s"""
+         |{
+         |  "SCRSIncorpStatus": {
+         |    "IncorpSubscriptionKey" : {
+         |      "subscriber" : "SCRS",
+         |      "discriminator" : "PAYE",
+         |      "transactionId" : "NN1234"
+         |    },
+         |    "SCRSIncorpSubscription" : {
+         |      "callbackUrl" : "scrs-incorporation-update-listener.service/incorp-updates/incorp-status-update"
+         |    },
+         |    "IncorpStatusEvent": {
+         |      "status": "$status",
+         |      "crn":"OC123456",
+         |      "incorporationDate":"2000-12-12",
+         |      "timestamp" : ${Json.toJson(LocalDate.of(2017, 12, 21))}
+         |    }
+         |  }
+         |}
+        """.stripMargin
+    }
+
+    val jsonIncorpStatusUpdate = Json.parse(incorpUpdate("accepted"))
+
+    "return a 500 response when the registration we try to incorporate is in invalid status" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
+
+      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.failed(new RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.invalid.toString)))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+
+    "return a 200 response when the registration we try to incorporate is in acknowledge status" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
+
+      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.acknowledged.toString)))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.OK
+    }
+
+    "return a 200 response when the registration we try to incorporate is in rejected status" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.rejected))))
+
+      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.rejected.toString)))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.OK
+    }
+
+    "return a 200 response when the registration we try to incorporate is in cancelled status" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.cancelled))))
+
+      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.cancelled.toString)))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.OK
+    }
+
+    "return a 500 response when the mongo retrieve failed" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new RetrieveFailed(validRegistration.registrationID)))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+
+    }
+
+    "return a 500 response when the mongo update failed" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
+
+      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.failed(new UpdateFailed(validRegistration.registrationID, "Registration status")))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
   }
 }

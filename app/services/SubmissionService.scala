@@ -142,9 +142,8 @@ trait SubmissionSrv extends ETMPStatusCodes {
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a partial DES submission")
           payeReg2DESSubmission(payeReg, None, ctutr)
       }
-      case Some(payeReg) if payeReg.status == PAYEStatus.invalid => throw new InvalidRegistrationException(regId)
       case Some(payeReg) =>
-        Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]: The registration for regId $regId has incorrect statu of ${payeReg.status.toString}s")
+        Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]: The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case None =>
         Logger.warn(s"[SubmissionService] - [buildPartialDesSubmission]:  building des top submission failed, there was no registration document present for regId $regId")
@@ -155,9 +154,12 @@ trait SubmissionSrv extends ETMPStatusCodes {
   private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
+      case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
+        Logger.warn(s"[SubmissionService] - [buildTopUpDESSubmission]: paye status is currently ${payeReg.status} for registrationId $regId")
+        throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case Some(payeReg) =>
         Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: paye status is currently ${payeReg.status} for registrationId $regId")
-        throw new InvalidRegistrationException(regId)
+        throw new ErrorRegistrationException(regId, payeReg.status.toString)
       case None =>
         Logger.error(s"[SubmissionService] - [buildTopUpDESSubmission]: building des top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)

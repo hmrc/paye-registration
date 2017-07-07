@@ -336,13 +336,6 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   "Calling buildADesSubmission" should {
-    "throw the correct exception when the registration is invalid" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
-        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
-
-      intercept[InvalidRegistrationException](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
-    }
-
     "throw the correct exception when there is no registration in mongo" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
@@ -370,14 +363,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
-      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
+      intercept[RegistrationInvalidStatus](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
-      intercept[InvalidRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
+      intercept[ErrorRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
   }
 

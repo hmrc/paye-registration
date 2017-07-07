@@ -17,7 +17,7 @@
 package controllers
 
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
-import common.exceptions.SubmissionExceptions.InvalidRegistrationException
+import common.exceptions.SubmissionExceptions.{RegistrationInvalidStatus, ErrorRegistrationException}
 import common.exceptions.SubmissionMarshallingException
 import connectors.{AuthConnect, AuthConnector}
 import enums.PAYEStatus
@@ -28,7 +28,7 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import javax.inject.{Inject, Singleton}
 
-import common.exceptions.DBExceptions.{MissingRegDocument, UpdateFailed}
+import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
@@ -333,6 +333,9 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
           submissionService.submitToDes(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
+            case e =>
+              Logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID - error: ${e.getMessage}")
+              throw e
           }
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [submitPAYERegistration] User not logged in")
@@ -366,18 +369,24 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request => {
       val transactionId = request.body.as[IncorpStatusUpdate].transactionId
       registrationService.fetchPAYERegistrationByTransactionID(transactionId) flatMap {
-        case None => Future.successful(NotFound(s"No registration found for transaction id $transactionId"))
+        case None =>
+          Logger.error(s"[RegistrationController] [processIncorporationData] No registration found for transaction id $transactionId")
+          throw new MissingRegDocument(transactionId)
         case Some(reg) => withJsonBody[IncorpStatusUpdate] { incorpStatusUpdateData =>
           submissionService.submitTopUpToDES(reg.registrationID, incorpStatusUpdateData) map (_ => Ok(Json.toJson(incorpStatusUpdateData.crn)))
         }
       } recover {
-        case invalid: InvalidRegistrationException => InternalServerError(
-                s"Cannot process Incorporation Update for transaction ID '$transactionId' - attempting to submit Top Up when status is not '${PAYEStatus.held}'"
-              )
-        case mongo @ (_: UpdateFailed | _: MissingRegDocument) => InternalServerError(
-                s"Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream"
-              )
-        case e => throw e
+        case invalid: ErrorRegistrationException =>
+          Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}")
+        case _: MissingRegDocument =>
+          Ok(s"No registration found for transaction id $transactionId")
+        case error: RegistrationInvalidStatus =>
+          InternalServerError(s"Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
+        case mongo @ (_: UpdateFailed | _: RetrieveFailed) =>
+          InternalServerError(s"Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
+        case e =>
+          Logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
+          throw e
       }
     }
   }

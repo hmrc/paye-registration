@@ -25,5 +25,7 @@ trait SubmissionExceptions {
     override def getMessage = s"Tried to submit registration with status $status for reg ID $regId"
   }
   class RegistrationNotYetSubmitted(regId: String) extends NoStackTrace
-  class InvalidRegistrationException(regId: String) extends NoStackTrace
+  class ErrorRegistrationException(regId: String, status: String) extends NoStackTrace{
+    override def getMessage = s"Incorporation not processed for regId $regId because the status is $status"
+  }
 }
