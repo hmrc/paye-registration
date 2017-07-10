@@ -17,14 +17,13 @@
 package utils
 
 import java.time.{Instant, ZoneId, ZoneOffset, ZonedDateTime}
+import javax.inject.{Inject, Singleton}
 
 import helpers.DateHelper
-import org.joda.time.DateTimeZone
 import play.api.libs.json._
 
-
-trait DateFormatter {
-
+class  DateFormatter extends DateHelper
+{
   val dateTimeReadMongo: Reads[ZonedDateTime]  = (__ \ "$date").read[Long] map { dateTime =>
     ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateTime), ZoneOffset.UTC)
   }
@@ -34,20 +33,20 @@ trait DateFormatter {
   }
 
   val dateTimeWriteApi: Writes[ZonedDateTime] = new Writes[ZonedDateTime] {
-    def writes(z:ZonedDateTime) = JsString(DateHelper.formatTimestamp(z))
+    def writes(z:ZonedDateTime) = JsString(formatTimestamp(z))
   }
 
   val dateTimeReadApi: Reads[ZonedDateTime] = new Reads[ZonedDateTime] {
     def reads(js: JsValue) =
-    try {
-     JsSuccess(DateHelper.zonedDateTimeFromString(js.as[String]))
+      try {
+        JsSuccess(zonedDateTimeFromString(js.as[String]))
       }
-    catch {
+      catch {
         case e:Throwable =>  JsError(error = e.getMessage)
       }
   }
-
   val apiFormat:Format[ZonedDateTime] = Format(dateTimeReadApi,dateTimeWriteApi)
   val mongoFormat:Format[ZonedDateTime] = Format(dateTimeReadMongo, dateTimeWriteMongo)
-
 }
+
+

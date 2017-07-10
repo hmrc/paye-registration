@@ -25,7 +25,7 @@ import connectors._
 import enums.{AddressTypes, IncorporationStatus, PAYEStatus}
 import models._
 import models.submission._
-import helpers.{DateHelper, PAYERegSpec}
+import helpers.PAYERegSpec
 import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
 import org.mockito.ArgumentMatchers

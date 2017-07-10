@@ -19,19 +19,19 @@ package controllers
 import java.time.{LocalDate, LocalDateTime}
 
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Application, Play}
+import org.scalatest.mockito.MockitoSugar
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
-import play.api.libs.ws.WS
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TestEndpointControllerISpec extends IntegrationSpecBase {
+class TestEndpointControllerISpec extends IntegrationSpecBase with MockitoSugar {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -55,7 +55,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -310,7 +311,6 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
 
     "return a 400 when the json body cannot be validated" in new Setup {
       setupSimpleAuthMocks()
-
       val regID1 = "12345"
       val transactionID = "NN1234"
       val intID = "Int-xxx"

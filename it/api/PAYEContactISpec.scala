@@ -19,9 +19,10 @@ package api
 import java.time.LocalDateTime
 
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
+import org.scalatest.mockito.MockitoSugar
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -52,7 +53,8 @@ class   PAYEContactISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

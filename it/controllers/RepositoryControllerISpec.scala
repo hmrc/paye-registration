@@ -19,9 +19,10 @@ package controllers
 import java.time.LocalDate
 
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
+import org.scalatest.mockito.MockitoSugar
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WS
@@ -30,7 +31,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RepositoryControllerISpec extends IntegrationSpecBase {
+class RepositoryControllerISpec extends IntegrationSpecBase with MockitoSugar {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -59,8 +60,10 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-
-    val mongo = new RegistrationMongo(mockMetrics)
+     val mockDateHelper = new DateHelper {
+      override def getTimestampString: String = timestamp
+     }
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store

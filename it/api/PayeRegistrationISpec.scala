@@ -16,17 +16,14 @@
 package api
 
 import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
-import java.time.format.DateTimeFormatter
 
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, EmpRefNotification, PAYERegistration}
+import models.{Eligibility, PAYERegistration}
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.WS
-import play.api.test.FakeApplication
 import repositories.RegistrationMongo
 import services.MetricsService
 
@@ -53,8 +50,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

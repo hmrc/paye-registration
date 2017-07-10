@@ -20,7 +20,6 @@ import models._
 import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
-import helpers.DateHelper
 
 trait RegistrationFixture {
 

@@ -18,14 +18,14 @@ package repositories
 
 import java.time.LocalDate
 
-import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument, DeleteFailed}
+import common.exceptions.DBExceptions.{DeleteFailed, InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import play.api.Play
+import org.scalatest.mockito.MockitoSugar
 import reactivemongo.api.commands.WriteResult
 import services.MetricsService
 import uk.gov.hmrc.mongo.MongoSpecSupport
@@ -39,7 +39,8 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
                                         with BeforeAndAfterEach
                                         with ScalaFutures
                                         with Eventually
-                                        with WithFakeApplication {
+                                        with WithFakeApplication
+                                        with MockitoSugar {
 
   private val date = LocalDate.of(2016, 12, 20)
   private val lastUpdate = "2017-05-09T07:58:35Z"
@@ -488,8 +489,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
 
   class Setup(timestamp: String = lastUpdate) {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
-
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = new DateHelper {
+      override def getTimestampString: String = timestamp
+    }
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

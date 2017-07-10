@@ -24,6 +24,7 @@ import helpers.DateHelper
 import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
+import org.scalatest.mockito.MockitoSugar
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.WS
@@ -34,7 +35,7 @@ import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper {
+class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper with MockitoSugar {
 
   override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
 
@@ -76,8 +77,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-
-    val mongo = new RegistrationMongo(mockMetrics)
+    val timestamp = "2017-01-01T00:00:00"
+    lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -322,8 +324,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
-      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
@@ -386,8 +388,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate))
 
-      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
@@ -532,8 +534,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp))
 
-      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
@@ -576,8 +578,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       val reg = await(repository.retrieveRegistration(regId))
       reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate))
 
-      val regLastUpdate = DateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = DateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
+      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
+      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }

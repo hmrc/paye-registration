@@ -22,7 +22,7 @@ import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions._
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import models._
 import play.api.Logger
 import play.api.libs.json.{Format, Json}
@@ -42,9 +42,9 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService) extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService,injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics)
+  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics, injDateHelper)
 }
 
 trait RegistrationRepository {
@@ -77,10 +77,9 @@ trait RegistrationRepository {
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
 
-
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService,dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format
@@ -195,7 +194,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
-    val timestamp = DateHelper.getTimestampString
+    val timestamp = dh.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
         val reg = payeStatus match {
@@ -594,7 +593,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
-    val timeStamp = DateHelper.getTimestampString
+    val timeStamp = dh.getTimestampString
     PAYERegistration(
       registrationID = registrationID,
       transactionID = transactionID,
@@ -615,11 +614,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
       acknowledgedTimestamp = None,
-      lastAction = Some(DateHelper.getTimestamp)
+      lastAction = Some(dh.getTimestamp)
     )
   }
 
   private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
-    collection.update(doc, reg.copy(lastUpdate = DateHelper.getTimestampString)).map(f)
+    collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
   }
 }

@@ -19,9 +19,10 @@ package api
 import java.time.LocalDateTime
 
 import enums.PAYEStatus
-import helpers.DateHelper
+import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, EmpRefNotification, PAYERegistration, SICCode}
+import org.scalatest.mockito.MockitoSugar
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -31,7 +32,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SICCodesISpec extends IntegrationSpecBase {
+class SICCodesISpec extends IntegrationSpecBase{
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
@@ -51,7 +52,8 @@ class SICCodesISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    val mongo = new RegistrationMongo(mockMetrics)
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
+    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
