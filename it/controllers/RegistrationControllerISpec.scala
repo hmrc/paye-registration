@@ -391,7 +391,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
     }
 
-    "return a 404 status when registration is not found" in new Setup {
+    "return a 200 status when registration is not found" in new Setup {
       setupSimpleAuthMocks()
 
       stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
@@ -432,12 +432,12 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       await(repository.insert(processedSubmission))
 
       val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate2).futureValue
-      response.status shouldBe 404
+      response.status shouldBe 200
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
     }
 
-    "return a 500 status when registration is already submitted" in new Setup {
+    "return a 200 status when registration is already submitted" in new Setup {
       setupSimpleAuthMocks()
 
       stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
@@ -459,7 +459,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate).futureValue
-      response.status shouldBe 500
+      response.status shouldBe 200
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
     }

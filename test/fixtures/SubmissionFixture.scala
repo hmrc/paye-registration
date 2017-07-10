@@ -22,6 +22,7 @@ import enums.IncorporationStatus
 import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name, SICCode}
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
+import play.api.libs.json.Json
 
 trait SubmissionFixture {
   val validCompanyDetails = CompanyDetails(
