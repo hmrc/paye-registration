@@ -25,7 +25,7 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
 import org.scalatest.mockito.MockitoSugar
-import play.api.{Application, Play}
+import play.api.{Application}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}

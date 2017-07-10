@@ -22,11 +22,9 @@ import enums.PAYEStatus
 import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import org.scalatest.mockito.MockitoSugar
-import play.api.{Application, Play}
+import play.api.{Application}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.WS
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import services.MetricsService
 

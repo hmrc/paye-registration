@@ -22,17 +22,22 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
+import netscape.javascript.JSObject
 import org.scalatest.mockito.MockitoSugar
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json._
 import play.api.libs.ws.WS
-import repositories.RegistrationMongo
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import services.MetricsService
 
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DirectorsISpec extends IntegrationSpecBase {
+
+class DirectorsISpec extends IntegrationSpecBase{
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
@@ -58,6 +63,7 @@ class DirectorsISpec extends IntegrationSpecBase {
     await(repository.drop)
     await(repository.ensureIndexes)
   }
+
 
   "PAYE Registration API - Directors" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
@@ -91,12 +97,12 @@ class DirectorsISpec extends IntegrationSpecBase {
 
     "Return a 200 when the user gets directors" in new Setup {
       setupSimpleAuthMocks()
-
       val regID = "12345"
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+
+      val mongoFormattedRegDoc =
         PAYERegistration(
           regID,
           transactionID,
@@ -118,8 +124,11 @@ class DirectorsISpec extends IntegrationSpecBase {
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
-        )
+
       )
+
+  await(repository.insert(mongoFormattedRegDoc))
+
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 200

@@ -22,7 +22,6 @@ import enums.PAYEStatus
 import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, EmpRefNotification, PAYERegistration, SICCode}
-import org.scalatest.mockito.MockitoSugar
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
