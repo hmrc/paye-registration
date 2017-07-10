@@ -334,7 +334,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
             case e =>
-              Logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID - error: ${e.getMessage}")
+              Logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID - error:", e)
               throw e
           }
         case NotLoggedInOrAuthorised =>
