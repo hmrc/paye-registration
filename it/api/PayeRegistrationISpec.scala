@@ -75,8 +75,9 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val ackRef = "BRPY-xxx"
       val timestamp = "2017-01-01T00:00:00"
       val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
+      val dtTimestamp = "2000-01-20T16:01:00Z"
 
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -99,9 +100,10 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}").get.futureValue
+
       response.status shouldBe 200
       response.json shouldBe Json.obj(
         "registrationID" -> regID,
@@ -112,7 +114,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
         "status" -> PAYEStatus.draft,
         "directors" -> Json.arr(),
         "sicCodes" -> Json.arr(),
-        "lastUpdate" -> lastUpdate
+        "lastUpdate" -> lastUpdate,
+        "lastAction" -> dtTimestamp
       )
     }
 
@@ -124,7 +127,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
       val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -147,7 +150,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}").get.futureValue
       response.status shouldBe 403

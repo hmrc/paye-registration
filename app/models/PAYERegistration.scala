@@ -94,7 +94,4 @@ object PAYERegistration extends DateFormatter{
     (__ \ "acknowledgedTimestamp").formatNullable[String] and
       (__ \ "lastAction").formatNullable[ZonedDateTime](mongoFormat)
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
-
-
-
 }

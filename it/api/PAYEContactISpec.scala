@@ -30,7 +30,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class   PAYEContactISpec extends IntegrationSpecBase {
+class  PAYEContactISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort

@@ -509,6 +509,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
       val actual = await(repository.createNewRegistration("AC234321", "NN1234", "09876"))
       actual.registrationID shouldBe "AC234321"
       actual.transactionID shouldBe "NN1234"
+      actual.lastAction.isDefined shouldBe true
     }
 
     "throw an Insert Failed exception when creating a new PAYE reg when one already exists" in new Setup {
@@ -1011,6 +1012,64 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
 
       await(repository.deleteRegistration(reg.registrationID)) shouldBe true
       await(repository.retrieveRegistration(reg.registrationID)) shouldBe None
+    }
+  }
+
+  "populateLastAction" should {
+    "modify multiple records with a " in new Setup {
+
+     await(repository.upsertRegTestOnly(
+      PAYERegistration(
+        registrationID = "fooble1",
+        transactionID = "fooble1",
+        internalID = "fooble1",
+        acknowledgementReference = Some("testAckRef"),
+        crn = None,
+        registrationConfirmation = None,
+        formCreationTimestamp = "timestamp",
+        eligibility = Some(Eligibility(false, false)),
+        status = PAYEStatus.held,
+        completionCapacity = None,
+        companyDetails = None,
+        directors = Seq.empty,
+        payeContact = None,
+        employment = None,
+        sicCodes = Seq.empty,
+        lastUpdate,
+        partialSubmissionTimestamp = None,
+        fullSubmissionTimestamp = None,
+        acknowledgedTimestamp = None,
+        lastAction = None
+      )))
+      await(repository.upsertRegTestOnly(
+        PAYERegistration(
+          registrationID = "fooble2",
+          transactionID = "fooble2",
+          internalID = "fooble2",
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = "timestamp",
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.held,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None,
+          lastAction = None
+        )))
+      await(repository.count) shouldBe 2
+
+
+     await(repository.populateLastAction)
+
+
     }
   }
 }

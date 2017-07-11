@@ -22,10 +22,11 @@ import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions._
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
-import helpers.{DateHelper}
+import helpers.DateHelper
 import models._
 import play.api.Logger
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json._
+import play.api.mvc.Result
 import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -33,13 +34,15 @@ import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
+import reactivemongo.core.commands.{Group, Match}
 import services.MetricsService
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.http.HeaderCarrier
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 
 @Singleton
 class RegistrationMongo @Inject()(injMetrics: MetricsService,injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
@@ -76,6 +79,8 @@ trait RegistrationRepository {
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
+  def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
+  def populateLastAction: Future[Boolean]
 
 }
 
@@ -105,6 +110,13 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       name = Some("TxId"),
       unique = true,
       sparse = false
+    ),
+    Index(
+      key = Seq("lastAction" -> IndexType.Ascending),
+      name = Some("lastActionIndex"),
+      unique = false,
+      sparse = false
+
     )
   )
 
@@ -594,6 +606,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
     val timeStamp = dh.getTimestampString
+
     PAYERegistration(
       registrationID = registrationID,
       transactionID = transactionID,
@@ -621,4 +634,17 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
     collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
   }
+
+   def populateLastAction: Future[Boolean] = {
+     //val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false)),BSONDocument("lastUpdate" -> 1)
+     //val update = BSONDocument("$set" -> BSONDocument("lastAction" -> "$lastUpdate"))
+    // collection.update(selector,update,multi=true).map(s => true)
+Future.successful(true)
+  }
+
+  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
+     collection.insert[JsObject](w.writes(p))
+     }
+
+
 }

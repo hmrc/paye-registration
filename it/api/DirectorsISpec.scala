@@ -124,15 +124,13 @@ class DirectorsISpec extends IntegrationSpecBase{
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
-
       )
-
-  await(repository.insert(mongoFormattedRegDoc))
+      await(repository.upsertRegTestOnly(mongoFormattedRegDoc))
 
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validDirectors)
+     response.json shouldBe Json.toJson(validDirectors)
     }
 
     "Return a 200 when the user upserts directors" in new Setup {
@@ -142,7 +140,7 @@ class DirectorsISpec extends IntegrationSpecBase{
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -165,6 +163,7 @@ class DirectorsISpec extends IntegrationSpecBase{
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
+      )
       )
 
       val getResponse1 = client(s"/${regID}/directors").get.futureValue
@@ -187,43 +186,7 @@ class DirectorsISpec extends IntegrationSpecBase{
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
-        PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          None,
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
-          partialSubmissionTimestamp = None,
-          fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None,
-          lastAction = Some(dt)
-        ))
-
-
-      val response = client(s"/${regID}/directors").get.futureValue
-      response.status shouldBe 403
-    }
-
-    "Return a 403 when the user is not authorised to upsert directors" in new Setup {
-      setupSimpleAuthMocks()
-
-      val regID = "12345"
-      val transactionID = "NN1234"
-      val intID = "Int-xxx-yyy-zzz"
-      val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -246,7 +209,44 @@ class DirectorsISpec extends IntegrationSpecBase{
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      )
+      ))
+
+
+      val response = client(s"/${regID}/directors").get.futureValue
+      response.status shouldBe 403
+    }
+
+    "Return a 403 when the user is not authorised to upsert directors" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val transactionID = "NN1234"
+      val intID = "Int-xxx-yyy-zzz"
+      val timestamp = "2017-01-01T00:00:00"
+      await(repository.upsertRegTestOnly(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          None,
+          None,
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          None,
+          None,
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
+        )
+      ))
 
       val response = client(s"/${regID}/directors")
         .patch(Json.toJson(validDirectors))

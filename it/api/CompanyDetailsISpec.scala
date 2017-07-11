@@ -85,7 +85,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -108,7 +108,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
@@ -122,7 +122,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      await(repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -168,7 +168,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -191,7 +191,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 403
@@ -204,7 +204,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -227,7 +227,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/company-details")
         .patch(Json.toJson(validCompanyDetails))
