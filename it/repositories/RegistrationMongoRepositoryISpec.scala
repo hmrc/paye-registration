@@ -16,12 +16,12 @@
 
 package repositories
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import common.exceptions.DBExceptions.{DeleteFailed, InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
-import helpers.{DateHelper}
+import helpers.DateHelper
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -1064,11 +1064,59 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
           acknowledgedTimestamp = None,
           lastAction = None
         )))
-      await(repository.count) shouldBe 2
+      private val lastUpdate2 = "2016-05-09T07:58:35Z"
+      await(repository.upsertRegTestOnly(
+        PAYERegistration(
+          registrationID = "foobl32",
+          transactionID = "fooble23",
+          internalID = "fooble32",
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = "timestamp",
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.held,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate2,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None,
+          lastAction = None
+        )))
+      val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
+      await(repository.upsertRegTestOnly(
+        PAYERegistration(
+          registrationID = "fooble4",
+          transactionID = "fooble4",
+          internalID = "fooble4",
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = "timestamp",
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.held,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate2,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None,
+          lastAction = Some(zDtNow)
+        )))
+      await(repository.count) shouldBe 4
 
 
      await(repository.populateLastAction)
-
+Thread.sleep(10000)
 
     }
   }

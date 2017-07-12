@@ -25,6 +25,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import models._
 import play.api.Logger
+import play.api.libs.iteratee.{Enumerator, Iteratee}
 import play.api.libs.json._
 import play.api.mvc.Result
 import play.modules.reactivemongo.MongoDbConnection
@@ -34,7 +35,7 @@ import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
-import reactivemongo.core.commands.{Group, Match}
+import reactivemongo.core.commands.{Group, Match, RawCommand}
 import services.MetricsService
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -635,11 +636,21 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
   }
 
-   def populateLastAction: Future[Boolean] = {
-     //val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false)),BSONDocument("lastUpdate" -> 1)
-     //val update = BSONDocument("$set" -> BSONDocument("lastAction" -> "$lastUpdate"))
-    // collection.update(selector,update,multi=true).map(s => true)
-Future.successful(true)
+   def populateLastAction: Future[Unit] = {
+
+     val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
+     val enumerator = collection.find[BSONDocument](selector).cursor().enumerate()
+
+
+     val processDocuments: Iteratee[PAYERegistration,Unit] = {
+       Iteratee.foreach {   s =>
+         val res = dh.zonedDateTimeFromString(s.lastUpdate)
+         collection.update(BSONDocument("registrationID" -> s.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat)))).map(res => res.hasErrors)
+       }
+     }
+    enumerator.run(processDocuments)
+
+
   }
 
   def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
