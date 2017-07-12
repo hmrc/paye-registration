@@ -25,44 +25,43 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
     System.clearProperty("feature.test")
   }
 
-  val featureSwitch = new FeatureSwitchManager
-  val payeFeatureSwitch = new PAYEFeatureSwitch(featureSwitch)
+  val payeFeatureSwitch = PAYEFeatureSwitches
   val booleanFeatureSwitch = BooleanFeatureSwitch("test", false)
 
   "getProperty" should {
 
     "return a disabled feature switch if the system property is undefined" in {
-      featureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = false)
+      FeatureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = false)
     }
 
     "return an enabled feature switch if the system property is defined as 'true'" in {
       System.setProperty("feature.test", "true")
 
-      featureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = true)
+      FeatureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = true)
     }
 
     "return an enabled feature switch if the system property is defined as 'false'" in {
       System.setProperty("feature.test", "false")
 
-      featureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = false)
+      FeatureSwitch.getProperty("test") shouldBe BooleanFeatureSwitch("test", enabled = false)
     }
   }
 
   "systemPropertyName" should {
 
     "append feature. to the supplied string'" in {
-      featureSwitch.systemPropertyName("test") shouldBe "feature.test"
+      FeatureSwitch.systemPropertyName("test") shouldBe "feature.test"
     }
   }
 
   "setProperty" should {
 
     "return a feature switch (testKey, false) when supplied with (testKey, testValue)" in {
-      featureSwitch.setProperty("test", "testValue") shouldBe BooleanFeatureSwitch("test", enabled = false)
+      FeatureSwitch.setProperty("test", "testValue") shouldBe BooleanFeatureSwitch("test", enabled = false)
     }
 
     "return a feature switch (testKey, true) when supplied with (testKey, true)" in {
-      featureSwitch.setProperty("test", "true") shouldBe BooleanFeatureSwitch("test", enabled = true)
+      FeatureSwitch.setProperty("test", "true") shouldBe BooleanFeatureSwitch("test", enabled = true)
     }
   }
 
@@ -70,7 +69,7 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
     "set the value for the supplied key to 'true'" in {
       System.setProperty("feature.test", "false")
 
-      featureSwitch.enable(booleanFeatureSwitch) shouldBe BooleanFeatureSwitch("test", enabled = true)
+      FeatureSwitch.enable(booleanFeatureSwitch) shouldBe BooleanFeatureSwitch("test", enabled = true)
     }
   }
 
@@ -78,13 +77,13 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
     "set the value for the supplied key to 'false'" in {
       System.setProperty("feature.test", "true")
 
-      featureSwitch.disable(booleanFeatureSwitch) shouldBe BooleanFeatureSwitch("test", enabled = false)
+      FeatureSwitch.disable(booleanFeatureSwitch) shouldBe BooleanFeatureSwitch("test", enabled = false)
     }
   }
 
   "dynamic toggling should be supported" in {
-    featureSwitch.disable(booleanFeatureSwitch).enabled shouldBe false
-    featureSwitch.enable(booleanFeatureSwitch).enabled shouldBe true
+    FeatureSwitch.disable(booleanFeatureSwitch).enabled shouldBe false
+    FeatureSwitch.enable(booleanFeatureSwitch).enabled shouldBe true
   }
 
   "SCRSFeatureSwitches" should {
@@ -93,13 +92,13 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
     }
 
     "return an enabled feature when the associated system property is true" in {
-      featureSwitch.enable(payeFeatureSwitch.desService)
+      FeatureSwitch.enable(payeFeatureSwitch.desService)
 
       payeFeatureSwitch.desService.enabled shouldBe true
     }
 
     "return a disable feature when the associated system property is false" in {
-      featureSwitch.disable(payeFeatureSwitch.desService)
+      FeatureSwitch.disable(payeFeatureSwitch.desService)
 
       payeFeatureSwitch.desService.enabled shouldBe false
     }

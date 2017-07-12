@@ -25,9 +25,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import models._
 import play.api.Logger
-import play.api.libs.iteratee.{Enumerator, Iteratee}
 import play.api.libs.json._
-import play.api.mvc.Result
 import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -35,15 +33,13 @@ import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
-import reactivemongo.core.commands.{Group, Match, RawCommand}
 import services.MetricsService
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
 
 @Singleton
 class RegistrationMongo @Inject()(injMetrics: MetricsService,injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {

@@ -18,7 +18,7 @@ package repositories
 
 import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
-import common.exceptions.DBExceptions.{DeleteFailed, InsertFailed, MissingRegDocument}
+import common.exceptions.DBExceptions.{ InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -1017,7 +1017,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
   }
 
   "populateLastAction" should {
-    "modify multiple records with a " in new Setup {
+    "modify multiple records copying lastUpdate to lastAction if lastAction does not exist" in new Setup {
 
       await(repository.upsertRegTestOnly(
         PAYERegistration(
@@ -1043,9 +1043,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
           lastAction = None
         )))
       private val lastUpdate2 = "2016-05-09T07:58:35Z"
+      private val lastUpdateZoned2 = ZonedDateTime.of(LocalDateTime.of(2016, 5, 9, 7, 58, 35), ZoneOffset.UTC)
       await(repository.upsertRegTestOnly(
         PAYERegistration(
-          registrationID = "foobl32",
+          registrationID = "fooble2",
           transactionID = "fooble23",
           internalID = "fooble32",
           acknowledgementReference = Some("testAckRef"),
@@ -1069,7 +1070,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
       val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
       await(repository.upsertRegTestOnly(
         PAYERegistration(
-          registrationID = "fooble4",
+          registrationID = "fooble3",
           transactionID = "fooble4",
           internalID = "fooble4",
           acknowledgementReference = Some("testAckRef"),
@@ -1094,6 +1095,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
       await(repository.populateLastAction)
 
       await(repository.retrieveRegistration("fooble1")).map(_.lastAction) shouldBe Some(Some(lastUpdateZoned))
+      // different date to lastUpdateZoned to show that record is updated for each and not using the same date for all records
+      await(repository.retrieveRegistration("fooble2")).map(_.lastAction) shouldBe Some(Some(lastUpdateZoned2))
+      // untouched lastAction because it already existed
+      await(repository.retrieveRegistration("fooble3")).map(_.lastAction) shouldBe Some(Some(zDtNow))
 
     }
   }

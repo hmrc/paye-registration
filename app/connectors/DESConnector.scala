@@ -28,14 +28,14 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
-import utils.{PAYEFeatureSwitch, PAYEFeatureSwitches}
+import utils.PAYEFeatureSwitches
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class DESConnector @Inject()(injFeatureSwitch: PAYEFeatureSwitch) extends DESConnect with ServicesConfig {
-  val featureSwitch = injFeatureSwitch
+class DESConnector extends DESConnect with ServicesConfig {
+  val featureSwitch = PAYEFeatureSwitches
   lazy val desUrl = getConfString("des-service.url", "")
   lazy val desURI = getConfString("des-service.uri", "")
   lazy val desTopUpURI = getConfString("des-service.top-up-uri", "")

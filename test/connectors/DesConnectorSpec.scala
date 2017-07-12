@@ -27,7 +27,7 @@ import helpers.PAYERegSpec
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.http._
-import utils.PAYEFeatureSwitch
+import utils.PAYEFeatureSwitches
 
 import scala.concurrent.Future
 
@@ -35,7 +35,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   implicit val hc = HeaderCarrier()
   val mockHttp = mock[WSHttp]
-  val mockFeatureSwitch = mock[PAYEFeatureSwitch]
+  val mockFeatureSwitch = mock[PAYEFeatureSwitches]
   val mockAuditConnector= mock[AuditConnector]
 
   class SetupWithProxy(withProxy: Boolean) {

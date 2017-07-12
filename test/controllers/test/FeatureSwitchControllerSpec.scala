@@ -21,56 +21,39 @@ import org.mockito.Mockito.when
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, OK}
 import helpers.PAYERegSpec
-import utils.{BooleanFeatureSwitch, FeatureManager, PAYEFeatureSwitches}
+import utils.{BooleanFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
 
 class FeatureSwitchControllerSpec extends PAYERegSpec {
 
-  val mockPAYEFeatureSwitch = mock[PAYEFeatureSwitches]
-  val mockFeatureManager = mock[FeatureManager]
-
-  val testFeatureSwitch = BooleanFeatureSwitch(name = "desStubFeature", enabled = true)
-  val testDisabledSwitch = BooleanFeatureSwitch(name = "desStubFeature", enabled = false)
-
+  override def beforeEach(): Unit = {
+    System.clearProperty("feature.desServiceFeature")
+  }
   class Setup {
     val controller = new FeatureSwitchCtrl {
-      override val PayeFeatureSwitch = mockPAYEFeatureSwitch
-      override val featureManager = mockFeatureManager
     }
   }
 
   "switch" should {
-    "enable the desStubFeature and return an OK" when {
+    "enable the desServiceFeature and return an OK" when {
       "desStubFeature and true are passed in the url" in new Setup {
-        when(mockPAYEFeatureSwitch(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Some(testFeatureSwitch)))
-
-        when(mockFeatureManager.enable(ArgumentMatchers.any()))
-          .thenReturn(testFeatureSwitch)
-
-        val result = controller.switch("desStubFeature","true")(FakeRequest())
+        val result = controller.switch("desServiceFeature","true")(FakeRequest())
         status(result) shouldBe OK
       }
     }
 
-    "disable the desStubFeatureFeature and return an OK" when {
+    "disable the desServiceFeature and return an OK" when {
       "desStubFeature and some other featureState is passed into the URL" in new Setup {
-        when(mockPAYEFeatureSwitch(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Some(testFeatureSwitch)))
 
-        when(mockFeatureManager.disable(ArgumentMatchers.any()))
-          .thenReturn(testDisabledSwitch)
 
-        val result = await(controller.switch("desStubFeature","someOtherState")(FakeRequest()))
+        val result = await(controller.switch("desServiceFeature","someOtherState")(FakeRequest()))
         status(result) shouldBe OK
       }
     }
 
     "return a bad request" when {
       "an unknown feature is trying to be enabled" in new Setup {
-        when(mockPAYEFeatureSwitch(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(None))
 
         val result = controller.switch("invalidName","invalidState")(FakeRequest())
         status(result) shouldBe BAD_REQUEST

@@ -18,25 +18,51 @@ package utils
 
 import javax.inject.{Inject, Singleton}
 
+import org.joda.time.format.ISODateTimeFormat
+import org.joda.time.{DateTime, DateTimeZone}
+import play.api.libs.json.Json
+
 sealed trait FeatureSwitch {
   def name: String
   def enabled: Boolean
 }
 
+trait TimedFeatureSwitch extends FeatureSwitch {
+
+  def start: Option[DateTime]
+  def end: Option[DateTime]
+  def target: DateTime
+
+  override def enabled: Boolean = (start, end) match {
+    case (Some(s), Some(e)) => !target.isBefore(s) && !target.isAfter(e)
+    case (None, Some(e)) => !target.isAfter(e)
+    case (Some(s), None) => !target.isBefore(s)
+    case (None, None) => false
+  }
+}
+
 case class BooleanFeatureSwitch(name: String, enabled: Boolean) extends FeatureSwitch
 
-@Singleton
-class FeatureSwitchManager extends FeatureManager
+case class EnabledTimedFeatureSwitch(name: String, start: Option[DateTime], end: Option[DateTime], target: DateTime) extends TimedFeatureSwitch
+case class DisabledTimedFeatureSwitch(name: String, start: Option[DateTime], end: Option[DateTime], target: DateTime) extends TimedFeatureSwitch {
+  override def enabled = !super.enabled
+}
 
-trait FeatureManager {
 
-  private[utils] def systemPropertyName(name: String) = s"feature.$name"
+object FeatureSwitch {
+
+  val DisabledIntervalExtractor = """!(\S+)_(\S+)""".r
+  val EnabledIntervalExtractor = """(\S+)_(\S+)""".r
+  val UNSPECIFIED = "X"
+  val dateFormat = ISODateTimeFormat.dateTimeNoMillis()
 
   private[utils] def getProperty(name: String): FeatureSwitch = {
     val value = sys.props.get(systemPropertyName(name))
 
     value match {
       case Some("true") => BooleanFeatureSwitch(name, enabled = true)
+      case Some(DisabledIntervalExtractor(start, end)) => DisabledTimedFeatureSwitch(name, toDate(start), toDate(end), DateTime.now(DateTimeZone.UTC))
+      case Some(EnabledIntervalExtractor(start, end)) => EnabledTimedFeatureSwitch(name, toDate(start), toDate(end), DateTime.now(DateTimeZone.UTC))
       case _ => BooleanFeatureSwitch(name, enabled = false)
     }
   }
@@ -46,25 +72,39 @@ trait FeatureManager {
     getProperty(name)
   }
 
+  private[utils] def toDate(text: String) : Option[DateTime] = {
+    text match {
+      case UNSPECIFIED => None
+      case _ => Some(dateFormat.parseDateTime(text))
+    }
+  }
+
+  private[utils] def systemPropertyName(name: String) = s"feature.$name"
+
   def enable(fs: FeatureSwitch): FeatureSwitch = setProperty(fs.name, "true")
   def disable(fs: FeatureSwitch): FeatureSwitch = setProperty(fs.name, "false")
-}
 
-@Singleton
-class PAYEFeatureSwitch @Inject()(injManager: FeatureSwitchManager) extends PAYEFeatureSwitches {
-  val desServiceFeature = "desServiceFeature"
-  val manager = injManager
+  def apply(name: String, enabled: Boolean = false): FeatureSwitch = getProperty(name)
+  def unapply(fs: FeatureSwitch): Option[(String, Boolean)] = Some(fs.name -> fs.enabled)
+
+  implicit val formats = Json.format[FeatureSwitch]
+}
+object PAYEFeatureSwitches extends PAYEFeatureSwitches {
+   val desServiceFeature: String = "desServiceFeature"
+  val  populateLastActionFeature:String = "populateLastActionFeature"
 }
 
 trait PAYEFeatureSwitches {
 
   val desServiceFeature: String
-  val manager: FeatureManager
+  val populateLastActionFeature:String
 
-  def desService = manager.getProperty(desServiceFeature)
+  def desService = FeatureSwitch.getProperty(desServiceFeature)
+  def populateLastAction = FeatureSwitch.getProperty(populateLastActionFeature)
 
   def apply(name: String): Option[FeatureSwitch] = name match {
     case "desServiceFeature" => Some(desService)
+    case "populateLastAction" => Some(populateLastAction)
     case _ => None
   }
 }
