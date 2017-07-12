@@ -16,6 +16,8 @@
 
 package controllers.test
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.test.FakeRequest
@@ -24,9 +26,10 @@ import helpers.PAYERegSpec
 import utils.{BooleanFeatureSwitch, PAYEFeatureSwitches}
 
 import scala.concurrent.Future
-
 class FeatureSwitchControllerSpec extends PAYERegSpec {
 
+  implicit val system = ActorSystem("PR")
+  implicit val materializer = ActorMaterializer()
   override def beforeEach(): Unit = {
     System.clearProperty("feature.desServiceFeature")
   }
@@ -34,21 +37,23 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
     val controller = new FeatureSwitchCtrl {
     }
   }
+  val testFeatureSwitch = BooleanFeatureSwitch(name = "desServiceFeature", enabled = true)
+  val testDisabledSwitch = BooleanFeatureSwitch(name = "desServiceFeature", enabled = false)
 
   "switch" should {
     "enable the desServiceFeature and return an OK" when {
       "desStubFeature and true are passed in the url" in new Setup {
         val result = controller.switch("desServiceFeature","true")(FakeRequest())
         status(result) shouldBe OK
+        bodyOf(await(result)) shouldBe testFeatureSwitch.toString
       }
     }
 
     "disable the desServiceFeature and return an OK" when {
       "desStubFeature and some other featureState is passed into the URL" in new Setup {
-
-
         val result = await(controller.switch("desServiceFeature","someOtherState")(FakeRequest()))
         status(result) shouldBe OK
+        bodyOf(await(result)) shouldBe testDisabledSwitch.toString
       }
     }
 

@@ -90,7 +90,7 @@ object FeatureSwitch {
   implicit val formats = Json.format[FeatureSwitch]
 }
 object PAYEFeatureSwitches extends PAYEFeatureSwitches {
-   val desServiceFeature: String = "desServiceFeature"
+  val desServiceFeature: String = "desServiceFeature"
   val  populateLastActionFeature:String = "populateLastActionFeature"
 }
 
