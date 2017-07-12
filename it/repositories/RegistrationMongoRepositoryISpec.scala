@@ -44,6 +44,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
 
   private val date = LocalDate.of(2016, 12, 20)
   private val lastUpdate = "2017-05-09T07:58:35Z"
+  private val lastUpdateZoned = ZonedDateTime.of(LocalDateTime.of(2017, 5, 9, 7, 58, 35), ZoneOffset.UTC)
 
   private val address = Address(
     "14 St Test Walk",
@@ -1018,34 +1019,11 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
   "populateLastAction" should {
     "modify multiple records with a " in new Setup {
 
-     await(repository.upsertRegTestOnly(
-      PAYERegistration(
-        registrationID = "fooble1",
-        transactionID = "fooble1",
-        internalID = "fooble1",
-        acknowledgementReference = Some("testAckRef"),
-        crn = None,
-        registrationConfirmation = None,
-        formCreationTimestamp = "timestamp",
-        eligibility = Some(Eligibility(false, false)),
-        status = PAYEStatus.held,
-        completionCapacity = None,
-        companyDetails = None,
-        directors = Seq.empty,
-        payeContact = None,
-        employment = None,
-        sicCodes = Seq.empty,
-        lastUpdate,
-        partialSubmissionTimestamp = None,
-        fullSubmissionTimestamp = None,
-        acknowledgedTimestamp = None,
-        lastAction = None
-      )))
       await(repository.upsertRegTestOnly(
         PAYERegistration(
-          registrationID = "fooble2",
-          transactionID = "fooble2",
-          internalID = "fooble2",
+          registrationID = "fooble1",
+          transactionID = "fooble1",
+          internalID = "fooble1",
           acknowledgementReference = Some("testAckRef"),
           crn = None,
           registrationConfirmation = None,
@@ -1112,11 +1090,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
           acknowledgedTimestamp = None,
           lastAction = Some(zDtNow)
         )))
-      await(repository.count) shouldBe 4
+      await(repository.count) shouldBe 3
+      await(repository.populateLastAction)
 
-
-     await(repository.populateLastAction)
-Thread.sleep(10000)
+      await(repository.retrieveRegistration("fooble1")).map(_.lastAction) shouldBe Some(Some(lastUpdateZoned))
 
     }
   }

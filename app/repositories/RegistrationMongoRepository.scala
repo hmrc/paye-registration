@@ -81,7 +81,7 @@ trait RegistrationRepository {
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
-  def populateLastAction: Future[Boolean]
+  def populateLastAction: Future[Int]
 
 }
 
@@ -636,21 +636,19 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
   }
 
-   def populateLastAction: Future[Unit] = {
+  def populateLastAction: Future[Int] = {
+    val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
 
-     val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
-     val enumerator = collection.find[BSONDocument](selector).cursor().enumerate()
+    for {
+     lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
+     updateResults <- Future.sequence(lst.map(updateLastAction))
+     count = updateResults.count(res => !res.hasErrors)
+    } yield count
+  }
 
-
-     val processDocuments: Iteratee[PAYERegistration,Unit] = {
-       Iteratee.foreach {   s =>
-         val res = dh.zonedDateTimeFromString(s.lastUpdate)
-         collection.update(BSONDocument("registrationID" -> s.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat)))).map(res => res.hasErrors)
-       }
-     }
-    enumerator.run(processDocuments)
-
-
+  private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
+    val res = dh.zonedDateTimeFromString(reg.lastUpdate)
+    collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat))))
   }
 
   def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
