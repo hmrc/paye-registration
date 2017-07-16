@@ -24,7 +24,7 @@ import utils._
 
 import scala.concurrent.Future
 
-
+@Singleton
 class FeatureSwitchController extends FeatureSwitchCtrl
 
 

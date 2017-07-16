@@ -67,7 +67,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
     (__ \ "acknowledgedTimestamp").formatNullable[String] and
-      ( __ \ "lastAction").formatNullable[ZonedDateTime](apiFormat)
+    ( __ \ "lastAction").formatNullable[ZonedDateTime](apiFormat)
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 
 
@@ -92,6 +92,6 @@ object PAYERegistration extends DateFormatter{
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
     (__ \ "acknowledgedTimestamp").formatNullable[String] and
-      (__ \ "lastAction").formatNullable[ZonedDateTime](mongoFormat)
+    (__ \ "lastAction").formatNullable[ZonedDateTime](mongoFormat)
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 }

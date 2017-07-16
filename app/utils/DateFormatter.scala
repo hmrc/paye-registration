@@ -22,8 +22,7 @@ import javax.inject.{Inject, Singleton}
 import helpers.DateHelper
 import play.api.libs.json._
 
-class  DateFormatter extends DateHelper
-{
+trait DateFormatter extends DateHelper {
 
   val dateTimeReadMongo: Reads[ZonedDateTime]  = (__ \ "$date").read[Long] map { dateTime =>
     ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateTime), ZoneOffset.UTC)
@@ -36,17 +35,18 @@ class  DateFormatter extends DateHelper
   val dateTimeReadApi: Reads[ZonedDateTime] = new Reads[ZonedDateTime] {
     def reads(js: JsValue) =
       try {
-
         JsSuccess(zonedDateTimeFromString(js.as[String]))
       }
       catch {
-        case e:Throwable =>  JsError(error = e.getMessage)
+        case e: Throwable =>  JsError(error = e.getMessage)
       }
   }
+
   val dateTimeWriteApi: Writes[ZonedDateTime] = new Writes[ZonedDateTime] {
     def writes(z:ZonedDateTime) = JsString(formatTimestamp(z))
   }
-  val apiFormat:Format[ZonedDateTime] = Format(dateTimeReadApi,dateTimeWriteApi)
+
+  val apiFormat:Format[ZonedDateTime] = Format(dateTimeReadApi, dateTimeWriteApi)
   val mongoFormat:Format[ZonedDateTime] = Format(dateTimeReadMongo, dateTimeWriteMongo)
 
 }

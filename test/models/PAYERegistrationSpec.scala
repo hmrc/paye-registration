@@ -23,7 +23,6 @@ import enums.PAYEStatus
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
-import utils.DateFormatter
 
 class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 

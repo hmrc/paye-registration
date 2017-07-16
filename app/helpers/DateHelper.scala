@@ -21,19 +21,19 @@ import java.time.{ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
 @Singleton
-class DateHelper{
-  val formats: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXX")
+class DateHelper {
+  val dtFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXX")
 
   def formatTimestamp(timeStamp: ZonedDateTime) : String = {
     val utcTimeStamp = timeStamp.withZoneSameInstant(ZoneId.of("Z"))
-    formats.format(utcTimeStamp)
+    dtFormat.format(utcTimeStamp)
   }
 
-  def zonedDateTimeFromString(d:String) = ZonedDateTime.parse(d,formats).withZoneSameInstant(ZoneId.of("Z"))
+  def zonedDateTimeFromString(d:String) = ZonedDateTime.parse(d,dtFormat).withZoneSameInstant(ZoneId.of("Z"))
 
   def getTimestamp: ZonedDateTime = ZonedDateTime.now(ZoneId.of("Z"))
 
   def getTimestampString: String = formatTimestamp(getTimestamp)
 
-  def getDateFromTimestamp(timestamp: String): ZonedDateTime = ZonedDateTime.parse(timestamp, formats)
+  def getDateFromTimestamp(timestamp: String): ZonedDateTime = ZonedDateTime.parse(timestamp, dtFormat)
 }

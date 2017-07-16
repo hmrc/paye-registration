@@ -77,7 +77,7 @@ trait RegistrationRepository {
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
-  def populateLastAction: Future[Int]
+  def populateLastAction: Future[(Int, Int)]
 
 }
 
@@ -113,7 +113,6 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       name = Some("lastActionIndex"),
       unique = false,
       sparse = false
-
     )
   )
 
@@ -632,14 +631,22 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
   }
 
-  def populateLastAction: Future[Int] = {
+  def populateLastAction: Future[(Int, Int)] = {
+
+    def updateOutcomeCount(running: (Int, Int), res: UpdateWriteResult) = {
+      (running, res.hasErrors) match {
+        case ((successful, errors), true) =>  (successful, errors + 1)
+        case ((successful, errors), false) => (successful + 1, errors)
+      }
+    }
+
     val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
 
     for {
      lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
      updateResults <- Future.sequence(lst.map(updateLastAction))
-     count = updateResults.count(res => !res.hasErrors)
-    } yield count
+     res = updateResults
+    } yield res.foldLeft[(Int, Int)](0, 0){updateOutcomeCount}
   }
 
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {

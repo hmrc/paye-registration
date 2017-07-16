@@ -27,9 +27,9 @@ import play.api.Logger
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
-class populateLastActionOneOffJob @Inject()(mRepo: RegistrationMongoRepository)  extends PopulateLastActionOneOffJob{
-   val name: String = "populate-last-action-one-off-job"
-    val mongoRepo = mRepo
+class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongoRepository)  extends PopulateLastActionOneOffJob {
+  val name: String = "populate-last-action-one-off-job"
+  val mongoRepo = mRepo
   override lazy val lock: LockKeeper = new LockKeeper() {
     override val lockId = s"$name-lock"
     override val forceLockReleaseAfter: Duration = lockTimeout
@@ -45,11 +45,12 @@ trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
 
   override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
     PAYEFeatureSwitches.populateLastAction.enabled match {
-      case true => {
+      case true =>
         lock.tryLock{
           Logger.info(s"Triggered $name")
           mongoRepo.populateLastAction.map { s =>
-            val message = s"errors occurred when adding lastAction field in registration-information $s"
+            val (successes, failures) = s
+            val message = s"updated $successes documents successfully with $failures failures"
             Logger.info(message)
             Result(message)
           }
@@ -58,10 +59,10 @@ trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
             Result(s"$name")
           case None => Logger.info(s"failed to acquire lock for $name")
             Result(s"$name failed")
-        }recover {
+        } recover {
           case _: Exception => Result(s"$name failed")
         }
-      }
+      case false => Future.successful(Result(s"Feature is turned off"))
     }
-    }
+  }
 }
