@@ -92,13 +92,13 @@ object FeatureSwitch {
 
 object PAYEFeatureSwitches extends PAYEFeatureSwitches {
   val desServiceFeature: String = "desServiceFeature"
-  val populateLastActionFeature:String = "populateLastActionFeature"
+  val populateLastActionFeature: String = "populateLastActionFeature"
 }
 
 trait PAYEFeatureSwitches {
 
   val desServiceFeature: String
-  val populateLastActionFeature:String
+  val populateLastActionFeature: String
 
   def desService = FeatureSwitch.getProperty(desServiceFeature)
   def populateLastAction = FeatureSwitch.getProperty(populateLastActionFeature)

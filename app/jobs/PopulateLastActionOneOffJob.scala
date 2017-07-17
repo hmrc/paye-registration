@@ -16,7 +16,7 @@
 
 package jobs
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 
 import org.joda.time.Duration
 import play.modules.reactivemongo.MongoDbConnection
@@ -24,9 +24,11 @@ import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.scheduling.ExclusiveScheduledJob
 import utils.PAYEFeatureSwitches
 import play.api.Logger
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.{ExecutionContext, Future}
+
+@Singleton
 class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongoRepository)  extends PopulateLastActionOneOffJob {
   val name: String = "populate-last-action-one-off-job"
   val mongoRepo = mRepo
@@ -62,7 +64,7 @@ trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
         } recover {
           case _: Exception => Result(s"$name failed")
         }
-      case false => Future.successful(Result(s"Feature is turned off"))
+      case false => Future.successful(Result(s"Populate last action Feature is turned off"))
     }
   }
 }
