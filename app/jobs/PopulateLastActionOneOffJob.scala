@@ -24,12 +24,12 @@ import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.scheduling.ExclusiveScheduledJob
 import utils.PAYEFeatureSwitches
 import play.api.Logger
-import repositories.RegistrationMongoRepository
+import repositories.RegistrationMongo
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongoRepository)  extends PopulateLastActionOneOffJob {
+class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongo)  extends PopulateLastActionOneOffJob {
   val name: String = "populate-last-action-one-off-job"
   val mongoRepo = mRepo
   override lazy val lock: LockKeeper = new LockKeeper() {
@@ -43,22 +43,22 @@ class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongoReposito
 trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
 
   val lock:LockKeeper
-  val mongoRepo : RegistrationMongoRepository
+  val mongoRepo : RegistrationMongo
 
   override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
     PAYEFeatureSwitches.populateLastAction.enabled match {
       case true =>
         lock.tryLock{
           Logger.info(s"Triggered $name")
-          mongoRepo.populateLastAction.map { s =>
+          mongoRepo.store.populateLastAction.map { s =>
             val (successes, failures) = s
             val message = s"updated $successes documents successfully with $failures failures"
             Logger.info(message)
             Result(message)
           }
         } map {
-          case Some(x) => Logger.info(s"successfully acquired lock for $name - result ${x}")
-            Result(s"$name")
+          case Some(x) => Logger.info(s"successfully acquired lock for $name - result $x")
+            Result(s"$name: ${x.message}")
           case None => Logger.info(s"failed to acquire lock for $name")
             Result(s"$name failed")
         } recover {

@@ -42,7 +42,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService,injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics, injDateHelper)
 }
@@ -633,20 +633,13 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   def populateLastAction: Future[(Int, Int)] = {
 
-    def updateOutcomeCount(running: (Int, Int), res: UpdateWriteResult) = {
-      (running, res.hasErrors) match {
-        case ((successful, errors), true) =>  (successful, errors + 1)
-        case ((successful, errors), false) => (successful + 1, errors)
-      }
-    }
-
     val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
 
     for {
-     lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
-     updateResults <- Future.sequence(lst.map(updateLastAction))
-     res = updateResults
-    } yield res.foldLeft[(Int, Int)](0, 0){updateOutcomeCount}
+      lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
+      updateResults <- Future.sequence(lst.map(updateLastAction))
+      successes     =  updateResults.count(!_.hasErrors)
+    } yield (successes, updateResults.size - successes)
   }
 
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {

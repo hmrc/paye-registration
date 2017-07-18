@@ -44,7 +44,7 @@ case class PAYERegistration(registrationID: String,
                             partialSubmissionTimestamp: Option[String],
                             fullSubmissionTimestamp: Option[String],
                             acknowledgedTimestamp: Option[String],
-                           lastAction:Option[ZonedDateTime])
+                            lastAction:Option[ZonedDateTime])
 
 object PAYERegistration extends DateFormatter{
   implicit val format: OFormat[PAYERegistration] = (

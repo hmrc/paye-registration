@@ -16,6 +16,8 @@
 
 package config
 
+import javax.inject.{Named, Inject, Singleton}
+
 import auth.Crypto
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
@@ -28,7 +30,7 @@ import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
 import uk.gov.hmrc.crypto.PlainText
-
+import uk.gov.hmrc.play.scheduling.{RunningOfScheduledJobs, ScheduledJob}
 
 
 object ControllerConfiguration extends ControllerConfig {
@@ -54,7 +56,8 @@ object MicroserviceAuthFilter extends AuthorisationFilter with MicroserviceFilte
   override def controllerNeedsAuth(controllerName: String): Boolean = ControllerConfiguration.paramsForController(controllerName).needsAuth
 }
 
-object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with MicroserviceFilterSupport {
+object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with MicroserviceFilterSupport with RunningOfScheduledJobs {
+  override lazy val scheduledJobs = Play.current.injector.instanceOf[Jobs].lookupJobs()
   override val auditConnector = MicroserviceAuditConnector
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
@@ -78,4 +81,18 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Mi
 
     super.onStart(app)
   }
+}
+
+trait JobsList {
+  def lookupJobs(): Seq[ScheduledJob] = Seq()
+}
+
+@Singleton
+class Jobs @Inject()(
+                      @Named("populate-last-action-one-off-job") lastActionJob: ScheduledJob
+                      ) extends JobsList {
+  override def lookupJobs(): Seq[ScheduledJob] =
+    Seq(
+      lastActionJob
+    )
 }
