@@ -16,14 +16,13 @@
 package api
 
 
-import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
+import java.time.{ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import helpers.{DateHelper}
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import org.scalatest.mockito.MockitoSugar
-import play.api.{Application, Play}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsValue, Json}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
@@ -31,7 +30,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class CompanyDetailsISpec extends IntegrationSpecBase{
+class CompanyDetailsISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -53,7 +52,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase{
   class Setup  {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper){
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper){
       override val registrationFormat: Format[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.mongoFormat)    }
      val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)

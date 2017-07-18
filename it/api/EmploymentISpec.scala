@@ -31,7 +31,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class EmploymentISpec extends IntegrationSpecBase with MockitoSugar {
+class EmploymentISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -52,7 +52,7 @@ class EmploymentISpec extends IntegrationSpecBase with MockitoSugar {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

@@ -25,7 +25,6 @@ import helpers.DateHelper
 import models._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.mockito.MockitoSugar
 import reactivemongo.api.commands.WriteResult
 import services.MetricsService
 import uk.gov.hmrc.mongo.MongoSpecSupport
@@ -39,12 +38,10 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
                                         with BeforeAndAfterEach
                                         with ScalaFutures
                                         with Eventually
-                                        with WithFakeApplication
-                                        with MockitoSugar {
+                                        with WithFakeApplication {
 
   private val date = LocalDate.of(2016, 12, 20)
   private val lastUpdate = "2017-05-09T07:58:35Z"
-  private val lastUpdateZoned = ZonedDateTime.of(LocalDateTime.of(2017, 5, 9, 7, 58, 35), ZoneOffset.UTC)
 
   private val address = Address(
     "14 St Test Walk",
@@ -493,7 +490,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lazy val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
     }
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -1013,93 +1010,6 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
 
       await(repository.deleteRegistration(reg.registrationID)) shouldBe true
       await(repository.retrieveRegistration(reg.registrationID)) shouldBe None
-    }
-  }
-
-  "populateLastAction" should {
-    "modify multiple records copying lastUpdate to lastAction if lastAction does not exist" in new Setup {
-
-      await(repository.upsertRegTestOnly(
-        PAYERegistration(
-          registrationID = "fooble1",
-          transactionID = "fooble1",
-          internalID = "fooble1",
-          acknowledgementReference = Some("testAckRef"),
-          crn = None,
-          registrationConfirmation = None,
-          formCreationTimestamp = "timestamp",
-          eligibility = Some(Eligibility(false, false)),
-          status = PAYEStatus.held,
-          completionCapacity = None,
-          companyDetails = None,
-          directors = Seq.empty,
-          payeContact = None,
-          employment = None,
-          sicCodes = Seq.empty,
-          lastUpdate,
-          partialSubmissionTimestamp = None,
-          fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None,
-          lastAction = None
-        )))
-      private val lastUpdate2 = "2016-05-09T07:58:35Z"
-      private val lastUpdateZoned2 = ZonedDateTime.of(LocalDateTime.of(2016, 5, 9, 7, 58, 35), ZoneOffset.UTC)
-      await(repository.upsertRegTestOnly(
-        PAYERegistration(
-          registrationID = "fooble2",
-          transactionID = "fooble23",
-          internalID = "fooble32",
-          acknowledgementReference = Some("testAckRef"),
-          crn = None,
-          registrationConfirmation = None,
-          formCreationTimestamp = "timestamp",
-          eligibility = Some(Eligibility(false, false)),
-          status = PAYEStatus.held,
-          completionCapacity = None,
-          companyDetails = None,
-          directors = Seq.empty,
-          payeContact = None,
-          employment = None,
-          sicCodes = Seq.empty,
-          lastUpdate2,
-          partialSubmissionTimestamp = None,
-          fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None,
-          lastAction = None
-        )))
-      val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
-      await(repository.upsertRegTestOnly(
-        PAYERegistration(
-          registrationID = "fooble3",
-          transactionID = "fooble4",
-          internalID = "fooble4",
-          acknowledgementReference = Some("testAckRef"),
-          crn = None,
-          registrationConfirmation = None,
-          formCreationTimestamp = "timestamp",
-          eligibility = Some(Eligibility(false, false)),
-          status = PAYEStatus.held,
-          completionCapacity = None,
-          companyDetails = None,
-          directors = Seq.empty,
-          payeContact = None,
-          employment = None,
-          sicCodes = Seq.empty,
-          lastUpdate2,
-          partialSubmissionTimestamp = None,
-          fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None,
-          lastAction = Some(zDtNow)
-        )))
-      await(repository.count) shouldBe 3
-      await(repository.populateLastAction)
-
-      await(repository.retrieveRegistration("fooble1")).map(_.lastAction) shouldBe Some(Some(lastUpdateZoned))
-      // different date to lastUpdateZoned to show that record is updated for each and not using the same date for all records
-      await(repository.retrieveRegistration("fooble2")).map(_.lastAction) shouldBe Some(Some(lastUpdateZoned2))
-      // untouched lastAction because it already existed
-      await(repository.retrieveRegistration("fooble3")).map(_.lastAction) shouldBe Some(Some(zDtNow))
-
     }
   }
 }

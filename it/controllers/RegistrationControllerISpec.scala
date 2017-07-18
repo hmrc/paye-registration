@@ -24,18 +24,16 @@ import helpers.DateHelper
 import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import org.scalatest.mockito.MockitoSugar
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.WS
-import play.api.{Application, Play}
+import play.api.Application
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper with MockitoSugar {
+class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper {
 
   override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
 
@@ -79,7 +77,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     val timestamp = "2017-01-01T00:00:00"
     lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store

@@ -16,13 +16,12 @@
 
 package controllers
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 
 import enums.PAYEStatus
-import helpers.{DateHelper}
+import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import org.scalatest.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
@@ -31,7 +30,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TestEndpointControllerISpec extends IntegrationSpecBase with MockitoSugar {
+class TestEndpointControllerISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -56,7 +55,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with MockitoSugar 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

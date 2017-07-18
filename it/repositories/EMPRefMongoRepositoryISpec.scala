@@ -16,14 +16,11 @@
 
 package repositories
 
-import java.time.LocalDateTime
-
 import enums.PAYEStatus
-import helpers.{DateHelper}
+import helpers.DateHelper
 import models.{Eligibility, EmpRefNotification, PAYERegistration}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.mockito.MockitoSugar
 import play.api.libs.json.JsObject
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.json.ImplicitBSONHandlers
@@ -39,10 +36,7 @@ class EMPRefMongoRepositoryISpec extends UnitSpec
                                   with BeforeAndAfterEach
                                   with ScalaFutures
                                   with Eventually
-                                  with WithFakeApplication
-{
-
-
+                                  with WithFakeApplication {
   class Setup {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]

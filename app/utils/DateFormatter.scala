@@ -16,8 +16,7 @@
 
 package utils
 
-import java.time.{Instant, ZoneId, ZoneOffset, ZonedDateTime}
-import javax.inject.{Inject, Singleton}
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import helpers.DateHelper
 import play.api.libs.json._

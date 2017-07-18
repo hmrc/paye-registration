@@ -24,7 +24,6 @@ import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import org.scalatest.mockito.MockitoSugar
 import play.api.{Application}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
@@ -33,7 +32,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SubmissionISpec extends IntegrationSpecBase with MockitoSugar{
+class SubmissionISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -75,7 +74,7 @@ class SubmissionISpec extends IntegrationSpecBase with MockitoSugar{
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store

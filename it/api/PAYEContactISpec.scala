@@ -30,7 +30,7 @@ import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class  PAYEContactISpec extends IntegrationSpecBase {
+class PAYEContactISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -52,7 +52,7 @@ class  PAYEContactISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics,mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
