@@ -81,7 +81,7 @@ trait RegistrationRepository {
 
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService,dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format

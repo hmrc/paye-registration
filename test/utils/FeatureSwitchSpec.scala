@@ -87,7 +87,121 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
     FeatureSwitch.enable(booleanFeatureSwitch).enabled shouldBe true
   }
 
-  "SCRSFeatureSwitches" should {
+  "apply" should {
+
+    "return a constructed BooleanFeatureSwitch if the set system property is a boolean" in {
+      System.setProperty("feature.test", "true")
+
+      FeatureSwitch("test") shouldBe BooleanFeatureSwitch("test", enabled = true)
+    }
+
+    "create an instance of BooleanFeatureSwitch which inherits FeatureSwitch" in {
+      FeatureSwitch("test") shouldBe a[FeatureSwitch]
+      FeatureSwitch("test") shouldBe a[BooleanFeatureSwitch]
+    }
+
+    "create an instance of EnabledTimedFeatureSwitch which inherits FeatureSwitch" in {
+      System.setProperty("feature.test", "2016-05-05T14:30:00Z_2016-05-08T14:30:00Z")
+
+      FeatureSwitch("test") shouldBe a[FeatureSwitch]
+      FeatureSwitch("test") shouldBe a[TimedFeatureSwitch]
+      FeatureSwitch("test") shouldBe a[EnabledTimedFeatureSwitch]
+    }
+
+    "return an enabled EnabledTimedFeatureSwitch when only the end datetime is specified and is in the future" in {
+      System.setProperty("feature.test", "X_9999-05-08T14:30:00Z")
+
+      FeatureSwitch("test") shouldBe a[EnabledTimedFeatureSwitch]
+      FeatureSwitch("test").enabled shouldBe true
+    }
+
+    "return a disabled EnabledTimedFeatureSwitch when only the end datetime is specified and is in the past" in {
+      System.setProperty("feature.test", "X_2000-05-08T14:30:00Z")
+
+      FeatureSwitch("test") shouldBe a[EnabledTimedFeatureSwitch]
+      FeatureSwitch("test").enabled shouldBe false
+    }
+
+    "return an enabled EnabledTimedFeatureSwitch when only the start datetime is specified and is in the past" in {
+      System.setProperty("feature.test", "2000-05-05T14:30:00Z_X")
+
+      FeatureSwitch("test") shouldBe a[EnabledTimedFeatureSwitch]
+      FeatureSwitch("test").enabled shouldBe true
+    }
+
+    "return a disabled TimedFeatureSwitch when neither date is specified" in {
+      System.setProperty("feature.test", "X_X")
+
+      FeatureSwitch("test").enabled shouldBe false
+    }
+
+    "create an instance of DisabledTimedFeatureSwitch which inherits FeatureSwitch" in {
+      System.setProperty("feature.test", "!2016-05-05T14:30:00Z_2016-05-08T14:30:00Z")
+
+      FeatureSwitch("test") shouldBe a[FeatureSwitch]
+      FeatureSwitch("test") shouldBe a[TimedFeatureSwitch]
+      FeatureSwitch("test") shouldBe a[DisabledTimedFeatureSwitch]
+    }
+
+    "return an enabled DisabledTimedFeatureSwitch when only the end datetime is specified and is in the future" in {
+      System.setProperty("feature.test", "!X_9999-05-08T14:30:00Z")
+
+      FeatureSwitch("test") shouldBe a[DisabledTimedFeatureSwitch]
+      FeatureSwitch("test").enabled shouldBe false
+    }
+
+    "return a disabled DisabledTimedFeatureSwitch when only the end datetime is specified and is in the past" in {
+      System.setProperty("feature.test", "!X_2000-05-08T14:30:00Z")
+
+      FeatureSwitch("test") shouldBe a[DisabledTimedFeatureSwitch]
+      FeatureSwitch("test").enabled shouldBe true
+    }
+
+    "return an enabled DisabledTimedFeatureSwitch when only the start datetime is specified and is in the past" in {
+      System.setProperty("feature.test", "!2000-05-05T14:30:00Z_X")
+
+      FeatureSwitch("test") shouldBe a[DisabledTimedFeatureSwitch]
+      FeatureSwitch("test").enabled shouldBe false
+    }
+
+    "return an enabled DisabledTimedFeatureSwitch when neither date is specified" in {
+      System.setProperty("feature.test", "!X_X")
+
+      FeatureSwitch("test").enabled shouldBe true
+    }
+  }
+
+  "unapply" should {
+
+    "deconstruct a given FeatureSwitch into it's name and a false enabled value if undefined as a system property" in {
+      val fs = FeatureSwitch("test")
+
+      FeatureSwitch.unapply(fs) shouldBe Some("test" -> false)
+    }
+
+    "deconstruct a given FeatureSwitch into its name and true if defined as true as a system property" in {
+      System.setProperty("feature.test", "true")
+      val fs = FeatureSwitch("test")
+
+      FeatureSwitch.unapply(fs) shouldBe Some("test" -> true)
+    }
+
+    "deconstruct a given FeatureSwitch into its name and false if defined as false as a system property" in {
+      System.setProperty("feature.test", "false")
+      val fs = FeatureSwitch("test")
+
+      FeatureSwitch.unapply(fs) shouldBe Some("test" -> false)
+    }
+
+    "deconstruct a given TimedFeatureSwitch into its name and enabled flag if defined as a system property" in {
+      System.setProperty("feature.test", "2016-05-05T14:30:00Z_2016-05-08T14:30:00Z")
+      val fs = FeatureSwitch("test")
+
+      FeatureSwitch.unapply(fs) shouldBe Some("test" -> false)
+    }
+  }
+
+  "PAYEFeatureSwitches" should {
     "return a disabled feature when the associated system property doesn't exist" in {
       payeFeatureSwitch.desService.enabled shouldBe false
     }
@@ -118,6 +232,18 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
 
     "return an empty option if a system property doesn't exist when using the apply function" in {
       payeFeatureSwitch("somethingElse") shouldBe None
+    }
+
+    "return true if the populateLastAction system property is true" in {
+      System.setProperty("feature.populateLastActionFeature", "true")
+
+      payeFeatureSwitch("populateLastAction") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", true))
+    }
+
+    "return false if the populateLastAction system property is false" in {
+      System.setProperty("feature.populateLastActionFeature", "false")
+
+      payeFeatureSwitch("populateLastAction") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", false))
     }
   }
 
