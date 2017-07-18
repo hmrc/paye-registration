@@ -565,6 +565,199 @@ class SubmissionISpec extends IntegrationSpecBase {
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
     }
 
+    "return a 200 with an ack ref when a full DES submission completes successfully with a company containing none standard characters" in new Setup {
+      setupSimpleAuthMocks()
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(200)
+        )
+      )
+
+      stubBusinessProfile()
+
+      stubFor(post(urlMatching(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              incorpUpdate(accepted)
+            )
+        )
+      )
+
+      stubFor(get(urlMatching(s"/company-registration/corporation-tax-registration/12345/corporation-tax-registration"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(
+              """{
+                | "acknowledgementReferences" : {
+                |   "ctUtr" : "testCtUtr"
+                | }
+                |}
+                |""".stripMargin
+            )
+        )
+      )
+
+      val submission = PAYERegistration(
+        regId,
+        transactionID,
+        intId,
+        Some("testAckRef"),
+        None,
+        None,
+        timestamp,
+        Some(Eligibility(false, false)),
+        PAYEStatus.draft,
+        Some("Director"),
+        Some(
+          CompanyDetails(
+            "téštÇômpāñÿÑámë",
+            Some("test"),
+            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
+            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
+            DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+          )
+        ),
+        Seq(
+          Director(
+            Name(
+              forename = Some("Thierry"),
+              otherForenames = Some("Dominique"),
+              surname = Some("Henry"),
+              title = Some("Sir")
+            ),
+            Some("SR123456C")
+          )
+        ),
+        Some(
+          PAYEContact(
+            contactDetails = PAYEContactDetails(
+              name = "Thierry Henry",
+              digitalContactDetails = DigitalContactDetails(
+                Some("test@test.com"),
+                Some("1234"),
+                Some("4358475")
+              )
+            ),
+            correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
+          )
+        ),
+        Some(
+          Employment(
+            employees = true,
+            companyPension = Some(true),
+            subcontractors = true,
+            firstPaymentDate = LocalDate.of(2016, 12, 20)
+          )
+        ),
+        Seq(
+          SICCode(code = None, description = Some("consulting"))
+        ),
+        lastUpdate,
+        partialSubmissionTimestamp = None,
+        fullSubmissionTimestamp = None,
+        acknowledgedTimestamp = None
+      )
+
+      await(repository.insert(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = await(client(s"$regId/submit-registration").put(""))
+
+      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             | "acknowledgementReference": "testAckRef",
+             |    "metaData": {
+             |        "businessType": "Limited company",
+             |        "sessionID": "session-12345",
+             |        "credentialID": "xxx2",
+             |        "language": "en",
+             |        "formCreationTimestamp": "$timestamp",
+             |        "submissionFromAgent": false,
+             |        "completionCapacity": "Director",
+             |        "declareAccurateAndComplete": true
+             |    },
+             |    "payAsYouEarn": {
+             |        "limitedCompany": {
+             |            "companyUTR": "testCtUtr",
+             |            "crn": "OC123456",
+             |            "companiesHouseCompanyName": "testCompanyName",
+             |            "nameOfBusiness": "test",
+             |            "registeredOfficeAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "postcode": "TE1 1ST"
+             |            },
+             |            "businessAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            },
+             |            "businessContactDetails": {
+             |                "phoneNumber": "012345",
+             |                "mobileNumber": "543210",
+             |                "email": "test@email.com"
+             |            },
+             |            "natureOfBusiness": "consulting",
+             |            "directors": [
+             |                {
+             |                   "directorName": {
+             |                     "title": "Sir",
+             |              	      "firstName": "Thierry",
+             |              	      "lastName": "Henry",
+             |              	      "middleName": "Dominique"
+             |                   },
+             |                   "directorNINO": "SR123456C"
+             |                }
+             |            ],
+             |            "operatingOccPensionScheme": true
+             |        },
+             |        "employingPeople": {
+             |            "dateOfFirstEXBForEmployees": "2016-12-20",
+             |            "numberOfEmployeesExpectedThisYear": "1",
+             |            "engageSubcontractors": true,
+             |            "correspondenceName": "Thierry Henry",
+             |            "correspondenceContactDetails": {
+             |                "phoneNumber": "1234",
+             |                "mobileNumber": "4358475",
+             |                "email": "test@test.com"
+             |            },
+             |            "payeCorrespondenceAddress": {
+             |                "addressLine1": "19 St Walk",
+             |                "addressLine2": "Testley CA",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            }
+             |        }
+             |    }
+             |}
+          """.stripMargin).toString())
+        )
+      )
+
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson("testAckRef")
+
+
+      val reg = await(repository.retrieveRegistration(regId))
+
+      reg.get.status shouldBe PAYEStatus.submitted
+      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+    }
+
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
       setupSimpleAuthMocks()
 

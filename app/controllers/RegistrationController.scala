@@ -17,7 +17,7 @@
 package controllers
 
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
-import common.exceptions.SubmissionExceptions.{RegistrationInvalidStatus, ErrorRegistrationException}
+import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.SubmissionMarshallingException
 import connectors.{AuthConnect, AuthConnector}
 import enums.PAYEStatus
@@ -27,7 +27,6 @@ import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import javax.inject.{Inject, Singleton}
-
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
 import play.api.Logger
@@ -112,7 +111,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
             } recover {
-              case missing   : MissingRegDocument => NotFound
+              case missing   : MissingRegDocument          => NotFound
               case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)
             }
           }

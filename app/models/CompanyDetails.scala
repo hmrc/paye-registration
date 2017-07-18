@@ -80,11 +80,18 @@ object Address {
 object CompanyDetails extends CompanyDetailsValidator {
 
   implicit val format: Format[CompanyDetails] = (
-      (__ \ "companyName").format[String](companyNameValidator) and
-      (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-      (__ \ "roAddress").format[Address] and
-      (__ \ "ppobAddress").format[Address] and
-      (__ \ "businessContactDetails").format[DigitalContactDetails]
-    )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
+    (__ \ "companyName").format[String](companyNameValidator) and
+    (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
+    (__ \ "roAddress").format[Address] and
+    (__ \ "ppobAddress").format[Address] and
+    (__ \ "businessContactDetails").format[DigitalContactDetails]
+  )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 
+  val companyDetailDESFormat: Format[CompanyDetails] = (
+    (__ \ "companyName").format[String](companyNameForDES) and
+    (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
+    (__ \ "roAddress").format[Address] and
+    (__ \ "ppobAddress").format[Address] and
+    (__ \ "businessContactDetails").format[DigitalContactDetails]
+  )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 }

@@ -16,14 +16,16 @@
 
 package helpers
 
+import java.text.Normalizer
+import java.text.Normalizer.Form
 import java.time.LocalDate
 
 import models.{DigitalContactDetails, PAYEContact}
+import play.api.Logger
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads.{maxLength, minLength, pattern}
 import play.api.libs.json._
-
 
 object Validation {
 
@@ -54,7 +56,18 @@ trait CompanyDetailsValidator {
 
   import Validation._
 
-  val companyNameValidator: Format[String] = readToFmt(pattern(companyNameRegex.r))
+  val companyNameForDES: Writes[String] = new Writes[String] {
+    override def writes(o: String) = {
+      val normalised = Normalizer.normalize(o, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+      Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $o and after; $normalised")
+      Writes.StringWrites.writes(normalised)
+    }
+  }
+
+  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(
+    companyName => Normalizer.normalize(companyName, Form.NFKD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").matches(companyNameRegex)
+  )
+
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }
 
