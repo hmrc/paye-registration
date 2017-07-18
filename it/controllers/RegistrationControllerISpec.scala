@@ -26,8 +26,7 @@ import models._
 import models.external.BusinessProfile
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.WS
-import play.api.{Application, Play}
+import play.api.Application
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
@@ -76,9 +75,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = new DateHelper {
-      override def getTimestampString: String = timestamp
-    }
+    val timestamp = "2017-01-01T00:00:00"
+    lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
@@ -156,7 +154,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val processedSubmission = PAYERegistration(
@@ -178,7 +177,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lastUpdate,
     partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
@@ -202,7 +202,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lastUpdate,
     partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
     fullSubmissionTimestamp = Some(fullSubmissionTimestamp),
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")

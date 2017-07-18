@@ -19,10 +19,25 @@ import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import uk.gov.hmrc.play.test.UnitSpec
+import utils.{PAYEFeatureSwitches, FeatureSwitch}
 
 trait IntegrationSpecBase extends UnitSpec
   with GuiceOneServerPerSuite with ScalaFutures with IntegrationPatience with Matchers
   with WiremockHelper with BeforeAndAfterEach with BeforeAndAfterAll {
+
+  def setupFeatures(
+                     desService: Boolean = false,
+                     lastActionJob: Boolean = false
+                     ) = {
+    def enableFeature(fs: FeatureSwitch, enabled: Boolean) = {
+      enabled match {
+        case true => FeatureSwitch.enable(fs)
+        case _ => FeatureSwitch.disable(fs)
+      }
+    }
+    enableFeature(PAYEFeatureSwitches.desService, desService)
+    enableFeature(PAYEFeatureSwitches.populateLastAction, lastActionJob)
+  }
 
   override def beforeEach() = {
     resetWiremock()

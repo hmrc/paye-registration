@@ -15,12 +15,13 @@
  */
 package api
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, Employment, PAYERegistration}
+import org.scalatest.mockito.MockitoSugar
 import play.api.{Application, Play}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -48,7 +49,6 @@ class EmploymentISpec extends IntegrationSpecBase {
     .build
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
-
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
@@ -61,7 +61,7 @@ class EmploymentISpec extends IntegrationSpecBase {
 
   "PAYE Registration API - Employment" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-
+    val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -82,7 +82,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -102,9 +102,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/employment").get.futureValue
       response.status shouldBe 200
@@ -118,7 +119,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -138,9 +139,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val getResponse1 = client(s"/${regID}/employment").get.futureValue
       getResponse1.status shouldBe 404
@@ -162,7 +164,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -182,9 +184,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/employment").get.futureValue
       response.status shouldBe 403
@@ -197,7 +200,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -217,9 +220,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/employment")
         .patch(Json.toJson(validEmployment))
@@ -241,7 +245,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -261,9 +265,10 @@ class EmploymentISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val getResponse1 = client(s"/${regID}/employment").get.futureValue
       getResponse1.status shouldBe 404

@@ -15,18 +15,15 @@
  */
 package api
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.time.{ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, EmpRefNotification, PAYERegistration}
-import play.api.{Application, Play}
+import models.{Eligibility, PAYERegistration}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.WS
-import play.api.test.FakeApplication
 import repositories.RegistrationMongo
 import services.MetricsService
 
@@ -77,8 +74,10 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val intID = "Int-xxx"
       val ackRef = "BRPY-xxx"
       val timestamp = "2017-01-01T00:00:00"
+      val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
+      val dtTimestamp = "2000-01-20T16:01:00Z"
 
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -98,11 +97,13 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}").get.futureValue
+
       response.status shouldBe 200
       response.json shouldBe Json.obj(
         "registrationID" -> regID,
@@ -113,7 +114,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
         "status" -> PAYEStatus.draft,
         "directors" -> Json.arr(),
         "sicCodes" -> Json.arr(),
-        "lastUpdate" -> lastUpdate
+        "lastUpdate" -> lastUpdate,
+        "lastAction" -> dtTimestamp
       )
     }
 
@@ -124,7 +126,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -144,9 +147,10 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}").get.futureValue
       response.status shouldBe 403

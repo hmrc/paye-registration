@@ -17,7 +17,7 @@
 package helpers
 
 import java.time.format.DateTimeParseException
-import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
+import java.time.{LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
 
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -54,10 +54,18 @@ class DateHelperSpec extends UnitSpec {
   }
 
   "DateHelper" should {
-    "parse and convert an Australian time" in {
-      val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0), ZoneId.of("Australia/Sydney"))
+    "parse and convert an Argentinian time" in {
+      val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 2, 20, 12, 35, 0), ZoneId.of("America/Argentina/Buenos_Aires"))
 
-      TestDateHelper.formatTimestamp(timestamp) shouldBe "2017-02-20T01:35:00Z"
+      TestDateHelper.formatTimestamp(timestamp) shouldBe "2017-02-20T15:35:00Z"
+    }
+  }
+
+  "zonedDateTimeFromString" should {
+    "return ZonedDateTime from a valid ZoneDateTimeStamp passed in" in {
+      val timestamp = "2015-02-20T15:30:00Z"
+      val zonedDateTime = ZonedDateTime.of(LocalDateTime.of(2015,2,20,15,30),ZoneOffset.UTC)
+      TestDateHelper.zonedDateTimeFromString(timestamp) shouldBe zonedDateTime
     }
   }
 }

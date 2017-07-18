@@ -16,8 +16,8 @@
 
 package models
 
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime}
+
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import play.api.data.validation.ValidationError
@@ -28,6 +28,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
   val timestamp = "2017-05-09T07:58:35.000Z"
 
+  val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
   "Creating a PAYERegistration model from Json" should {
     "complete successfully from full Json" in {
 
@@ -128,7 +129,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "description":"laundring"
            |    }
            |  ],
-           |  "lastUpdate": "$timestamp"
+           |  "lastUpdate": "$timestamp",
+           |  "lastAction": "2000-01-20T16:00:00Z"
            |}
         """.stripMargin)
 
@@ -200,10 +202,115 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         lastUpdate = timestamp,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
-        acknowledgedTimestamp = None
+        acknowledgedTimestamp = None,
+        lastAction = Some(zDtNow)
       )
 
-      Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
+      Json.fromJson[PAYERegistration](json)(PAYERegistration.format) shouldBe JsSuccess(tstPAYERegistration)
+    }
+
+    "complete successfully from json when lastAction is in mongo Format (using mongo reads)" in {
+      val json1 = Json.parse(
+        """
+           |{
+           |  "registrationID":"12345",
+           |  "transactionID" : "NNASD9789F",
+           |  "internalID" : "09876",
+           |  "formCreationTimestamp":"2016-05-31",
+           |  "registrationConfirmation" : {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
+           |  },
+           |  "eligibility" : {
+           |    "companyEligibility" : false,
+           |    "directorEligibility" : false
+           |  },
+           |  "status":"draft",
+           |  "completionCapacity":"Director",
+           |  "companyDetails":
+           |    {
+           |      "companyName":"Test Company",
+           |      "tradingName":"Test Trading Name",
+           |      "roAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "auditRef":"testAudit"
+           |      },
+           |      "ppobAddress": {
+           |        "line1":"15 St Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "country":"UK"
+           |      },
+           |      "businessContactDetails": {
+           |        "email":"email@test.co.uk",
+           |        "phoneNumber":"999",
+           |        "mobileNumber":"00000"
+           |      }
+           |    },
+           |  "directors" : [
+           |    {
+           |      "nino":"SR123456C",
+           |      "director": {
+           |        "forename":"Thierry",
+           |        "other_forenames":"Dominique",
+           |        "surname":"Henry",
+           |        "title":"Sir"
+           |      }
+           |    },
+           |    {
+           |      "nino":"SR000009C",
+           |      "director": {
+           |        "forename":"David",
+           |        "other_forenames":"Jesus",
+           |        "surname":"Trezeguet",
+           |        "title":"Mr"
+           |      }
+           |    }
+           |  ],
+           |  "payeContact": {
+           |    "contactDetails": {
+           |      "name": "toto tata",
+           |      "digitalContactDetails": {
+           |        "email": "payeemail@test.co.uk",
+           |        "phoneNumber": "654",
+           |        "mobileNumber": "12345"
+           |      }
+           |    },
+           |    "correspondenceAddress": {
+           |      "line1":"19 St Walk",
+           |      "line2":"Testley CA",
+           |      "line3":"Testford",
+           |      "line4":"Testshire",
+           |      "country":"UK"
+           |    }
+           |  },
+           |  "employment": {
+           |    "first-payment-date": "2016-12-20",
+           |    "cis": true,
+           |    "employees": true,
+           |    "ocpn": true
+           |  },
+           |  "sicCodes": [
+           |    {
+           |      "code":"666",
+           |      "description":"demolition"
+           |    },
+           |    {
+           |      "description":"laundring"
+           |    }
+           |  ],
+           |  "lastUpdate": "2017-05-09T07:58:35.000Z",
+           |  "lastAction": {"$date": 1483232461000 }
+           |}
+        """.stripMargin)
+
+      Json.fromJson[PAYERegistration](json1)(PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)).map(s => s.lastAction).get shouldBe Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
     }
 
     "complete successfully from Json with no companyDetails" in {
@@ -240,7 +347,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         lastUpdate = timestamp,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
-        acknowledgedTimestamp = None
+        acknowledgedTimestamp = None,
+        lastAction = None
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

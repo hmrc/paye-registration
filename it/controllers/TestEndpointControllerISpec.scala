@@ -16,16 +16,15 @@
 
 package controllers
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Application, Play}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
-import play.api.libs.ws.WS
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import services.MetricsService
 
@@ -91,7 +90,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -115,7 +115,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -157,7 +158,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -181,7 +183,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
 
@@ -230,7 +233,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
       await(repository.count) shouldBe 1
@@ -295,7 +299,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       )
 
@@ -305,7 +310,6 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
 
     "return a 400 when the json body cannot be validated" in new Setup {
       setupSimpleAuthMocks()
-
       val regID1 = "12345"
       val transactionID = "NN1234"
       val intID = "Int-xxx"
@@ -331,7 +335,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       ))
       await(repository.count) shouldBe 1

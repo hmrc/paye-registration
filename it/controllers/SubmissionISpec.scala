@@ -24,10 +24,9 @@ import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import play.api.{Application, Play}
+import play.api.{Application}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.WS
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 
@@ -159,7 +158,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
   val processedSubmission = PAYERegistration(
     regId,
@@ -180,7 +180,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   val crn = "OC123456"

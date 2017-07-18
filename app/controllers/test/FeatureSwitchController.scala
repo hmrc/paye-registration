@@ -25,26 +25,23 @@ import utils._
 import scala.concurrent.Future
 
 @Singleton
-class FeatureSwitchController @Inject()(injFeatureSwitch: FeatureSwitchManager,
-                                        injPayeFeatureSwitch: PAYEFeatureSwitch) extends FeatureSwitchCtrl{
-  val featureManager = injFeatureSwitch
-  val PayeFeatureSwitch = injPayeFeatureSwitch
-}
+class FeatureSwitchController extends FeatureSwitchCtrl
+
+
 
 trait FeatureSwitchCtrl extends BaseController {
 
-  val featureManager : FeatureManager
-  val PayeFeatureSwitch : PAYEFeatureSwitches
+  val fs =  FeatureSwitch
 
   def switch(featureName: String, featureState: String) = Action.async {
     implicit request =>
 
       def feature: FeatureSwitch = featureState match {
-        case "true" => featureManager.enable(BooleanFeatureSwitch(featureName, enabled = true))
-        case _ => featureManager.disable(BooleanFeatureSwitch(featureName, enabled = false))
+        case "true" => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
+        case _ => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
       }
 
-      PayeFeatureSwitch(featureName) match {
+      PAYEFeatureSwitches(featureName) match {
         case Some(_) => Future.successful(Ok(feature.toString))
         case None => Future.successful(BadRequest)
       }

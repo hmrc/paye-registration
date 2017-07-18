@@ -16,16 +16,13 @@
 
 package api
 
-import java.time.LocalDateTime
-
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, EmpRefNotification, PAYERegistration, SICCode}
-import play.api.{Application, Play}
+import models.{Eligibility, PAYERegistration, SICCode}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.WS
 import repositories.RegistrationMongo
 import services.MetricsService
 
@@ -99,7 +96,8 @@ class SICCodesISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       )
 
@@ -135,7 +133,8 @@ class SICCodesISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       )
 
@@ -179,7 +178,8 @@ class SICCodesISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       )
 
@@ -214,7 +214,8 @@ class SICCodesISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = None
         )
       )
 

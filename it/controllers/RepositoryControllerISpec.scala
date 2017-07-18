@@ -22,9 +22,8 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Application, Play}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.ws.WS
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 
@@ -59,9 +58,9 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
-    lazy val mockDateHelper = new DateHelper {
+     val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
-    }
+     }
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
     val sequenceMongo = new SequenceMongo()
     val repository: RegistrationMongoRepository = mongo.store
@@ -130,7 +129,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = None
   )
 
   "deletePAYERegistration" should {

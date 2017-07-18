@@ -16,20 +16,22 @@
 
 package api
 
-import java.time.LocalDateTime
+import java.time.{ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Application, Play}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.WS
+import play.api.libs.json._
 import repositories.RegistrationMongo
 import services.MetricsService
 
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
+
 
 class DirectorsISpec extends IntegrationSpecBase {
   val mockHost = WiremockHelper.wiremockHost
@@ -58,9 +60,10 @@ class DirectorsISpec extends IntegrationSpecBase {
     await(repository.ensureIndexes)
   }
 
+
   "PAYE Registration API - Directors" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-
+    val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
     def setupSimpleAuthMocks() = {
       stubPost("/write/audit", 200, """{"x":2}""")
       stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
@@ -90,12 +93,12 @@ class DirectorsISpec extends IntegrationSpecBase {
 
     "Return a 200 when the user gets directors" in new Setup {
       setupSimpleAuthMocks()
-
       val regID = "12345"
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+
+      val mongoFormattedRegDoc =
         PAYERegistration(
           regID,
           transactionID,
@@ -115,13 +118,15 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
-        )
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
       )
+      await(repository.upsertRegTestOnly(mongoFormattedRegDoc))
+
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validDirectors)
+     response.json shouldBe Json.toJson(validDirectors)
     }
 
     "Return a 200 when the user upserts directors" in new Setup {
@@ -131,7 +136,7 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -151,8 +156,10 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
+      )
       )
 
       val getResponse1 = client(s"/${regID}/directors").get.futureValue
@@ -175,7 +182,7 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -195,8 +202,10 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
-        ))
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
+        )
+      ))
 
 
       val response = client(s"/${regID}/directors").get.futureValue
@@ -210,7 +219,7 @@ class DirectorsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      await(repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -230,9 +239,10 @@ class DirectorsISpec extends IntegrationSpecBase {
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
         )
-      )
+      ))
 
       val response = client(s"/${regID}/directors")
         .patch(Json.toJson(validDirectors))

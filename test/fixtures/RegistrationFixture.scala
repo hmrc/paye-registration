@@ -17,10 +17,9 @@
 package fixtures
 
 import models._
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
-import helpers.DateHelper
 
 trait RegistrationFixture {
 
@@ -77,6 +76,9 @@ trait RegistrationFixture {
     correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"))
   )
 
+  val zDtNow = ZonedDateTime.of(LocalDateTime.of(2017,1,10,1,2,1),ZoneOffset.UTC)
+
+
   val validRegistration = PAYERegistration(
     registrationID = "AC187651",
     transactionID = "NNASD9789F",
@@ -99,7 +101,8 @@ trait RegistrationFixture {
     lastUpdate = "2017-05-09T07:58:35Z",
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = Some(zDtNow)
   )
 
 

@@ -16,7 +16,7 @@
 
 package services
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
@@ -25,7 +25,7 @@ import connectors._
 import enums.{AddressTypes, IncorporationStatus, PAYEStatus}
 import models._
 import models.submission._
-import helpers.{DateHelper, PAYERegSpec}
+import helpers.PAYERegSpec
 import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
 import org.mockito.ArgumentMatchers
@@ -71,6 +71,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   val lastUpdate = "2017-05-09T07:58:35Z"
+  val zDtNow = ZonedDateTime.of(LocalDateTime.of(1,1,1,1,1),ZoneOffset.UTC)
 
   val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
@@ -158,7 +159,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
     lastUpdate = lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = Some(zDtNow)
   )
 
   val validRegistrationAfterPartialSubmission = PAYERegistration(
@@ -180,7 +182,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
     lastUpdate = lastUpdate,
     partialSubmissionTimestamp = Some(lastUpdate),
     fullSubmissionTimestamp = None,
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = Some(zDtNow)
   )
 
   val validRegistrationAfterTopUpSubmission = PAYERegistration(
@@ -206,7 +209,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
     lastUpdate = lastUpdate,
     partialSubmissionTimestamp = Some(lastUpdate),
     fullSubmissionTimestamp = Some(lastUpdate),
-    acknowledgedTimestamp = None
+    acknowledgedTimestamp = None,
+    lastAction = Some(zDtNow)
   )
 
   val validDESCompletionCapacity = DESCompletionCapacity(

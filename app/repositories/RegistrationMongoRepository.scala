@@ -25,7 +25,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import models._
 import play.api.Logger
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json._
 import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -42,8 +42,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService,
-                                  injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics, injDateHelper)
 }
@@ -77,8 +76,9 @@ trait RegistrationRepository {
   def dropCollection: Future[Unit]
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
+  def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
+  def populateLastAction: Future[(Int, Int)]
 
-  val dateHelper: DateHelper
 }
 
 class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
@@ -88,7 +88,6 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   ) with RegistrationRepository
     with AuthorisationResource[String] {
 
-  override val dateHelper: DateHelper = dh
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -107,6 +106,12 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       key = Seq("transactionID" -> IndexType.Ascending),
       name = Some("TxId"),
       unique = true,
+      sparse = false
+    ),
+    Index(
+      key = Seq("lastAction" -> IndexType.Ascending),
+      name = Some("lastActionIndex"),
+      unique = false,
       sparse = false
     )
   )
@@ -197,7 +202,7 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     val mongoTimer = metricsService.mongoResponseTimer.time()
-    val timestamp = dateHelper.getTimestampString
+    val timestamp = dh.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
         val reg = payeStatus match {
@@ -596,7 +601,8 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
-    val timeStamp = dateHelper.getTimestampString
+    val timeStamp = dh.getTimestampString
+
     PAYERegistration(
       registrationID = registrationID,
       transactionID = transactionID,
@@ -616,11 +622,34 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
       lastUpdate = timeStamp,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
-      acknowledgedTimestamp = None
+      acknowledgedTimestamp = None,
+      lastAction = Some(dh.getTimestamp)
     )
   }
 
   private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
-    collection.update(doc, reg.copy(lastUpdate = dateHelper.getTimestampString)).map(f)
+    collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
   }
+
+  def populateLastAction: Future[(Int, Int)] = {
+
+    val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
+
+    for {
+      lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
+      updateResults <- Future.sequence(lst.map(updateLastAction))
+      successes     =  updateResults.count(!_.hasErrors)
+    } yield (successes, updateResults.size - successes)
+  }
+
+  private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
+    val res = dh.zonedDateTimeFromString(reg.lastUpdate)
+    collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat))))
+  }
+
+  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
+     collection.insert[JsObject](w.writes(p))
+     }
+
+
 }
