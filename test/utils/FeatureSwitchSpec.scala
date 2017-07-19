@@ -234,16 +234,16 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
       payeFeatureSwitch("somethingElse") shouldBe None
     }
 
-    "return true if the populateLastAction system property is true" in {
+    "return true if the populateLastActionFeature system property is true" in {
       System.setProperty("feature.populateLastActionFeature", "true")
 
-      payeFeatureSwitch("populateLastAction") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", true))
+      payeFeatureSwitch("populateLastActionFeature") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", true))
     }
 
-    "return false if the populateLastAction system property is false" in {
+    "return false if the populateLastActionFeature system property is false" in {
       System.setProperty("feature.populateLastActionFeature", "false")
 
-      payeFeatureSwitch("populateLastAction") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", false))
+      payeFeatureSwitch("populateLastActionFeature") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", false))
     }
   }
 

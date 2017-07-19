@@ -104,8 +104,8 @@ trait PAYEFeatureSwitches {
   def populateLastAction = FeatureSwitch.getProperty(populateLastActionFeature)
 
   def apply(name: String): Option[FeatureSwitch] = name match {
-    case "desServiceFeature" => Some(desService)
-    case "populateLastAction" => Some(populateLastAction)
+    case `desServiceFeature` => Some(desService)
+    case `populateLastActionFeature` => Some(populateLastAction)
     case _ => None
   }
 }
