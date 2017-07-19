@@ -421,7 +421,7 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.json shouldBe Json.toJson("testAckRef")
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp))
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
@@ -592,7 +592,7 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.json shouldBe Json.toJson("testAckRef")
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp))
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
@@ -612,7 +612,7 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.status shouldBe 204
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(rejectedSubmission.copy(lastUpdate = reg.get.lastUpdate))
+      reg shouldBe Some(rejectedSubmission.copy(lastUpdate = reg.get.lastUpdate, lastAction = reg.get.lastAction))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
