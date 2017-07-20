@@ -62,7 +62,7 @@ trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
           case None => Logger.info(s"failed to acquire lock for $name")
             Result(s"$name failed")
         } recover {
-          case _: Exception => Result(s"$name failed")
+          case ex: Exception => Result(s"$name failed. Exception generated: ${ex.getClass.toString}, Reason: ${ex.getMessage}")
         }
       case false => Future.successful(Result(s"Populate last action Feature is turned off"))
     }
