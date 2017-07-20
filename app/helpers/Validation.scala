@@ -57,26 +57,26 @@ object Validation {
 trait CompanyDetailsValidator {
 
   import Validation._
+
+  private def validateCompanyName(companyName: String): String = {
+    Normalizer.normalize(
+      companyName
+        .replaceAll("æ", "ae")
+        .replaceAll("œ", "oe")
+        .replaceAll("ß", "ss")
+        .replaceAll("ø", "o"), Form.NFD)
+      .replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
+  }
+
   val companyNameForDES: Writes[String] = new Writes[String] {
-    override def writes(o: String) = {
-      val ae = o.replace("æ", "ae")
-      val oe = ae.replace("œ", "oe")
-      val ss = oe.replace("ß", "ss")
-      val normalised = Normalizer.normalize(ss, Form.NFD).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
-      Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $o and after; $normalised")
+    override def writes(companyName: String) = {
+      val normalised = validateCompanyName(companyName)
+      Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $companyName and after; $normalised")
       Writes.StringWrites.writes(normalised)
     }
   }
 
-  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(
-    companyName => {
-      val ae = companyName.replace("æ", "ae")
-      val oe = ae.replace("œ", "oe")
-      val ss = oe.replace("ß", "ss")
-      val normalised = Normalizer.normalize(ss, Form.NFD).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
-      normalised.matches(companyNameRegex)
-    }
-  )
+  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(companyName => validateCompanyName(companyName).matches(companyNameRegex))
 
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }

@@ -63,8 +63,6 @@ case class DESLimitedCompany(companyUTR: Option[String],
                              operatingOccPensionScheme: Option[Boolean])
 
 object DESLimitedCompany {
-  println()
-
   implicit val writes: Writes[DESLimitedCompany] = (
     (__ \ "companyUTR").writeNullable[String] and
     (__ \ "companiesHouseCompanyName").write[String](CompanyDetails.companyNameForDES) and
