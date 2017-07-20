@@ -21,12 +21,13 @@ import java.time.LocalDate
 import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
 import helpers.DateHelper
-import itutil.{IntegrationSpecBase, WiremockHelper}
+import itutil.{MongoBaseSpec, IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
 import play.api.{Application}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
+import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 
@@ -62,6 +63,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build()
 
+  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
     .withFollowRedirects(false)
     .withHeaders(("X-Session-ID","session-12345"))
@@ -74,8 +77,8 @@ class SubmissionISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
-    val sequenceMongo = new SequenceMongo()
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
     await(repository.drop)

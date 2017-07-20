@@ -25,6 +25,7 @@ import models._
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
+import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import services.MetricsService
 
@@ -48,6 +49,8 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
+  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/test-only$path").withFollowRedirects(false)
 
   val lastUpdate = "2017-05-09T07:58:35Z"
@@ -55,7 +58,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

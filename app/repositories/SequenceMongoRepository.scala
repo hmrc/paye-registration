@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 import models.Sequence
 import play.api.Logger
 import play.api.libs.json.JsValue
-import play.modules.reactivemongo.MongoDbConnection
+import play.modules.reactivemongo.{ReactiveMongoComponent, MongoDbConnection}
 import reactivemongo.api.DB
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -32,8 +32,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NoStackTrace
 
 @Singleton
-class SequenceMongo @Inject()() extends MongoDbConnection with ReactiveMongoFormats {
-  val store = new SequenceMongoRepository(db)
+class SequenceMongo @Inject()(mongo: ReactiveMongoComponent) extends ReactiveMongoFormats {
+  val store = new SequenceMongoRepository(mongo.mongoConnector.db)
 }
 
 trait SequenceRepository extends Repository[Sequence, BSONObjectID]{

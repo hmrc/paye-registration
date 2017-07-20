@@ -24,6 +24,7 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 
@@ -46,6 +47,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build()
 
+  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
     .withFollowRedirects(false)
     .withHeaders(("X-Session-ID","session-12345"))
@@ -61,8 +64,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
      val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
      }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
-    val sequenceMongo = new SequenceMongo()
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
     await(repository.drop)

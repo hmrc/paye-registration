@@ -26,7 +26,7 @@ import helpers.DateHelper
 import models._
 import play.api.Logger
 import play.api.libs.json._
-import play.modules.reactivemongo.MongoDbConnection
+import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson._
@@ -42,9 +42,9 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper) extends MongoDbConnection with ReactiveMongoFormats {
+class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper, mongo: ReactiveMongoComponent) extends ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(db, registrationFormat, injMetrics, injDateHelper)
+  val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper)
 }
 
 trait RegistrationRepository {
