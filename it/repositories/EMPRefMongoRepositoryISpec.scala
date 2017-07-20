@@ -18,29 +18,22 @@ package repositories
 
 import enums.PAYEStatus
 import helpers.DateHelper
+import itutil.MongoBaseSpec
 import models.{Eligibility, EmpRefNotification, PAYERegistration}
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import play.api.libs.json.JsObject
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.json.ImplicitBSONHandlers
 import services.MetricsService
-import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class EMPRefMongoRepositoryISpec extends UnitSpec
-                                  with MongoSpecSupport
-                                  with BeforeAndAfterEach
-                                  with ScalaFutures
-                                  with Eventually
-                                  with WithFakeApplication {
+class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
+
   class Setup {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

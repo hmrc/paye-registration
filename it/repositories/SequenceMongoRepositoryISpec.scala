@@ -16,18 +16,15 @@
 
 package repositories
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.BeforeAndAfterEach
-import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import itutil.MongoBaseSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SequenceMongoRepositoryISpec
-  extends UnitSpec with MongoSpecSupport with BeforeAndAfterEach with ScalaFutures with Eventually with WithFakeApplication {
+  extends MongoBaseSpec {
 
   class Setup {
-    val mongo = new SequenceMongo()
+    val mongo = new SequenceMongo(reactiveMongoComponent)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

@@ -27,6 +27,7 @@ import models.external.BusinessProfile
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.Application
+import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
 import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
@@ -66,6 +67,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     .configure(additionalConfiguration)
     .build()
 
+  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
                                         .withFollowRedirects(false)
                                         .withHeaders(("X-Session-ID","session-12345"))
@@ -77,8 +80,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     val timestamp = "2017-01-01T00:00:00"
     lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
-    val sequenceMongo = new SequenceMongo()
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
     await(repository.drop)

@@ -22,23 +22,15 @@ import common.exceptions.DBExceptions.{ InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
+import itutil.MongoBaseSpec
 import models._
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import reactivemongo.api.commands.WriteResult
 import services.MetricsService
-import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationMongoRepositoryISpec extends UnitSpec
-                                        with MongoSpecSupport
-                                        with BeforeAndAfterEach
-                                        with ScalaFutures
-                                        with Eventually
-                                        with WithFakeApplication {
+class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
   private val date = LocalDate.of(2016, 12, 20)
   private val lastUpdate = "2017-05-09T07:58:35Z"
@@ -491,7 +483,7 @@ class RegistrationMongoRepositoryISpec extends UnitSpec
     lazy val mockDateHelper = new DateHelper {
       override def getTimestamp: ZonedDateTime = lastUpdateZDT
     }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

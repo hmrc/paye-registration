@@ -29,7 +29,7 @@ import repositories.RegistrationMongo
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongo)  extends PopulateLastActionOneOffJob {
+class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongo) extends PopulateLastActionOneOffJob {
   val name: String = "populate-last-action-one-off-job"
   val mongoRepo = mRepo
   override lazy val lock: LockKeeper = new LockKeeper() {

@@ -10,6 +10,7 @@ import models.PAYERegistration
 import play.api.Application
 import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
 import services.MetricsService
 import uk.gov.hmrc.play.scheduling.ScheduledJob
@@ -38,6 +39,8 @@ class PopulateLastActionOneOffJobISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build()
 
+  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
     val key = BindingKey[ScheduledJob](classOf[ScheduledJob], qualifier)
@@ -50,7 +53,7 @@ class PopulateLastActionOneOffJobISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = new DateHelper{ override def getTimestamp = timestamp }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
     val repository = mongo.store
   }
 
