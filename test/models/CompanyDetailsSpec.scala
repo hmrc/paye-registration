@@ -124,12 +124,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      "it contains invalid characters" in {
-        val json = tstJson("Test£Company")
-
-        val result = Json.fromJson[CompanyDetails](json)
-        shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))
-      }
       "it is too long" in {
         val longName = List.fill(161)('a').mkString
         val json = tstJson(longName)
@@ -139,13 +133,6 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       }
       "it is too short" in {
         val json = tstJson("")
-
-        val result = Json.fromJson[CompanyDetails](json)
-        shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))
-      }
-
-      "it is contains none standard characters" in {
-        val json = tstJson("Téšt Çœmpåñÿ Ńāmę")
 
         val result = Json.fromJson[CompanyDetails](json)
         shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))

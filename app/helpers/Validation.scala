@@ -50,22 +50,32 @@ object Validation {
   val titleRegex = """^[A-Za-z]{1,20}$"""
 
   val minDate = LocalDate.of(1900,1,1)
+
+  val forbiddenPunctuation = List('[', ']', '{', '}', '#', '«', '»')
 }
 
 trait CompanyDetailsValidator {
 
   import Validation._
-
   val companyNameForDES: Writes[String] = new Writes[String] {
     override def writes(o: String) = {
-      val normalised = Normalizer.normalize(o, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+      val ae = o.replace("æ", "ae")
+      val oe = ae.replace("œ", "oe")
+      val ss = oe.replace("ß", "ss")
+      val normalised = Normalizer.normalize(ss, Form.NFD).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
       Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $o and after; $normalised")
       Writes.StringWrites.writes(normalised)
     }
   }
 
   val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(
-    companyName => Normalizer.normalize(companyName, Form.NFKD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").matches(companyNameRegex)
+    companyName => {
+      val ae = companyName.replace("æ", "ae")
+      val oe = ae.replace("œ", "oe")
+      val ss = oe.replace("ß", "ss")
+      val normalised = Normalizer.normalize(ss, Form.NFD).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
+      normalised.matches(companyNameRegex)
+    }
   )
 
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
