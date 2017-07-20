@@ -628,7 +628,9 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
-    collection.update(doc, reg.copy(lastUpdate = dh.getTimestampString)).map(f)
+    val timestamp = dh.getTimestamp
+
+    collection.update(doc, reg.copy(lastUpdate = dh.formatTimestamp(timestamp), lastAction = Some(timestamp))).map(f)
   }
 
   def populateLastAction: Future[(Int, Int)] = {
