@@ -58,7 +58,7 @@ trait CompanyDetailsValidator {
 
   import Validation._
 
-  private def validateCompanyName(companyName: String): String = {
+  private def cleanseCompanyName(companyName: String): String = {
     Normalizer.normalize(
       companyName
         .replaceAll("æ", "ae")
@@ -70,13 +70,13 @@ trait CompanyDetailsValidator {
 
   val companyNameForDES: Writes[String] = new Writes[String] {
     override def writes(companyName: String) = {
-      val normalised = validateCompanyName(companyName)
+      val normalised = cleanseCompanyName(companyName)
       Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $companyName and after; $normalised")
       Writes.StringWrites.writes(normalised)
     }
   }
 
-  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(companyName => validateCompanyName(companyName).matches(companyNameRegex))
+  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(companyName => cleanseCompanyName(companyName).matches(companyNameRegex))
 
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }
