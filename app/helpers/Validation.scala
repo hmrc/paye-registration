@@ -62,9 +62,12 @@ trait CompanyDetailsValidator {
     Normalizer.normalize(
       companyName
         .replaceAll("æ", "ae")
+        .replaceAll("Æ", "AE")
         .replaceAll("œ", "oe")
+        .replaceAll("Œ", "OE")
         .replaceAll("ß", "ss")
-        .replaceAll("ø", "o"), Form.NFD)
+        .replaceAll("ø", "o")
+        .replaceAll("Ø", "O"), Form.NFD)
       .replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
   }
 

@@ -616,7 +616,7 @@ class SubmissionISpec extends IntegrationSpecBase {
         Some("Director"),
         Some(
           CompanyDetails(
-            "téštÇômpæñÿÑámë[]{}#«»œßø",
+            "téštÇômpæñÿÑámë[]{}#«»œßøÆŒ",
             Some("test"),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
@@ -691,7 +691,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |        "limitedCompany": {
              |            "companyUTR": "testCtUtr",
              |            "crn": "OC123456",
-             |            "companiesHouseCompanyName": "testCompaenyNameoesso",
+             |            "companiesHouseCompanyName": "testCompaenyNameoessoAEOE",
              |            "nameOfBusiness": "test",
              |            "registeredOfficeAddress": {
              |                "addressLine1": "14 St Test Walk",
