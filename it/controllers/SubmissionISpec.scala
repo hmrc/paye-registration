@@ -163,7 +163,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = None
+    lastAction = Some(dt)
   )
   val processedSubmission = PAYERegistration(
     regId,
@@ -239,7 +239,7 @@ class SubmissionISpec extends IntegrationSpecBase {
         name = Name(forename = Some("Malcolm"), surname = Some("Test"), otherForenames = Some("Testing"), title = Some("Mr")),
         nino = None
       )
-      await(repository.insert(submission.copy(directors = extraDirectorList)))
+      await(repository.upsertRegTestOnly(submission.copy(directors = extraDirectorList)))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -471,7 +471,7 @@ class SubmissionISpec extends IntegrationSpecBase {
         )
       )
 
-      await(repository.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = await(client(s"$regId/submit-registration").put(""))
@@ -662,10 +662,10 @@ class SubmissionISpec extends IntegrationSpecBase {
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = None
+        lastAction = Some(dt)
       )
 
-      await(repository.collection.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = await(client(s"$regId/submit-registration").put(""))
@@ -782,7 +782,7 @@ class SubmissionISpec extends IntegrationSpecBase {
       stubBusinessProfile()
 
 
-      await(repository.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -804,7 +804,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 200, incorpUpdate(rejected))
 
-      await(repository.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
 
       val response = client(s"$regId/submit-registration").put("").futureValue
       response.status shouldBe 204
@@ -832,7 +832,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -855,7 +855,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -878,7 +878,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.insert(submission))
+      await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -892,7 +892,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.insert(processedSubmission))
+      await(repository.upsertRegTestOnly(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue

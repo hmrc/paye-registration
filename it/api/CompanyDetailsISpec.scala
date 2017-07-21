@@ -124,7 +124,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.collection.insert(
+      repository.upsertRegTestOnly(
         PAYERegistration(
           regID,
           transactionID,
@@ -145,7 +145,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = Some(dt)
         )
       )
 
