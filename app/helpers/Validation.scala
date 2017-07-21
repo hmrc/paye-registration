@@ -16,14 +16,16 @@
 
 package helpers
 
+import java.text.Normalizer
+import java.text.Normalizer.Form
 import java.time.LocalDate
 
 import models.{DigitalContactDetails, PAYEContact}
+import play.api.Logger
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads.{maxLength, minLength, pattern}
 import play.api.libs.json._
-
 
 object Validation {
 
@@ -48,13 +50,34 @@ object Validation {
   val titleRegex = """^[A-Za-z]{1,20}$"""
 
   val minDate = LocalDate.of(1900,1,1)
+
+  val forbiddenPunctuation = List('[', ']', '{', '}', '#', '«', '»')
 }
 
 trait CompanyDetailsValidator {
 
   import Validation._
 
-  val companyNameValidator: Format[String] = readToFmt(pattern(companyNameRegex.r))
+  private def cleanseCompanyName(companyName: String): String = {
+    Normalizer.normalize(
+      companyName
+        .replaceAll("æ", "ae")
+        .replaceAll("œ", "oe")
+        .replaceAll("ß", "ss")
+        .replaceAll("ø", "o"), Form.NFD)
+      .replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
+  }
+
+  val companyNameForDES: Writes[String] = new Writes[String] {
+    override def writes(companyName: String) = {
+      val normalised = cleanseCompanyName(companyName)
+      Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $companyName and after; $normalised")
+      Writes.StringWrites.writes(normalised)
+    }
+  }
+
+  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(companyName => cleanseCompanyName(companyName).matches(companyNameRegex))
+
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }
 

@@ -18,7 +18,7 @@ package models.submission
 
 import java.time.LocalDate
 
-import models.{Address, DigitalContactDetails, Director}
+import models.{Address, CompanyDetails, DigitalContactDetails, Director}
 import play.api.libs.json.Writes
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -65,7 +65,7 @@ case class DESLimitedCompany(companyUTR: Option[String],
 object DESLimitedCompany {
   implicit val writes: Writes[DESLimitedCompany] = (
     (__ \ "companyUTR").writeNullable[String] and
-    (__ \ "companiesHouseCompanyName").write[String] and
+    (__ \ "companiesHouseCompanyName").write[String](CompanyDetails.companyNameForDES) and
     (__ \ "nameOfBusiness").writeNullable[String] and
     (__ \ "businessAddress").write[Address](Address.writesDES) and
     (__ \ "businessContactDetails").write[DigitalContactDetails] and
@@ -102,14 +102,13 @@ case class DESPAYEContact(name: String,
                           correspondenceAddress: Address)
 
 object DESPAYEContact {
-  implicit val writes: Writes[DESPAYEContact] =
-    (
-      (__ \ "name").write[String] and
-        (__ \ "email").writeNullable[String] and
-        (__ \ "tel").writeNullable[String] and
-        (__ \ "mobile").writeNullable[String] and
-        (__ \ "correspondenceAddress").write[Address]
-      )(unlift(DESPAYEContact.unapply))
+  implicit val writes: Writes[DESPAYEContact] = (
+    (__ \ "name").write[String] and
+    (__ \ "email").writeNullable[String] and
+    (__ \ "tel").writeNullable[String] and
+    (__ \ "mobile").writeNullable[String] and
+    (__ \ "correspondenceAddress").write[Address]
+  )(unlift(DESPAYEContact.unapply))
 }
 
 case class DESCompletionCapacity(capacity: String,
