@@ -662,10 +662,10 @@ class SubmissionISpec extends IntegrationSpecBase {
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = Some(dt)
+        lastAction = None
       )
 
-      await(repository.insert(submission))
+      await(repository.collection.insert(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = await(client(s"$regId/submit-registration").put(""))
