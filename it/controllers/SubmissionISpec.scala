@@ -16,15 +16,15 @@
 
 package controllers
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import enums.PAYEStatus
 import helpers.DateHelper
-import itutil.{MongoBaseSpec, IntegrationSpecBase, WiremockHelper}
+import itutil.{IntegrationSpecBase, MongoBaseSpec, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import play.api.{Application}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -73,6 +73,7 @@ class SubmissionISpec extends IntegrationSpecBase {
   private val subscriber = "SCRS"
 
   val lastUpdate = "2017-05-09T07:58:35Z"
+  val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
@@ -660,7 +661,8 @@ class SubmissionISpec extends IntegrationSpecBase {
         lastUpdate,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
-        acknowledgedTimestamp = None
+        acknowledgedTimestamp = None,
+        lastAction = Some(dt)
       )
 
       await(repository.insert(submission))
