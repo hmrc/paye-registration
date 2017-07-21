@@ -635,13 +635,23 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
   def populateLastAction: Future[(Int, Int)] = {
 
-    val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false))
+    val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false), "lastUpdate" -> BSONDocument("$exists" -> true))
 
     for {
+      report        <- reportOnMissedDocuments
+      _             = if(report.nonEmpty) Logger.info(s"[RegistrationMongoRepository] - [populateLastAction]: ${report.length} documents not updated becaue of missing lastUpdate field. Reg IDs: ${report.map(_.toString)}")
       lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
       updateResults <- Future.sequence(lst.map(updateLastAction))
       successes     =  updateResults.count(!_.hasErrors)
     } yield (successes, updateResults.size - successes)
+  }
+
+  private def reportOnMissedDocuments: Future[Seq[Option[BSONValue]]] = {
+
+    val selector = BSONDocument("lastUpdate" -> BSONDocument("$exists" -> false))
+    for {
+      noLastActionList <- collection.find[BSONDocument](selector).cursor[BSONDocument]().collect[Seq]()
+    } yield noLastActionList.map(_.get("registrationID"))
   }
 
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
