@@ -68,13 +68,24 @@ class PAYEContactISpec extends IntegrationSpecBase {
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validPAYEContact = new PAYEContact(
+    val validPAYEContact = PAYEContact(
       contactDetails = PAYEContactDetails(
         name = "Thierry Henry",
-        digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+        digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("9876549999"))
       ),
       correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
     )
+
+    val oldFormatPAYEContact = {
+      implicit val format = PAYEContact.mongoFormat
+      PAYEContact(
+        contactDetails = PAYEContactDetails(
+          name = "Thierry Henry",
+          digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+        ),
+        correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
+      )
+    }
 
     "Return a 200 when the user gets paye contact" in new Setup {
       setupSimpleAuthMocks()
@@ -111,6 +122,43 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 200
       response.json shouldBe Json.toJson(validPAYEContact)
+    }
+
+    "Return a 200 when the user gets paye contact with old format" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val transactionID = "NN1234"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      repository.insert(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          None,
+          None,
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          None,
+          Seq.empty,
+          Some(oldFormatPAYEContact),
+          None,
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None,
+          lastAction = None
+        )
+      )
+
+      val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson(oldFormatPAYEContact)
     }
 
     "Return a 200 when the user upserts paye contact" in new Setup {

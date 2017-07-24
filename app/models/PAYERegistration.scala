@@ -80,9 +80,9 @@ object PAYERegistration extends DateFormatter{
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails] and
+    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.mongoFormat) and
     (__ \ "directors").format[Seq[Director]] and
-    (__ \ "payeContact").formatNullable[PAYEContact] and
+    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.mongoFormat) and
     (__ \ "employment").formatNullable[Employment] and
     (__ \ "sicCodes").format[Seq[SICCode]] and
     (__ \ "lastUpdate").format[String] and

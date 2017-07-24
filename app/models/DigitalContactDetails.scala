@@ -25,8 +25,20 @@ case class DigitalContactDetails(email: Option[String],
                                  phoneNumber: Option[String],
                                  mobileNumber: Option[String])
 
+
 object DigitalContactDetails {
-  private val phoneNumberValidate = Reads.StringReads.filter(ValidationError("invalid phone number pattern"))(_.matches(Validation.phoneNumberRegex))
+
+  private def isValidPhoneNo(phone: String): Boolean = {
+    def isValidNumberCount(s: String): Boolean = s.replaceAll(" ", "").matches("[0-9]{10,20}")
+
+    (isValidNumberCount(phone), phone.matches(Validation.phoneNumberRegex)) match {
+      case (true, true) => true
+      case (true, false) => false
+      case (false, _) => false
+    }
+  }
+
+  private val phoneNumberValidate = Reads.StringReads.filter(ValidationError("invalid phone number pattern"))(isValidPhoneNo)
   private val emailValidate = Reads.StringReads
     .filter(ValidationError("invalid email pattern"))(_.matches(Validation.emailRegex))
     .filter(ValidationError("email too long"))(_.length <= Validation.maxEmailLength)
@@ -38,4 +50,10 @@ object DigitalContactDetails {
       (__ \ "phoneNumber").readNullable[String](phoneNumberValidate) and
       (__ \ "mobileNumber").readNullable[String](phoneNumberValidate)
     )(DigitalContactDetails.apply _)
+
+  val mongoReads: Reads[DigitalContactDetails] = (
+    (__ \ "email").readNullable[String](emailValidate) and
+    (__ \ "phoneNumber").readNullable[String] and
+    (__ \ "mobileNumber").readNullable[String]
+  )(DigitalContactDetails.apply _)
 }

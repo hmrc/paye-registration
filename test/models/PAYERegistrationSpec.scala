@@ -73,8 +73,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      },
            |      "businessContactDetails": {
            |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
+           |        "phoneNumber":"9999999999",
+           |        "mobileNumber":"0000000000"
            |      }
            |    },
            |  "directors" : [
@@ -102,8 +102,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "name": "toto tata",
            |      "digitalContactDetails": {
            |        "email": "payeemail@test.co.uk",
-           |        "phoneNumber": "654",
-           |        "mobileNumber": "12345"
+           |        "phoneNumber": "6549999999",
+           |        "mobileNumber": "1234599999"
            |      }
            |    },
            |    "correspondenceAddress": {
@@ -158,7 +158,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             tradingName = Some("Test Trading Name"),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("testAudit")),
             Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
-            DigitalContactDetails(Some("email@test.co.uk"), Some("999"), Some("00000"))
+            DigitalContactDetails(Some("email@test.co.uk"), Some("9999999999"), Some("0000000000"))
           )
         ),
         directors = Seq(
@@ -187,8 +187,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
               name = "toto tata",
               digitalContactDetails = DigitalContactDetails(
                 Some("payeemail@test.co.uk"),
-                Some("654"),
-                Some("12345")
+                Some("6549999999"),
+                Some("1234599999")
               )
             ),
             correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
@@ -249,8 +249,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      },
            |      "businessContactDetails": {
            |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
+           |        "phoneNumber":"9999999999",
+           |        "mobileNumber":"0000000000"
            |      }
            |    },
            |  "directors" : [
@@ -278,8 +278,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "name": "toto tata",
            |      "digitalContactDetails": {
            |        "email": "payeemail@test.co.uk",
-           |        "phoneNumber": "654",
-           |        "mobileNumber": "12345"
+           |        "phoneNumber": "6549999999",
+           |        "mobileNumber": "1234599999"
            |      }
            |    },
            |    "correspondenceAddress": {
@@ -391,8 +391,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      },
            |      "businessContactDetails": {
            |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
+           |        "phoneNumber":"9999999999",
+           |        "mobileNumber":"0000000000"
            |      }
            |    },
            |  "directors": [],
@@ -442,8 +442,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      },
            |      "businessContactDetails": {
            |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
+           |        "phoneNumber":"9999999999",
+           |        "mobileNumber":"0000000000"
            |      }
            |    },
            |  "directors": [],
@@ -494,8 +494,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      },
            |      "businessContactDetails": {
            |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
+           |        "phoneNumber":"9999999999",
+           |        "mobileNumber":"0000000000"
            |      }
            |    },
            |  "directors": [],
@@ -546,8 +546,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      },
            |      "businessContactDetails": {
            |        "email":"email@test.co.uk",
-           |        "phoneNumber":"999",
-           |        "mobileNumber":"00000"
+           |        "phoneNumber":"9999 999 99 9",
+           |        "mobileNumber":"00000000000000000000"
            |      }
            |    },
            |  "directors": [],
