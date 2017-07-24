@@ -16,8 +16,6 @@
 
 package utils
 
-import javax.inject.{Inject, Singleton}
-
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.Json
@@ -93,19 +91,23 @@ object FeatureSwitch {
 object PAYEFeatureSwitches extends PAYEFeatureSwitches {
   val desServiceFeature: String = "desServiceFeature"
   val populateLastActionFeature: String = "populateLastActionFeature"
+  val removeStaleDocumentsFeature: String = "removeStaleDocumentsFeature"
 }
 
 trait PAYEFeatureSwitches {
 
   val desServiceFeature: String
   val populateLastActionFeature: String
+  val removeStaleDocumentsFeature: String
 
   def desService = FeatureSwitch.getProperty(desServiceFeature)
   def populateLastAction = FeatureSwitch.getProperty(populateLastActionFeature)
+  def removeStaleDocuments = FeatureSwitch.getProperty(removeStaleDocumentsFeature)
 
   def apply(name: String): Option[FeatureSwitch] = name match {
     case `desServiceFeature` => Some(desService)
     case `populateLastActionFeature` => Some(populateLastAction)
+    case `removeStaleDocumentsFeature` => Some(removeStaleDocuments)
     case _ => None
   }
 }

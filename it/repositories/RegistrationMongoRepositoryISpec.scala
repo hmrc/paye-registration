@@ -478,10 +478,10 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     lastAction = Some(lastUpdateZDT)
   )
 
-  class Setup(timestamp: String = lastUpdate) {
+  class Setup(timestampZDT: ZonedDateTime = lastUpdateZDT) {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = new DateHelper {
-      override def getTimestamp: ZonedDateTime = lastUpdateZDT
+      override def getTimestamp: ZonedDateTime = timestampZDT
     }
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
     val repository = mongo.store
@@ -1003,6 +1003,63 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       await(repository.deleteRegistration(reg.registrationID)) shouldBe true
       await(repository.retrieveRegistration(reg.registrationID)) shouldBe None
+    }
+  }
+
+  "Calling removeStaleDocuments" should {
+
+    def timedReg(regId: String, lastAction: Option[ZonedDateTime], status: PAYEStatus.Value = PAYEStatus.draft) = PAYERegistration(
+      registrationID = regId,
+      transactionID = s"100-000-$regId",
+      internalID = "09876",
+      acknowledgementReference = Some("testAckRef"),
+      crn = None,
+      registrationConfirmation = None,
+      formCreationTimestamp = "timestamp",
+      eligibility = Some(Eligibility(false, false)),
+      status = status,
+      completionCapacity = None,
+      companyDetails = None,
+      directors = Seq.empty,
+      payeContact = None,
+      employment = None,
+      sicCodes = Seq.empty,
+      lastUpdate,
+      partialSubmissionTimestamp = None,
+      fullSubmissionTimestamp = None,
+      acknowledgedTimestamp = None,
+      lastAction = lastAction
+    )
+
+    def dt = ZonedDateTime.of(LocalDateTime.of(2017, 6, 30, 12, 0, 0), ZoneId.of("Z"))
+
+    "clear any documents older than 90 days" in new Setup(timestampZDT = dt) {
+      val deleteDT = ZonedDateTime.of(LocalDateTime.of(2017, 4, 1, 12, 0, 0), ZoneId.of("Z"))
+      val keepDT = ZonedDateTime.of(LocalDateTime.of(2017, 4, 1, 12, 0, 1), ZoneId.of("Z"))
+      await(repository.upsertRegTestOnly(timedReg("123", Some(deleteDT))))
+      await(repository.upsertRegTestOnly(timedReg("223", Some(keepDT))))
+      await(repository.removeStaleDocuments())
+
+      await(repository.retrieveRegistration("123")) shouldBe None
+      await(repository.retrieveRegistration("223")) shouldBe Some(timedReg("223", Some(keepDT)))
+    }
+
+    "clear only documents that are draft or invalid" in new Setup(timestampZDT = dt) {
+      val deleteDT = ZonedDateTime.of(LocalDateTime.of(2017, 4, 1, 12, 0, 0), ZoneId.of("Z"))
+      await(repository.upsertRegTestOnly(timedReg("123", Some(deleteDT), PAYEStatus.draft)))
+      await(repository.upsertRegTestOnly(timedReg("223", Some(deleteDT), PAYEStatus.invalid)))
+      await(repository.upsertRegTestOnly(timedReg("323", Some(deleteDT), PAYEStatus.held)))
+      await(repository.removeStaleDocuments())
+
+      await(repository.retrieveRegistration("123")) shouldBe None
+      await(repository.retrieveRegistration("223")) shouldBe None
+      await(repository.retrieveRegistration("323")) shouldBe Some(timedReg("323", Some(deleteDT), PAYEStatus.held))
+    }
+
+    "not clear documents which don't have a lastAction field" in new Setup(timestampZDT = dt) {
+      await(repository.upsertRegTestOnly(timedReg("123", None, PAYEStatus.draft)))
+      await(repository.removeStaleDocuments())
+      await(repository.retrieveRegistration("123")) shouldBe Some(timedReg("123", None, PAYEStatus.draft))
     }
   }
 }

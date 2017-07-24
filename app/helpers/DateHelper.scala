@@ -36,4 +36,6 @@ class DateHelper {
   def getTimestampString: String = formatTimestamp(getTimestamp)
 
   def getDateFromTimestamp(timestamp: String): ZonedDateTime = ZonedDateTime.parse(timestamp, dtFormat)
+
+  def zonedDateTimeToMillis(dt: ZonedDateTime): Long = dt.toEpochSecond * 1000
 }
