@@ -51,12 +51,9 @@ object DigitalContactDetails {
       (__ \ "mobileNumber").readNullable[String](phoneNumberValidate)
     )(DigitalContactDetails.apply _)
 
-  val mongoReads: Reads[DigitalContactDetails] = {
-    val mongoPhoneNumberValidate = Reads.StringReads.filter(ValidationError("invalid phone number pattern"))(_.matches(Validation.phoneNumberRegex))
-    (
-      (__ \ "email").readNullable[String](emailValidate) and
-      (__ \ "phoneNumber").readNullable[String](mongoPhoneNumberValidate) and
-      (__ \ "mobileNumber").readNullable[String](mongoPhoneNumberValidate)
-    )(DigitalContactDetails.apply _)
-  }
+  val mongoReads: Reads[DigitalContactDetails] = (
+    (__ \ "email").readNullable[String](emailValidate) and
+    (__ \ "phoneNumber").readNullable[String] and
+    (__ \ "mobileNumber").readNullable[String]
+  )(DigitalContactDetails.apply _)
 }
