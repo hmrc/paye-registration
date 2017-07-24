@@ -18,7 +18,7 @@ package config
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
-import jobs.PopulateLastActionOneOffJobImpl
+import jobs.{RemoveStaleDocumentsJobImpl, PopulateLastActionOneOffJobImpl}
 import uk.gov.hmrc.play.scheduling.ScheduledJob
 
 
@@ -29,5 +29,7 @@ class Module extends AbstractModule {
     // jobs
     bind(classOf[ScheduledJob]).annotatedWith(Names.named("populate-last-action-one-off-job"))
       .to(classOf[PopulateLastActionOneOffJobImpl])
+    bind(classOf[ScheduledJob]).annotatedWith(Names.named("remove-stale-documents-job"))
+      .to(classOf[RemoveStaleDocumentsJobImpl])
   }
 }

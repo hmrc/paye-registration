@@ -16,6 +16,8 @@
 
 package repositories
 
+import java.time.ZonedDateTime
+
 import auth.AuthorisationResource
 import javax.inject.{Inject, Singleton}
 
@@ -48,6 +50,9 @@ class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: Dat
 }
 
 trait RegistrationRepository {
+
+  protected val MAX_STORAGE_DAYS = 90
+
   def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration]
   //TODO: Rename to something more generic and remove the above two retrieve functions
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
@@ -78,6 +83,7 @@ trait RegistrationRepository {
   def deleteRegistration(registrationID: String): Future[Boolean]
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
   def populateLastAction: Future[(Int, Int)]
+  def removeStaleDocuments(): Future[(ZonedDateTime, Int)]
 
 }
 
@@ -654,14 +660,24 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     } yield noLastActionList.map(_.get("registrationID"))
   }
 
+  def removeStaleDocuments(): Future[(ZonedDateTime, Int)] = {
+    val ninetyDaysAgo = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
+    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(ninetyDaysAgo)))
+    val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
+    val documentSelector = BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
+
+    collection.remove(documentSelector).map {
+      res => (ninetyDaysAgo, res.n)
+    }
+  }
+
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
     val res = dh.zonedDateTimeFromString(reg.lastUpdate)
     collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat))))
   }
 
   def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
-     collection.insert[JsObject](w.writes(p))
-     }
-
+    collection.insert[JsObject](w.writes(p))
+  }
 
 }
