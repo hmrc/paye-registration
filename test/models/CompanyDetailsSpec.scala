@@ -46,8 +46,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
           |  },
           |  "businessContactDetails": {
           |    "email":"test@email.com",
-          |    "phoneNumber":"012345",
-          |    "mobileNumber":"543210"
+          |    "phoneNumber":"0123459999",
+          |    "mobileNumber":"5432109999"
           |  }
           |}
         """.stripMargin)
@@ -57,7 +57,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         tradingName = Some("Test Trading Name"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
         Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
-        DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+        DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
       )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
@@ -85,7 +85,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |    "auditRef":"ppobAuditRef"
            |  },
            |  "businessContactDetails": {
-           |    "phoneNumber":"012345"
+           |    "phoneNumber":"0123459999"
            |  }
            |}
         """.stripMargin)
@@ -95,7 +95,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         tradingName = Some(".Test, (&') Trading/Name!"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
         Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
-        DigitalContactDetails(None, Some("012345"), None)
+        DigitalContactDetails(None, Some("0123459999"), None)
       )
 
       Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)

@@ -94,4 +94,12 @@ object CompanyDetails extends CompanyDetailsValidator {
     (__ \ "ppobAddress").format[Address] and
     (__ \ "businessContactDetails").format[DigitalContactDetails]
   )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
+
+  val mongoFormat: Format[CompanyDetails] = (
+    (__ \ "companyName").format[String](companyNameValidator) and
+      (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
+      (__ \ "roAddress").format[Address] and
+      (__ \ "ppobAddress").format[Address] and
+      (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.mongoReads)
+    )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 }

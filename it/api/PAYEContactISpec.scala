@@ -68,10 +68,10 @@ class PAYEContactISpec extends IntegrationSpecBase {
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validPAYEContact = new PAYEContact(
+    val validPAYEContact = PAYEContact(
       contactDetails = PAYEContactDetails(
         name = "Thierry Henry",
-        digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+        digitalContactDetails = DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("9876549999"))
       ),
       correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
     )

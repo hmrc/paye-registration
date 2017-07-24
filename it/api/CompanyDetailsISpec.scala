@@ -72,13 +72,24 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    val validCompanyDetails = new CompanyDetails(
+    val validCompanyDetails = CompanyDetails(
       companyName = "Test Company Name",
       tradingName = Some("Test Trading Name"),
       roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
       ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
-      businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("9876549999"))
     )
+
+    val oldFormatCompanyDetails = {
+      implicit val format = CompanyDetails.mongoFormat
+      CompanyDetails(
+        companyName = "Test Company Name",
+        tradingName = Some("Test Trading Name"),
+        roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+        ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
+        businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+      )
+    }
 
     "Return a 200 when the user gets company details" in new Setup {
       setupSimpleAuthMocks()
@@ -115,6 +126,43 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
       response.json shouldBe Json.toJson(validCompanyDetails)
+    }
+
+    "Return a 200 when the user gets company details with an old format" in new Setup {
+      setupSimpleAuthMocks()
+
+      val regID = "12345"
+      val transactionID = "NN1234"
+      val intID = "Int-xxx"
+      val timestamp = "2017-01-01T00:00:00"
+      await(repository.upsertRegTestOnly(
+        PAYERegistration(
+          regID,
+          transactionID,
+          intID,
+          Some("testAckRef"),
+          None,
+          None,
+          timestamp,
+          Some(Eligibility(false, false)),
+          PAYEStatus.draft,
+          None,
+          Some(oldFormatCompanyDetails),
+          Seq.empty,
+          None,
+          None,
+          Seq.empty,
+          lastUpdate,
+          partialSubmissionTimestamp = None,
+          fullSubmissionTimestamp = None,
+          acknowledgedTimestamp = None,
+          lastAction = Some(dt)
+        )
+      ))
+
+      val response = client(s"/${regID}/company-details").get.futureValue
+      response.status shouldBe 200
+      response.json shouldBe Json.toJson(oldFormatCompanyDetails)
     }
 
     "Return a 200 when the user upserts company details with a company name that contains none standard characters" in new Setup {
@@ -154,7 +202,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         tradingName = Some("Test Trading Name"),
         roAddress = Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
         ppobAddress = Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
-        businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("987654"))
+        businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("9876549999"))
       )
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue

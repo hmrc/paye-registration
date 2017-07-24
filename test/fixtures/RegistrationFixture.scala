@@ -28,7 +28,7 @@ trait RegistrationFixture {
     tradingName = Some("Test Trading Name"),
     Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
     Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None),
-    DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+    DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
   )
 
   val validEmployment = Employment(
@@ -69,8 +69,8 @@ trait RegistrationFixture {
       name = "Toto Tata",
       digitalContactDetails = DigitalContactDetails(
         Some("test@email.com"),
-        Some("012345"),
-        Some("543210")
+        Some("0123459999"),
+        Some("5432109999")
       )
     ),
     correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"))

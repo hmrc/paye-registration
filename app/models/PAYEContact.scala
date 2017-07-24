@@ -31,6 +31,11 @@ object PAYEContactDetails extends PAYEContactDetailsValidator {
     (__ \ "name").format[String](nameValidator) and
     (__ \ "digitalContactDetails").format[DigitalContactDetails]
   )(PAYEContactDetails.apply, unlift(PAYEContactDetails.unapply))
+
+  val mongoFormat: Format[PAYEContactDetails] = (
+    (__ \ "name").format[String](nameValidator) and
+    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.mongoReads)
+  )(PAYEContactDetails.apply, unlift(PAYEContactDetails.unapply))
 }
 
 object PAYEContact {
@@ -38,4 +43,9 @@ object PAYEContact {
   implicit val addressReads = Address.reads
   implicit val addressWrites = Address.writes
   implicit val format = Json.format[PAYEContact]
+
+  val mongoFormat: Format[PAYEContact] = {
+    implicit val payeContactDetails = PAYEContactDetails.mongoFormat
+    Json.format[PAYEContact]
+  }
 }

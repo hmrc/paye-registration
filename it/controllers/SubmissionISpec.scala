@@ -121,7 +121,7 @@ class SubmissionISpec extends IntegrationSpecBase {
         Some("test"),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
         Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
-        DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+        DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
       )
     ),
     Seq(
@@ -141,8 +141,8 @@ class SubmissionISpec extends IntegrationSpecBase {
           name = "Thierry Henry",
           digitalContactDetails = DigitalContactDetails(
             Some("test@test.com"),
-            Some("1234"),
-            Some("4358475")
+            Some("1234999999"),
+            Some("4358475999")
           )
         ),
         correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
@@ -280,8 +280,8 @@ class SubmissionISpec extends IntegrationSpecBase {
              |                "country": "UK"
              |            },
              |            "businessContactDetails": {
-             |                "phoneNumber": "012345",
-             |                "mobileNumber": "543210",
+             |                "phoneNumber": "0123459999",
+             |                "mobileNumber": "5432109999",
              |                "email": "test@email.com"
              |            },
              |            "natureOfBusiness": "consulting",
@@ -312,8 +312,8 @@ class SubmissionISpec extends IntegrationSpecBase {
              |            "engageSubcontractors": true,
              |            "correspondenceName": "Thierry Henry",
              |            "correspondenceContactDetails": {
-             |                "phoneNumber": "1234",
-             |                "mobileNumber": "4358475",
+             |                "phoneNumber": "1234999999",
+             |                "mobileNumber": "4358475999",
              |                "email": "test@test.com"
              |            },
              |            "payeCorrespondenceAddress": {
@@ -365,8 +365,8 @@ class SubmissionISpec extends IntegrationSpecBase {
             |        },
             |        "businessContactDetails" : {
             |          "email" : "test@email.com",
-            |          "phoneNumber" : "012345",
-            |          "mobileNumber" : "543210"
+            |          "phoneNumber" : "0123459999",
+            |          "mobileNumber" : "5432109999"
             |        },
             |        "natureOfBusiness" : "consulting",
             |        "directors" : [ {
@@ -402,8 +402,8 @@ class SubmissionISpec extends IntegrationSpecBase {
             |        "correspondenceName" : "Thierry Henry",
             |        "correspondenceContactDetails" : {
             |          "email" : "test@test.com",
-            |          "phoneNumber" : "1234",
-            |          "mobileNumber" : "4358475"
+            |          "phoneNumber" : "1234999999",
+            |          "mobileNumber" : "4358475999"
             |        },
             |        "payeCorrespondenceAddress" : {
             |          "addressLine1" : "19 St Walk",
@@ -514,8 +514,8 @@ class SubmissionISpec extends IntegrationSpecBase {
              |                "country": "UK"
              |            },
              |            "businessContactDetails": {
-             |                "phoneNumber": "012345",
-             |                "mobileNumber": "543210",
+             |                "phoneNumber": "0123459999",
+             |                "mobileNumber": "5432109999",
              |                "email": "test@email.com"
              |            },
              |            "natureOfBusiness": "consulting",
@@ -538,8 +538,8 @@ class SubmissionISpec extends IntegrationSpecBase {
              |            "engageSubcontractors": true,
              |            "correspondenceName": "Thierry Henry",
              |            "correspondenceContactDetails": {
-             |                "phoneNumber": "1234",
-             |                "mobileNumber": "4358475",
+             |                "phoneNumber": "1234999999",
+             |                "mobileNumber": "4358475999",
              |                "email": "test@test.com"
              |            },
              |            "payeCorrespondenceAddress": {
@@ -620,7 +620,7 @@ class SubmissionISpec extends IntegrationSpecBase {
             Some("test"),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("roAuditRef")),
             Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("ppobAuditRef")),
-            DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+            DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
           )
         ),
         Seq(
@@ -640,8 +640,8 @@ class SubmissionISpec extends IntegrationSpecBase {
               name = "Thierry Henry",
               digitalContactDetails = DigitalContactDetails(
                 Some("test@test.com"),
-                Some("1234"),
-                Some("4358475")
+                Some("1234999999"),
+                Some("4358475999")
               )
             ),
             correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
@@ -708,8 +708,8 @@ class SubmissionISpec extends IntegrationSpecBase {
              |                "country": "UK"
              |            },
              |            "businessContactDetails": {
-             |                "phoneNumber": "012345",
-             |                "mobileNumber": "543210",
+             |                "phoneNumber": "0123459999",
+             |                "mobileNumber": "5432109999",
              |                "email": "test@email.com"
              |            },
              |            "natureOfBusiness": "consulting",
@@ -732,8 +732,8 @@ class SubmissionISpec extends IntegrationSpecBase {
              |            "engageSubcontractors": true,
              |            "correspondenceName": "Thierry Henry",
              |            "correspondenceContactDetails": {
-             |                "phoneNumber": "1234",
-             |                "mobileNumber": "4358475",
+             |                "phoneNumber": "1234999999",
+             |                "mobileNumber": "4358475999",
              |                "email": "test@test.com"
              |            },
              |            "payeCorrespondenceAddress": {
