@@ -245,6 +245,30 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
 
       payeFeatureSwitch("populateLastActionFeature") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", false))
     }
+
+    "return true if the removeStaleDocumentsFeature system property is true" in {
+      System.setProperty("feature.removeStaleDocumentsFeature", "true")
+
+      payeFeatureSwitch("removeStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("removeStaleDocumentsFeature", true))
+    }
+
+    "return false if the removeStaleDocumentsFeature system property is false" in {
+      System.setProperty("feature.removeStaleDocumentsFeature", "false")
+
+      payeFeatureSwitch("removeStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("removeStaleDocumentsFeature", false))
+    }
+
+    "return true if the findStaleDocumentsFeature system property is true" in {
+      System.setProperty("feature.findStaleDocumentsFeature", "true")
+
+      payeFeatureSwitch("findStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("findStaleDocumentsFeature", true))
+    }
+
+    "return false if the findStaleDocumentsFeature system property is false" in {
+      System.setProperty("feature.findStaleDocumentsFeature", "false")
+
+      payeFeatureSwitch("findStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("findStaleDocumentsFeature", false))
+    }
   }
 
   "TimedFeatureSwitch" should {

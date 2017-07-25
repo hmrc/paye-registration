@@ -7,7 +7,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{WiremockHelper, IntegrationSpecBase}
 import models.PAYERegistration
-import play.api.Application
+import play.api.{Configuration, Application}
 import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -40,6 +40,7 @@ class PopulateLastActionOneOffJobISpec extends IntegrationSpecBase {
     .build()
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val sConfig = app.injector.instanceOf[Configuration]
 
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
@@ -53,7 +54,7 @@ class PopulateLastActionOneOffJobISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = new DateHelper{ override def getTimestamp = timestamp }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository = mongo.store
   }
 

@@ -68,4 +68,11 @@ class DateHelperSpec extends UnitSpec {
       TestDateHelper.zonedDateTimeFromString(timestamp) shouldBe zonedDateTime
     }
   }
+
+  "zonedDateTimeToMillis" should {
+    "convert a ZonedDateTime to epoch milliseconds" in {
+      val zonedDateTime = ZonedDateTime.of(LocalDateTime.of(2017,4,15,12,30),ZoneOffset.UTC)
+      TestDateHelper.zonedDateTimeToMillis(zonedDateTime) shouldBe 1492259400000L
+    }
+  }
 }

@@ -16,6 +16,8 @@
 
 package repositories
 
+import java.time.ZonedDateTime
+
 import auth.AuthorisationResource
 import javax.inject.{Inject, Singleton}
 
@@ -24,7 +26,7 @@ import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsEx
 import enums.PAYEStatus
 import helpers.DateHelper
 import models._
-import play.api.Logger
+import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONDocument
@@ -42,12 +44,18 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper, mongo: ReactiveMongoComponent) extends ReactiveMongoFormats {
+class RegistrationMongo @Inject()(
+                                   injMetrics: MetricsService,
+                                   injDateHelper: DateHelper,
+                                   mongo: ReactiveMongoComponent,
+                                   config: Configuration) extends ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper)
+  lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
+  val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)
 }
 
 trait RegistrationRepository {
+
   def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration]
   //TODO: Rename to something more generic and remove the above two retrieve functions
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
@@ -78,16 +86,18 @@ trait RegistrationRepository {
   def deleteRegistration(registrationID: String): Future[Boolean]
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
   def populateLastAction: Future[(Int, Int)]
+  def removeStaleDocuments(): Future[(ZonedDateTime, Int)]
 
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper, maxStorageDays: Int) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format
   ) with RegistrationRepository
     with AuthorisationResource[String] {
 
+  val MAX_STORAGE_DAYS = maxStorageDays
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -654,14 +664,39 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     } yield noLastActionList.map(_.get("registrationID"))
   }
 
+  def removeStaleDocuments(): Future[(ZonedDateTime, Int)] = {
+    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
+
+    collection.remove(staleDocumentSelector(cuttOffDate)).map {
+      res => (cuttOffDate, res.n)
+    }
+  }
+
+  def findStaleDocuments(): Future[(ZonedDateTime, Int)] = {
+    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
+
+    collection.find(staleDocumentSelector(cuttOffDate)).cursor[PAYERegistration]().collect[Seq]().map {
+      regSeq =>
+        regSeq.map {
+          reg => logger.info(s"To be removed: regID: ${reg.registrationID}, status: ${reg.status}, lastAction: ${reg.lastAction.getOrElse("No Last Action")}")
+        }
+        (cuttOffDate, regSeq.length)
+    }
+  }
+
+  private def staleDocumentSelector(cutOffDateTime: ZonedDateTime): BSONDocument = {
+    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(cutOffDateTime)))
+    val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
+    BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
+  }
+
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
     val res = dh.zonedDateTimeFromString(reg.lastUpdate)
     collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat))))
   }
 
   def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
-     collection.insert[JsObject](w.writes(p))
-     }
-
+    collection.insert[JsObject](w.writes(p))
+  }
 
 }

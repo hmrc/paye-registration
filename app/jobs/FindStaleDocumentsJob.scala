@@ -16,21 +16,20 @@
 
 package jobs
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 
 import org.joda.time.Duration
+import play.api.Logger
 import play.modules.reactivemongo.MongoDbConnection
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import repositories.RegistrationMongo
+import uk.gov.hmrc.lock.{LockRepository, LockKeeper}
 import uk.gov.hmrc.play.scheduling.ExclusiveScheduledJob
 import utils.PAYEFeatureSwitches
-import play.api.Logger
-import repositories.RegistrationMongo
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Future, ExecutionContext}
 
-@Singleton
-class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongo) extends PopulateLastActionOneOffJob {
-  val name: String = "populate-last-action-one-off-job"
+class FindStaleDocumentsJobImpl @Inject()(mRepo: RegistrationMongo) extends FindStaleDocumentsJob {
+  val name: String = "find-stale-documents-job"
   val mongoRepo = mRepo
   override lazy val lock: LockKeeper = new LockKeeper() {
     override val lockId = s"$name-lock"
@@ -40,19 +39,22 @@ class PopulateLastActionOneOffJobImpl @Inject()(mRepo: RegistrationMongo) extend
   }
 }
 
-trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
+trait FindStaleDocumentsJob extends ExclusiveScheduledJob with JobConfig {
 
   val lock: LockKeeper
   val mongoRepo : RegistrationMongo
 
   override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
-    PAYEFeatureSwitches.populateLastAction.enabled match {
+    PAYEFeatureSwitches.findStaleDocuments.enabled match {
       case true =>
         lock.tryLock {
           Logger.info(s"Triggered $name")
-          mongoRepo.store.populateLastAction.map { s =>
-            val (successes, failures) = s
-            val message = s"updated $successes documents successfully with $failures failures"
+          mongoRepo.store.findStaleDocuments().map { res =>
+            val(dt, numberFound) = res
+            val message = numberFound match {
+              case 0 => s"No documents found as there were no documents older than $dt in the database"
+              case _ => s"Successfully found $numberFound documents that were last updated before $dt"
+            }
             Logger.info(message)
             Result(message)
           }
@@ -64,7 +66,7 @@ trait PopulateLastActionOneOffJob extends ExclusiveScheduledJob with JobConfig {
         } recover {
           case ex: Exception => Result(s"$name failed. Exception generated: ${ex.getClass.toString}, Reason: ${ex.getMessage}")
         }
-      case false => Future.successful(Result(s"Populate last action Feature is turned off"))
+      case false => Future.successful(Result(s"Find stale documents feature is turned off"))
     }
   }
 }
