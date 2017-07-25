@@ -26,10 +26,7 @@ import uk.gov.hmrc.play.scheduling.ScheduledJob
 class Module extends AbstractModule {
 
   override def configure(): Unit = {
-
-    // config
-    bind(classOf[ServicesConfig]).to(classOf[DefaultServicesConfig]).asEagerSingleton()
-
+    
     // jobs
     bind(classOf[ScheduledJob]).annotatedWith(Names.named("populate-last-action-one-off-job"))
       .to(classOf[PopulateLastActionOneOffJobImpl])
