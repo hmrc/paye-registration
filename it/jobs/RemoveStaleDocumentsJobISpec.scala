@@ -27,7 +27,8 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     "auditing.consumer.baseUri.host" -> s"$mockHost",
     "auditing.consumer.baseUri.port" -> s"$mockPort",
     "Test.auditing.consumer.baseUri.host" -> s"$mockHost",
-    "Test.auditing.consumer.baseUri.port" -> s"$mockPort"
+    "Test.auditing.consumer.baseUri.port" -> s"$mockPort",
+    "constants.maxStorageDays" -> 60
   )
 
   override def beforeEach() = new Setup(timestamp) {
@@ -101,7 +102,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
       val job = new RemoveStaleDocumentsJobImpl(mongo)
       val res = await(job.execute)
 
-      res shouldBe job.Result("remove-stale-documents-job: Successfully removed 1 documents that were last updated before 2016-12-03T12:30Z")
+      res shouldBe job.Result("remove-stale-documents-job: Successfully removed 1 documents that were last updated before 2017-01-02T12:30Z")
       await(repository.retrieveRegistration("123")) shouldBe None
       await(repository.retrieveRegistration("223")) shouldBe Some(reg("223", Some(keepDT)))
     }

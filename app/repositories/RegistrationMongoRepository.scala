@@ -665,29 +665,29 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
   }
 
   def removeStaleDocuments(): Future[(ZonedDateTime, Int)] = {
-    val ninetyDaysAgo = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
-    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(ninetyDaysAgo)))
-    val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
-    val documentSelector = BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
+    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
 
-    collection.remove(documentSelector).map {
-      res => (ninetyDaysAgo, res.n)
+    collection.remove(staleDocumentSelector(cuttOffDate)).map {
+      res => (cuttOffDate, res.n)
     }
   }
 
   def findStaleDocuments(): Future[(ZonedDateTime, Int)] = {
-    val ninetyDaysAgo = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
-    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(ninetyDaysAgo)))
-    val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
-    val documentSelector = BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
+    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
 
-    collection.find(documentSelector).cursor[PAYERegistration]().collect[Seq]().map {
+    collection.find(staleDocumentSelector(cuttOffDate)).cursor[PAYERegistration]().collect[Seq]().map {
       regSeq =>
         regSeq.map {
           reg => logger.info(s"To be removed: regID: ${reg.registrationID}, status: ${reg.status}, lastAction: ${reg.lastAction.getOrElse("No Last Action")}")
         }
-        (ninetyDaysAgo, regSeq.length)
+        (cuttOffDate, regSeq.length)
     }
+  }
+
+  private def staleDocumentSelector(cutOffDateTime: ZonedDateTime): BSONDocument = {
+    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(cutOffDateTime)))
+    val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
+    BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
   }
 
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
