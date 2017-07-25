@@ -26,7 +26,7 @@ import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsEx
 import enums.PAYEStatus
 import helpers.DateHelper
 import models._
-import play.api.Logger
+import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONDocument
@@ -44,14 +44,17 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper, mongo: ReactiveMongoComponent) extends ReactiveMongoFormats {
+class RegistrationMongo @Inject()(
+                                   injMetrics: MetricsService,
+                                   injDateHelper: DateHelper,
+                                   mongo: ReactiveMongoComponent,
+                                   config: Configuration) extends ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
-  val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper)
+  lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
+  val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)
 }
 
 trait RegistrationRepository {
-
-  protected val MAX_STORAGE_DAYS = 90
 
   def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration]
   //TODO: Rename to something more generic and remove the above two retrieve functions
@@ -87,13 +90,14 @@ trait RegistrationRepository {
 
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper, maxStorageDays: Int) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format
   ) with RegistrationRepository
     with AuthorisationResource[String] {
 
+  val MAX_STORAGE_DAYS = maxStorageDays
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -668,6 +672,21 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
 
     collection.remove(documentSelector).map {
       res => (ninetyDaysAgo, res.n)
+    }
+  }
+
+  def findStaleDocuments(): Future[(ZonedDateTime, Int)] = {
+    val ninetyDaysAgo = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
+    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(ninetyDaysAgo)))
+    val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
+    val documentSelector = BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
+
+    collection.find(documentSelector).cursor[PAYERegistration]().collect[Seq]().map {
+      regSeq =>
+        regSeq.map {
+          reg => logger.info(s"To be removed: regID: ${reg.registrationID}, status: ${reg.status}, lastAction: ${reg.lastAction.getOrElse("No Last Action")}")
+        }
+        (ninetyDaysAgo, regSeq.length)
     }
   }
 

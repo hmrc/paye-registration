@@ -21,7 +21,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, Employment, PAYERegistration}
-import play.api.Application
+import play.api.{Configuration, Application}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
@@ -49,12 +49,13 @@ class EmploymentISpec extends IntegrationSpecBase {
     .build
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val sConfig = app.injector.instanceOf[Configuration]
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

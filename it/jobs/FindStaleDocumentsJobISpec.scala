@@ -17,7 +17,7 @@ import uk.gov.hmrc.play.scheduling.ScheduledJob
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
+class FindStaleDocumentsJobISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -82,27 +82,27 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     val repository = mongo.store
   }
 
-  "Remove Stale Documents Job" should {
+  "Find Stale Documents Job" should {
     "take no action when job is disabled" in new Setup(timestamp) {
-      setupFeatures(removeStaleDocumentsJob = false)
+      setupFeatures(findStaleDocumentsJob = false)
 
-      val job = lookupJob("remove-stale-documents-job")
+      val job = lookupJob("find-stale-documents-job")
       val res = await(job.execute)
-      res shouldBe job.Result("Remove stale documents feature is turned off")
+      res shouldBe job.Result("Find stale documents feature is turned off")
     }
 
-    "remove other documents older than 90 days" in new Setup(timestamp) {
+    "report on documents older than 90 days without deleting them" in new Setup(timestamp) {
       val deleteDT = ZonedDateTime.of(LocalDateTime.of(2016, 12, 1, 12, 0), ZoneId.of("Z"))
       val keepDT = ZonedDateTime.of(LocalDateTime.of(2017, 3, 1, 12, 0), ZoneId.of("Z"))
       await(repository.upsertRegTestOnly(reg("123", Some(deleteDT))))
       await(repository.upsertRegTestOnly(reg("223", Some(keepDT))))
 
-      setupFeatures(removeStaleDocumentsJob = true)
-      val job = new RemoveStaleDocumentsJobImpl(mongo)
+      setupFeatures(findStaleDocumentsJob = true)
+      val job = new FindStaleDocumentsJobImpl(mongo)
       val res = await(job.execute)
 
-      res shouldBe job.Result("remove-stale-documents-job: Successfully removed 1 documents that were last updated before 2016-12-03T12:30Z")
-      await(repository.retrieveRegistration("123")) shouldBe None
+      res shouldBe job.Result("find-stale-documents-job: Successfully found 1 documents that were last updated before 2016-12-03T12:30Z")
+      await(repository.retrieveRegistration("123")) shouldBe Some(reg("123", Some(deleteDT)))
       await(repository.retrieveRegistration("223")) shouldBe Some(reg("223", Some(keepDT)))
     }
   }

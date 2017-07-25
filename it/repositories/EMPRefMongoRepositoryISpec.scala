@@ -20,6 +20,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models.{Eligibility, EmpRefNotification, PAYERegistration}
+import play.api.Configuration
 import play.api.libs.json.JsObject
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.json.ImplicitBSONHandlers
@@ -33,7 +34,8 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
   class Setup {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
     lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)

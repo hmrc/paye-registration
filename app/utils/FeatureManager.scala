@@ -92,6 +92,7 @@ object PAYEFeatureSwitches extends PAYEFeatureSwitches {
   val desServiceFeature: String = "desServiceFeature"
   val populateLastActionFeature: String = "populateLastActionFeature"
   val removeStaleDocumentsFeature: String = "removeStaleDocumentsFeature"
+  val findStaleDocumentsFeature: String = "findStaleDocumentsFeature"
 }
 
 trait PAYEFeatureSwitches {
@@ -99,15 +100,18 @@ trait PAYEFeatureSwitches {
   val desServiceFeature: String
   val populateLastActionFeature: String
   val removeStaleDocumentsFeature: String
+  val findStaleDocumentsFeature: String
 
   def desService = FeatureSwitch.getProperty(desServiceFeature)
   def populateLastAction = FeatureSwitch.getProperty(populateLastActionFeature)
   def removeStaleDocuments = FeatureSwitch.getProperty(removeStaleDocumentsFeature)
+  def findStaleDocuments = FeatureSwitch.getProperty(findStaleDocumentsFeature)
 
   def apply(name: String): Option[FeatureSwitch] = name match {
     case `desServiceFeature` => Some(desService)
     case `populateLastActionFeature` => Some(populateLastAction)
     case `removeStaleDocumentsFeature` => Some(removeStaleDocuments)
+    case `findStaleDocumentsFeature` => Some(findStaleDocuments)
     case _ => None
   }
 }

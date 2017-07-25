@@ -18,7 +18,8 @@ package config
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
-import jobs.{RemoveStaleDocumentsJobImpl, PopulateLastActionOneOffJobImpl}
+import jobs.{FindStaleDocumentsJobImpl, RemoveStaleDocumentsJobImpl, PopulateLastActionOneOffJobImpl}
+import uk.gov.hmrc.play.config.inject.{DefaultServicesConfig, ServicesConfig}
 import uk.gov.hmrc.play.scheduling.ScheduledJob
 
 
@@ -26,10 +27,15 @@ class Module extends AbstractModule {
 
   override def configure(): Unit = {
 
+    // config
+    bind(classOf[ServicesConfig]).to(classOf[DefaultServicesConfig]).asEagerSingleton()
+
     // jobs
     bind(classOf[ScheduledJob]).annotatedWith(Names.named("populate-last-action-one-off-job"))
       .to(classOf[PopulateLastActionOneOffJobImpl])
     bind(classOf[ScheduledJob]).annotatedWith(Names.named("remove-stale-documents-job"))
       .to(classOf[RemoveStaleDocumentsJobImpl])
+    bind(classOf[ScheduledJob]).annotatedWith(Names.named("find-stale-documents-job"))
+      .to(classOf[FindStaleDocumentsJobImpl])
   }
 }

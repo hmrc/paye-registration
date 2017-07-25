@@ -24,6 +24,7 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models._
+import play.api.Configuration
 import reactivemongo.api.commands.WriteResult
 import services.MetricsService
 
@@ -483,7 +484,8 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     lazy val mockDateHelper = new DateHelper {
       override def getTimestamp: ZonedDateTime = timestampZDT
     }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent)
+    lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
