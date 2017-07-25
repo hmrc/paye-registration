@@ -92,7 +92,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
       res shouldBe job.Result("Remove stale documents feature is turned off")
     }
 
-    "remove other documents older than 90 days" in new Setup(timestamp) {
+    "remove documents older than a config specified length of time" in new Setup(timestamp) {
       val deleteDT = ZonedDateTime.of(LocalDateTime.of(2016, 12, 1, 12, 0), ZoneId.of("Z"))
       val keepDT = ZonedDateTime.of(LocalDateTime.of(2017, 3, 1, 12, 0), ZoneId.of("Z"))
       await(repository.upsertRegTestOnly(reg("123", Some(deleteDT))))
