@@ -119,7 +119,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         val json = Json.parse(
           s"""
              |{
-             |  "email":"test@testWithExtraCharactersWhichTakeTheLengthToOneInExcessOfSeventyWhichHasBeenDeemedToBeAmple.com",
+             |  "email":"test@testWithExtraCharactersWhichTakeTheLengthToOneInExcessOfSeventyWhi",
              |  "mobileNumber":"07123456789",
              |  "phoneNumber":"0123456789"
              |}
@@ -191,6 +191,21 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         s"""
            |{
            |  "email":"test@test.c",
+           |  "mobileNumber":"07123456789",
+           |  "phoneNumber":"0123456789"
+           |}
+        """.stripMargin)
+
+      val res = Json.fromJson[DigitalContactDetails](json)
+      val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+      shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
+    }
+
+    "email has wacky domain suffix" in {
+      val json = Json.parse(
+        s"""
+           |{
+           |  "email":"test@test.coomm",
            |  "mobileNumber":"07123456789",
            |  "phoneNumber":"0123456789"
            |}
