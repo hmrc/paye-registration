@@ -41,7 +41,6 @@ object DigitalContactDetails {
   private val phoneNumberValidate = Reads.StringReads.filter(ValidationError("invalid phone number pattern"))(isValidPhoneNo)
   private val emailValidate = Reads.StringReads
     .filter(ValidationError("invalid email pattern"))(_.matches(Validation.emailRegex))
-    .filter(ValidationError("email too long"))(_.length <= Validation.maxEmailLength)
 
   implicit val writes = Json.writes[DigitalContactDetails]
 

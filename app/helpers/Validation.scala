@@ -37,8 +37,7 @@ object Validation {
   val countryRegex = """^[A-Za-z0-9]{1}[A-Za-z 0-9]{0,19}$"""
 
   val phoneNumberRegex = """^[0-9 ]{1,20}$"""
-  val emailRegex = """^([A-Za-z0-9\-_.]+)@([A-Za-z0-9\-_.]+)\.[A-Za-z0-9\-_.]{2,3}$"""
-  val maxEmailLength = 70
+  val emailRegex = """^(?!.{71,})([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{2,4})$"""
 
   val completionCapacityRegex = """^[A-Za-z0-9 '\-]{1,100}$"""
 
