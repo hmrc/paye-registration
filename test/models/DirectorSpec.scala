@@ -179,20 +179,11 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
     "allow space in a tile" in {
       val tstJson = Json.parse(
         s"""{
-           |  "forename":"Thierry'",
-           |  "other_forenames":"Dominique;",
-           |  "surname":"Henr-01y",
            |  "title":"Sir "
            |}""".stripMargin)
 
-      val tstModel = Name(
-        forename = Some("Thierry'"),
-        otherForenames = Some("Dominique;"),
-        surname = Some("Henr-01y"),
-        title = Some("Sir ")
-      )
-      //val tstModel = Name(Some("Thierry"),Some("Dominique"),Some("Henr-01y"),Some("Sir "))
+      val tstModel = Name(None,None,None,Some("Sir "))
       Json.fromJson[Name](tstJson) shouldBe JsSuccess(tstModel)
+    }
   }
-}
 }
