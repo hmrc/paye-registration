@@ -85,7 +85,6 @@ trait RegistrationRepository {
   def cleardownRegistration(registrationID: String): Future[PAYERegistration]
   def deleteRegistration(registrationID: String): Future[Boolean]
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
-  def populateLastAction: Future[(Int, Int)]
   def removeStaleDocuments(): Future[(ZonedDateTime, Int)]
 
 }
@@ -643,44 +642,11 @@ class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistrati
     collection.update(doc, reg.copy(lastUpdate = dh.formatTimestamp(timestamp), lastAction = Some(timestamp))).map(f)
   }
 
-  def populateLastAction: Future[(Int, Int)] = {
-
-    val selector = BSONDocument("lastAction" -> BSONDocument("$exists" -> false), "lastUpdate" -> BSONDocument("$exists" -> true))
-
-    for {
-      report        <- reportOnMissedDocuments
-      _             = if(report.nonEmpty) Logger.info(s"[RegistrationMongoRepository] - [populateLastAction]: ${report.length} documents not updated becaue of missing lastUpdate field. Reg IDs: ${report.map(_.toString)}")
-      lst           <- collection.find[BSONDocument](selector).cursor().collect[Seq]()
-      updateResults <- Future.sequence(lst.map(updateLastAction))
-      successes     =  updateResults.count(!_.hasErrors)
-    } yield (successes, updateResults.size - successes)
-  }
-
-  private def reportOnMissedDocuments: Future[Seq[Option[BSONValue]]] = {
-
-    val selector = BSONDocument("lastUpdate" -> BSONDocument("$exists" -> false))
-    for {
-      noLastActionList <- collection.find[BSONDocument](selector).cursor[BSONDocument]().collect[Seq]()
-    } yield noLastActionList.map(_.get("registrationID"))
-  }
-
   def removeStaleDocuments(): Future[(ZonedDateTime, Int)] = {
     val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
 
     collection.remove(staleDocumentSelector(cuttOffDate)).map {
       res => (cuttOffDate, res.n)
-    }
-  }
-
-  def findStaleDocuments(): Future[(ZonedDateTime, Int)] = {
-    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
-
-    collection.find(staleDocumentSelector(cuttOffDate)).cursor[PAYERegistration]().collect[Seq]().map {
-      regSeq =>
-        regSeq.map {
-          reg => logger.info(s"To be removed: regID: ${reg.registrationID}, status: ${reg.status}, lastAction: ${reg.lastAction.getOrElse("No Last Action")}")
-        }
-        (cuttOffDate, regSeq.length)
     }
   }
 

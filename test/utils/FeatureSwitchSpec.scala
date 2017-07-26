@@ -234,18 +234,6 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
       payeFeatureSwitch("somethingElse") shouldBe None
     }
 
-    "return true if the populateLastActionFeature system property is true" in {
-      System.setProperty("feature.populateLastActionFeature", "true")
-
-      payeFeatureSwitch("populateLastActionFeature") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", true))
-    }
-
-    "return false if the populateLastActionFeature system property is false" in {
-      System.setProperty("feature.populateLastActionFeature", "false")
-
-      payeFeatureSwitch("populateLastActionFeature") shouldBe Some(BooleanFeatureSwitch("populateLastActionFeature", false))
-    }
-
     "return true if the removeStaleDocumentsFeature system property is true" in {
       System.setProperty("feature.removeStaleDocumentsFeature", "true")
 
@@ -256,18 +244,6 @@ class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
       System.setProperty("feature.removeStaleDocumentsFeature", "false")
 
       payeFeatureSwitch("removeStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("removeStaleDocumentsFeature", false))
-    }
-
-    "return true if the findStaleDocumentsFeature system property is true" in {
-      System.setProperty("feature.findStaleDocumentsFeature", "true")
-
-      payeFeatureSwitch("findStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("findStaleDocumentsFeature", true))
-    }
-
-    "return false if the findStaleDocumentsFeature system property is false" in {
-      System.setProperty("feature.findStaleDocumentsFeature", "false")
-
-      payeFeatureSwitch("findStaleDocumentsFeature") shouldBe Some(BooleanFeatureSwitch("findStaleDocumentsFeature", false))
     }
   }
 

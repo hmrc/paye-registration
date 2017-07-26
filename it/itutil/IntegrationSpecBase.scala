@@ -27,9 +27,7 @@ trait IntegrationSpecBase extends UnitSpec
 
   def setupFeatures(
                      desService: Boolean = false,
-                     lastActionJob: Boolean = false,
-                     removeStaleDocumentsJob: Boolean = false,
-                     findStaleDocumentsJob: Boolean = false
+                     removeStaleDocumentsJob: Boolean = false
                      ) = {
     def enableFeature(fs: FeatureSwitch, enabled: Boolean) = {
       enabled match {
@@ -38,9 +36,7 @@ trait IntegrationSpecBase extends UnitSpec
       }
     }
     enableFeature(PAYEFeatureSwitches.desService, desService)
-    enableFeature(PAYEFeatureSwitches.populateLastAction, lastActionJob)
     enableFeature(PAYEFeatureSwitches.removeStaleDocuments, removeStaleDocumentsJob)
-    enableFeature(PAYEFeatureSwitches.findStaleDocuments, findStaleDocumentsJob)
   }
 
   override def beforeEach() = {
