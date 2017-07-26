@@ -209,7 +209,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
       stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
     }
 
-    "return a 200 when a specified registration has been updated" ignore new Setup {
+    "return a 200 when a specified registration has been updated" in new Setup {
       // Doesn't seem to work! as expected - TODO SCRS-4976
       setupSimpleAuthMocks()
       val regID1 = "12345"
@@ -259,9 +259,9 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
             CompanyDetails(
               "testCompanyName",
               Some("test"),
-              Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-              Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), Some("UK")),
-              DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
+              Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+              Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None),
+              DigitalContactDetails(Some("test@email.com"), Some("07517123456"), Some("07517123456"))
             )
           ),
           Seq(
@@ -272,7 +272,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
                 surname = Some("Henry"),
                 title = Some("Sir")
               ),
-              Some("AA123456Z")
+              Some("JX556677D")
             )
           ),
           Some(
@@ -281,11 +281,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
                 name = "Thierry Henry",
                 digitalContactDetails = DigitalContactDetails(
                   Some("test@test.com"),
-                  Some("1234"),
-                  Some("4358475")
+                  Some("07517123456"),
+                  Some("07517123456")
                 )
               ),
-              correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
+              correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
             )
           ),
           Some(
