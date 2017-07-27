@@ -84,6 +84,7 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
            |  "surname":"Last",
            |  "title":"$title"
            |}""".stripMargin)
+
       "name is too long" in {
         val result = Json.fromJson[Name](testNameJson(name = List.fill(101)('a').mkString))
         shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
@@ -171,6 +172,18 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
       shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
 
       shouldHaveErrors(result("SR 09 87 65 C"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+    }
+  }
+
+  "Title" should {
+    "allow space in a tile" in {
+      val tstJson = Json.parse(
+        s"""{
+           |  "title":"Sir "
+           |}""".stripMargin)
+
+      val tstModel = Name(None,None,None,Some("Sir "))
+      Json.fromJson[Name](tstJson) shouldBe JsSuccess(tstModel)
     }
   }
 }

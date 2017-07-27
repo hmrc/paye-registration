@@ -46,7 +46,7 @@ object Validation {
   val natureOfBusinessRegex = """^[A-Za-z 0-9\-,/&']{1,100}$"""
 
   val nameRegex = """^[A-Za-z 0-9\-';]{1,100}$"""
-  val titleRegex = """^[A-Za-z]{1,20}$"""
+  val titleRegex = """^[A-Za-z ]{1,20}$"""
 
   val minDate = LocalDate.of(1900,1,1)
 
