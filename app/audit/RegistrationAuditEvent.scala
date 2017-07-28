@@ -91,6 +91,3 @@ object RegistrationAuditEvent {
     }
   }
 }
-
-class AmendCompletionCapacityEvent(regId: String, details: JsObject)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("completionCapacityAmendment", None, details.++(Json.obj(RegistrationAuditEvent.JOURNEY_ID -> regId)))(hc)

@@ -44,7 +44,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   val mockDESConnector = mock[DESConnector]
   val mockIIConnector = mock[IncorporationInformationConnector]
-  val mockAuditConnector = mock[AuditConnector]
+  val mockAuditService = mock[AuditService]
   val mockBusinessRegistrationConnector = mock[BusinessRegistrationConnector]
   val mockCompanyRegistrationConnector = mock[CompanyRegistrationConnector]
 
@@ -58,7 +58,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val desConnector = mockDESConnector
       override val incorporationInformationConnector = mockIIConnector
       override val authConnector = mockAuthConnector
-      override val auditConnector = mockAuditConnector
+      override val auditService = mockAuditService
       override val businessRegistrationConnector = mockBusinessRegistrationConnector
       override val companyRegistrationConnector = mockCompanyRegistrationConnector
     }
@@ -465,7 +465,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(200)))
 
-      when(mockAuditConnector.sendEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Success))
 
       when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
@@ -551,21 +551,6 @@ class SubmissionServiceSpec extends PAYERegSpec {
         val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
         result shouldBe None
       }
-    }
-  }
-
-  "Calling fetchAddressAuditRefs" should {
-    "return a map of enums to refs" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validRegistration)))
-
-      await(service.fetchAddressAuditRefs("regId")) shouldBe Map(AddressTypes.roAdddress -> "roAuditRef")
-    }
-    "throw a MissingRegDocument exception when there is no Registration object returned from mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(None))
-
-      intercept[MissingRegDocument](await(service.fetchAddressAuditRefs("regId")))
     }
   }
 }

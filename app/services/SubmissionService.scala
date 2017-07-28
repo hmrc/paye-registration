@@ -18,14 +18,12 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import common.constants.ETMPStatusCodes
-import config.MicroserviceAuditConnector
 import connectors._
-import enums.{AddressTypes, IncorporationStatus, PAYEStatus}
+import enums.{IncorporationStatus, PAYEStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -33,7 +31,6 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -52,15 +49,16 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injIncorporationInformationConnector: IncorporationInformationConnector,
                                   injAuthConnector: AuthConnector,
                                   injBusinessRegistrationConnector: BusinessRegistrationConnector,
-                                  injCompanyRegistrationConnector: CompanyRegistrationConnector) extends SubmissionSrv {
+                                  injCompanyRegistrationConnector: CompanyRegistrationConnector,
+                                  injAuditService: AuditService) extends SubmissionSrv {
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
   val incorporationInformationConnector = injIncorporationInformationConnector
   val authConnector = injAuthConnector
-  val auditConnector = MicroserviceAuditConnector
   val businessRegistrationConnector = injBusinessRegistrationConnector
   val companyRegistrationConnector = injCompanyRegistrationConnector
+  val auditService = injAuditService
 }
 
 trait SubmissionSrv extends ETMPStatusCodes {
@@ -70,9 +68,9 @@ trait SubmissionSrv extends ETMPStatusCodes {
   val desConnector: DESConnect
   val incorporationInformationConnector: IncorporationInformationConnect
   val authConnector: AuthConnect
-  val auditConnector: AuditConnector
   val businessRegistrationConnector: BusinessRegistrationConnect
   val companyRegistrationConnector: CompanyRegistrationConnect
+  val auditService: AuditSrv
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
@@ -88,8 +86,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
       ctutr         <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
       submission    <- buildADesSubmission(regId, incUpdate, ctutr)
       _             <- desConnector.submitToDES(submission, regId, incUpdate)
-      auditRefs     <- fetchAddressAuditRefs(regId)
-      _             <- auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr, auditRefs)
+      _             <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
       updatedStatus =  incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
       _             <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield ackRef
@@ -100,7 +97,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _             <- auditDESTopUp(regId, desSubmission)
+      _             <- auditService.auditDESTopUp(regId, desSubmission)
       updatedStatus = if(incorpStatusUpdate.status == IncorporationStatus.rejected) PAYEStatus.cancelled else PAYEStatus.submitted
       status        <- updatePAYERegistrationDocument(regId, updatedStatus)
     } yield status
@@ -258,37 +255,6 @@ trait SubmissionSrv extends ETMPStatusCodes {
       correspondenceContactDetails = payeContactDetails.contactDetails.digitalContactDetails,
       payeCorrespondenceAddress = payeContactDetails.correspondenceAddress
     )
-  }
-
-  private[services] def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String], auditRefs: Map[AddressTypes.Value, String])(implicit hc: HeaderCarrier, req: Request[AnyContent]) = {
-    for {
-      authority <- authConnector.getCurrentAuthority
-      userDetails <- authConnector.getUserDetails
-      authProviderId = userDetails.get.authProviderId
-    } yield {
-      val event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs))
-      auditConnector.sendEvent(event)
-    }
-  }
-
-  private[services] def fetchAddressAuditRefs(regId: String): Future[Map[AddressTypes.Value, String]] = {
-    registrationRepository.retrieveRegistration(regId) map { oReg =>
-      oReg.map { reg =>
-        List(
-          reg.companyDetails.flatMap(_.roAddress.auditRef).map( AddressTypes.roAdddress -> _ ),
-          reg.companyDetails.flatMap(_.ppobAddress.auditRef).map( AddressTypes.ppobAdddress -> _ ),
-          reg.payeContact.flatMap(_.correspondenceAddress.auditRef).map( AddressTypes.correspondenceAdddress -> _ )
-        ).flatten.toMap
-      }.getOrElse{ throw new MissingRegDocument(s"No registration found when fetching address audit refs for regID $regId") }
-    }
-  }
-
-  private[services] def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
-    val event: RegistrationAuditEvent = topUpDESSubmission.status match {
-      case IncorporationStatus.accepted => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]))
-      case IncorporationStatus.rejected => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
-    }
-    auditConnector.sendEvent(event)
   }
 
   private[services] class FailedToGetCredId extends NoStackTrace

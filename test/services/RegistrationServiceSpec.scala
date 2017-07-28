@@ -18,31 +18,27 @@ package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
-import connectors.UserDetailsModel
 import enums.PAYEStatus
-import fixtures.{AuthFixture, RegistrationFixture}
+import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.Mockito._
-import play.api.libs.json.Json
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.SessionId
 
 import scala.concurrent.Future
 
-class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture with AuthFixture {
-  val mockAuditConnector = mock[AuditConnector]
+class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
+  val mockAuditService = mock[AuditService]
 
   class Setup {
     val service = new RegistrationSrv {
       override val registrationRepository = mockRegistrationRepository
       override val payeRestartURL = "testRestartURL"
       override val payeCancelURL = "testCancelURL"
-      override val auditConnector = mockAuditConnector
-      override val authConnector = mockAuthConnector
+      override val auditService = mockAuditService
     }
   }
 
@@ -443,11 +439,8 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture with 
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.eq(regId)))
         .thenReturn(Future.successful(Some(validRegistration)))
 
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validAuthority)))
-
-      when(mockAuditConnector.sendEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Success))
+      when(mockAuditService.auditCompletionCapacity(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(AuditResult.Success))
 
       when(mockRegistrationRepository.upsertCompletionCapacity(ArgumentMatchers.eq(regId), ArgumentMatchers.any()))
         .thenReturn(Future.successful("Agent"))
@@ -548,37 +541,6 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture with 
 
         intercept[MissingRegDocument](await(service.deletePAYERegistration(validRegistration.registrationID)))
       }
-    }
-  }
-
-  "auditCompletionCapacity" should {
-    implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
-
-    "send audit with correct detail" in new Setup {
-      val previousCC = "director"
-      val newCC = "agent"
-      val authProviderId = "testAuthProviderId"
-      val validUserDetailsModel = UserDetailsModel("testName", "testEmail", "testAffinityGroup", None, None, None, None, authProviderId, "testAuthProviderType")
-
-      val expectedDetail = Json.parse(
-        s"""
-           |{
-           |   "externalUserId": "${validAuthority.ids.externalId}",
-           |   "authProviderId": "$authProviderId",
-           |   "journeyId": "$regId",
-           |   "previousCompletionCapacity": "Director",
-           |   "newCompletionCapacity": "Agent"
-           |}
-         """.stripMargin)
-
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validAuthority)))
-
-      when(mockAuthConnector.getUserDetails(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validUserDetailsModel)))
-
-      val event = await(service.auditCompletionCapacity(regId, previousCC, newCC))
-      event.detail shouldBe expectedDetail
     }
   }
 }

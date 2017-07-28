@@ -115,38 +115,6 @@ case class DESCompletionCapacity(capacity: String,
                                 otherCapacity: Option[String])
 
 object DESCompletionCapacity {
-  val capitalizeWrites = new Writes[String] {
-    override def writes(o: String): JsValue = Json.toJson(o.capitalize)
-  }
-
-  implicit val writes: Writes[DESCompletionCapacity] =
-    (
-      (__ \ "completionCapacity").write[String](capitalizeWrites) and
-      (__ \ "completionCapacityOther").writeNullable[String]
-    )(unlift(DESCompletionCapacity.unapply))
-
-  val writesPreviousCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {
-    override def writes(cc: DESCompletionCapacity): JsValue = {
-      val successWrites = (
-        (__ \ "previousCompletionCapacity").write[String](capitalizeWrites) and
-        (__ \ "previousCompletionCapacityOther").writeNullable[String]
-      )(unlift(DESCompletionCapacity.unapply))
-
-      Json.toJson(cc)(successWrites).as[JsObject]
-    }
-  }
-
-  val writesNewCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {
-    override def writes(cc: DESCompletionCapacity): JsValue = {
-      val successWrites = (
-        (__ \ "newCompletionCapacity").write[String](capitalizeWrites) and
-        (__ \ "newCompletionCapacityOther").writeNullable[String]
-      )(unlift(DESCompletionCapacity.unapply))
-
-      Json.toJson(cc)(successWrites).as[JsObject]
-    }
-  }
-
   def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
     val DIRECTOR = "Director"
     val AGENT = "Agent"
@@ -159,4 +127,14 @@ object DESCompletionCapacity {
       throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
     }
   }
+
+  val capitalizeWrites = new Writes[String] {
+    override def writes(o: String): JsValue = Json.toJson(o.capitalize)
+  }
+
+  implicit val writes: Writes[DESCompletionCapacity] =
+    (
+      (__ \ "completionCapacity").write[String](capitalizeWrites) and
+      (__ \ "completionCapacityOther").writeNullable[String]
+    )(unlift(DESCompletionCapacity.unapply))
 }
