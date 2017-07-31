@@ -25,7 +25,6 @@ import connectors.{AuthConnect, AuthConnector}
 import enums.{AddressTypes, IncorporationStatus}
 import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
 import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.{AnyContent, Request}
 import repositories.{RegistrationMongo, RegistrationRepository}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.http.HeaderCarrier

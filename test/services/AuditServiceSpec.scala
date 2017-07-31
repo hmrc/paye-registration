@@ -24,7 +24,6 @@ import helpers.PAYERegSpec
 import models.{Address, CompanyDetails, DigitalContactDetails}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
-import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.SessionId
