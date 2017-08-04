@@ -16,6 +16,7 @@
 
 package models
 
+import models.validation.APIReads
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -60,7 +61,9 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
       )
 
-      Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
+      Json.fromJson[CompanyDetails](json)(
+        CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+      ) shouldBe JsSuccess(tstCompanyDetails)
     }
 
     "complete successfully from Json with no CRN" in {
@@ -98,7 +101,9 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         DigitalContactDetails(None, Some("0123459999"), None)
       )
 
-      Json.fromJson[CompanyDetails](json) shouldBe JsSuccess(tstCompanyDetails)
+      Json.fromJson[CompanyDetails](json)(
+        CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+      ) shouldBe JsSuccess(tstCompanyDetails)
     }
 
     "fail on company name" when {
@@ -128,13 +133,17 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         val longName = List.fill(161)('a').mkString
         val json = tstJson(longName)
 
-        val result = Json.fromJson[CompanyDetails](json)
+        val result = Json.fromJson[CompanyDetails](json)(
+          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+        )
         shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))
       }
       "it is too short" in {
         val json = tstJson("")
 
-        val result = Json.fromJson[CompanyDetails](json)
+        val result = Json.fromJson[CompanyDetails](json)(
+          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+        )
         shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))
       }
     }
@@ -165,26 +174,34 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       "it contains invalid characters" in {
         val json = tstJson("Test£Company")
 
-        val result = Json.fromJson[CompanyDetails](json)
+        val result = Json.fromJson[CompanyDetails](json)(
+          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+        )
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
       "it contains invalid characters 2" in {
         val json = tstJson(" Test Company")
 
-        val result = Json.fromJson[CompanyDetails](json)
+        val result = Json.fromJson[CompanyDetails](json)(
+          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+        )
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
       "it is too long" in {
         val longName = List.fill(36)('a').mkString
         val json = tstJson(longName)
 
-        val result = Json.fromJson[CompanyDetails](json)
+        val result = Json.fromJson[CompanyDetails](json)(
+          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+        )
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
       "it is too short" in {
         val json = tstJson("")
 
-        val result = Json.fromJson[CompanyDetails](json)
+        val result = Json.fromJson[CompanyDetails](json)(
+          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+        )
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
     }

@@ -41,7 +41,7 @@ object PAYEContact {
   implicit val format = Json.format[PAYEContact]
 
   val mongoFormat: Format[PAYEContact] = {
-    implicit val payeContactDetails = PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation)
+    implicit val payeContactDetails = PAYEContactDetails.payeContactDetailsFormat(MongoReads.phoneNumberValidation)
     Json.format[PAYEContact]
   }
 }

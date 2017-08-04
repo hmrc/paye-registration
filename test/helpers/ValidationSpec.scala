@@ -16,6 +16,7 @@
 
 package helpers
 
+import models.validation.DesFormats
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import uk.gov.hmrc.play.test.UnitSpec
@@ -26,7 +27,7 @@ class ValidationSpec extends UnitSpec {
 
   case class TestModel(cName: String, int: Int = 616)
   implicit val testModelWriter: Writes[TestModel] = (
-    (__ \ "cName").write[String](testCompanyNameValidator.companyNameForDES) and
+    (__ \ "cName").write[String](DesFormats.companyNameValidation) and
     (__ \ "int").write[Int]
   )(unlift(TestModel.unapply))
 

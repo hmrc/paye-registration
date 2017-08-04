@@ -16,6 +16,7 @@
 
 package models
 
+import models.validation.APIReads
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -44,7 +45,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContactDetails](json) shouldBe JsSuccess(tstPAYEContactDetails)
+      Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation)) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
     "complete successfully from Json with incomplete digital contact details" in {
@@ -68,7 +69,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContactDetails](json) shouldBe JsSuccess(tstPAYEContactDetails)
+      Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation)) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
     "fail" when {
@@ -85,19 +86,19 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
       "contact name is invalid" in {
         val json = contact("Luis@Fernandez")
 
-        val result = Json.fromJson[PAYEContactDetails](json)
+        val result = Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation))
         shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
       }
       "contact name is too long" in {
         val json = contact(List.fill(101)('a').mkString)
 
-        val result = Json.fromJson[PAYEContactDetails](json)
+        val result = Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation))
         shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
       }
       "contact name is too short" in {
         val json = contact("")
 
-        val result = Json.fromJson[PAYEContactDetails](json)
+        val result = Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation))
         shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
       }
     }
