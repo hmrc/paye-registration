@@ -40,7 +40,6 @@ object Validation {
 
   val completionCapacityRegex = """^[A-Za-z0-9 '\-]{1,100}$"""
 
-  val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
   val tradingNameRegex = """^[A-Za-z0-9\-,.()/&'!][A-Za-z 0-9\-,.()/&'!]{0,34}$"""
   val natureOfBusinessRegex = """^[A-Za-z 0-9\-,/&']{1,100}$"""
 
@@ -48,34 +47,11 @@ object Validation {
   val titleRegex = """^[A-Za-z ]{1,20}$"""
 
   val minDate = LocalDate.of(1900,1,1)
-
-  val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
-  val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
 }
 
 trait CompanyDetailsValidator {
 
   import Validation._
-
-  private def cleanseCompanyName(companyName: String, m: Map[Char, String]): String = {
-    Normalizer.normalize(
-      companyName.map(c => if(m.contains(c)) m(c) else c).mkString,
-      Form.NFD
-    ).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation)
-  }
-
-  val companyNameForDES: Writes[String] = new Writes[String] {
-    override def writes(companyName: String) = {
-      val normalised = cleanseCompanyName(companyName, illegalCharacters)
-      Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $companyName and after; $normalised")
-      Writes.StringWrites.writes(normalised)
-    }
-  }
-
-  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(
-    companyName => cleanseCompanyName(companyName, illegalCharacters).matches(companyNameRegex)
-  )
-
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }
 

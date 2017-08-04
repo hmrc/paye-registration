@@ -27,14 +27,17 @@ import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import javax.inject.{Inject, Singleton}
+
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
+import models.validation.{APIReads, MongoReads}
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json._
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class RegistrationController @Inject()(injAuthConnector: AuthConnector,
@@ -53,6 +56,17 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val registrationService: RegistrationSrv
   val submissionService: SubmissionSrv
   val notificationService: NotificationService
+
+  val companyDetailsMongoFormat = CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation)
+  val companyDetailsAPIFormat = CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+
+  def readJsonBody[T](reads: Reads[T])(f: (T) => Future[Result])(implicit request: Request[JsValue], m: Manifest[T]) = {
+    Try(request.body.validate[T](reads)) match {
+      case Success(JsSuccess(payload, _)) => f(payload)
+      case Success(JsError(errs))         => Future.successful(BadRequest(s"Invalid ${m.runtimeClass.getSimpleName} payload: $errs"))
+      case Failure(e)                     => Future.successful(BadRequest(s"could not parse body due to ${e.getMessage}"))
+    }
+  }
 
   def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
@@ -90,7 +104,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationService.getCompanyDetails(regID) map {
-            case Some(companyDetails) => Ok(Json.toJson(companyDetails))
+            case Some(companyDetails) => Ok(Json.toJson(companyDetails)(companyDetailsMongoFormat))
             case None => NotFound
           }
         case NotLoggedInOrAuthorised =>
@@ -107,9 +121,9 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          withJsonBody[CompanyDetails] { companyDetails =>
+          readJsonBody[CompanyDetails](companyDetailsAPIFormat) { companyDetails =>
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
-              Ok(Json.toJson(companyDetailsResponse))
+              Ok(Json.toJson(companyDetailsResponse)(companyDetailsAPIFormat))
             } recover {
               case missing   : MissingRegDocument          => NotFound
               case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)

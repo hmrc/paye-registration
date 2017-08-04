@@ -39,7 +39,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         phoneNumber = Some("0123 456 789")
       )
 
-      Json.toJson(tstDigitalContactDetails) shouldBe json
+      Json.toJson(tstDigitalContactDetails)(DigitalContactDetails.writes) shouldBe json
     }
   }
 
@@ -60,7 +60,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         phoneNumber = Some("0123 456 789")
       )
 
-      Json.fromJson[DigitalContactDetails](json) shouldBe JsSuccess(tstDigitalContactDetails)
+      Json.fromJson[DigitalContactDetails](json)(DigitalContactDetails.digitalContactDetailsReads()) shouldBe JsSuccess(tstDigitalContactDetails)
     }
 
     "complete successfully from partial Json" when {

@@ -78,28 +78,11 @@ object Address {
 }
 
 object CompanyDetails extends CompanyDetailsValidator {
-
-  implicit val format: Format[CompanyDetails] = (
+  def companyDetailsFormatter(phoneValidator: Reads[String], companyNameValidator: Format[String]) = (
     (__ \ "companyName").format[String](companyNameValidator) and
     (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
     (__ \ "roAddress").format[Address] and
     (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails]
+    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.digitalContactDetailsReads(phoneValidator))
   )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
-
-  val companyDetailDESFormat: Format[CompanyDetails] = (
-    (__ \ "companyName").format[String](companyNameForDES) and
-    (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-    (__ \ "roAddress").format[Address] and
-    (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails]
-  )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
-
-  val mongoFormat: Format[CompanyDetails] = (
-    (__ \ "companyName").format[String](companyNameValidator) and
-      (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-      (__ \ "roAddress").format[Address] and
-      (__ \ "ppobAddress").format[Address] and
-      (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.mongoReads)
-    )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 }
