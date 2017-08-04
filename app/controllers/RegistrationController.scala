@@ -380,9 +380,11 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case _: MissingRegDocument =>
           Ok(s"No registration found for transaction id $transactionId")
         case error: RegistrationInvalidStatus =>
-          InternalServerError(s"Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
+          Logger.error(s"[RegistrationController] - [processIncorporationData] - Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
+          InternalServerError
         case mongo @ (_: UpdateFailed | _: RetrieveFailed) =>
-          InternalServerError(s"Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
+          Logger.error(s"[RegistrationController] - [processIncorporationData] - Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
+          InternalServerError
         case e =>
           Logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
           throw e
