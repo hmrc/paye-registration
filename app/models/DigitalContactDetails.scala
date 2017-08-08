@@ -17,8 +17,9 @@
 package models
 
 import helpers.Validation
+import models.validation.BaseValidation
 import play.api.data.validation.ValidationError
-import play.api.libs.json.{Reads, Json, __}
+import play.api.libs.json.{Json, Reads, __}
 import play.api.libs.functional.syntax._
 
 case class DigitalContactDetails(email: Option[String],
@@ -33,9 +34,9 @@ object DigitalContactDetails {
 
   implicit val writes = Json.writes[DigitalContactDetails]
 
-  def digitalContactDetailsReads(phoneValidation: Reads[String]): Reads[DigitalContactDetails] = (
+  def reads(validators: BaseValidation): Reads[DigitalContactDetails] = (
     (__ \ "email").readNullable[String](emailValidate) and
-    (__ \ "phoneNumber").readNullable[String](phoneValidation) and
-    (__ \ "mobileNumber").readNullable[String](phoneValidation)
+    (__ \ "phoneNumber").readNullable[String](validators.phoneNumberValidation) and
+    (__ \ "mobileNumber").readNullable[String](validators.phoneNumberValidation)
   )(DigitalContactDetails.apply _)
 }

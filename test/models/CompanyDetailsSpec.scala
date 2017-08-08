@@ -23,6 +23,8 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
+  val cdFormatter = CompanyDetails.formatter(APIReads)
+
   "Creating a CompanyDetails model from Json" should {
     "complete successfully from full Json" in {
       val json = Json.parse(
@@ -61,9 +63,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
       )
 
-      Json.fromJson[CompanyDetails](json)(
-        CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-      ) shouldBe JsSuccess(tstCompanyDetails)
+      Json.fromJson[CompanyDetails](json)(cdFormatter) shouldBe JsSuccess(tstCompanyDetails)
     }
 
     "complete successfully from Json with no CRN" in {
@@ -101,9 +101,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         DigitalContactDetails(None, Some("0123459999"), None)
       )
 
-      Json.fromJson[CompanyDetails](json)(
-        CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-      ) shouldBe JsSuccess(tstCompanyDetails)
+      Json.fromJson[CompanyDetails](json)(cdFormatter) shouldBe JsSuccess(tstCompanyDetails)
     }
 
     "fail on company name" when {
@@ -133,17 +131,13 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         val longName = List.fill(161)('a').mkString
         val json = tstJson(longName)
 
-        val result = Json.fromJson[CompanyDetails](json)(
-          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-        )
+        val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
         shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))
       }
       "it is too short" in {
         val json = tstJson("")
 
-        val result = Json.fromJson[CompanyDetails](json)(
-          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-        )
+        val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
         shouldHaveErrors(result, JsPath() \ "companyName", Seq(ValidationError("Invalid company name")))
       }
     }
@@ -174,34 +168,26 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       "it contains invalid characters" in {
         val json = tstJson("Test£Company")
 
-        val result = Json.fromJson[CompanyDetails](json)(
-          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-        )
+        val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
       "it contains invalid characters 2" in {
         val json = tstJson(" Test Company")
 
-        val result = Json.fromJson[CompanyDetails](json)(
-          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-        )
+        val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
       "it is too long" in {
         val longName = List.fill(36)('a').mkString
         val json = tstJson(longName)
 
-        val result = Json.fromJson[CompanyDetails](json)(
-          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-        )
+        val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
       "it is too short" in {
         val json = tstJson("")
 
-        val result = Json.fromJson[CompanyDetails](json)(
-          CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
-        )
+        val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
         shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
       }
     }

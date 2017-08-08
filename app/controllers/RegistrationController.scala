@@ -57,8 +57,8 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val submissionService: SubmissionSrv
   val notificationService: NotificationService
 
-  val companyDetailsMongoFormat = CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation)
-  val companyDetailsAPIFormat = CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)
+  val companyDetailsMongoFormat = CompanyDetails.formatter(MongoReads)
+  val companyDetailsAPIFormat = CompanyDetails.formatter(APIReads)
 
   def readJsonBody[T](reads: Reads[T])(f: (T) => Future[Result])(implicit request: Request[JsValue], m: Manifest[T]) = {
     Try(request.body.validate[T](reads)) match {

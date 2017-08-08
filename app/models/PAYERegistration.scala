@@ -57,7 +57,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)) and
+    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(APIReads)) and
     (__ \ "directors").format[Seq[Director]] and
     (__ \ "payeContact").formatNullable[PAYEContact] and
     (__ \ "employment").formatNullable[Employment] and
@@ -82,7 +82,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation)) and
+    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(MongoReads)) and
     (__ \ "directors").format[Seq[Director]] and
     (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.mongoFormat) and
     (__ \ "employment").formatNullable[Employment] and

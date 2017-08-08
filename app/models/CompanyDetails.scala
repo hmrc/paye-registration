@@ -17,6 +17,7 @@
 package models
 
 import helpers.{CompanyDetailsValidator, Validation}
+import models.validation.BaseValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -78,11 +79,11 @@ object Address {
 }
 
 object CompanyDetails extends CompanyDetailsValidator {
-  def companyDetailsFormatter(phoneValidator: Reads[String], companyNameValidator: Format[String]) = (
-    (__ \ "companyName").format[String](companyNameValidator) and
+  def formatter(validators: BaseValidation) = (
+    (__ \ "companyName").format[String](validators.companyNameValidation) and
     (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
     (__ \ "roAddress").format[Address] and
     (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.digitalContactDetailsReads(phoneValidator))
+    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(validators))
   )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 }

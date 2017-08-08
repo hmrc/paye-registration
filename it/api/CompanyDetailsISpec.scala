@@ -83,7 +83,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     )
 
     val oldFormatCompanyDetails = {
-      implicit val format = CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation)
+      implicit val format = CompanyDetails.formatter(MongoReads)
       CompanyDetails(
         companyName = "Test Company Name",
         tradingName = Some("Test Trading Name"),
@@ -127,7 +127,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation))
+      response.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.formatter(MongoReads))
     }
 
     "Return a 200 when the user gets company details with an old format" in new Setup {
@@ -164,7 +164,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(oldFormatCompanyDetails)(CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation))
+      response.json shouldBe Json.toJson(oldFormatCompanyDetails)(CompanyDetails.formatter(MongoReads))
     }
 
     "Return a 200 when the user upserts company details with a company name that contains none standard characters" in new Setup {
@@ -211,13 +211,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
-        .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)))
+        .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.formatter(APIReads)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/company-details").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation))
+      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.formatter(MongoReads))
 
       await(repository.retrieveRegistration(regID)).get.companyDetails.get.companyName shouldBe "Téšt Çômpåñÿ Ñämę"
     }
@@ -259,13 +259,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
-        .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)))
+        .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.formatter(APIReads)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/company-details").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation))
+      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.formatter(MongoReads))
     }
 
     "Return a 403 when the user is not authorised to get company details" in new Setup {
@@ -337,7 +337,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       ))
 
       val response = client(s"/${regID}/company-details")
-        .patch(Json.toJson(validCompanyDetails)(CompanyDetails.companyDetailsFormatter(APIReads.phoneNumberValidation, APIReads.companyNameValidation)))
+        .patch(Json.toJson(validCompanyDetails)(CompanyDetails.formatter(APIReads)))
         .futureValue
       response.status shouldBe 403
     }

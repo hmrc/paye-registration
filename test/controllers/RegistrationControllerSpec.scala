@@ -229,10 +229,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.companyDetailsFormatter(
-              APIReads.phoneNumberValidation,
-              APIReads.companyNameValidation
-            )
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads)
           )
         )
       )
@@ -250,12 +247,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(
-              CompanyDetails.companyDetailsFormatter(
-                APIReads.phoneNumberValidation,
-                APIReads.companyNameValidation
-              )
-            )
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
           )
       )
 
@@ -272,12 +264,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(
-              CompanyDetails.companyDetailsFormatter(
-                APIReads.phoneNumberValidation,
-                APIReads.companyNameValidation
-              )
-            )
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
           )
       )
 
@@ -297,12 +284,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(
-              CompanyDetails.companyDetailsFormatter(
-                APIReads.phoneNumberValidation,
-                APIReads.companyNameValidation
-              )
-            )
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
           )
       )
 
@@ -322,12 +304,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = await(controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(
-              CompanyDetails.companyDetailsFormatter(
-                APIReads.phoneNumberValidation,
-                APIReads.companyNameValidation
-              )
-            )
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
           )
         )
       )
@@ -349,12 +326,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(
-              CompanyDetails.companyDetailsFormatter(
-                APIReads.phoneNumberValidation,
-                APIReads.companyNameValidation
-              )
-            )
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
           )
       )
 

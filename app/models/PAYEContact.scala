@@ -17,7 +17,7 @@
 package models
 
 import helpers.PAYEContactDetailsValidator
-import models.validation.{APIReads, MongoReads}
+import models.validation.{APIReads, BaseValidation, MongoReads}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Json, Reads, __}
 
@@ -28,20 +28,20 @@ case class PAYEContactDetails(name: String,
                               digitalContactDetails: DigitalContactDetails)
 
 object PAYEContactDetails extends PAYEContactDetailsValidator {
-  def payeContactDetailsFormat(phoneValidator: Reads[String]): Format[PAYEContactDetails] = (
+  def formatter(validators: BaseValidation): Format[PAYEContactDetails] = (
     (__ \ "name").format[String](nameValidator) and
-    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.digitalContactDetailsReads(phoneValidator))
+    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(validators))
   )(PAYEContactDetails.apply, unlift(PAYEContactDetails.unapply))
 }
 
 object PAYEContact {
-  implicit val payeContactDetails = PAYEContactDetails.payeContactDetailsFormat(APIReads.phoneNumberValidation)
+  implicit val payeContactDetails = PAYEContactDetails.formatter(APIReads)
   implicit val addressReads = Address.reads
   implicit val addressWrites = Address.writes
   implicit val format = Json.format[PAYEContact]
 
   val mongoFormat: Format[PAYEContact] = {
-    implicit val payeContactDetails = PAYEContactDetails.payeContactDetailsFormat(MongoReads.phoneNumberValidation)
+    implicit val payeContactDetails = PAYEContactDetails.formatter(MongoReads)
     Json.format[PAYEContact]
   }
 }

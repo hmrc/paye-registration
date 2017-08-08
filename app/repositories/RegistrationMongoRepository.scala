@@ -50,7 +50,7 @@ class RegistrationMongo @Inject()(
                                    injDateHelper: DateHelper,
                                    mongo: ReactiveMongoComponent,
                                    config: Configuration) extends ReactiveMongoFormats {
-  implicit val companyDetailsFormat = CompanyDetails.companyDetailsFormatter(MongoReads.phoneNumberValidation, MongoReads.companyNameValidation)
+  implicit val companyDetailsFormat = CompanyDetails.formatter(MongoReads)
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
   val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)
