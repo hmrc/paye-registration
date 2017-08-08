@@ -57,7 +57,6 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val submissionService: SubmissionSrv
   val notificationService: NotificationService
 
-  val companyDetailsMongoFormat = CompanyDetails.formatter(MongoReads)
   val companyDetailsAPIFormat = CompanyDetails.formatter(APIReads)
 
   def readJsonBody[T](reads: Reads[T])(f: (T) => Future[Result])(implicit request: Request[JsValue], m: Manifest[T]) = {
@@ -104,7 +103,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationService.getCompanyDetails(regID) map {
-            case Some(companyDetails) => Ok(Json.toJson(companyDetails)(companyDetailsMongoFormat))
+            case Some(companyDetails) => Ok(Json.toJson(companyDetails)(companyDetailsAPIFormat))
             case None => NotFound
           }
         case NotLoggedInOrAuthorised =>
