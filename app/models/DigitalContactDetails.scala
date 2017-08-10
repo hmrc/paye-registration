@@ -17,8 +17,9 @@
 package models
 
 import helpers.Validation
+import models.validation.BaseValidation
 import play.api.data.validation.ValidationError
-import play.api.libs.json.{Reads, Json, __}
+import play.api.libs.json.{Json, Reads, __}
 import play.api.libs.functional.syntax._
 
 case class DigitalContactDetails(email: Option[String],
@@ -28,31 +29,14 @@ case class DigitalContactDetails(email: Option[String],
 
 object DigitalContactDetails {
 
-  private def isValidPhoneNo(phone: String): Boolean = {
-    def isValidNumberCount(s: String): Boolean = s.replaceAll(" ", "").matches("[0-9]{10,20}")
-
-    (isValidNumberCount(phone), phone.matches(Validation.phoneNumberRegex)) match {
-      case (true, true) => true
-      case (true, false) => false
-      case (false, _) => false
-    }
-  }
-
-  private val phoneNumberValidate = Reads.StringReads.filter(ValidationError("invalid phone number pattern"))(isValidPhoneNo)
   private val emailValidate = Reads.StringReads
     .filter(ValidationError("invalid email pattern"))(_.matches(Validation.emailRegex))
 
   implicit val writes = Json.writes[DigitalContactDetails]
 
-  implicit val reads: Reads[DigitalContactDetails] = (
-      (__ \ "email").readNullable[String](emailValidate) and
-      (__ \ "phoneNumber").readNullable[String](phoneNumberValidate) and
-      (__ \ "mobileNumber").readNullable[String](phoneNumberValidate)
-    )(DigitalContactDetails.apply _)
-
-  val mongoReads: Reads[DigitalContactDetails] = (
+  def reads(validators: BaseValidation): Reads[DigitalContactDetails] = (
     (__ \ "email").readNullable[String](emailValidate) and
-    (__ \ "phoneNumber").readNullable[String] and
-    (__ \ "mobileNumber").readNullable[String]
+    (__ \ "phoneNumber").readNullable[String](validators.phoneNumberValidation) and
+    (__ \ "mobileNumber").readNullable[String](validators.phoneNumberValidation)
   )(DigitalContactDetails.apply _)
 }

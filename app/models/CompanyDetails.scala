@@ -17,6 +17,7 @@
 package models
 
 import helpers.{CompanyDetailsValidator, Validation}
+import models.validation.BaseValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -78,28 +79,11 @@ object Address {
 }
 
 object CompanyDetails extends CompanyDetailsValidator {
-
-  implicit val format: Format[CompanyDetails] = (
-    (__ \ "companyName").format[String](companyNameValidator) and
+  def formatter(validators: BaseValidation) = (
+    (__ \ "companyName").format[String](validators.companyNameValidation) and
     (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
     (__ \ "roAddress").format[Address] and
     (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails]
+    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(validators))
   )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
-
-  val companyDetailDESFormat: Format[CompanyDetails] = (
-    (__ \ "companyName").format[String](companyNameForDES) and
-    (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-    (__ \ "roAddress").format[Address] and
-    (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails]
-  )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
-
-  val mongoFormat: Format[CompanyDetails] = (
-    (__ \ "companyName").format[String](companyNameValidator) and
-      (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-      (__ \ "roAddress").format[Address] and
-      (__ \ "ppobAddress").format[Address] and
-      (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.mongoReads)
-    )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 }

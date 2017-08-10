@@ -19,10 +19,11 @@ package api
 import java.time.{ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
-import helpers.{DateHelper}
+import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Configuration, Application}
+import models.validation.{APIValidation, MongoValidation}
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsValue, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -82,7 +83,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     )
 
     val oldFormatCompanyDetails = {
-      implicit val format = CompanyDetails.mongoFormat
+      implicit val format = CompanyDetails.formatter(MongoValidation)
       CompanyDetails(
         companyName = "Test Company Name",
         tradingName = Some("Test Trading Name"),
@@ -126,7 +127,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validCompanyDetails)
+      response.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.formatter(MongoValidation))
     }
 
     "Return a 200 when the user gets company details with an old format" in new Setup {
@@ -163,7 +164,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(oldFormatCompanyDetails)
+      response.json shouldBe Json.toJson(oldFormatCompanyDetails)(CompanyDetails.formatter(MongoValidation))
     }
 
     "Return a 200 when the user upserts company details with a company name that contains none standard characters" in new Setup {
@@ -210,13 +211,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
-        .patch[JsValue](Json.toJson(validCompanyDetails))
+        .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.formatter(APIValidation)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/company-details").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)
+      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.formatter(MongoValidation))
 
       await(repository.retrieveRegistration(regID)).get.companyDetails.get.companyName shouldBe "Téšt Çômpåñÿ Ñämę"
     }
@@ -258,13 +259,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
-        .patch[JsValue](Json.toJson(validCompanyDetails))
+        .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.formatter(APIValidation)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/company-details").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)
+      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.formatter(MongoValidation))
     }
 
     "Return a 403 when the user is not authorised to get company details" in new Setup {
@@ -336,7 +337,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       ))
 
       val response = client(s"/${regID}/company-details")
-        .patch(Json.toJson(validCompanyDetails))
+        .patch(Json.toJson(validCompanyDetails)(CompanyDetails.formatter(APIValidation)))
         .futureValue
       response.status shouldBe 403
     }

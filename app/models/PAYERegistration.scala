@@ -18,6 +18,8 @@ package models
 
 import enums.PAYEStatus
 import java.time.ZonedDateTime
+
+import models.validation.{APIValidation, MongoValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import utils.DateFormatter
@@ -55,7 +57,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails] and
+    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(APIValidation)) and
     (__ \ "directors").format[Seq[Director]] and
     (__ \ "payeContact").formatNullable[PAYEContact] and
     (__ \ "employment").formatNullable[Employment] and
@@ -80,7 +82,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.mongoFormat) and
+    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(MongoValidation)) and
     (__ \ "directors").format[Seq[Director]] and
     (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.mongoFormat) and
     (__ \ "employment").formatNullable[Employment] and

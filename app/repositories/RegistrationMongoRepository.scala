@@ -26,6 +26,7 @@ import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsEx
 import enums.PAYEStatus
 import helpers.DateHelper
 import models._
+import models.validation.MongoValidation
 import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -49,6 +50,7 @@ class RegistrationMongo @Inject()(
                                    injDateHelper: DateHelper,
                                    mongo: ReactiveMongoComponent,
                                    config: Configuration) extends ReactiveMongoFormats {
+  implicit val companyDetailsFormat = CompanyDetails.formatter(MongoValidation)
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
   val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)
@@ -89,12 +91,14 @@ trait RegistrationRepository {
 
 }
 
-class RegistrationMongoRepository(mongo: () => DB, format: Format[PAYERegistration], metricsService: MetricsService, dh: DateHelper, maxStorageDays: Int) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+class RegistrationMongoRepository(mongo: () => DB,
+                                  format: Format[PAYERegistration],
+                                  metricsService: MetricsService,
+                                  dh: DateHelper,
+                                  maxStorageDays: Int) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
-  domainFormat = format
-  ) with RegistrationRepository
-    with AuthorisationResource[String] {
+  domainFormat = format) with RegistrationRepository with AuthorisationResource[String] {
 
   val MAX_STORAGE_DAYS = maxStorageDays
 
