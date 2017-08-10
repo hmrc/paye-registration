@@ -26,12 +26,14 @@ import scala.collection.Seq
 
 trait BaseValidation {
   private val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
-  private val forbiddenPunctuation = List('[', ']', '{', '}', '#', '«', '»')
+  private val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
   private val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
 
   def cleanseCompanyName(companyName: String): String = Normalizer.normalize(
-    companyName map(c => if(illegalCharacters.contains(c)) illegalCharacters(c) else c).mkString, Form.NFD
-  ).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
+    companyName.map(c => if(illegalCharacters.contains(c)) illegalCharacters(c) else c).mkString,
+    Form.NFD
+  ).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation)
+
 
   val phoneNumberValidation: Reads[String]
 
