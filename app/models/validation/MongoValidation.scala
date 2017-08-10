@@ -18,6 +18,6 @@ package models.validation
 
 import play.api.libs.json.Reads
 
-object MongoReads extends BaseValidation {
+object MongoValidation extends BaseValidation {
   override val phoneNumberValidation = Reads.StringReads.filter(_ => true)
 }

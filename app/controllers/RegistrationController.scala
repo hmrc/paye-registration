@@ -30,7 +30,7 @@ import javax.inject.{Inject, Singleton}
 
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
-import models.validation.{APIReads, MongoReads}
+import models.validation.APIValidation
 import play.api.Logger
 import play.api.libs.json._
 import repositories.RegistrationMongoRepository
@@ -57,7 +57,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val submissionService: SubmissionSrv
   val notificationService: NotificationService
 
-  val companyDetailsAPIFormat = CompanyDetails.formatter(APIReads)
+  val companyDetailsAPIFormat = CompanyDetails.formatter(APIValidation)
 
   def readJsonBody[T](reads: Reads[T])(f: (T) => Future[Result])(implicit request: Request[JsValue], m: Manifest[T]) = {
     Try(request.body.validate[T](reads)) match {

@@ -27,12 +27,15 @@ import enums.PAYEStatus
 import fixtures.{AuthFixture, RegistrationFixture}
 import helpers.PAYERegSpec
 import models._
-import models.validation.APIReads
+import models.validation.APIValidation
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
 import play.api.test.FakeRequest
+import play.api.mvc.Results.{Ok, BadRequest}
+import play.api.http.Status.{OK, BAD_REQUEST}
 import repositories.RegistrationMongoRepository
 import services._
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -62,6 +65,62 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   override def beforeEach() {
     reset(mockAuthConnector)
+  }
+
+  case class TestModel(str: String, int: Int)
+  implicit val format: Format[TestModel] = (
+    (__ \ "str").format[String] and
+    (__ \ "int").format[Int]
+  )(TestModel.apply, unlift(TestModel.unapply))
+
+  val testModel = TestModel(str = "testString", int = 616)
+  val testJsonValid = Json.parse(
+    """
+      |{
+      | "str" : "testString",
+      | "int" : 616
+      |}
+    """.stripMargin
+  )
+
+  val testJsonInvalid = Json.parse(
+    """
+      |{
+      | "integer" : 123
+      |}
+    """.stripMargin
+  )
+
+  val okFunction = Future.successful(Ok)
+
+  "readJsonBody" should {
+    "return an Ok" when {
+      "a valid json body has been processed" in new Setup {
+        implicit val request = FakeRequest().withBody(testJsonValid)
+        val result = controller.readJsonBody[TestModel](format) { tm =>
+          okFunction
+        }
+        status(result) shouldBe OK
+      }
+    }
+
+    "return a bad request" when {
+      "the json body was in the wrong structure" in new Setup {
+        implicit val request = FakeRequest().withBody(testJsonInvalid)
+        val result = controller.readJsonBody[TestModel](format) { tm =>
+          okFunction
+        }
+        status(result) shouldBe BAD_REQUEST
+      }
+
+      "the request body could not be parsed into json" in new Setup {
+        implicit val request = FakeRequest().withBody(JsString("Invalid_body"))
+        val result = controller.readJsonBody[TestModel](format) { tm =>
+          okFunction
+        }
+        status(result) shouldBe BAD_REQUEST
+      }
+    }
   }
 
   "Calling newPAYERegistration" should {
@@ -229,7 +288,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads)
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation)
           )
         )
       )
@@ -247,7 +306,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
           )
       )
 
@@ -264,7 +323,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
           )
       )
 
@@ -284,7 +343,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
           )
       )
 
@@ -304,7 +363,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = await(controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
           )
         )
       )
@@ -326,7 +385,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIReads))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
           )
       )
 

@@ -16,14 +16,14 @@
 
 package models
 
-import models.validation.APIReads
+import models.validation.APIValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
-  val cdFormatter = CompanyDetails.formatter(APIReads)
+  val cdFormatter = CompanyDetails.formatter(APIValidation)
 
   "Creating a CompanyDetails model from Json" should {
     "complete successfully from full Json" in {

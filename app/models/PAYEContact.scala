@@ -17,7 +17,7 @@
 package models
 
 import helpers.PAYEContactDetailsValidator
-import models.validation.{APIReads, BaseValidation, MongoReads}
+import models.validation.{APIValidation, BaseValidation, MongoValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Json, Reads, __}
 
@@ -35,13 +35,13 @@ object PAYEContactDetails extends PAYEContactDetailsValidator {
 }
 
 object PAYEContact {
-  implicit val payeContactDetails = PAYEContactDetails.formatter(APIReads)
+  implicit val payeContactDetails = PAYEContactDetails.formatter(APIValidation)
   implicit val addressReads = Address.reads
   implicit val addressWrites = Address.writes
   implicit val format = Json.format[PAYEContact]
 
   val mongoFormat: Format[PAYEContact] = {
-    implicit val payeContactDetails = PAYEContactDetails.formatter(MongoReads)
+    implicit val payeContactDetails = PAYEContactDetails.formatter(MongoValidation)
     Json.format[PAYEContact]
   }
 }

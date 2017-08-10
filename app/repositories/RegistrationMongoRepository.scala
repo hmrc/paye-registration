@@ -26,7 +26,7 @@ import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsEx
 import enums.PAYEStatus
 import helpers.DateHelper
 import models._
-import models.validation.MongoReads
+import models.validation.MongoValidation
 import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -50,7 +50,7 @@ class RegistrationMongo @Inject()(
                                    injDateHelper: DateHelper,
                                    mongo: ReactiveMongoComponent,
                                    config: Configuration) extends ReactiveMongoFormats {
-  implicit val companyDetailsFormat = CompanyDetails.formatter(MongoReads)
+  implicit val companyDetailsFormat = CompanyDetails.formatter(MongoValidation)
   val registrationFormat: Format[PAYERegistration] = Json.format[PAYERegistration]
   lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
   val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)

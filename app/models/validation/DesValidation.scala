@@ -19,7 +19,7 @@ package models.validation
 import play.api.Logger
 import play.api.libs.json.{Format, JsValue, Reads, Writes}
 
-object DesFormats extends BaseValidation {
+object DesValidation extends BaseValidation {
   override val phoneNumberValidation = Reads.StringReads.filter(_ => true)
 
   override val companyNameValidation = new Format[String] {

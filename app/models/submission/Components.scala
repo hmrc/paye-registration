@@ -18,12 +18,12 @@ package models.submission
 
 import java.time.LocalDate
 
-import models.{Address, CompanyDetails, DigitalContactDetails, Director}
+import models.{Address, DigitalContactDetails, Director}
 import play.api.libs.json.Writes
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import common.exceptions.RegistrationExceptions.CompletionCapacityNotDefinedException
-import models.validation.DesFormats
+import models.validation.DesValidation
 
 object BusinessType {
   val LimitedCompany = "Limited company"
@@ -66,7 +66,7 @@ case class DESLimitedCompany(companyUTR: Option[String],
 object DESLimitedCompany {
   implicit val writes: Writes[DESLimitedCompany] = (
     (__ \ "companyUTR").writeNullable[String] and
-    (__ \ "companiesHouseCompanyName").write[String](DesFormats.companyNameValidation) and
+    (__ \ "companiesHouseCompanyName").write[String](DesValidation.companyNameValidation) and
     (__ \ "nameOfBusiness").writeNullable[String] and
     (__ \ "businessAddress").write[Address](Address.writesDES) and
     (__ \ "businessContactDetails").write[DigitalContactDetails] and

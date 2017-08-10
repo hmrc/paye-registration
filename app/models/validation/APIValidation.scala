@@ -20,7 +20,7 @@ import helpers.Validation
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
 
-object APIReads extends BaseValidation {
+object APIValidation extends BaseValidation {
 
   private def isValidPhoneNumber(phoneNumber: String): Boolean = {
     def isValidNumberCount(s: String): Boolean = phoneNumber.replaceAll(" ", "").matches("[0-9]{10,20}")

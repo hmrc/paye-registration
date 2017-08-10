@@ -16,14 +16,14 @@
 
 package models
 
-import models.validation.APIReads
+import models.validation.APIValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
 
-  val payeContactDetailsFormatter = PAYEContactDetails.formatter(APIReads)
+  val payeContactDetailsFormatter = PAYEContactDetails.formatter(APIValidation)
 
   "Creating a PAYEContactDetails model from Json" should {
     "complete successfully from full Json" in {
@@ -48,7 +48,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.formatter(APIReads)) shouldBe JsSuccess(tstPAYEContactDetails)
+      Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.formatter(APIValidation)) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
     "complete successfully from Json with incomplete digital contact details" in {
