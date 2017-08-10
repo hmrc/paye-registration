@@ -23,8 +23,7 @@ import java.time.LocalDate
 import models.{DigitalContactDetails, PAYEContact}
 import play.api.Logger
 import play.api.data.validation.ValidationError
-import play.api.libs.functional.syntax._
-import play.api.libs.json.Reads.{maxLength, minLength, pattern}
+import play.api.libs.json.Reads.pattern
 import play.api.libs.json._
 
 object Validation {
@@ -50,35 +49,32 @@ object Validation {
 
   val minDate = LocalDate.of(1900,1,1)
 
-  val forbiddenPunctuation = List('[', ']', '{', '}', '#', '«', '»')
+  val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
+  val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
 }
 
 trait CompanyDetailsValidator {
 
   import Validation._
 
-  private def cleanseCompanyName(companyName: String): String = {
+  private def cleanseCompanyName(companyName: String, m: Map[Char, String]): String = {
     Normalizer.normalize(
-      companyName
-        .replaceAll("æ", "ae")
-        .replaceAll("Æ", "AE")
-        .replaceAll("œ", "oe")
-        .replaceAll("Œ", "OE")
-        .replaceAll("ß", "ss")
-        .replaceAll("ø", "o")
-        .replaceAll("Ø", "O"), Form.NFD)
-      .replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation.contains)
+      companyName.map(c => if(m.contains(c)) m(c) else c).mkString,
+      Form.NFD
+    ).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation)
   }
 
   val companyNameForDES: Writes[String] = new Writes[String] {
     override def writes(companyName: String) = {
-      val normalised = cleanseCompanyName(companyName)
+      val normalised = cleanseCompanyName(companyName, illegalCharacters)
       Logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $companyName and after; $normalised")
       Writes.StringWrites.writes(normalised)
     }
   }
 
-  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(companyName => cleanseCompanyName(companyName).matches(companyNameRegex))
+  val companyNameValidator: Reads[String] = Reads.StringReads.filter(ValidationError("Invalid company name"))(
+    companyName => cleanseCompanyName(companyName, illegalCharacters).matches(companyNameRegex)
+  )
 
   val tradingNameValidator: Format[String] = readToFmt(pattern(tradingNameRegex.r))
 }
