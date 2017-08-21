@@ -16,12 +16,13 @@
 
 package config
 
-import javax.inject.{Named, Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 
 import auth.Crypto
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import play.api.{Application, Configuration, Logger, Play}
+import repositories.RegistrationMongo
 import uk.gov.hmrc.play.audit.filters.AuditFilter
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
@@ -77,6 +78,12 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Mi
       case ex: Throwable => {
         Logger.error("Invalid mongo encryption key", ex)
       }
+    }
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val repo = Play.current.injector.instanceOf[RegistrationMongo]
+    repo.store.getRegistrationStats() map {
+      stats => Logger.info(s"[RegStats] ${stats}")
     }
 
     super.onStart(app)
