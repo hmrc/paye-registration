@@ -88,6 +88,7 @@ trait RegistrationRepository {
   def deleteRegistration(registrationID: String): Future[Boolean]
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
   def removeStaleDocuments(): Future[(ZonedDateTime, Int)]
+  def getRegistrationStats(): Future[Map[String, Int]]
 
 }
 
@@ -667,6 +668,33 @@ class RegistrationMongoRepository(mongo: () => DB,
 
   def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
     collection.insert[JsObject](w.writes(p))
+  }
+
+  override def getRegistrationStats(): Future[Map[String, Int]] = {
+
+    import play.api.libs.json._
+    import reactivemongo.json.collection.JSONBatchCommands.AggregationFramework.{Group, Match, SumValue, Project}
+
+    // perform on all documents in the collection
+    val matchQuery = Match(Json.obj())
+    // covering query to minimise doc fetch (optimiser would probably spot this anyway and transform the query)
+    val project = Project(Json.obj("status" -> 1, "_id" -> 0))
+    // calculate the status counts
+    val group = Group(JsString("$status"))("count" -> SumValue(1))
+
+    val metrics = collection.aggregate(matchQuery, List(project, group)) map {
+      _.documents map {
+        d => {
+          val regime = (d \ "_id").as[String]
+          val count = (d \ "count").as[Int]
+          regime -> count
+        }
+      }
+    }
+
+    metrics map {
+      _.toMap
+    }
   }
 
 }
