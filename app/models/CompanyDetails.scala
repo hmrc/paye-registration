@@ -16,8 +16,7 @@
 
 package models
 
-import helpers.{CompanyDetailsValidator, Validation}
-import models.validation.BaseValidation
+import models.validation.{BaseJsonFormatting, DesValidation}
 import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -37,7 +36,6 @@ case class Address(line1: String,
                    auditRef: Option[String] = None)
 
 object Address {
-
   val writesDES: Writes[Address] = new Writes[Address] {
 
     val ignore = OWrites[Any](_ => Json.obj())
@@ -56,20 +54,16 @@ object Address {
       Json.toJson(address)(successWrites).as[JsObject]
     }
   }
-  val addressLineValidate = Reads.StringReads.filter(ValidationError("invalid address line pattern"))(_.matches(Validation.addressLineRegex))
-  val addressLine4Validate = Reads.StringReads.filter(ValidationError("invalid address line 4 pattern"))(_.matches(Validation.addressLine4Regex))
-  val postcodeValidate = Reads.StringReads.filter(ValidationError("invalid postcode"))(_.matches(Validation.postcodeRegex))
-  val countryValidate = Reads.StringReads.filter(ValidationError("invalid country"))(_.matches(Validation.countryRegex))
 
   implicit val writes = Json.writes[Address]
 
-  implicit val reads: Reads[Address] = (
-    (__ \ "line1").read[String](addressLineValidate) and
-    (__ \ "line2").read[String](addressLineValidate) and
-    (__ \ "line3").readNullable[String](addressLineValidate) and
-    (__ \ "line4").readNullable[String](addressLine4Validate) and
-    (__ \ "postCode").readNullable[String](postcodeValidate) and
-    (__ \ "country").readNullable[String](countryValidate) and
+  def reads(formatters: BaseJsonFormatting): Reads[Address] = (
+    (__ \ "line1").read[String](formatters.addressLineValidate) and
+    (__ \ "line2").read[String](formatters.addressLineValidate) and
+    (__ \ "line3").readNullable[String](formatters.addressLineValidate) and
+    (__ \ "line4").readNullable[String](formatters.addressLine4Validate) and
+    (__ \ "postCode").readNullable[String](formatters.postcodeValidate) and
+    (__ \ "country").readNullable[String](formatters.countryValidate) and
     (__ \ "auditRef").readNullable[String]
   )(Address.apply _).filter(ValidationError("neither postcode nor country was completed")) {
     addr => addr.postCode.isDefined || addr.country.isDefined
@@ -78,12 +72,12 @@ object Address {
   }
 }
 
-object CompanyDetails extends CompanyDetailsValidator {
-  def formatter(validators: BaseValidation) = (
-    (__ \ "companyName").format[String](validators.companyNameValidation) and
-    (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-    (__ \ "roAddress").format[Address] and
-    (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(validators))
+object CompanyDetails {
+  def formatter(formatter: BaseJsonFormatting) = (
+    (__ \ "companyName").format[String](formatter.companyNameFormatter) and
+    (__ \ "tradingName").formatNullable[String](formatter.tradingNameFormat) and
+    (__ \ "roAddress").format[Address](Address.reads(formatter)) and
+    (__ \ "ppobAddress").format[Address](Address.reads(formatter)) and
+    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(formatter))
   )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
 }

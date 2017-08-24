@@ -18,26 +18,28 @@ package models.validation
 
 import java.text.Normalizer
 import java.text.Normalizer.Form
+import java.time.LocalDate
 
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
 
 import scala.collection.Seq
 
-trait BaseValidation {
+trait BaseJsonFormatting {
   private val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
   private val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
   private val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
+
+  def readToFmt(rds: Reads[String])(implicit wts: Writes[String]): Format[String] = Format(rds, wts)
+
+  def standardRead = Reads.StringReads.filter(_ => true)
 
   def cleanseCompanyName(companyName: String): String = Normalizer.normalize(
     companyName.map(c => if(illegalCharacters.contains(c)) illegalCharacters(c) else c).mkString,
     Form.NFD
   ).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation)
 
-
-  val phoneNumberValidation: Reads[String]
-
-  val companyNameValidation = new Format[String] {
+  val companyNameFormatter = new Format[String] {
     override def reads(json: JsValue) = json match {
       case JsString(companyName) => if(cleanseCompanyName(companyName).matches(companyNameRegex)) {
         JsSuccess(companyName)
@@ -49,4 +51,29 @@ trait BaseValidation {
 
     override def writes(o: String) = Writes.StringWrites.writes(o)
   }
+
+  val phoneNumberReads: Reads[String]
+
+  val emailAddressReads: Reads[String]
+
+  val nameReads: Reads[String]
+
+  val natureOfBusinessReads: Reads[String]
+
+  val tradingNameFormat: Format[String]
+
+  //Address validation
+  val addressLineValidate: Reads[String]
+  val addressLine4Validate: Reads[String]
+  val postcodeValidate: Reads[String]
+  val countryValidate: Reads[String]
+
+  val firstPaymentDateFormat: Format[LocalDate]
+
+  val directorNameFormat: Format[String]
+
+  val directorTitleFormat: Format[String]
+
+  val directorNinoFormat: Format[String]
+
 }

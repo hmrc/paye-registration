@@ -16,10 +16,9 @@
 
 package models
 
-import helpers.PAYEContactDetailsValidator
-import models.validation.{APIValidation, BaseValidation, MongoValidation}
+import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, Json, Reads, __}
+import play.api.libs.json.{Format, Json, __}
 
 case class PAYEContact(contactDetails: PAYEContactDetails,
                        correspondenceAddress: Address)
@@ -27,21 +26,16 @@ case class PAYEContact(contactDetails: PAYEContactDetails,
 case class PAYEContactDetails(name: String,
                               digitalContactDetails: DigitalContactDetails)
 
-object PAYEContactDetails extends PAYEContactDetailsValidator {
-  def formatter(validators: BaseValidation): Format[PAYEContactDetails] = (
-    (__ \ "name").format[String](nameValidator) and
-    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(validators))
+object PAYEContactDetails {
+  def formatter(formatters: BaseJsonFormatting): Format[PAYEContactDetails] = (
+    (__ \ "name").format[String](formatters.nameReads) and
+    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(formatters))
   )(PAYEContactDetails.apply, unlift(PAYEContactDetails.unapply))
 }
 
 object PAYEContact {
-  implicit val payeContactDetails = PAYEContactDetails.formatter(APIValidation)
-  implicit val addressReads = Address.reads
-  implicit val addressWrites = Address.writes
-  implicit val format = Json.format[PAYEContact]
-
-  val mongoFormat: Format[PAYEContact] = {
-    implicit val payeContactDetails = PAYEContactDetails.formatter(MongoValidation)
-    Json.format[PAYEContact]
-  }
+  def format(formatters: BaseJsonFormatting): Format[PAYEContact] = (
+    (__ \ "contactDetails").format[PAYEContactDetails](PAYEContactDetails.formatter(formatters)) and
+    (__ \ "correspondenceAddress").format[Address](Address.reads(formatters))
+  )(PAYEContact.apply, unlift(PAYEContact.unapply))
 }

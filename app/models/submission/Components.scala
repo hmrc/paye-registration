@@ -66,13 +66,13 @@ case class DESLimitedCompany(companyUTR: Option[String],
 object DESLimitedCompany {
   implicit val writes: Writes[DESLimitedCompany] = (
     (__ \ "companyUTR").writeNullable[String] and
-    (__ \ "companiesHouseCompanyName").write[String](DesValidation.companyNameValidation) and
+    (__ \ "companiesHouseCompanyName").write[String](DesValidation.companyNameFormatter) and
     (__ \ "nameOfBusiness").writeNullable[String] and
     (__ \ "businessAddress").write[Address](Address.writesDES) and
     (__ \ "businessContactDetails").write[DigitalContactDetails] and
     (__ \ "natureOfBusiness").write[String] and
     (__ \ "crn").writeNullable[String] and
-    (__ \ "directors").write[Seq[Director]](Director.seqWritesDES) and
+    (__ \ "directors").write[Seq[Director]](Director.directorSequenceWriter(DesValidation)) and
     (__ \ "registeredOfficeAddress").write[Address](Address.writesDES) and
     (__ \ "operatingOccPensionScheme").writeNullable[Boolean]
   )(unlift(DESLimitedCompany.unapply))

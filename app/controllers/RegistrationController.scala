@@ -147,8 +147,8 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationService.getEmployment(regID) map {
-            case Some(employment) => Ok(Json.toJson(employment))
-            case None => NotFound
+            case Some(employment) => Ok(Json.toJson(employment)(Employment.format(APIValidation)))
+            case None             => NotFound
           }
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [getEmployment] User not logged in")
@@ -164,9 +164,9 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          withJsonBody[Employment] { employmentDetails =>
+          readJsonBody[Employment](Employment.format(APIValidation)) { employmentDetails =>
             registrationService.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
-              Ok(Json.toJson(employmentResponse))
+              Ok(Json.toJson(employmentResponse)(Employment.format(APIValidation)))
             } recover {
               case missing : MissingRegDocument => NotFound
             }
@@ -187,7 +187,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case Authorised(_) =>
           registrationService.getDirectors(regID) map {
             case s: Seq[Director] if s.isEmpty => NotFound
-            case directors: Seq[Director] => Ok(Json.toJson(directors))
+            case directors: Seq[Director]      => Ok(Json.toJson(directors)(Director.directorSequenceWriter(APIValidation)))
           }
         case NotLoggedInOrAuthorised =>
           Logger.info(s"[RegistrationController] [getDirectors] User not logged in")
@@ -205,9 +205,9 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          withJsonBody[Seq[Director]] { directors =>
+          readJsonBody[Seq[Director]](Director.directorSequenceReader(APIValidation)) { directors =>
             registrationService.upsertDirectors(regID, directors) map { directorsResponse =>
-              Ok(Json.toJson(directorsResponse))
+              Ok(Json.toJson(directorsResponse)(Director.directorSequenceWriter(APIValidation)))
             } recover {
               case missing : MissingRegDocument => NotFound
               case noNinos : RegistrationFormatException => BadRequest(noNinos.getMessage)
@@ -245,7 +245,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          withJsonBody[Seq[SICCode]] { sicCodes =>
+          readJsonBody[Seq[SICCode]](SICCode.sicCodeSequenceReader(APIValidation)) { sicCodes =>
             registrationService.upsertSICCodes(regID, sicCodes) map { sicCodesResponse =>
               Ok(Json.toJson(sicCodesResponse))
             } recover {
@@ -267,7 +267,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationService.getPAYEContact(regID) map {
-            case Some(payeContact) => Ok(Json.toJson(payeContact))
+            case Some(payeContact) => Ok(Json.toJson(payeContact)(PAYEContact.format(APIValidation)))
             case None => NotFound
           }
         case NotLoggedInOrAuthorised =>
@@ -284,9 +284,9 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          withJsonBody[PAYEContact] { payeContact =>
+          readJsonBody[PAYEContact](PAYEContact.format(APIValidation)) { payeContact =>
             registrationService.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
-              Ok(Json.toJson(payeContactResponse))
+              Ok(Json.toJson(payeContactResponse)(PAYEContact.format(APIValidation)))
             } recover {
               case missing : MissingRegDocument => NotFound
               case format  : RegistrationFormatException => BadRequest(format.getMessage)

@@ -16,8 +16,32 @@
 
 package models.validation
 
-import play.api.libs.json.Reads
+import play.api.libs.json.{Format, JsValue, Reads, Writes}
 
-object MongoValidation extends BaseValidation {
-  override val phoneNumberValidation = Reads.StringReads.filter(_ => true)
+object MongoValidation extends BaseJsonFormatting {
+  override val phoneNumberReads      = standardRead
+
+  override val emailAddressReads     = standardRead
+
+  override val nameReads             = standardRead
+
+  override val natureOfBusinessReads = standardRead
+
+  override val tradingNameFormat     = new Format[String] {
+    override def reads(json: JsValue) = Reads.StringReads.reads(json)
+
+    override def writes(o: String) = Writes.StringWrites.writes(o)
+  }
+
+  //Address validation
+  override val addressLineValidate  = standardRead
+  override val addressLine4Validate = standardRead
+  override val postcodeValidate     = standardRead
+  override val countryValidate      = standardRead
+
+  override val firstPaymentDateFormat = Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
+
+  override val directorNameFormat   = readToFmt(standardRead)
+  override val directorTitleFormat  = readToFmt(standardRead)
+  override val directorNinoFormat   = readToFmt(standardRead)
 }

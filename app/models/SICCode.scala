@@ -16,23 +16,24 @@
 
 package models
 
-import helpers.Validation
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{Reads, Json, __}
+import models.validation.BaseJsonFormatting
+import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-case class SICCode(
-                  code: Option[String],
-                  description: Option[String]
-                  )
+case class SICCode(code: Option[String],
+                   description: Option[String])
 
 object SICCode {
-  private val natureOfBusinessValidate = Reads.StringReads.filter(ValidationError("Invalid nature of business"))(_.matches(Validation.natureOfBusinessRegex))
+  implicit val writes: Writes[SICCode] = Json.writes[SICCode]
 
-  implicit val writes = Json.writes[SICCode]
-
-  implicit val reads: Reads[SICCode] = (
+  def reads(formatters: BaseJsonFormatting): Reads[SICCode] = (
     (__ \ "code").readNullable[String] and
-    (__ \ "description").readNullable[String](natureOfBusinessValidate)
+    (__ \ "description").readNullable[String](formatters.natureOfBusinessReads)
   )(SICCode.apply _)
+
+  def sicCodeSequenceReader(formatters: BaseJsonFormatting) = Reads.seq[SICCode](SICCode.reads(formatters))
+
+  def sicCodeSequenceWriter(formatters: BaseJsonFormatting): Writes[Seq[SICCode]] = new Writes[Seq[SICCode]] {
+    override def writes(directors: Seq[SICCode]): JsValue = Json.toJson(directors map (d => Json.toJson(d)))
+  }
 }

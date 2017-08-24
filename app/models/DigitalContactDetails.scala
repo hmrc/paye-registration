@@ -16,10 +16,8 @@
 
 package models
 
-import helpers.Validation
-import models.validation.BaseValidation
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{Json, Reads, __}
+import models.validation.BaseJsonFormatting
+import play.api.libs.json.{Json, Reads, Writes, __}
 import play.api.libs.functional.syntax._
 
 case class DigitalContactDetails(email: Option[String],
@@ -28,15 +26,11 @@ case class DigitalContactDetails(email: Option[String],
 
 
 object DigitalContactDetails {
+  implicit val writes: Writes[DigitalContactDetails] = Json.writes[DigitalContactDetails]
 
-  private val emailValidate = Reads.StringReads
-    .filter(ValidationError("invalid email pattern"))(_.matches(Validation.emailRegex))
-
-  implicit val writes = Json.writes[DigitalContactDetails]
-
-  def reads(validators: BaseValidation): Reads[DigitalContactDetails] = (
-    (__ \ "email").readNullable[String](emailValidate) and
-    (__ \ "phoneNumber").readNullable[String](validators.phoneNumberValidation) and
-    (__ \ "mobileNumber").readNullable[String](validators.phoneNumberValidation)
+  def reads(formatters: BaseJsonFormatting): Reads[DigitalContactDetails] = (
+    (__ \ "email").readNullable[String](formatters.emailAddressReads) and
+    (__ \ "phoneNumber").readNullable[String](formatters.phoneNumberReads) and
+    (__ \ "mobileNumber").readNullable[String](formatters.phoneNumberReads)
   )(DigitalContactDetails.apply _)
 }

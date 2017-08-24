@@ -58,10 +58,10 @@ object PAYERegistration extends DateFormatter{
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(APIValidation)) and
-    (__ \ "directors").format[Seq[Director]] and
-    (__ \ "payeContact").formatNullable[PAYEContact] and
-    (__ \ "employment").formatNullable[Employment] and
-    (__ \ "sicCodes").format[Seq[SICCode]] and
+    (__ \ "directors").format[Seq[Director]](Director.directorSequenceReader(APIValidation))(Director.directorSequenceWriter(APIValidation)) and
+    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.format(APIValidation)) and
+    (__ \ "employment").formatNullable[Employment](Employment.format(APIValidation)) and
+    (__ \ "sicCodes").format[Seq[SICCode]](SICCode.sicCodeSequenceReader(APIValidation))(SICCode.sicCodeSequenceWriter(APIValidation)) and
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
@@ -83,10 +83,10 @@ object PAYERegistration extends DateFormatter{
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(MongoValidation)) and
-    (__ \ "directors").format[Seq[Director]] and
-    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.mongoFormat) and
-    (__ \ "employment").formatNullable[Employment] and
-    (__ \ "sicCodes").format[Seq[SICCode]] and
+    (__ \ "directors").format[Seq[Director]](Director.directorSequenceReader(MongoValidation))(Director.directorSequenceWriter(MongoValidation)) and
+    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.format(MongoValidation)) and
+    (__ \ "employment").formatNullable[Employment](Employment.format(MongoValidation)) and
+    (__ \ "sicCodes").format[Seq[SICCode]](SICCode.sicCodeSequenceReader(MongoValidation))(SICCode.sicCodeSequenceWriter(MongoValidation)) and
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
