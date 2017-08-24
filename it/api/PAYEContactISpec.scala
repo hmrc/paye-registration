@@ -20,7 +20,8 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Configuration, Application}
+import models.validation.{APIValidation, MongoValidation}
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -78,7 +79,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
     )
 
     val oldFormatPAYEContact = {
-      implicit val format = PAYEContact.mongoFormat
+      implicit val format = PAYEContact.format(MongoValidation)
       PAYEContact(
         contactDetails = PAYEContactDetails(
           name = "Thierry Henry",
@@ -122,7 +123,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validPAYEContact)
+      response.json shouldBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
     }
 
     "Return a 200 when the user gets paye contact with old format" in new Setup {
@@ -159,7 +160,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(oldFormatPAYEContact)
+      response.json shouldBe Json.toJson(oldFormatPAYEContact)(PAYEContact.format(APIValidation))
     }
 
     "Return a 200 when the user upserts paye contact" in new Setup {
@@ -198,13 +199,13 @@ class PAYEContactISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/contact-correspond-paye")
-        .patch[JsValue](Json.toJson(validPAYEContact))
+        .patch[JsValue](Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/contact-correspond-paye").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validPAYEContact)
+      getResponse2.json shouldBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
     }
 
     "Return a 403 when the user is not authorised to get paye contact" in new Setup {
@@ -276,7 +277,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/contact-correspond-paye")
-        .patch(Json.toJson(validPAYEContact))
+        .patch(Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation)))
         .futureValue
       response.status shouldBe 403
     }

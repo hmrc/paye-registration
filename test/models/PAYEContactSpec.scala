@@ -48,7 +48,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContactDetails](json)(PAYEContactDetails.formatter(APIValidation)) shouldBe JsSuccess(tstPAYEContactDetails)
+      Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter) shouldBe JsSuccess(tstPAYEContactDetails)
     }
 
     "complete successfully from Json with incomplete digital contact details" in {
@@ -90,19 +90,19 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         val json = contact("Luis@Fernandez")
 
         val result = Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter)
-        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("Invalid name")))
       }
       "contact name is too long" in {
         val json = contact(List.fill(101)('a').mkString)
 
         val result = Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter)
-        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("Invalid name")))
       }
       "contact name is too short" in {
         val json = contact("")
 
         val result = Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter)
-        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("Invalid name")))
       }
     }
   }
@@ -142,7 +142,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
       )
 
-      Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
+      Json.fromJson[PAYEContact](json)(PAYEContact.format(APIValidation)) shouldBe JsSuccess(tstPAYEContact)
     }
 
     "complete successfully from incomplete Correspondence Address Json" in {
@@ -178,7 +178,7 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         correspondenceAddress = Address("19 St Walk", "Testley CA", None, Some("Testshire"), None, Some("UK"))
       )
 
-      Json.fromJson[PAYEContact](json) shouldBe JsSuccess(tstPAYEContact)
+      Json.fromJson[PAYEContact](json)(PAYEContact.format(APIValidation)) shouldBe JsSuccess(tstPAYEContact)
     }
   }
 }

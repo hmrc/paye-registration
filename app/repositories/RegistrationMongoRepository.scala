@@ -46,7 +46,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration) extends ReactiveMongoFormats {
-  val registrationFormat: Format[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.mongoFormat)
+  val registrationFormat: Format[PAYERegistration] = PAYERegistration.format
   lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
   val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)
 }
