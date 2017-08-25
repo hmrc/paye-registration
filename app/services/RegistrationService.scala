@@ -125,19 +125,15 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertCompletionCapacity(regID: String, capacity: String)(implicit hc: HeaderCarrier): Future[String] = {
-    if(validCompletionCapacity(capacity)) {
-      registrationRepository.retrieveRegistration(regID) flatMap {
-        case Some(reg) =>
-          if( reg.completionCapacity.nonEmpty && !reg.completionCapacity.get.equals(capacity) ) {
-            auditService.auditCompletionCapacity(regID, reg.completionCapacity.get, capacity)
-          }
-          registrationRepository.upsertCompletionCapacity(regID, capacity)
-        case None =>
-          Logger.warn(s"Unable to update Completion Capacity for reg ID $regID, Error: Couldn't retrieve an existing registration with that ID")
-          throw new MissingRegDocument(regID)
-      }
-    } else {
-      throw new RegistrationFormatException(s"Invalid completion capacity submitted for reg ID $regID")
+    registrationRepository.retrieveRegistration(regID) flatMap {
+      case Some(reg) =>
+        if( reg.completionCapacity.nonEmpty && !reg.completionCapacity.get.equals(capacity) ) {
+          auditService.auditCompletionCapacity(regID, reg.completionCapacity.get, capacity)
+        }
+        registrationRepository.upsertCompletionCapacity(regID, capacity)
+      case None =>
+        Logger.warn(s"Unable to update Completion Capacity for reg ID $regID, Error: Couldn't retrieve an existing registration with that ID")
+        throw new MissingRegDocument(regID)
     }
   }
 

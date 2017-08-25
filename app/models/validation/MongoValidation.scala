@@ -19,13 +19,12 @@ package models.validation
 import play.api.libs.json.{Format, JsValue, Reads, Writes}
 
 object MongoValidation extends BaseJsonFormatting {
-  override val phoneNumberReads      = standardRead
 
-  override val emailAddressReads     = standardRead
-
-  override val nameReads             = standardRead
-
-  override val natureOfBusinessReads = standardRead
+  override val phoneNumberReads        = standardRead
+  override val emailAddressReads       = standardRead
+  override val completionCapacityReads = standardRead
+  override val nameReads               = standardRead
+  override val natureOfBusinessReads   = standardRead
 
   override val tradingNameFormat     = new Format[String] {
     override def reads(json: JsValue) = Reads.StringReads.reads(json)

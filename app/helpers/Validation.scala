@@ -17,27 +17,8 @@
 package helpers
 
 import models.{DigitalContactDetails, PAYEContact}
-import play.api.libs.json.Reads.pattern
-import play.api.libs.json._
-
-object Validation {
-
-  def readToFmt(rds: Reads[String])(implicit wts: Writes[String]): Format[String] = Format(rds, wts)
-
-  val completionCapacityRegex = """^[A-Za-z0-9 '\-]{1,100}$"""
-}
-
-trait IncorporationValidator {
-  import Validation._
-
-  val crnValidator: Format[String] =
-    readToFmt(pattern("^(\\d{1,8}|([AaFfIiOoRrSsZz][Cc]|[Cc][Uu]|[Ss][AaEeFfIiRrZz]|[Ee][Ss])\\d{1,6}|([IiSs][Pp]|[Nn][AaFfIiOoPpRrVvZz]|[Rr][Oo])[\\da-zA-Z]{1,6})$".r))
-}
 
 trait PAYEBaseValidator {
-  import Validation._
-
-  def validCompletionCapacity(cap: String): Boolean = cap.matches(completionCapacityRegex)
 
   def validPAYEContact(contact: PAYEContact): Boolean = validDigitalContactDetails(contact.contactDetails.digitalContactDetails)
 

@@ -25,11 +25,12 @@ import scala.collection.Seq
 
 object APIValidation extends BaseJsonFormatting {
 
-  private val emailRegex            = """^(?!.{71,})([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{2,4})$"""
-  private val phoneNumberRegex      = """^[0-9 ]{1,20}$"""
-  private val nameRegex             = """^[A-Za-z 0-9\-']{1,100}$"""
-  private val natureOfBusinessRegex = """^[A-Za-z 0-9\-,/&']{1,100}$"""
-  private val tradingNameRegex      = """^[A-Za-z0-9\-,.()/&'!][A-Za-z 0-9\-,.()/&'!]{0,34}$"""
+  private val emailRegex              = """^(?!.{71,})([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{2,4})$"""
+  private val phoneNumberRegex        = """^[0-9 ]{1,20}$"""
+  private val nameRegex               = """^[A-Za-z 0-9\-']{1,100}$"""
+  private val natureOfBusinessRegex   = """^[A-Za-z 0-9\-,/&']{1,100}$"""
+  private val tradingNameRegex        = """^[A-Za-z0-9\-,.()/&'!][A-Za-z 0-9\-,.()/&'!]{0,34}$"""
+  private val completionCapacityRegex = """^[A-Za-z0-9 '\-]{1,100}$"""
 
   private val addressLineRegex  = """^[a-zA-Z0-9,.\(\)/&'\"\-\\]{1}[a-zA-Z0-9, .\(\)/&'\"\-\\]{0,26}$"""
   private val addressLine4Regex = """^[a-zA-Z0-9,.\(\)/&'\"\-\\]{1}[a-zA-Z0-9, .\(\)/&'\"\-\\]{0,17}$"""
@@ -65,6 +66,8 @@ object APIValidation extends BaseJsonFormatting {
   override val nameReads             = Reads.StringReads.filter(ValidationError("Invalid name"))(_.matches(nameRegex))
 
   override val natureOfBusinessReads = Reads.StringReads.filter(ValidationError("Invalid nature of business"))(_.matches(natureOfBusinessRegex))
+
+  override val completionCapacityReads: Reads[String] = Reads.StringReads.filter(ValidationError("bad string"))(_.matches(completionCapacityRegex))
 
   override val tradingNameFormat     = new Format[String] {
     override def reads(json: JsValue) = json match {

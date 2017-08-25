@@ -19,7 +19,7 @@ package models.incorporation
 import java.time.LocalDate
 
 import enums.IncorporationStatus
-import helpers.IncorporationValidator
+import models.validation.BaseJsonFormatting
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{Reads, __}
 import play.api.libs.functional.syntax._
@@ -31,14 +31,12 @@ case class IncorpStatusUpdate(transactionId: String,
                               description: Option[String],
                               timestamp: LocalDate)
 
-object IncorpStatusUpdate extends IncorporationValidator {
+object IncorpStatusUpdate {
 
-
-
-  implicit val reads: Reads[IncorpStatusUpdate] = (
+  def reads(formatters: BaseJsonFormatting): Reads[IncorpStatusUpdate] = (
     (__ \\ "IncorpSubscriptionKey" \ "transactionId").read[String] and
     (__ \\ "IncorpStatusEvent"     \ "status").read[IncorporationStatus.Value] and
-    (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](crnValidator) and
+    (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](formatters.crnReads) and
     (__ \\ "IncorpStatusEvent"     \ "incorporationDate").readNullable[LocalDate] and
     (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
     (__ \\ "IncorpStatusEvent"     \ "timestamp").read[LocalDate]

@@ -21,6 +21,7 @@ import java.text.Normalizer.Form
 import java.time.LocalDate
 
 import play.api.data.validation.ValidationError
+import play.api.libs.json.Reads._
 import play.api.libs.json._
 
 import scala.collection.Seq
@@ -32,7 +33,7 @@ trait BaseJsonFormatting {
 
   def readToFmt(rds: Reads[String])(implicit wts: Writes[String]): Format[String] = Format(rds, wts)
 
-  def standardRead = Reads.StringReads.filter(_ => true)
+  def standardRead = Reads.StringReads
 
   def cleanseCompanyName(companyName: String): String = Normalizer.normalize(
     companyName.map(c => if(illegalCharacters.contains(c)) illegalCharacters(c) else c).mkString,
@@ -52,14 +53,12 @@ trait BaseJsonFormatting {
     override def writes(o: String) = Writes.StringWrites.writes(o)
   }
 
+  val crnReads: Reads[String] = Reads.pattern("^(\\d{1,8}|([AaFfIiOoRrSsZz][Cc]|[Cc][Uu]|[Ss][AaEeFfIiRrZz]|[Ee][Ss])\\d{1,6}|([IiSs][Pp]|[Nn][AaFfIiOoPpRrVvZz]|[Rr][Oo])[\\da-zA-Z]{1,6})$".r)
+  val completionCapacityReads: Reads[String]
   val phoneNumberReads: Reads[String]
-
   val emailAddressReads: Reads[String]
-
   val nameReads: Reads[String]
-
   val natureOfBusinessReads: Reads[String]
-
   val tradingNameFormat: Format[String]
 
   //Address validation
@@ -69,11 +68,8 @@ trait BaseJsonFormatting {
   val countryValidate: Reads[String]
 
   val firstPaymentDateFormat: Format[LocalDate]
-
   val directorNameFormat: Format[String]
-
   val directorTitleFormat: Format[String]
-
   val directorNinoFormat: Format[String]
 
 }

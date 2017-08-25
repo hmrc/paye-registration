@@ -20,11 +20,15 @@ import java.time.LocalDate
 
 import enums.IncorporationStatus
 import models.JsonFormatValidation
+import models.validation.APIValidation
 import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsPath, JsSuccess, Json}
+import play.api.libs.json.{JsValue, JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
+
+  private def statusUpdateFromJson(json: JsValue) = Json.fromJson[IncorpStatusUpdate](json)(IncorpStatusUpdate.reads(APIValidation))
+
   "Creating a IncorpStatusUpdate model from Json" should {
     "succeed" when {
       "provided with full json" in {
@@ -59,7 +63,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
           timestamp = LocalDate.of(2017, 12, 21)
         )
 
-        Json.fromJson[IncorpStatusUpdate](json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+        statusUpdateFromJson(json) shouldBe JsSuccess(tstIncorpStatusUpdate)
       }
       "there is no CRN in an update with rejected status" in {
         val json = Json.parse(
@@ -92,7 +96,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
           timestamp = LocalDate.of(2017, 12, 21)
         )
 
-        Json.fromJson[IncorpStatusUpdate](json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+        statusUpdateFromJson(json) shouldBe JsSuccess(tstIncorpStatusUpdate)
       }
     }
 
@@ -120,7 +124,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[IncorpStatusUpdate](json)
+        val result = statusUpdateFromJson(json)
         shouldHaveErrors(result, JsPath() \\ "IncorpStatusEvent" \ "status", Seq(ValidationError("error.path.missing")))
       }
 
@@ -146,7 +150,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[IncorpStatusUpdate](json)
+        val result = statusUpdateFromJson(json)
         shouldHaveErrors(result, JsPath(), Seq(ValidationError("no CRN defined when expected")))
       }
     }
