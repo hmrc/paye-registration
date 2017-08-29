@@ -16,11 +16,13 @@
 
 package models
 
-import play.api.libs.json.Json
+import models.validation.BaseJsonFormatting
+import play.api.libs.json.{Json, Writes}
 
 case class Eligibility(companyEligibility: Boolean,
                        directorEligibility: Boolean)
 
 object Eligibility {
-  implicit val format = Json.format[Eligibility]
+  implicit val writes: Writes[Eligibility] = Json.writes[Eligibility]
+  def format(formatter: BaseJsonFormatting) = formatter.eligibilityFormat
 }

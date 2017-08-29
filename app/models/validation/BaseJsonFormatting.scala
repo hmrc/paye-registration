@@ -20,6 +20,7 @@ import java.text.Normalizer
 import java.text.Normalizer.Form
 import java.time.LocalDate
 
+import models.Eligibility
 import play.api.data.validation.ValidationError
 import play.api.libs.json.Reads._
 import play.api.libs.json._
@@ -53,6 +54,7 @@ trait BaseJsonFormatting {
     override def writes(o: String) = Writes.StringWrites.writes(o)
   }
 
+  val eligibilityFormat: Format[Eligibility] = Json.format[Eligibility]
   val crnReads: Reads[String] = Reads.pattern("^(\\d{1,8}|([AaFfIiOoRrSsZz][Cc]|[Cc][Uu]|[Ss][AaEeFfIiRrZz]|[Ee][Ss])\\d{1,6}|([IiSs][Pp]|[Nn][AaFfIiOoPpRrVvZz]|[Rr][Oo])[\\da-zA-Z]{1,6})$".r)
   val completionCapacityReads: Reads[String]
   val phoneNumberReads: Reads[String]

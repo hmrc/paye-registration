@@ -434,7 +434,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regId) {
         case Authorised(_) =>
-          withJsonBody[Eligibility] { json =>
+          readJsonBody[Eligibility](Eligibility.format(APIValidation)) { json =>
             registrationService.updateEligibility(regId, json) map { updated =>
               Ok(Json.toJson(updated))
             } recover {

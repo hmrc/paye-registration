@@ -54,7 +54,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "crn").formatNullable[String] and
     (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.apiFormat) and
     (__ \ "formCreationTimestamp").format[String] and
-    (__ \ "eligibility").formatNullable[Eligibility] and
+    (__ \ "eligibility").formatNullable[Eligibility](Eligibility.format(APIValidation)) and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(APIValidation)) and
@@ -79,7 +79,7 @@ object PAYERegistration extends DateFormatter{
     (__ \ "crn").formatNullable[String] and
     (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](empRefFormat) and
     (__ \ "formCreationTimestamp").format[String] and
-    (__ \ "eligibility").formatNullable[Eligibility] and
+    (__ \ "eligibility").formatNullable[Eligibility](Eligibility.format(MongoValidation)) and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(MongoValidation)) and
