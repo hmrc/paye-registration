@@ -48,6 +48,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
   val mockSubmissionService = mock[SubmissionService]
   val mockRepo = mock[RegistrationMongoRepository]
   val mockNotificationService = mock[NotificationService]
+  val mockCounterService = mock[IICounterService]
 
   implicit val system = ActorSystem("PR")
   implicit val materializer = ActorMaterializer()
@@ -60,6 +61,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       override val registrationService = mockRegistrationService
       override val submissionService = mockSubmissionService
       override val notificationService = mockNotificationService
+      override val counterService = mockCounterService
     }
   }
 
@@ -1584,8 +1586,29 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.failed(new RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.invalid.toString)))
 
+      when(mockCounterService.maxIICounterCount).thenReturn(2)
+
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(1))
+
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+
+    "return a 200 response when the registration we try to incorporate is in invalid status but count exceeds max" in new Setup {
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
+
+      when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
+        .thenReturn(Future.failed(new RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.invalid.toString)))
+
+      when(mockCounterService.maxIICounterCount).thenReturn(2)
+
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(4))
+
+      val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
+      status(response) shouldBe Status.OK
     }
 
     "return a 200 response when the registration we try to incorporate is in acknowledge status" in new Setup {

@@ -37,18 +37,21 @@ import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class RegistrationController @Inject()(injAuthConnector: AuthConnector,
                                        injRegistrationService: RegistrationService,
                                        injSubmissionService: SubmissionService,
-                                       injNotificationService: NotificationService) extends RegistrationCtrl {
+                                       injNotificationService: NotificationService,
+                                       injIICounterService: IICounterService) extends RegistrationCtrl {
   val auth: AuthConnect = injAuthConnector
   val registrationService: RegistrationService = injRegistrationService
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
   val submissionService: SubmissionService = injSubmissionService
   val notificationService: NotificationService = injNotificationService
+  val counterService: IICounterService = injIICounterService
 }
 
 trait RegistrationCtrl extends BaseController with Authenticated with Authorisation[String] {
@@ -56,6 +59,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val registrationService: RegistrationSrv
   val submissionService: SubmissionSrv
   val notificationService: NotificationService
+  val counterService: IICounterSrv
 
   val companyDetailsAPIFormat = CompanyDetails.formatter(APIValidation)
 
@@ -387,23 +391,32 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case Some(reg) => withJsonBody[IncorpStatusUpdate] { incorpStatusUpdateData =>
           submissionService.submitTopUpToDES(reg.registrationID, incorpStatusUpdateData) map (_ => Ok(Json.toJson(incorpStatusUpdateData.crn)))
         }
-      } recover {
+      } recoverWith {
         case invalid: ErrorRegistrationException =>
-          Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}")
+          Future.successful(Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}"))
         case _: MissingRegDocument =>
-          Ok(s"No registration found for transaction id $transactionId")
-        case error: RegistrationInvalidStatus =>
-          Logger.error(s"[RegistrationController] - [processIncorporationData] - Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
-          InternalServerError
+          Future.successful(Ok(s"No registration found for transaction id $transactionId"))
+        case error: RegistrationInvalidStatus => registrationInvalidStatusHandler(error, transactionId)
         case mongo @ (_: UpdateFailed | _: RetrieveFailed) =>
           Logger.error(s"[RegistrationController] - [processIncorporationData] - Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
-          InternalServerError
+          Future.successful(InternalServerError)
         case e =>
           Logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
           throw e
       }
     }
   }
+  def registrationInvalidStatusHandler(error: RegistrationInvalidStatus, transactionId: String):Future[Result] ={
+    counterService.updateIncorpCount(error.regId) map {
+      case count if count > counterService.maxIICounterCount =>
+        Logger.info(s"[RegistrationController] - [processIncorporationData] - call count of ${counterService.maxIICounterCount} exceeded: Deleting from counter database")
+        Ok(s"call count of ${counterService.maxIICounterCount} exceeded: Deleting from counter database")
+      case _ =>
+        Logger.error(s"[RegistrationController] - [processIncorporationData] - Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
+        InternalServerError(s"Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
+    }
+  }
+
 
   def getEligibility(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
