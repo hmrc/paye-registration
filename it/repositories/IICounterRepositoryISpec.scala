@@ -23,8 +23,7 @@ class IICounterRepositoryISpec extends MongoBaseSpec{
   private val interrogateCompany = "ABC-123-WOW7"
 
   class Setup {
-    lazy val mockConfig =fakeApplication.injector.instanceOf[Configuration]
-    val mongo = new IICounterMongo(reactiveMongoComponent, mockConfig)
+    val mongo = new IICounterMongo(reactiveMongoComponent)
     val repository = mongo.store
     await(repository.drop)
   }

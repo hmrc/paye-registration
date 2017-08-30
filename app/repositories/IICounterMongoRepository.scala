@@ -32,9 +32,7 @@ import scala.util.Success
 
 @Singleton
 class IICounterMongo @Inject()(
-                                injReactiveMongoComponent: ReactiveMongoComponent,
-                                config: Configuration) {
-  lazy val maxIICounterCount: Int = config.getInt("constants.maxIICounterCount").getOrElse(2)
+                                injReactiveMongoComponent: ReactiveMongoComponent) {
   val store = IICounterMongoRepository(injReactiveMongoComponent.mongoConnector.db)
 }
 

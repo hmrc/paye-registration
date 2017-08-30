@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package services
 
@@ -65,6 +80,23 @@ class IICounterServiceSpec extends PAYERegSpec {
 
       val result = await(service.updateIncorpCount(regId))
       result shouldBe service.maxIICounterCount + 2
+    }
+
+    "return 3 if object has been called 2 times prior" in new Setup{
+      when(mockCounterRepository.addCompanyToCounterDB(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
+
+      when(mockCounterRepository.incrementCount(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
+
+      when(mockCounterRepository.removeCompanyFromCounterDB(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
+
+      when(mockCounterRepository.getCompanyFromCounterDB(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(oldCompany)))
+
+      val result = await(service.updateIncorpCount(regId))
+      result shouldBe service.maxIICounterCount + 1
     }
   }
 
