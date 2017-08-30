@@ -17,12 +17,9 @@
 package services
 
 import javax.inject.Inject
-
-import models.IICounter
 import play.api.Configuration
 import repositories.{IICounterMongo, IICounterMongoRepository}
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.concurrent.Future
 
 class IICounterService @Inject()(injIICounterMongo: IICounterMongo,
@@ -32,27 +29,13 @@ class IICounterService @Inject()(injIICounterMongo: IICounterMongo,
   val counterRepository = injIICounterMongo.store
 }
 
+
 trait IICounterSrv{
   val counterRepository: IICounterMongoRepository
   val maxIICounterCount: Int
 
-  private def getCountFromCounter(counter: Option[IICounter]): Int = counter match {
-    case None => maxIICounterCount + 2
-    case Some(result) => result.counter
+  def updateIncorpCount(regID: String): Future[Boolean] = counterRepository.getNext(regID) map {
+    count => count > maxIICounterCount
   }
 
-  private def deleteIfMaxExceeded(count: Int, regID: String): Future[Boolean] = {
-    if (count > maxIICounterCount) {
-      counterRepository.removeCompanyFromCounterDB(regID)
-    } else{
-      Future.successful(false)
-    }
-  }
-
-  def updateIncorpCount(regID: String): Future[Int] = for {
-    _       <- counterRepository.addCompanyToCounterDB(regID)
-    _       <- counterRepository.incrementCount(regID)
-    counter <- counterRepository.getCompanyFromCounterDB(regID)
-    _       <- deleteIfMaxExceeded(getCountFromCounter(counter),regID)
-  } yield getCountFromCounter(counter)
 }

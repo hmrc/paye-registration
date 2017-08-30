@@ -1589,7 +1589,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockCounterService.maxIICounterCount).thenReturn(2)
 
       when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(1))
+        .thenReturn(Future.successful(false))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
@@ -1605,7 +1605,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockCounterService.maxIICounterCount).thenReturn(2)
 
       when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(4))
+        .thenReturn(Future.successful(true))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
       status(response) shouldBe Status.OK

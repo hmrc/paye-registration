@@ -406,14 +406,17 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       }
     }
   }
-  def registrationInvalidStatusHandler(error: RegistrationInvalidStatus, transactionId: String):Future[Result] ={
-    counterService.updateIncorpCount(error.regId) map {
-      case count if count > counterService.maxIICounterCount =>
-        Logger.info(s"[RegistrationController] - [processIncorporationData] - call count of ${counterService.maxIICounterCount} exceeded: Deleting from counter database")
-        Ok(s"call count of ${counterService.maxIICounterCount} exceeded: Deleting from counter database")
-      case _ =>
-        Logger.error(s"[RegistrationController] - [processIncorporationData] - Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
-        InternalServerError(s"Error cannot process Incorporation Update for transaction ID '$transactionId' - ${error.getMessage}")
+
+  def registrationInvalidStatusHandler(regInvalidError: RegistrationInvalidStatus, transactionId: String):Future[Result] ={
+    counterService.updateIncorpCount(regInvalidError.regId) map {
+        case true => Logger.info(s"[RegistrationController] - [processIncorporationData] - II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
+          Ok(s" II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
+        case false => Logger.warn(s"[RegistrationController] - [processIncorporationData] - Warning cannot process Incorporation Update for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
+          InternalServerError
+      } recover {
+      case error: UpdateFailed =>
+        Logger.error(s"[RegistrationController] - [processIncorporation] returned a None when trying to upsert ${regInvalidError.regId} for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
+        InternalServerError
     }
   }
 

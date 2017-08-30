@@ -18,7 +18,9 @@ package repositories
 
 import javax.inject.{Inject, Singleton}
 
+import common.exceptions.DBExceptions.UpdateFailed
 import models.IICounter
+import play.api.libs.json.JsValue
 import play.api.{Configuration, Logger}
 import reactivemongo.api.{DB, ReadPreference}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -29,6 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.Success
+import scala.util.control.NoStackTrace
 
 @Singleton
 class IICounterMongo @Inject()(
@@ -37,58 +40,26 @@ class IICounterMongo @Inject()(
 }
 
 trait IICounterRepository{
-  def addCompanyToCounterDB(regId: String): Future[Boolean]
-  def removeCompanyFromCounterDB(regID: String): Future[Boolean]
-  def getCompanyFromCounterDB(regID: String): Future[Option[IICounter]]
-  def incrementCount(regID: String): Future[Boolean]
-
-
+  def getNext(regId: String): Future[Int]
 }
 
 
 case class IICounterMongoRepository(mongo: () => DB)
   extends ReactiveRepository[IICounter, BSONObjectID](
-    collectionName = "II-counter-collection",
+    collectionName = "IICounterCollection",
     domainFormat = IICounter.format,
     mongo = mongo) with IICounterRepository {
 
-  override def addCompanyToCounterDB(regId: String): Future[Boolean] = {
-    val iiCounter = IICounter(regID = regId, 0)
-    collection.insert(iiCounter).map {
-      case _ => true
-    } recover {
-      case _ => false
-    }
-  }
+  def getNext(regId: String): Future[Int] = {
+    val selector = BSONDocument("_id" -> regId)
+    val modifier = BSONDocument("$inc" -> BSONDocument("count" -> 1))
 
-  override def removeCompanyFromCounterDB(regID: String): Future[Boolean] = {
-    val selector = BSONDocument("_id" -> regID)
-
-    collection.findAndRemove(selector).map(_.result[IICounter]).map {
-      case None => false
-      case _ => true
-    }
-  }
-
-  override def incrementCount(regID: String): Future[Boolean] = {
-    val selector = BSONDocument("_id" -> regID)
-    val modifier = BSONDocument("$inc" -> BSONDocument("counter" -> 1))
-
-    collection.findAndUpdate(selector, modifier,fetchNewObject = true)
-      .map(_.result[IICounter]) map {
-        case None => false
-        case _ => true
-      }
-  }
-
-  override def getCompanyFromCounterDB(regID: String): Future[Option[IICounter]] = {
-    val selector = BSONDocument("_id" -> regID)
-
-    collection.find(selector)
-      .cursor[IICounter](ReadPreference.primary)
-      .collect[List](1)
-      .map{
-        _.headOption
+    collection.findAndUpdate(selector, modifier, fetchNewObject = true, upsert = true)
+      .map {
+        _.result[JsValue] match {
+          case None => throw new UpdateFailed(regId,"IICounter")
+          case Some(x) => (x \ "count").as[Int]
+        }
       }
   }
 }

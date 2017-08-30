@@ -42,61 +42,24 @@ class IICounterServiceSpec extends PAYERegSpec {
   }
 
   val regId = "AB12345"
-  val newCompany = IICounter(regId,0)
-  val incrCompany = IICounter(regId,1)
-  val oldCompany = IICounter(regId,3)
 
   "calling updateIncorpCount" should {
-    "increment the count and return it" in new Setup{
+    "return false if count is less than the maxCount of 2" in new Setup{
 
-      when(mockCounterRepository.addCompanyToCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.incrementCount(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.removeCompanyFromCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(false))
-
-      when(mockCounterRepository.getCompanyFromCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(incrCompany)))
+      when(mockCounterRepository.getNext(regId))
+        .thenReturn(Future.successful(1))
 
         val result = await(service.updateIncorpCount(regId))
-        result shouldBe 1
+        result shouldBe false
     }
 
-    "return maxCount + 2 if no object was found" in new Setup{
-      when(mockCounterRepository.addCompanyToCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
 
-      when(mockCounterRepository.incrementCount(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.removeCompanyFromCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.getCompanyFromCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(None))
+    "return true if count is more than maxCount" in new Setup{
+      when(mockCounterRepository.getNext(regId))
+        .thenReturn(Future.successful(4))
 
       val result = await(service.updateIncorpCount(regId))
-      result shouldBe service.maxIICounterCount + 2
-    }
-
-    "return 3 if object has been called 2 times prior" in new Setup{
-      when(mockCounterRepository.addCompanyToCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.incrementCount(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.removeCompanyFromCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(true))
-
-      when(mockCounterRepository.getCompanyFromCounterDB(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(oldCompany)))
-
-      val result = await(service.updateIncorpCount(regId))
-      result shouldBe service.maxIICounterCount + 1
+      result shouldBe true
     }
   }
 
