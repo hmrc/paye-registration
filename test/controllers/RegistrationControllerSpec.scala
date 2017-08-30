@@ -1579,7 +1579,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     val jsonIncorpStatusUpdate = Json.parse(incorpUpdate("accepted"))
 
-    "return a 500 response when the registration we try to incorporate is in invalid status" in new Setup {
+    "return a 500 response when the registration we try to incorporate is in invalid status and the II call count is < config value" in new Setup {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
@@ -1595,7 +1595,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
 
-    "return a 200 response when the registration we try to incorporate is in invalid status but count exceeds max" in new Setup {
+    "return a 200 response when the registration we try to incorporate is in invalid status and the II call count is > the config value" in new Setup {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
@@ -1662,6 +1662,42 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+  }
+
+  "calling registrationInvalidStatusHandler" should {
+
+    "return a 500 response when the error is an invalid status and the II call count is < config value" in new Setup {
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(false))
+
+      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
+
+      val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
+
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+
+    "return a 500 response when error is an invalid status and an UpdateFailed Error is Encountered" in new Setup {
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new UpdateFailed(validRegistration.registrationID, "IICounter")))
+
+      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
+
+      val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
+
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+
+    "return a 200 response when the error is an invalid status and the II call count is > config value" in new Setup {
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
+
+      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
+
+      val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
+
+      status(response) shouldBe Status.OK
     }
   }
 }
