@@ -1,0 +1,65 @@
+/*
+ * Copyright 2017 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package repositories
+
+import javax.inject.{Inject, Singleton}
+
+import common.exceptions.DBExceptions.UpdateFailed
+import models.IICounter
+import play.api.libs.json.JsValue
+import play.api.{Configuration, Logger}
+import reactivemongo.api.{DB, ReadPreference}
+import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import uk.gov.hmrc.mongo.ReactiveRepository
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
+@Singleton
+class IICounterMongo @Inject()(
+                                injReactiveMongoComponent: ReactiveMongoComponent) {
+  val store = IICounterMongoRepository(injReactiveMongoComponent.mongoConnector.db)
+}
+
+trait IICounterRepository{
+  def getNext(regId: String): Future[Int]
+}
+
+
+case class IICounterMongoRepository(mongo: () => DB)
+  extends ReactiveRepository[IICounter, BSONObjectID](
+    collectionName = "IICounterCollection",
+    domainFormat = IICounter.format,
+    mongo = mongo) with IICounterRepository {
+
+  def getNext(regId: String): Future[Int] = {
+    val selector = BSONDocument("_id" -> regId)
+    val modifier = BSONDocument("$inc" -> BSONDocument("count" -> 1))
+
+    collection.findAndUpdate(selector, modifier, fetchNewObject = true, upsert = true)
+      .map {
+        _.result[JsValue] match {
+          case None => throw new UpdateFailed(regId,"IICounter")
+          case Some(x) => (x \ "count").as[Int]
+        }
+      }
+  }
+}
