@@ -28,9 +28,9 @@ case class DigitalContactDetails(email: Option[String],
 object DigitalContactDetails {
   implicit val writes: Writes[DigitalContactDetails] = Json.writes[DigitalContactDetails]
 
-  def reads(formatters: BaseJsonFormatting): Reads[DigitalContactDetails] = (
-    (__ \ "email").readNullable[String](formatters.emailAddressReads) and
-    (__ \ "phoneNumber").readNullable[String](formatters.phoneNumberReads) and
-    (__ \ "mobileNumber").readNullable[String](formatters.phoneNumberReads)
+  def reads(formatter: BaseJsonFormatting): Reads[DigitalContactDetails] = (
+    (__ \ "email").readNullable[String](formatter.emailAddressReads) and
+    (__ \ "phoneNumber").readNullable[String](formatter.phoneNumberReads) and
+    (__ \ "mobileNumber").readNullable[String](formatter.phoneNumberReads)
   )(DigitalContactDetails.apply _)
 }

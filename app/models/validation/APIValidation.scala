@@ -17,7 +17,6 @@
 package models.validation
 
 import java.time.LocalDate
-
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
 

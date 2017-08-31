@@ -68,12 +68,12 @@ object DESLimitedCompany {
     (__ \ "companyUTR").writeNullable[String] and
     (__ \ "companiesHouseCompanyName").write[String](DesValidation.companyNameFormatter) and
     (__ \ "nameOfBusiness").writeNullable[String] and
-    (__ \ "businessAddress").write[Address](Address.writesDES) and
+    (__ \ "businessAddress").write[Address](Address.writes(DesValidation)) and
     (__ \ "businessContactDetails").write[DigitalContactDetails] and
     (__ \ "natureOfBusiness").write[String] and
     (__ \ "crn").writeNullable[String] and
     (__ \ "directors").write[Seq[Director]](Director.directorSequenceWriter(DesValidation)) and
-    (__ \ "registeredOfficeAddress").write[Address](Address.writesDES) and
+    (__ \ "registeredOfficeAddress").write[Address](Address.writes(DesValidation)) and
     (__ \ "operatingOccPensionScheme").writeNullable[Boolean]
   )(unlift(DESLimitedCompany.unapply))
 }
@@ -92,7 +92,7 @@ object DESEmployingPeople {
     (__ \ "engageSubcontractors").write[Boolean] and
     (__ \ "correspondenceName").write[String] and
     (__ \ "correspondenceContactDetails").write[DigitalContactDetails] and
-    (__ \ "payeCorrespondenceAddress").write[Address](Address.writesDES)
+    (__ \ "payeCorrespondenceAddress").write[Address](Address.writes(DesValidation))
   )(unlift(DESEmployingPeople.unapply))
 }
 

@@ -16,8 +16,8 @@
 
 package models
 
-import auth.Crypto
-import play.api.libs.json.{Format, Json, __}
+import models.validation.{APIValidation, BaseJsonFormatting}
+import play.api.libs.json.{Format, __}
 import play.api.libs.functional.syntax._
 
 case class EmpRefNotification(empRef: Option[String],
@@ -25,14 +25,11 @@ case class EmpRefNotification(empRef: Option[String],
                               status: String)
 
 object EmpRefNotification {
+  implicit val apiFormat: Format[EmpRefNotification] = format(APIValidation)
 
-  implicit val apiFormat = Json.format[EmpRefNotification]
-
-  private val empRefMongoFormat = Format[String](Crypto.rds, Crypto.wts)
-
-  val mongoFormat = (
-    (__ \ "empRef").formatNullable[String](empRefMongoFormat) and
+  def format(formatter: BaseJsonFormatting): Format[EmpRefNotification] = (
+    (__ \ "empRef").formatNullable[String](formatter.cryptoFormat) and
     (__ \ "timestamp").format[String] and
     (__ \ "status").format[String]
-    )(EmpRefNotification.apply, unlift(EmpRefNotification.unapply _))
+  )(EmpRefNotification.apply, unlift(EmpRefNotification.unapply))
 }

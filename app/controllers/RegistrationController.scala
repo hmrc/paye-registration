@@ -59,8 +59,6 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
   val notificationService: NotificationService
   val counterService: IICounterSrv
 
-  val companyDetailsAPIFormat = CompanyDetails.formatter(APIValidation)
-
   def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       authenticated {
@@ -97,7 +95,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
       authorised(regID) {
         case Authorised(_) =>
           registrationService.getCompanyDetails(regID) map {
-            case Some(companyDetails) => Ok(Json.toJson(companyDetails)(companyDetailsAPIFormat))
+            case Some(companyDetails) => Ok(Json.toJson(companyDetails))
             case None => NotFound
           }
         case NotLoggedInOrAuthorised =>
@@ -116,7 +114,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
         case Authorised(_) =>
           withJsonBody[CompanyDetails] { companyDetails =>
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
-              Ok(Json.toJson(companyDetailsResponse)(companyDetailsAPIFormat))
+              Ok(Json.toJson(companyDetailsResponse))
             } recover {
               case missing   : MissingRegDocument          => NotFound
               case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)
@@ -314,7 +312,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regID) {
         case Authorised(_) =>
-          implicit val reads = APIValidation.completionCapacityReads
+          implicit val stringReads: Reads[String] = APIValidation.completionCapacityReads
           withJsonBody[String] { capacity =>
             registrationService.upsertCompletionCapacity(regID, capacity) map { capacityResponse =>
               Ok(Json.toJson(capacityResponse))
@@ -434,7 +432,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     implicit request =>
       authorised(regId) {
         case Authorised(_) =>
-          readJsonBody[Eligibility](Eligibility.format(APIValidation)) { json =>
+          withJsonBody[Eligibility] { json =>
             registrationService.updateEligibility(regId, json) map { updated =>
               Ok(Json.toJson(updated))
             } recover {

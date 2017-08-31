@@ -17,9 +17,10 @@
 package models.submission
 
 import enums.IncorporationStatus
+import models.validation.{APIValidation, DesValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.functional.syntax.unlift
-import play.api.libs.json.{JsValue, Json, Writes, __}
+import play.api.libs.json.{Writes, __}
 
 
 case class DESSubmission(acknowledgementReference: String,
@@ -42,9 +43,9 @@ case class TopUpDESSubmission(acknowledgementReference: String,
                               crn: Option[String])
 
 object TopUpDESSubmission {
-  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.desWrites)
+  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(DesValidation))
 
-  val auditWrites: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.format)
+  val auditWrites: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
 
   private def genericTopDesSubmissionWrites(incorporationStatusWrites: Writes[IncorporationStatus.Value]) = (
     (__ \ "acknowledgementReference").write[String] and

@@ -16,7 +16,7 @@
 
 package models
 
-import models.validation.{BaseJsonFormatting, DesValidation}
+import models.validation.{APIValidation, BaseJsonFormatting, DesValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -29,8 +29,8 @@ case class Name(forename: Option[String],
                 title: Option[String])
 
 object Name {
-  def format(formatters: BaseJsonFormatting) = {
-    formatters match {
+  def format(formatter: BaseJsonFormatting) = {
+    formatter match {
       case DesValidation => (
         (__ \ "firstName").formatNullable[String] and
         (__ \ "middleName").formatNullable[String] and
@@ -38,32 +38,40 @@ object Name {
         (__ \ "title").formatNullable[String]
       )(Name.apply, unlift(Name.unapply))
       case _ => (
-        (__ \ "forename").formatNullable[String](formatters.directorNameFormat) and
-        (__ \ "other_forenames").formatNullable[String](formatters.directorNameFormat) and
-        (__ \ "surname").formatNullable[String](formatters.directorNameFormat) and
-        (__ \ "title").formatNullable[String](formatters.directorTitleFormat)
+        (__ \ "forename").formatNullable[String](formatter.directorNameFormat) and
+        (__ \ "other_forenames").formatNullable[String](formatter.directorNameFormat) and
+        (__ \ "surname").formatNullable[String](formatter.directorNameFormat) and
+        (__ \ "title").formatNullable[String](formatter.directorTitleFormat)
       )(Name.apply, unlift(Name.unapply))
     }
   }
 }
 
 object Director {
-  def format(formatters: BaseJsonFormatting): Format[Director] = {
-    formatters match {
+  def format(formatter: BaseJsonFormatting): Format[Director] = {
+    formatter match {
       case DesValidation => (
-        (__ \ "directorName").format[Name](Name.format(formatters)) and
-        (__ \ "directorNINO").formatNullable[String](formatters.directorNinoFormat)
+        (__ \ "directorName").format[Name](Name.format(formatter)) and
+        (__ \ "directorNINO").formatNullable[String](formatter.directorNinoFormat)
       )(Director.apply, unlift(Director.unapply))
       case _ => (
-        (__ \ "director").format[Name](Name.format(formatters)) and
-        (__ \ "nino").formatNullable[String](formatters.directorNinoFormat)
+        (__ \ "director").format[Name](Name.format(formatter)) and
+        (__ \ "nino").formatNullable[String](formatter.directorNinoFormat)
       )(Director.apply, unlift(Director.unapply))
     }
   }
 
-  def directorSequenceReader(formatters: BaseJsonFormatting) = Reads.seq[Director](Director.format(formatters))
+  def seqFormat(formatter: BaseJsonFormatting): Format[Seq[Director]] = {
+    val reads = Reads.seq[Director](Director.format(formatter))
+    val writes = directorSequenceWriter(formatter)
 
-  def directorSequenceWriter(formatters: BaseJsonFormatting): Writes[Seq[Director]] = new Writes[Seq[Director]] {
-    override def writes(directors: Seq[Director]): JsValue = Json.toJson(directors map (d => Json.toJson(d)(format(formatters))))
+    Format(reads, writes)
   }
+
+  def directorSequenceWriter(formatter: BaseJsonFormatting): Writes[Seq[Director]] = new Writes[Seq[Director]] {
+    override def writes(directors: Seq[Director]): JsValue = Json.toJson(directors map (d => Json.toJson(d)(format(formatter))))
+  }
+
+  implicit val format: Format[Director] = format(APIValidation)
+  implicit val seqFormat: Format[Seq[Director]] = seqFormat(APIValidation)
 }

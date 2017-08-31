@@ -16,7 +16,12 @@
 
 package models.validation
 
-import play.api.libs.json.{Format, JsValue, Reads, Writes}
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
+
+import auth.Crypto
+import models.Address
+import models.incorporation.IncorpStatusUpdate
+import play.api.libs.json.{Format, Json, Reads, Writes, __}
 
 object MongoValidation extends BaseJsonFormatting {
 
@@ -26,11 +31,7 @@ object MongoValidation extends BaseJsonFormatting {
   override val nameReads               = standardRead
   override val natureOfBusinessReads   = standardRead
 
-  override val tradingNameFormat     = new Format[String] {
-    override def reads(json: JsValue) = Reads.StringReads.reads(json)
-
-    override def writes(o: String) = Writes.StringWrites.writes(o)
-  }
+  override val tradingNameFormat = readToFmt(standardRead)
 
   //Address validation
   override val addressLineValidate  = standardRead
@@ -43,4 +44,20 @@ object MongoValidation extends BaseJsonFormatting {
   override val directorNameFormat   = readToFmt(standardRead)
   override val directorTitleFormat  = readToFmt(standardRead)
   override val directorNinoFormat   = readToFmt(standardRead)
+
+  private val dateTimeReadMongo: Reads[ZonedDateTime]  = (__ \ "$date").read[Long] map { dateTime =>
+    ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateTime), ZoneOffset.UTC)
+  }
+
+  private val dateTimeWriteMongo: Writes[ZonedDateTime] = new Writes[ZonedDateTime]{
+    def writes(z:ZonedDateTime) = Json.obj("$date" -> z.toInstant.toEpochMilli)
+  }
+
+  override val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadMongo, dateTimeWriteMongo)
+
+  override val cryptoFormat: Format[String] = Format(Crypto.rds, Crypto.wts)
+
+  override def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = readsDef
+
+  override def incorpStatusUpdateReadsWithFilter(readsDef: Reads[IncorpStatusUpdate]): Reads[IncorpStatusUpdate] = readsDef
 }

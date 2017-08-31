@@ -18,19 +18,35 @@ package models.validation
 
 import java.text.Normalizer
 import java.text.Normalizer.Form
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 
-import models.Eligibility
+import enums.IncorporationStatus
+import helpers.DateHelper
+import models.Address
+import models.incorporation.IncorpStatusUpdate
 import play.api.data.validation.ValidationError
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
 import scala.collection.Seq
 
-trait BaseJsonFormatting {
+trait BaseJsonFormatting extends DateHelper {
   private val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
   private val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
   private val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
+  private val dateTimeReadApi: Reads[ZonedDateTime] = new Reads[ZonedDateTime] {
+    def reads(js: JsValue) =
+      try {
+        JsSuccess(zonedDateTimeFromString(js.as[String]))
+      }
+      catch {
+        case e: Throwable =>  JsError(error = e.getMessage)
+      }
+  }
+
+  private val dateTimeWriteApi: Writes[ZonedDateTime] = new Writes[ZonedDateTime] {
+    def writes(z:ZonedDateTime) = JsString(formatTimestamp(z))
+  }
 
   def readToFmt(rds: Reads[String])(implicit wts: Writes[String]): Format[String] = Format(rds, wts)
 
@@ -54,7 +70,6 @@ trait BaseJsonFormatting {
     override def writes(o: String) = Writes.StringWrites.writes(o)
   }
 
-  val eligibilityFormat: Format[Eligibility] = Json.format[Eligibility]
   val crnReads: Reads[String] = Reads.pattern("^(\\d{1,8}|([AaFfIiOoRrSsZz][Cc]|[Cc][Uu]|[Ss][AaEeFfIiRrZz]|[Ee][Ss])\\d{1,6}|([IiSs][Pp]|[Nn][AaFfIiOoPpRrVvZz]|[Rr][Oo])[\\da-zA-Z]{1,6})$".r)
   val completionCapacityReads: Reads[String]
   val phoneNumberReads: Reads[String]
@@ -74,4 +89,21 @@ trait BaseJsonFormatting {
   val directorTitleFormat: Format[String]
   val directorNinoFormat: Format[String]
 
+  val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadApi, dateTimeWriteApi)
+
+  val cryptoFormat: Format[String] = readToFmt(standardRead)
+
+  def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = {
+    readsDef.filter(ValidationError("neither postcode nor country was completed")) {
+      addr => addr.postCode.isDefined || addr.country.isDefined
+    }.filter(ValidationError("both postcode and country were completed")) {
+      addr => !(addr.postCode.isDefined && addr.country.isDefined)
+    }
+  }
+
+  def incorpStatusUpdateReadsWithFilter(readsDef: Reads[IncorpStatusUpdate]): Reads[IncorpStatusUpdate] = {
+    readsDef.filter(ValidationError("no CRN defined when expected"))(
+      update => update.status == IncorporationStatus.rejected || update.crn.isDefined
+    )
+  }
 }

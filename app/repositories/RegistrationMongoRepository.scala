@@ -125,7 +125,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     )
   )
 
-  implicit val mongoFormat = PAYERegistration.payeRegistrationFormat(EmpRefNotification.mongoFormat)
+  implicit val mongoFormat = PAYERegistration.format(MongoValidation)
 
   private[repositories] def registrationIDSelector(registrationID: String): BSONDocument = BSONDocument(
     "registrationID" -> BSONString(registrationID)
@@ -658,10 +658,10 @@ class RegistrationMongoRepository(mongo: () => DB,
 
   private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
     val res = dh.zonedDateTimeFromString(reg.lastUpdate)
-    collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(PAYERegistration.mongoFormat))))
+    collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
   }
 
-  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)):Future[WriteResult] = {
+  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.format(MongoValidation)):Future[WriteResult] = {
     collection.insert[JsObject](w.writes(p))
   }
 

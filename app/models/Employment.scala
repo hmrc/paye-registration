@@ -18,7 +18,7 @@ package models
 
 import java.time.LocalDate
 
-import models.validation.BaseJsonFormatting
+import models.validation.{APIValidation, BaseJsonFormatting}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -28,12 +28,12 @@ case class Employment(employees: Boolean,
                       firstPaymentDate: LocalDate)
 
 object Employment {
-
-  def format(formatters: BaseJsonFormatting): OFormat[Employment] = (
+  def format(formatter: BaseJsonFormatting): Format[Employment] = (
     (__ \ "employees").format[Boolean] and
     (__ \ "ocpn").formatNullable[Boolean] and
     (__ \ "cis").format[Boolean] and
-    (__ \ "first-payment-date").format[LocalDate](formatters.firstPaymentDateFormat)
+    (__ \ "first-payment-date").format[LocalDate](formatter.firstPaymentDateFormat)
   )(Employment.apply, unlift(Employment.unapply))
 
+  implicit val format: Format[Employment] = format(APIValidation)
 }

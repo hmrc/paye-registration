@@ -16,7 +16,7 @@
 
 package models
 
-import models.validation.BaseJsonFormatting
+import models.validation.{APIValidation, BaseJsonFormatting}
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
@@ -25,15 +25,20 @@ case class SICCode(code: Option[String],
 
 object SICCode {
   implicit val writes: Writes[SICCode] = Json.writes[SICCode]
+  implicit val reads: Reads[SICCode] = reads(APIValidation)
 
-  def reads(formatters: BaseJsonFormatting): Reads[SICCode] = (
+  def reads(formatter: BaseJsonFormatting): Reads[SICCode] = (
     (__ \ "code").readNullable[String] and
-    (__ \ "description").readNullable[String](formatters.natureOfBusinessReads)
+    (__ \ "description").readNullable[String](formatter.natureOfBusinessReads)
   )(SICCode.apply _)
 
-  def sicCodeSequenceReader(formatters: BaseJsonFormatting) = Reads.seq[SICCode](SICCode.reads(formatters))
+  def seqFormat(formatter: BaseJsonFormatting): Format[Seq[SICCode]] = {
+    val reads = Reads.seq[SICCode](SICCode.reads(formatter))
 
-  def sicCodeSequenceWriter(formatters: BaseJsonFormatting): Writes[Seq[SICCode]] = new Writes[Seq[SICCode]] {
-    override def writes(directors: Seq[SICCode]): JsValue = Json.toJson(directors map (d => Json.toJson(d)))
+    val writes = new Writes[Seq[SICCode]] {
+      override def writes(directors: Seq[SICCode]): JsValue = Json.toJson(directors map (d => Json.toJson(d)))
+    }
+
+    Format(reads, writes)
   }
 }

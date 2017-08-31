@@ -16,9 +16,9 @@
 
 package models
 
-import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
+import models.validation.{APIValidation, BaseJsonFormatting}
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, Json, __}
+import play.api.libs.json.{Format, __}
 
 case class PAYEContact(contactDetails: PAYEContactDetails,
                        correspondenceAddress: Address)
@@ -27,15 +27,17 @@ case class PAYEContactDetails(name: String,
                               digitalContactDetails: DigitalContactDetails)
 
 object PAYEContactDetails {
-  def formatter(formatters: BaseJsonFormatting): Format[PAYEContactDetails] = (
-    (__ \ "name").format[String](formatters.nameReads) and
-    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(formatters))
+  def formatter(formatter: BaseJsonFormatting): Format[PAYEContactDetails] = (
+    (__ \ "name").format[String](formatter.nameReads) and
+    (__ \ "digitalContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(formatter))
   )(PAYEContactDetails.apply, unlift(PAYEContactDetails.unapply))
 }
 
 object PAYEContact {
-  def format(formatters: BaseJsonFormatting): Format[PAYEContact] = (
-    (__ \ "contactDetails").format[PAYEContactDetails](PAYEContactDetails.formatter(formatters)) and
-    (__ \ "correspondenceAddress").format[Address](Address.reads(formatters))
+  def format(formatter: BaseJsonFormatting): Format[PAYEContact] = (
+    (__ \ "contactDetails").format[PAYEContactDetails](PAYEContactDetails.formatter(formatter)) and
+    (__ \ "correspondenceAddress").format[Address](Address.reads(formatter))
   )(PAYEContact.apply, unlift(PAYEContact.unapply))
+
+  implicit val format: Format[PAYEContact] = format(APIValidation)
 }

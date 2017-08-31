@@ -16,14 +16,14 @@
 
 package models
 
-import models.validation.APIValidation
+import models.validation.{APIValidation, DesValidation}
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
-  val cdFormatter = CompanyDetails.formatter(APIValidation)
+  val cdFormatter = CompanyDetails.format(APIValidation)
 
   "Creating a CompanyDetails model from Json" should {
     "complete successfully from full Json" in {
@@ -473,7 +473,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       """.stripMargin
       )
 
-      Json.toJson[Address](addr)(Address.writesDES) shouldBe json
+      Json.toJson[Address](addr)(Address.writes(DesValidation)) shouldBe json
     }
 
     "include audit ref by default" in {
