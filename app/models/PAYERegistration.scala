@@ -60,8 +60,8 @@ object PAYERegistration {
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.format(formatter)) and
     (__ \ "directors").format[Seq[Director]](Director.seqFormat(formatter)) and
-    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.format(MongoValidation)) and
-    (__ \ "employment").formatNullable[Employment](Employment.format(MongoValidation)) and
+    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.format(formatter)) and
+    (__ \ "employment").formatNullable[Employment](Employment.format(formatter)) and
     (__ \ "sicCodes").format[Seq[SICCode]](SICCode.seqFormat(formatter)) and
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
