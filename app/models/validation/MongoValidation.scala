@@ -21,7 +21,7 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import auth.Crypto
 import models.Address
 import models.incorporation.IncorpStatusUpdate
-import play.api.libs.json.{Format, Json, Reads, Writes, __}
+import play.api.libs.json.{Format, JsValue, Json, Reads, Writes, __}
 
 object MongoValidation extends BaseJsonFormatting {
 
@@ -60,4 +60,9 @@ object MongoValidation extends BaseJsonFormatting {
   override def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = readsDef
 
   override def incorpStatusUpdateReadsWithFilter(readsDef: Reads[IncorpStatusUpdate]): Reads[IncorpStatusUpdate] = readsDef
+
+  override val companyNameFormatter = new Format[String] {
+    override def reads(json: JsValue) = Reads.StringReads.reads(json)
+    override def writes(companyName: String) = Writes.StringWrites.writes(companyName)
+  }
 }
