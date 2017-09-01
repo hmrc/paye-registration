@@ -20,8 +20,9 @@ import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
+import models.validation.APIValidation
 import models.{Eligibility, Employment, PAYERegistration}
-import play.api.{Configuration, Application}
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
@@ -112,7 +113,7 @@ class EmploymentISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/employment").get.futureValue
       response.status shouldBe 200
-      response.json shouldBe Json.toJson(validEmployment)
+      response.json shouldBe Json.toJson(validEmployment)(Employment.format(APIValidation))
     }
 
     "Return a 200 when the user upserts employment" in new Setup {
@@ -151,13 +152,13 @@ class EmploymentISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/employment")
-        .patch[JsValue](Json.toJson(validEmployment))
+        .patch[JsValue](Json.toJson(validEmployment)(Employment.format(APIValidation)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/employment").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validEmployment)
+      getResponse2.json shouldBe Json.toJson(validEmployment)(Employment.format(APIValidation))
     }
 
     "Return a 403 when the user is not authorised to get employment" in new Setup {
@@ -229,7 +230,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       ))
 
       val response = client(s"/${regID}/employment")
-        .patch(Json.toJson(validEmployment))
+        .patch(Json.toJson(validEmployment)(Employment.format(APIValidation)))
         .futureValue
       response.status shouldBe 403
     }
@@ -284,7 +285,7 @@ class EmploymentISpec extends IntegrationSpecBase {
       )
 
       val patchResponse = client(s"/${regID}/employment")
-        .patch[JsValue](Json.toJson(wrongEmploymentEarlyDate))
+        .patch[JsValue](Json.toJson(wrongEmploymentEarlyDate)(Employment.format(APIValidation)))
         .futureValue
       patchResponse.status shouldBe 400
 

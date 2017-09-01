@@ -129,7 +129,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
         shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
       }
       "email is of the wrong pattern" in {
@@ -143,7 +143,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
         shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
       }
       "email has no start" in {
@@ -157,7 +157,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
         shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
       }
       "email has no tail" in {
@@ -171,7 +171,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
         shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
       }
       "email has no domain suffix" in {
@@ -185,7 +185,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+        val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
         shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
       }
     }
@@ -200,7 +200,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+      val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
       shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
     }
 
@@ -215,7 +215,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("invalid email pattern")))
+      val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
       shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
     }
 
@@ -230,7 +230,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "phoneNumber" -> Seq(ValidationError("invalid phone number pattern")))
+      val expectedErrs = Map(JsPath() \ "phoneNumber" -> Seq(ValidationError("Invalid phone number pattern")))
       shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
     }
 
@@ -245,7 +245,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "phoneNumber" -> Seq(ValidationError("invalid phone number pattern")))
+      val expectedErrs = Map(JsPath() \ "phoneNumber" -> Seq(ValidationError("Invalid phone number pattern")))
       shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
     }
 
@@ -260,7 +260,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "mobileNumber" -> Seq(ValidationError("invalid phone number pattern")))
+      val expectedErrs = Map(JsPath() \ "mobileNumber" -> Seq(ValidationError("Invalid phone number pattern")))
       shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
     }
 
@@ -275,7 +275,7 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
       val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "mobileNumber" -> Seq(ValidationError("invalid phone number pattern")))
+      val expectedErrs = Map(JsPath() \ "mobileNumber" -> Seq(ValidationError("Invalid phone number pattern")))
       shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
     }
   }

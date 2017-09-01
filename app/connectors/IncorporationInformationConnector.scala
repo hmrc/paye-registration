@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 
 import config.WSHttp
 import models.incorporation.IncorpStatusUpdate
+import models.validation.APIValidation
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.http.Status.{ACCEPTED, OK}
@@ -55,7 +56,7 @@ trait IncorporationInformationConnect {
     val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> s"$payeRegUri/paye-registration/incorporation-data"))
     http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
       resp.status match {
-        case OK => Some(resp.json.as[IncorpStatusUpdate])
+        case OK => Some(resp.json.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation)))
         case ACCEPTED => None
         case _ =>
           Logger.error(s"[IncorporationInformationConnect] - [getIncorporationUpdate] returned a ${resp.status} response code for regId: $regId and txId: $transactionId")

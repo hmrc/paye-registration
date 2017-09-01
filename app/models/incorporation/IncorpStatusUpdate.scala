@@ -19,8 +19,7 @@ package models.incorporation
 import java.time.LocalDate
 
 import enums.IncorporationStatus
-import helpers.IncorporationValidator
-import play.api.data.validation.ValidationError
+import models.validation.{APIValidation, BaseJsonFormatting}
 import play.api.libs.json.{Reads, __}
 import play.api.libs.functional.syntax._
 
@@ -31,19 +30,19 @@ case class IncorpStatusUpdate(transactionId: String,
                               description: Option[String],
                               timestamp: LocalDate)
 
-object IncorpStatusUpdate extends IncorporationValidator {
+object IncorpStatusUpdate {
+  def reads(formatter: BaseJsonFormatting): Reads[IncorpStatusUpdate] = {
+    val readDef = (
+      (__ \\ "IncorpSubscriptionKey" \ "transactionId").read[String] and
+        (__ \\ "IncorpStatusEvent"     \ "status").read[IncorporationStatus.Value] and
+        (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](formatter.crnReads) and
+        (__ \\ "IncorpStatusEvent"     \ "incorporationDate").readNullable[LocalDate] and
+        (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
+        (__ \\ "IncorpStatusEvent"     \ "timestamp").read[LocalDate]
+    )(IncorpStatusUpdate.apply _)
 
+    formatter.incorpStatusUpdateReadsWithFilter(readDef)
+  }
 
-
-  implicit val reads: Reads[IncorpStatusUpdate] = (
-    (__ \\ "IncorpSubscriptionKey" \ "transactionId").read[String] and
-    (__ \\ "IncorpStatusEvent"     \ "status").read[IncorporationStatus.Value] and
-    (__ \\ "IncorpStatusEvent"     \ "crn").readNullable[String](crnValidator) and
-    (__ \\ "IncorpStatusEvent"     \ "incorporationDate").readNullable[LocalDate] and
-    (__ \\ "IncorpStatusEvent"     \ "description").readNullable[String] and
-    (__ \\ "IncorpStatusEvent"     \ "timestamp").read[LocalDate]
-  )(IncorpStatusUpdate.apply _)
-    .filter(ValidationError("no CRN defined when expected"))(
-      update => update.status == IncorporationStatus.rejected || update.crn.isDefined
-    )
+  implicit val format: Reads[IncorpStatusUpdate] = reads(APIValidation)
 }

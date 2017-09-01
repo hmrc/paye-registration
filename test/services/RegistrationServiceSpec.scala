@@ -421,18 +421,6 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       intercept[MissingRegDocument] { await(service.upsertCompletionCapacity(regId, "Agent")) }
     }
 
-    "throw a RegistrationFormatException when the completion capacity is incorrectly formatted" in new Setup {
-      intercept[RegistrationFormatException] { await(service.upsertCompletionCapacity(regId, "&&&&&")) }
-    }
-
-    "throw a RegistrationFormatException when the completion capacity is too long" in new Setup {
-      intercept[RegistrationFormatException] { await(service.upsertCompletionCapacity(regId, List.fill(101)('a').mkString)) }
-    }
-
-    "throw a RegistrationFormatException when the completion capacity is too short" in new Setup {
-      intercept[RegistrationFormatException] { await(service.upsertCompletionCapacity(regId, "")) }
-    }
-
     "return a DBSuccess response when the paye contact are successfully updated" in new Setup {
       val exception = new RuntimeException("tst message")
 

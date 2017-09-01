@@ -22,7 +22,8 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Configuration, Application}
+import models.validation.APIValidation
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -128,7 +129,7 @@ class DirectorsISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}/directors").get.futureValue
       response.status shouldBe 200
-     response.json shouldBe Json.toJson(validDirectors)
+     response.json shouldBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
     }
 
     "Return a 200 when the user upserts directors" in new Setup {
@@ -168,13 +169,13 @@ class DirectorsISpec extends IntegrationSpecBase {
       getResponse1.status shouldBe 404
 
       val patchResponse = client(s"/${regID}/directors")
-        .patch[JsValue](Json.toJson(validDirectors))
+        .patch[JsValue](Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation)))
         .futureValue
       patchResponse.status shouldBe 200
 
       val getResponse2 = client(s"/${regID}/directors").get.futureValue
       getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validDirectors)
+      getResponse2.json shouldBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
     }
 
     "Return a 403 when the user is not authorised to get directors" in new Setup {
@@ -247,7 +248,7 @@ class DirectorsISpec extends IntegrationSpecBase {
       ))
 
       val response = client(s"/${regID}/directors")
-        .patch(Json.toJson(validDirectors))
+        .patch(Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation)))
         .futureValue
       response.status shouldBe 403
     }

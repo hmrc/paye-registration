@@ -16,8 +16,48 @@
 
 package models.validation
 
-import play.api.libs.json.Reads
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
-object MongoValidation extends BaseValidation {
-  override val phoneNumberValidation = Reads.StringReads.filter(_ => true)
+import auth.Crypto
+import models.Address
+import models.incorporation.IncorpStatusUpdate
+import play.api.libs.json.{Format, Json, Reads, Writes, __}
+
+object MongoValidation extends BaseJsonFormatting {
+
+  override val phoneNumberReads        = standardRead
+  override val emailAddressReads       = standardRead
+  override val completionCapacityReads = standardRead
+  override val nameReads               = standardRead
+  override val natureOfBusinessReads   = standardRead
+
+  override val tradingNameFormat = readToFmt(standardRead)
+
+  //Address validation
+  override val addressLineValidate  = standardRead
+  override val addressLine4Validate = standardRead
+  override val postcodeValidate     = standardRead
+  override val countryValidate      = standardRead
+
+  override val firstPaymentDateFormat = Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
+
+  override val directorNameFormat   = readToFmt(standardRead)
+  override val directorTitleFormat  = readToFmt(standardRead)
+  override val directorNinoFormat   = readToFmt(standardRead)
+
+  private val dateTimeReadMongo: Reads[ZonedDateTime]  = (__ \ "$date").read[Long] map { dateTime =>
+    ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateTime), ZoneOffset.UTC)
+  }
+
+  private val dateTimeWriteMongo: Writes[ZonedDateTime] = new Writes[ZonedDateTime]{
+    def writes(z:ZonedDateTime) = Json.obj("$date" -> z.toInstant.toEpochMilli)
+  }
+
+  override val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadMongo, dateTimeWriteMongo)
+
+  override val cryptoFormat: Format[String] = Format(Crypto.rds, Crypto.wts)
+
+  override def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = readsDef
+
+  override def incorpStatusUpdateReadsWithFilter(readsDef: Reads[IncorpStatusUpdate]): Reads[IncorpStatusUpdate] = readsDef
 }

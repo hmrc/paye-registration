@@ -16,14 +16,14 @@
 
 package models
 
-import models.validation.APIValidation
+import models.validation.{APIValidation, DesValidation}
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
-  val cdFormatter = CompanyDetails.formatter(APIValidation)
+  val cdFormatter = CompanyDetails.format(APIValidation)
 
   "Creating a CompanyDetails model from Json" should {
     "complete successfully from full Json" in {
@@ -169,26 +169,26 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
         val json = tstJson("Test£Company")
 
         val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
-        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("Invalid trading name")))
       }
       "it contains invalid characters 2" in {
         val json = tstJson(" Test Company")
 
         val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
-        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("Invalid trading name")))
       }
       "it is too long" in {
         val longName = List.fill(36)('a').mkString
         val json = tstJson(longName)
 
         val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
-        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("Invalid trading name")))
       }
       "it is too short" in {
         val json = tstJson("")
 
         val result = Json.fromJson[CompanyDetails](json)(cdFormatter)
-        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "tradingName", Seq(ValidationError("Invalid trading name")))
       }
     }
   }
@@ -208,7 +208,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", Some("Testford & Testershire"), Some("Testshire"), None, Some("UK"))
 
-      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
     }
 
     "complete successfully from Json with no address line4" in {
@@ -224,7 +224,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St Test & Walk", "Testley\\Testerley", Some("Testford"), None, Some("TE1 1ST"), None)
 
-      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
     }
     "complete successfully from Json with no country" in {
       val json = Json.parse(
@@ -238,7 +238,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", None, None, Some("TE1 1ST"), None)
 
-      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
     }
     "complete successfully from Json with no postcode" in {
       val json = Json.parse(
@@ -252,7 +252,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", None, None, None, Some("UK"))
 
-      Json.fromJson[Address](json) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
     }
 
     "fail from Json with invalid address" in {
@@ -266,7 +266,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
            |}
       """.stripMargin)
 
-      val result = Json.fromJson[Address](json)
+      val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
       shouldHaveErrors(result, JsPath() \ "line1", Seq(ValidationError("error.path.missing")))
     }
 
@@ -282,7 +282,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
       """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
         shouldHaveErrors(result, JsPath() \ "line2", Seq(ValidationError("error.path.missing")))
       }
       "address lines are too long" in {
@@ -297,13 +297,13 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
         shouldHaveErrors(result,
           Map(
-            JsPath() \ "line1" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line2" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line3" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line4" -> Seq(ValidationError("invalid address line 4 pattern"))
+            JsPath() \ "line1" -> Seq(ValidationError("Invalid address line pattern")),
+            JsPath() \ "line2" -> Seq(ValidationError("Invalid address line pattern")),
+            JsPath() \ "line3" -> Seq(ValidationError("Invalid address line pattern")),
+            JsPath() \ "line4" -> Seq(ValidationError("Invalid address line 4 pattern"))
           )
         )
       }
@@ -319,13 +319,13 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
         shouldHaveErrors(result,
           Map(
-            JsPath() \ "line1" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line2" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line3" -> Seq(ValidationError("invalid address line pattern")),
-            JsPath() \ "line4" -> Seq(ValidationError("invalid address line 4 pattern"))
+            JsPath() \ "line1" -> Seq(ValidationError("Invalid address line pattern")),
+            JsPath() \ "line2" -> Seq(ValidationError("Invalid address line pattern")),
+            JsPath() \ "line3" -> Seq(ValidationError("Invalid address line pattern")),
+            JsPath() \ "line4" -> Seq(ValidationError("Invalid address line 4 pattern"))
           )
         )
       }
@@ -339,8 +339,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("Invalid postcode")))
       }
       "postcode is invalid 1" in {
         val json = Json.parse(
@@ -352,8 +352,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("Invalid postcode")))
       }
       "postcode is invalid 2" in {
         val json = Json.parse(
@@ -365,8 +365,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("Invalid postcode")))
       }
       "postcode is invalid 3" in {
         val json = Json.parse(
@@ -378,8 +378,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("Invalid postcode")))
       }
       "postcode is too short" in {
         val json = Json.parse(
@@ -391,8 +391,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("invalid postcode")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "postCode", Seq(ValidationError("Invalid postcode")))
       }
       "country is too short" in {
         val json = Json.parse(
@@ -404,8 +404,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "country", Seq(ValidationError("invalid country")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "country", Seq(ValidationError("Invalid country")))
       }
       "country is too long" in {
         val country = List.fill(21)('a').mkString
@@ -418,8 +418,8 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
-        shouldHaveErrors(result, JsPath() \ "country", Seq(ValidationError("invalid country")))
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
+        shouldHaveErrors(result, JsPath() \ "country", Seq(ValidationError("Invalid country")))
       }
       "neither country nor postcode is defined" in {
         val json = Json.parse(
@@ -430,7 +430,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
         shouldHaveErrors(result, JsPath(), Seq(ValidationError("neither postcode nor country was completed")))
       }
       "both country and postcode are defined" in {
@@ -444,7 +444,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
              |}
         """.stripMargin)
 
-        val result = Json.fromJson[Address](json)
+        val result = Json.fromJson[Address](json)(Address.reads(APIValidation))
         shouldHaveErrors(result, JsPath(), Seq(ValidationError("both postcode and country were completed")))
       }
     }
@@ -473,7 +473,7 @@ class CompanyDetailsSpec extends UnitSpec with JsonFormatValidation {
       """.stripMargin
       )
 
-      Json.toJson[Address](addr)(Address.writesDES) shouldBe json
+      Json.toJson[Address](addr)(Address.writes(DesValidation)) shouldBe json
     }
 
     "include audit ref by default" in {

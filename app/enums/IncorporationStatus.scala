@@ -16,15 +16,21 @@
 
 package enums
 
+import models.validation.{APIValidation, BaseJsonFormatting, DesValidation}
 import play.api.libs.json._
 
 object IncorporationStatus extends Enumeration {
   val accepted = Value
   val rejected = Value
 
-  implicit val format = Format(Reads.enumNameReads(IncorporationStatus), Writes.enumNameWrites)
+  implicit val format = Format(Reads.enumNameReads(IncorporationStatus), writes(APIValidation))
 
-  val desWrites: Writes[IncorporationStatus.Value] = new Writes[IncorporationStatus.Value] {
-    override def writes(o: IncorporationStatus.Value) = JsString(o.toString.capitalize)
+  def writes(formatter: BaseJsonFormatting): Writes[IncorporationStatus.Value] = {
+    formatter match {
+      case DesValidation => new Writes[IncorporationStatus.Value] {
+        override def writes(o: IncorporationStatus.Value) = JsString(o.toString.capitalize)
+      }
+      case _ => Writes.enumNameWrites
+    }
   }
 }

@@ -19,10 +19,9 @@ package models
 import enums.PAYEStatus
 import java.time.ZonedDateTime
 
-import models.validation.{APIValidation, MongoValidation}
+import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.DateFormatter
 
 case class PAYERegistration(registrationID: String,
                             transactionID: String,
@@ -45,52 +44,29 @@ case class PAYERegistration(registrationID: String,
                             acknowledgedTimestamp: Option[String],
                             lastAction:Option[ZonedDateTime])
 
-object PAYERegistration extends DateFormatter{
-  implicit val format: OFormat[PAYERegistration] = (
+object PAYERegistration {
+  implicit val format: OFormat[PAYERegistration] = format(APIValidation)
+
+  def format(formatter: BaseJsonFormatting): OFormat[PAYERegistration] = (
     (__ \ "registrationID").format[String] and
     (__ \ "transactionID").format[String] and
     (__ \ "internalID").format[String] and
     (__ \ "acknowledgementReference").formatNullable[String] and
     (__ \ "crn").formatNullable[String] and
-    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.apiFormat) and
+    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.format(formatter)) and
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(APIValidation)) and
-    (__ \ "directors").format[Seq[Director]] and
-    (__ \ "payeContact").formatNullable[PAYEContact] and
-    (__ \ "employment").formatNullable[Employment] and
-    (__ \ "sicCodes").format[Seq[SICCode]] and
+    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.format(formatter)) and
+    (__ \ "directors").format[Seq[Director]](Director.seqFormat(formatter)) and
+    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.format(formatter)) and
+    (__ \ "employment").formatNullable[Employment](Employment.format(formatter)) and
+    (__ \ "sicCodes").format[Seq[SICCode]](SICCode.seqFormat(formatter)) and
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
     (__ \ "acknowledgedTimestamp").formatNullable[String] and
-    ( __ \ "lastAction").formatNullable[ZonedDateTime](apiFormat)
-  )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
-
-
-
-  def payeRegistrationFormat(empRefFormat: Format[EmpRefNotification]): OFormat[PAYERegistration] = (
-    (__ \ "registrationID").format[String] and
-    (__ \ "transactionID").format[String] and
-    (__ \ "internalID").format[String] and
-    (__ \ "acknowledgementReference").formatNullable[String] and
-    (__ \ "crn").formatNullable[String] and
-    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](empRefFormat) and
-    (__ \ "formCreationTimestamp").format[String] and
-    (__ \ "eligibility").formatNullable[Eligibility] and
-    (__ \ "status").format[PAYEStatus.Value] and
-    (__ \ "completionCapacity").formatNullable[String] and
-    (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.formatter(MongoValidation)) and
-    (__ \ "directors").format[Seq[Director]] and
-    (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.mongoFormat) and
-    (__ \ "employment").formatNullable[Employment] and
-    (__ \ "sicCodes").format[Seq[SICCode]] and
-    (__ \ "lastUpdate").format[String] and
-    (__ \ "partialSubmissionTimestamp").formatNullable[String] and
-    (__ \ "fullSubmissionTimestamp").formatNullable[String] and
-    (__ \ "acknowledgedTimestamp").formatNullable[String] and
-    (__ \ "lastAction").formatNullable[ZonedDateTime](mongoFormat)
+    (__ \ "lastAction").formatNullable[ZonedDateTime](formatter.dateFormat)
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 }

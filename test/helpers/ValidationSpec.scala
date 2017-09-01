@@ -23,11 +23,9 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class ValidationSpec extends UnitSpec {
 
-  val testCompanyNameValidator = new CompanyDetailsValidator{}
-
   case class TestModel(cName: String, int: Int = 616)
   implicit val testModelWriter: Writes[TestModel] = (
-    (__ \ "cName").write[String](DesValidation.companyNameValidation) and
+    (__ \ "cName").write[String](DesValidation.companyNameFormatter) and
     (__ \ "int").write[Int]
   )(unlift(TestModel.unapply))
 

@@ -93,38 +93,6 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     """.stripMargin
   )
 
-  val okFunction = Future.successful(Ok)
-
-  "readJsonBody" should {
-    "return an Ok" when {
-      "a valid json body has been processed" in new Setup {
-        implicit val request = FakeRequest().withBody(testJsonValid)
-        val result = controller.readJsonBody[TestModel](format) { tm =>
-          okFunction
-        }
-        status(result) shouldBe OK
-      }
-    }
-
-    "return a bad request" when {
-      "the json body was in the wrong structure" in new Setup {
-        implicit val request = FakeRequest().withBody(testJsonInvalid)
-        val result = controller.readJsonBody[TestModel](format) { tm =>
-          okFunction
-        }
-        status(result) shouldBe BAD_REQUEST
-      }
-
-      "the request body could not be parsed into json" in new Setup {
-        implicit val request = FakeRequest().withBody(JsString("Invalid_body"))
-        val result = controller.readJsonBody[TestModel](format) { tm =>
-          okFunction
-        }
-        status(result) shouldBe BAD_REQUEST
-      }
-    }
-  }
-
   "Calling newPAYERegistration" should {
     "return a Forbidden response if the user is not logged in" in new Setup {
       AuthorisationMocks.mockNotLoggedInOrAuthorised
@@ -290,7 +258,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation)
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation)
           )
         )
       )
@@ -308,7 +276,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
       )
 
@@ -325,7 +293,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
       )
 
@@ -345,7 +313,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
       )
 
@@ -365,7 +333,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = await(controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
         )
       )
@@ -387,7 +355,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       val response = controller.upsertCompanyDetails("AC123456")(
         FakeRequest()
           .withBody(
-            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.formatter(APIValidation))
+            Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
       )
 
@@ -471,7 +439,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
 
       status(response) shouldBe Status.FORBIDDEN
     }
@@ -483,7 +451,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
 
-      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
 
       status(response) shouldBe Status.FORBIDDEN
     }
@@ -496,7 +464,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
 
       status(response) shouldBe Status.NOT_FOUND
     }
@@ -512,7 +480,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
-      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
 
       status(response) shouldBe Status.NOT_FOUND
     }
@@ -528,7 +496,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]()))
         .thenReturn(Future.successful(validEmployment))
 
-      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)))
+      val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
 
       status(response) shouldBe Status.OK
     }
@@ -610,7 +578,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)))
+      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
       status(response) shouldBe Status.FORBIDDEN
     }
@@ -622,7 +590,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
 
-      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)))
+      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
       status(response) shouldBe Status.FORBIDDEN
     }
@@ -635,7 +603,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)))
+      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
       status(response) shouldBe Status.NOT_FOUND
     }
@@ -651,7 +619,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
-      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)))
+      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
       status(response) shouldBe Status.NOT_FOUND
     }
@@ -667,7 +635,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
         .thenReturn(Future.failed(new RegistrationFormatException("test message")))
 
-      val response = await(controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors))))
+      val response = await(controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation)))))
 
       status(response) shouldBe Status.BAD_REQUEST
       bodyOf(response) shouldBe "test message"
@@ -684,7 +652,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
         .thenReturn(Future.successful(validDirectors))
 
-      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)))
+      val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
       status(response) shouldBe Status.OK
     }
@@ -903,7 +871,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
       status(response) shouldBe Status.FORBIDDEN
     }
@@ -915,7 +883,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
 
-      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
       status(response) shouldBe Status.FORBIDDEN
     }
@@ -927,7 +895,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(None))
 
-      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
       status(response) shouldBe Status.NOT_FOUND
     }
@@ -942,7 +910,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
-      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
       status(response) shouldBe Status.NOT_FOUND
     }
@@ -957,7 +925,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
         .thenReturn(Future.failed(new RegistrationFormatException("contact exception msg")))
 
-      val response = await(controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact))))
+      val response = await(controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation)))))
 
       status(response) shouldBe Status.BAD_REQUEST
       bodyOf(response) shouldBe "contact exception msg"
@@ -973,7 +941,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
         .thenReturn(Future.successful(validPAYEContact))
 
-      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)))
+      val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
       status(response) shouldBe Status.OK
     }

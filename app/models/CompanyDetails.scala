@@ -16,9 +16,7 @@
 
 package models
 
-import helpers.{CompanyDetailsValidator, Validation}
-import models.validation.BaseValidation
-import play.api.data.validation.ValidationError
+import models.validation.{APIValidation, BaseJsonFormatting, DesValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -37,13 +35,13 @@ case class Address(line1: String,
                    auditRef: Option[String] = None)
 
 object Address {
+  implicit val writes: Writes[Address] = writes(APIValidation)
 
-  val writesDES: Writes[Address] = new Writes[Address] {
-
+  def writes(formatter: BaseJsonFormatting): Writes[Address] = {
     val ignore = OWrites[Any](_ => Json.obj())
 
-    override def writes(address: Address): JsValue = {
-      val successWrites = (
+    formatter match {
+      case DesValidation => (
         (__ \ "addressLine1").write[String] and
         (__ \ "addressLine2").write[String] and
         (__ \ "addressLine3").writeNullable[String] and
@@ -52,38 +50,33 @@ object Address {
         (__ \ "country").writeNullable[String] and
         ignore
       )(unlift(Address.unapply))
-
-      Json.toJson(address)(successWrites).as[JsObject]
+      case _ => Json.writes[Address]
     }
   }
-  val addressLineValidate = Reads.StringReads.filter(ValidationError("invalid address line pattern"))(_.matches(Validation.addressLineRegex))
-  val addressLine4Validate = Reads.StringReads.filter(ValidationError("invalid address line 4 pattern"))(_.matches(Validation.addressLine4Regex))
-  val postcodeValidate = Reads.StringReads.filter(ValidationError("invalid postcode"))(_.matches(Validation.postcodeRegex))
-  val countryValidate = Reads.StringReads.filter(ValidationError("invalid country"))(_.matches(Validation.countryRegex))
 
-  implicit val writes = Json.writes[Address]
+  def reads(formatter: BaseJsonFormatting): Reads[Address] = {
+    val readsDef = (
+      (__ \ "line1").read[String](formatter.addressLineValidate) and
+      (__ \ "line2").read[String](formatter.addressLineValidate) and
+      (__ \ "line3").readNullable[String](formatter.addressLineValidate) and
+      (__ \ "line4").readNullable[String](formatter.addressLine4Validate) and
+      (__ \ "postCode").readNullable[String](formatter.postcodeValidate) and
+      (__ \ "country").readNullable[String](formatter.countryValidate) and
+      (__ \ "auditRef").readNullable[String]
+    )(Address.apply _)
 
-  implicit val reads: Reads[Address] = (
-    (__ \ "line1").read[String](addressLineValidate) and
-    (__ \ "line2").read[String](addressLineValidate) and
-    (__ \ "line3").readNullable[String](addressLineValidate) and
-    (__ \ "line4").readNullable[String](addressLine4Validate) and
-    (__ \ "postCode").readNullable[String](postcodeValidate) and
-    (__ \ "country").readNullable[String](countryValidate) and
-    (__ \ "auditRef").readNullable[String]
-  )(Address.apply _).filter(ValidationError("neither postcode nor country was completed")) {
-    addr => addr.postCode.isDefined || addr.country.isDefined
-  }.filter(ValidationError("both postcode and country were completed")) {
-    addr => !(addr.postCode.isDefined && addr.country.isDefined)
+    formatter.addressReadsWithFilter(readsDef)
   }
 }
 
-object CompanyDetails extends CompanyDetailsValidator {
-  def formatter(validators: BaseValidation) = (
-    (__ \ "companyName").format[String](validators.companyNameValidation) and
-    (__ \ "tradingName").formatNullable[String](tradingNameValidator) and
-    (__ \ "roAddress").format[Address] and
-    (__ \ "ppobAddress").format[Address] and
-    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(validators))
+object CompanyDetails {
+  def format(formatter: BaseJsonFormatting): Format[CompanyDetails] = (
+    (__ \ "companyName").format[String](formatter.companyNameFormatter) and
+    (__ \ "tradingName").formatNullable[String](formatter.tradingNameFormat) and
+    (__ \ "roAddress").format[Address](Address.reads(formatter)) and
+    (__ \ "ppobAddress").format[Address](Address.reads(formatter)) and
+    (__ \ "businessContactDetails").format[DigitalContactDetails](DigitalContactDetails.reads(formatter))
   )(CompanyDetails.apply, unlift(CompanyDetails.unapply))
+
+  implicit val format: Format[CompanyDetails] = format(APIValidation)
 }

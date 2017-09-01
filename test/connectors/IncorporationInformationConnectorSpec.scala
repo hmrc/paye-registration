@@ -20,6 +20,7 @@ import java.time.LocalDate
 
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
+import models.validation.APIValidation
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.Helpers.{ACCEPTED, INTERNAL_SERVER_ERROR, OK}
 import uk.gov.hmrc.play.http.ws.WSHttp
@@ -86,7 +87,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
           .thenReturn(Future.successful(testResponse))
 
         val result = await(testConnector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
-        result shouldBe Some(Json.fromJson[IncorpStatusUpdate](testJson).get)
+        result shouldBe Some(Json.fromJson[IncorpStatusUpdate](testJson)(IncorpStatusUpdate.reads(APIValidation)).get)
       }
     }
 

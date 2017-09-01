@@ -19,8 +19,9 @@ package models
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
-
 import java.time.LocalDate
+
+import models.validation.APIValidation
 
 class EmploymentSpec extends UnitSpec with JsonFormatValidation {
 
@@ -41,7 +42,7 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
 
       val testEmployment = Employment(employees = true, Some(true), subcontractors = true, date)
 
-      Json.fromJson[Employment](json) shouldBe JsSuccess(testEmployment)
+      Json.fromJson[Employment](json)(Employment.format(APIValidation)) shouldBe JsSuccess(testEmployment)
     }
 
     "complete successfully from Json with no OCPN" in {
@@ -56,7 +57,7 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
 
       val testEmployment = Employment(employees = true, None, subcontractors = true, date)
 
-      Json.fromJson[Employment](json) shouldBe JsSuccess(testEmployment)
+      Json.fromJson[Employment](json)(Employment.format(APIValidation)) shouldBe JsSuccess(testEmployment)
     }
 
     "fail from Json with invalid date" ignore {
@@ -70,7 +71,7 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val result = Json.fromJson[Employment](json)
+      val result = Json.fromJson[Employment](json)(Employment.format(APIValidation))
       shouldHaveErrors(result, JsPath() \ "first-payment-date", Seq(ValidationError(
         "error.expected.date.isoformat")))
     }
@@ -87,7 +88,7 @@ class EmploymentSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      val result = Json.fromJson[Employment](json)
+      val result = Json.fromJson[Employment](json)(Employment.format(APIValidation))
       shouldHaveErrors(result, JsPath() \ "first-payment-date", Seq(ValidationError(
         "invalid date - too early")))
     }

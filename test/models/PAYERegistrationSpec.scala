@@ -20,6 +20,7 @@ package models
 import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import enums.PAYEStatus
+import models.validation.MongoValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -217,11 +218,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "transactionID" : "NNASD9789F",
            |  "internalID" : "09876",
            |  "formCreationTimestamp":"2016-05-31",
-           |  "registrationConfirmation" : {
-           |    "empRef":"testEmpRef",
-           |    "timestamp":"2017-01-01T12:00:00Z",
-           |    "status":"testStatus"
-           |  },
            |  "eligibility" : {
            |    "companyEligibility" : false,
            |    "directorEligibility" : false
@@ -310,7 +306,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      Json.fromJson[PAYERegistration](json1)(PAYERegistration.payeRegistrationFormat(EmpRefNotification.apiFormat)).map(s => s.lastAction).get shouldBe Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
+      Json.fromJson[PAYERegistration](json1)(PAYERegistration.format(MongoValidation)).map(s => s.lastAction).get shouldBe Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
     }
 
     "complete successfully from Json with no companyDetails" in {

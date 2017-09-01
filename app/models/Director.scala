@@ -16,7 +16,7 @@
 
 package models
 
-import helpers.DirectorValidator
+import models.validation.{APIValidation, BaseJsonFormatting, DesValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -28,48 +28,50 @@ case class Name(forename: Option[String],
                 surname: Option[String],
                 title: Option[String])
 
-object Name extends DirectorValidator {
-  implicit val format: Format[Name] =
-    (
-      (__ \ "forename").formatNullable[String](nameValidator) and
-      (__ \ "other_forenames").formatNullable[String](nameValidator) and
-      (__ \ "surname").formatNullable[String](nameValidator) and
-      (__ \ "title").formatNullable[String](titleValidator)
-    )(Name.apply, unlift(Name.unapply))
-
-  val writesDES: Writes[Name] = new Writes[Name] {
-    override def writes(name: Name): JsValue = {
-      val successWrites = (
-        (__ \ "firstName").writeNullable[String] and
-        (__ \ "middleName").writeNullable[String] and
-        (__ \ "lastName").writeNullable[String] and
-        (__ \ "title").writeNullable[String]
-      )(unlift(Name.unapply))
-
-      Json.toJson(name)(successWrites).as[JsObject]
+object Name {
+  def format(formatter: BaseJsonFormatting) = {
+    formatter match {
+      case DesValidation => (
+        (__ \ "firstName").formatNullable[String] and
+        (__ \ "middleName").formatNullable[String] and
+        (__ \ "lastName").formatNullable[String] and
+        (__ \ "title").formatNullable[String]
+      )(Name.apply, unlift(Name.unapply))
+      case _ => (
+        (__ \ "forename").formatNullable[String](formatter.directorNameFormat) and
+        (__ \ "other_forenames").formatNullable[String](formatter.directorNameFormat) and
+        (__ \ "surname").formatNullable[String](formatter.directorNameFormat) and
+        (__ \ "title").formatNullable[String](formatter.directorTitleFormat)
+      )(Name.apply, unlift(Name.unapply))
     }
   }
 }
 
-object Director extends DirectorValidator {
-  implicit val format: Format[Director] =
-    (
-      (__ \ "director").format[Name] and
-      (__ \ "nino").formatNullable[String](ninoValidator)
-    )(Director.apply, unlift(Director.unapply))
-
-  val writesDES: Writes[Director] = new Writes[Director] {
-    override def writes(director: Director): JsValue = {
-      val successWrites = (
-        (__ \ "directorName").write[Name](Name.writesDES) and
-        (__ \ "directorNINO").writeNullable[String](ninoValidator)
-      )(unlift(Director.unapply))
-
-      Json.toJson(director)(successWrites).as[JsObject]
+object Director {
+  def format(formatter: BaseJsonFormatting): Format[Director] = {
+    formatter match {
+      case DesValidation => (
+        (__ \ "directorName").format[Name](Name.format(formatter)) and
+        (__ \ "directorNINO").formatNullable[String](formatter.directorNinoFormat)
+      )(Director.apply, unlift(Director.unapply))
+      case _ => (
+        (__ \ "director").format[Name](Name.format(formatter)) and
+        (__ \ "nino").formatNullable[String](formatter.directorNinoFormat)
+      )(Director.apply, unlift(Director.unapply))
     }
   }
 
-  val seqWritesDES: Writes[Seq[Director]] = new Writes[Seq[Director]] {
-    override def writes(directors: Seq[Director]): JsValue = Json.toJson(directors map (d => Json.toJson(d)(writesDES)))
+  def seqFormat(formatter: BaseJsonFormatting): Format[Seq[Director]] = {
+    val reads = Reads.seq[Director](Director.format(formatter))
+    val writes = directorSequenceWriter(formatter)
+
+    Format(reads, writes)
   }
+
+  def directorSequenceWriter(formatter: BaseJsonFormatting): Writes[Seq[Director]] = new Writes[Seq[Director]] {
+    override def writes(directors: Seq[Director]): JsValue = Json.toJson(directors map (d => Json.toJson(d)(format(formatter))))
+  }
+
+  implicit val format: Format[Director] = format(APIValidation)
+  implicit val seqFormat: Format[Seq[Director]] = seqFormat(APIValidation)
 }

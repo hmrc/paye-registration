@@ -16,6 +16,7 @@
 
 package models
 
+import models.validation.APIValidation
 import play.api.libs.json.{JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -47,7 +48,7 @@ class SICCodeSpec extends UnitSpec with JsonFormatValidation {
     )
 
     "read from json with full data" in {
-      Json.fromJson[SICCode](tstJsonFull) shouldBe JsSuccess(tstSICCodeFull)
+      Json.fromJson[SICCode](tstJsonFull)(SICCode.reads(APIValidation)) shouldBe JsSuccess(tstSICCodeFull)
     }
 
     "write to json with full data" in {
@@ -55,7 +56,7 @@ class SICCodeSpec extends UnitSpec with JsonFormatValidation {
     }
 
     "read from json with none full data" in {
-      Json.fromJson[SICCode](tstJson) shouldBe JsSuccess(tstSICCode)
+      Json.fromJson[SICCode](tstJson)(SICCode.reads(APIValidation)) shouldBe JsSuccess(tstSICCode)
     }
 
     "write to json with none full data" in {

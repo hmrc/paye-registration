@@ -16,6 +16,7 @@
 
 package models
 
+import models.validation.APIValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -38,21 +39,21 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
     )
 
     "read from json with full data" in {
-      Json.fromJson[Name](tstJson) shouldBe JsSuccess(tstModel)
+      Json.fromJson[Name](tstJson)(Name.format(APIValidation)) shouldBe JsSuccess(tstModel)
     }
 
     "write to json with full data" in {
-      Json.toJson[Name](tstModel) shouldBe tstJson
+      Json.toJson[Name](tstModel)(Name.format(APIValidation)) shouldBe tstJson
     }
 
     val tstEmptyJson = Json.parse(s"""{}""".stripMargin)
     val tstEmptyModel = Name(None, None, None, None)
     "read from json with empty data" in {
-      Json.fromJson[Name](tstEmptyJson) shouldBe JsSuccess(tstEmptyModel)
+      Json.fromJson[Name](tstEmptyJson)(Name.format(APIValidation)) shouldBe JsSuccess(tstEmptyModel)
     }
 
     "write to json with empty data" in {
-      Json.toJson[Name](tstEmptyModel) shouldBe tstEmptyJson
+      Json.toJson[Name](tstEmptyModel)(Name.format(APIValidation)) shouldBe tstEmptyJson
     }
 
     "read successfully" when {
@@ -72,7 +73,7 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
           surname = Some(maxName),
           title = Some(maxTitle)
         )
-        Json.fromJson[Name](nameJson) shouldBe JsSuccess(fullNameModel)
+        Json.fromJson[Name](nameJson)(Name.format(APIValidation)) shouldBe JsSuccess(fullNameModel)
       }
     }
 
@@ -86,19 +87,19 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
            |}""".stripMargin)
 
       "name is too long" in {
-        val result = Json.fromJson[Name](testNameJson(name = List.fill(101)('a').mkString))
+        val result = Json.fromJson[Name](testNameJson(name = List.fill(101)('a').mkString))(Name.format(APIValidation))
         shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
       }
       "name is invalid" in {
-        val result = Json.fromJson[Name](testNameJson(name = "Name$$"))
+        val result = Json.fromJson[Name](testNameJson(name = "Name$$"))(Name.format(APIValidation))
         shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
       }
       "title is too long" in {
-        val result = Json.fromJson[Name](testNameJson(title = List.fill(21)('a').mkString))
+        val result = Json.fromJson[Name](testNameJson(title = List.fill(21)('a').mkString))(Name.format(APIValidation))
         shouldHaveErrors(result, JsPath() \ "title", Seq(ValidationError("error.pattern")))
       }
       "title is invalid" in {
-        val result = Json.fromJson[Name](testNameJson(title = "Title1"))
+        val result = Json.fromJson[Name](testNameJson(title = "Title1"))(Name.format(APIValidation))
         shouldHaveErrors(result, JsPath() \ "title", Seq(ValidationError("error.pattern")))
       }
     }
@@ -128,21 +129,21 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
     val tstModel = Director(tstName, Some("SR098765C"))
 
     "read from json with full data" in {
-      Json.fromJson[Director](tstJson) shouldBe JsSuccess(tstModel)
+      Json.fromJson[Director](tstJson)(Director.format(APIValidation)) shouldBe JsSuccess(tstModel)
     }
 
     "write to json with full data" in {
-      Json.toJson[Director](tstModel) shouldBe tstJson
+      Json.toJson[Director](tstModel)(Director.format(APIValidation)) shouldBe tstJson
     }
 
     val tstEmptyJson = Json.parse(s"""{"director":{}}""".stripMargin)
     val tstEmptyModel = Director(Name(None, None, None, None), None)
     "read from json with empty data" in {
-      Json.fromJson[Director](tstEmptyJson) shouldBe JsSuccess(tstEmptyModel)
+      Json.fromJson[Director](tstEmptyJson)(Director.format(APIValidation)) shouldBe JsSuccess(tstEmptyModel)
     }
 
     "write to json with empty data" in {
-      Json.toJson[Director](tstEmptyModel) shouldBe tstEmptyJson
+      Json.toJson[Director](tstEmptyModel)(Director.format(APIValidation)) shouldBe tstEmptyJson
     }
 
     "fail from Json with invalid nino" in {
@@ -159,7 +160,7 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
            |}
       """.stripMargin)
 
-      def result(nino: String) = Json.fromJson[Director](json(nino))
+      def result(nino: String) = Json.fromJson[Director](json(nino))(Director.format(APIValidation))
 
       shouldHaveErrors(result("BG098765B"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
 
@@ -183,7 +184,7 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
            |}""".stripMargin)
 
       val tstModel = Name(None,None,None,Some("Sir "))
-      Json.fromJson[Name](tstJson) shouldBe JsSuccess(tstModel)
+      Json.fromJson[Name](tstJson)(Name.format(APIValidation)) shouldBe JsSuccess(tstModel)
     }
   }
 }
