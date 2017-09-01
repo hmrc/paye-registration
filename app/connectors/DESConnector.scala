@@ -75,7 +75,7 @@ trait DESConnect extends HttpErrorFunctions {
       case 499 =>
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
       case status if is4xx(status) =>
-        if(status == 400) {Logger.error("PAYE - 400 response returned from DES")} //used in alerting - DO NOT CHANGE ERROR TEXT
+        if(status == 400) {Logger.error("PAYE_-_400_response_returned_from_DES")} //used in alerting - DO NOT CHANGE ERROR TEXT
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.allHeaders)
       case _ => handleResponse(http, url)(response)
     }
