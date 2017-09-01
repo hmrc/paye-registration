@@ -65,4 +65,6 @@ object MongoValidation extends BaseJsonFormatting {
     override def reads(json: JsValue) = Reads.StringReads.reads(json)
     override def writes(companyName: String) = Writes.StringWrites.writes(companyName)
   }
+
+  override val crnReads: Reads[String] = Reads.StringReads
 }
