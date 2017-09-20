@@ -49,6 +49,26 @@ class AmendCompletionCapacityEventDetailSpec extends UnitSpec {
       Json.toJson(testModel) shouldBe expectedDetail
     }
 
+    "have the correct result when the new completion capacity is secretary" in {
+      val expectedDetail = Json.parse(
+        s"""{
+           |    "externalUserId": "$externalUserId",
+           |    "authProviderId": "$authProviderId",
+           |    "journeyId": "$regId",
+           |    "previousCompletionCapacity": "Director",
+           |    "newCompletionCapacity": "Secretary"
+           | }
+        """.stripMargin)
+
+      val testModel = AmendCompletionCapacityEventDetail(
+        externalUserId,
+        authProviderId,
+        regId,
+        DESCompletionCapacity.buildDESCompletionCapacity(Some("director")),
+        DESCompletionCapacity.buildDESCompletionCapacity(Some("secretary")))
+      Json.toJson(testModel) shouldBe expectedDetail
+    }
+
     "have the correct result when the new completion capacity is agent" in {
       val expectedDetail = Json.parse(
         s"""{

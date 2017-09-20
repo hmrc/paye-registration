@@ -406,6 +406,9 @@ class SubmissionServiceSpec extends PAYERegSpec {
     "succeed for agent" in new Setup {
       DESCompletionCapacity.buildDESCompletionCapacity(Some("agent")) shouldBe DESCompletionCapacity("Agent", None)
     }
+    "succeed for secretary" in new Setup {
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("secretary")) shouldBe DESCompletionCapacity("Secretary", None)
+    }
     "succeed for 'DiReCTOR  '" in new Setup {
       DESCompletionCapacity.buildDESCompletionCapacity(Some("DiReCTOR  ")) shouldBe DESCompletionCapacity("Director", None)
     }
