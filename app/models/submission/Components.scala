@@ -118,11 +118,13 @@ case class DESCompletionCapacity(capacity: String,
 object DESCompletionCapacity {
   def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
     val DIRECTOR = "Director"
+    val SECRETARY = "Secretary"
     val AGENT = "Agent"
     val OTHER = "Other"
     capacity.map(_.trim.toLowerCase).map {
       case d if d == DIRECTOR.toLowerCase => DESCompletionCapacity(DIRECTOR, None)
       case a if a == AGENT.toLowerCase => DESCompletionCapacity(AGENT, None)
+      case s if s == SECRETARY.toLowerCase => DESCompletionCapacity(SECRETARY, None)
       case other => DESCompletionCapacity(OTHER, Some(other))
     }.getOrElse{
       throw new CompletionCapacityNotDefinedException("Completion capacity not defined")
