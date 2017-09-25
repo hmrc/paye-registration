@@ -56,7 +56,7 @@ class AmendCompletionCapacityEventDetailSpec extends UnitSpec {
            |    "authProviderId": "$authProviderId",
            |    "journeyId": "$regId",
            |    "previousCompletionCapacity": "Director",
-           |    "newCompletionCapacity": "Secretary"
+           |    "newCompletionCapacity": "Company secretary"
            | }
         """.stripMargin)
 
@@ -65,7 +65,7 @@ class AmendCompletionCapacityEventDetailSpec extends UnitSpec {
         authProviderId,
         regId,
         DESCompletionCapacity.buildDESCompletionCapacity(Some("director")),
-        DESCompletionCapacity.buildDESCompletionCapacity(Some("secretary")))
+        DESCompletionCapacity.buildDESCompletionCapacity(Some("company secretary")))
       Json.toJson(testModel) shouldBe expectedDetail
     }
 
