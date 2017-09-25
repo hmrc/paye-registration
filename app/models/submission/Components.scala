@@ -118,7 +118,7 @@ case class DESCompletionCapacity(capacity: String,
 object DESCompletionCapacity {
   def buildDESCompletionCapacity(capacity: Option[String]): DESCompletionCapacity = {
     val DIRECTOR = "Director"
-    val SECRETARY = "Secretary"
+    val SECRETARY = "Company secretary"
     val AGENT = "Agent"
     val OTHER = "Other"
     capacity.map(_.trim.toLowerCase).map {
