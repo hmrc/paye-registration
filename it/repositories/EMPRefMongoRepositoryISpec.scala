@@ -16,6 +16,9 @@
 
 package repositories
 
+import javax.inject.Provider
+
+import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.MongoBaseSpec
@@ -32,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
 
   class Setup {
-    lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
     lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
     lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)

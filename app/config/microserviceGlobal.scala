@@ -96,10 +96,12 @@ trait JobsList {
 
 @Singleton
 class Jobs @Inject()(
-                      @Named("remove-stale-documents-job") removeStaleDocsJob: ScheduledJob
+                      @Named("remove-stale-documents-job") removeStaleDocsJob: ScheduledJob,
+                      @Named("metrics-job") graphiteMetrics: ScheduledJob
                       ) extends JobsList {
   override def lookupJobs(): Seq[ScheduledJob] =
     Seq(
-      removeStaleDocsJob
+      removeStaleDocsJob,
+      graphiteMetrics
     )
 }

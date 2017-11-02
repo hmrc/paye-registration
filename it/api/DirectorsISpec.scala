@@ -17,7 +17,9 @@
 package api
 
 import java.time.{ZoneOffset, ZonedDateTime}
+import javax.inject.Provider
 
+import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
@@ -55,7 +57,7 @@ class DirectorsISpec extends IntegrationSpecBase {
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository = mongo.store

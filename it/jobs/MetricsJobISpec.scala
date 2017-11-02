@@ -17,14 +17,15 @@
 package jobs
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
+
 import com.google.inject.name.Names
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.PAYERegistration
-import play.api.{Application, Configuration}
 import play.api.inject.{BindingKey, QualifierInstance}
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
@@ -32,13 +33,14 @@ import uk.gov.hmrc.play.scheduling.ScheduledJob
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
+class MetricsJobISpec extends IntegrationSpecBase {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
 
   val additionalConfiguration = Map(
+    "metrics.enabled" -> "true",
     "auditing.consumer.baseUri.host" -> s"$mockHost",
     "auditing.consumer.baseUri.port" -> s"$mockPort",
     "Test.auditing.consumer.baseUri.host" -> s"$mockHost",
@@ -65,7 +67,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     app.injector.instanceOf[ScheduledJob](key)
   }
 
-  def reg(regId: String, lastAction: Option[ZonedDateTime]) = PAYERegistration(
+  def reg(regId: String, lastAction: Option[ZonedDateTime], status: PAYEStatus.Value) = PAYERegistration(
     registrationID = regId,
     transactionID = s"trans$regId",
     internalID = s"Int-xxx",
@@ -74,7 +76,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     registrationConfirmation = None,
     formCreationTimestamp = timestampString,
     eligibility = None,
-    status = PAYEStatus.draft,
+    status = status,
     completionCapacity = Some("Director"),
     companyDetails = None,
     directors = Seq.empty,
@@ -98,28 +100,30 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     val repository = mongo.store
   }
 
-  "Remove Stale Documents Job" should {
-    "take no action when job is disabled" in new Setup(timestamp) {
-      setupFeatures(removeStaleDocumentsJob = false)
+  "Metrics Job" should {
+    "take no action when the job is disabled" in new Setup(timestamp) {
+      setupFeatures(metricsJob = false)
 
-      val job = lookupJob("remove-stale-documents-job")
+      val job = lookupJob("metrics-job")
       val res = await(job.execute)
-      res shouldBe job.Result("Remove stale documents feature is turned off")
+      res shouldBe job.Result("Feature metrics-job is turned off")
     }
 
-    "remove documents older than a config specified length of time" in new Setup(timestamp) {
-      val deleteDT = ZonedDateTime.of(LocalDateTime.of(2016, 12, 1, 12, 0), ZoneId.of("Z"))
-      val keepDT = ZonedDateTime.of(LocalDateTime.of(2017, 3, 1, 12, 0), ZoneId.of("Z"))
-      await(repository.upsertRegTestOnly(reg("123", Some(deleteDT))))
-      await(repository.upsertRegTestOnly(reg("223", Some(keepDT))))
+    "return what documents are currently in PAYE" in new Setup(timestamp) {
+      setupFeatures(metricsJob = true)
 
-      setupFeatures(removeStaleDocumentsJob = true)
-      val job = new RemoveStaleDocumentsJobImpl(mongo)
+      val dateTime = ZonedDateTime.of(LocalDateTime.of(2017, 3, 1, 12, 0), ZoneId.of("Z"))
+
+      await(repository.upsertRegTestOnly(reg("223", Some(dateTime), PAYEStatus.draft)))
+      await(repository.upsertRegTestOnly(reg("224", Some(dateTime), PAYEStatus.draft)))
+      await(repository.upsertRegTestOnly(reg("225", Some(dateTime), PAYEStatus.cancelled)))
+
+      val job = lookupJob("metrics-job")
       val res = await(job.execute)
 
-      res shouldBe job.Result("remove-stale-documents-job: Successfully removed 1 documents that were last updated before 2017-01-02T12:30Z")
-      await(repository.retrieveRegistration("123")) shouldBe None
-      await(repository.retrieveRegistration("223")) shouldBe Some(reg("223", Some(keepDT)))
+      val docMap = Map("cancelled" -> 1, "draft" -> 2)
+
+      res shouldBe job.Result(s"metrics-job - Result(Feature is turned on - result = Updated document stats - $docMap)")
     }
   }
 

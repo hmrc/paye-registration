@@ -17,14 +17,16 @@
 package controllers
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
+import javax.inject.Provider
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, MongoBaseSpec, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import play.api.{Configuration, Application}
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -77,7 +79,7 @@ class SubmissionISpec extends IntegrationSpecBase {
   val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val sequenceMongo = new SequenceMongo(reactiveMongoComponent)

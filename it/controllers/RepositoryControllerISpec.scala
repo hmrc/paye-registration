@@ -17,12 +17,14 @@
 package controllers
 
 import java.time.LocalDate
+import javax.inject.Provider
 
+import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Configuration, Application}
+import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
@@ -61,7 +63,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
   val lastUpdate = "2017-05-09T07:58:35Z"
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = app.injector.instanceOf[Metrics]
      val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
      }

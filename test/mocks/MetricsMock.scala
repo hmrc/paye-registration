@@ -17,13 +17,17 @@
 package mocks
 
 import com.codahale.metrics.{Counter, Timer}
+import com.kenshoo.play.metrics.Metrics
 import helpers.PAYERegSpec
+import repositories.RegistrationMongoRepository
 import services.MetricsSrv
 
-class MetricsMock extends MetricsSrv with PAYERegSpec {
+object MetricsMock extends MetricsSrv with PAYERegSpec {
   lazy val mockContext = mock[Timer.Context]
   val mockTimer = new Timer()
   val mockCounter = mock[Counter]
+  val metrics = mock[Metrics]
+  val regRepo = mock[RegistrationMongoRepository]
 
   override val mongoResponseTimer = mockTimer
 }
