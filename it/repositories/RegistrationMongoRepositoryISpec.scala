@@ -17,8 +17,10 @@
 package repositories
 
 import java.time._
+import javax.inject.Provider
 
-import common.exceptions.DBExceptions.{ InsertFailed, MissingRegDocument}
+import com.kenshoo.play.metrics.Metrics
+import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -480,7 +482,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
   )
 
   class Setup(timestampZDT: ZonedDateTime = lastUpdateZDT) {
-    lazy val mockMetrics = fakeApplication.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
     lazy val mockDateHelper = new DateHelper {
       override def getTimestamp: ZonedDateTime = timestampZDT
     }

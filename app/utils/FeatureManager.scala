@@ -91,19 +91,23 @@ object FeatureSwitch {
 object PAYEFeatureSwitches extends PAYEFeatureSwitches {
   val desServiceFeature: String = "desServiceFeature"
   val removeStaleDocumentsFeature: String = "removeStaleDocumentsFeature"
+  val graphiteMetricsFeature: String = "graphiteMetrics"
 }
 
 trait PAYEFeatureSwitches {
 
   val desServiceFeature: String
   val removeStaleDocumentsFeature: String
+  val graphiteMetricsFeature: String
 
   def desService = FeatureSwitch.getProperty(desServiceFeature)
   def removeStaleDocuments = FeatureSwitch.getProperty(removeStaleDocumentsFeature)
+  def graphiteMetrics = FeatureSwitch.getProperty(graphiteMetricsFeature)
 
   def apply(name: String): Option[FeatureSwitch] = name match {
     case `desServiceFeature` => Some(desService)
     case `removeStaleDocumentsFeature` => Some(removeStaleDocuments)
+    case `graphiteMetricsFeature` => Some(graphiteMetrics)
     case _ => None
   }
 }

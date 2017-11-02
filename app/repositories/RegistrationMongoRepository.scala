@@ -19,8 +19,10 @@ package repositories
 import java.time.ZonedDateTime
 
 import auth.AuthorisationResource
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 
+import com.codahale.metrics.Timer
+import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions._
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
@@ -36,7 +38,7 @@ import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.bson.BSONObjectID
-import services.MetricsService
+import services.{MetricsService, MetricsSrv}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -44,11 +46,12 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-@Singleton
-class RegistrationMongo @Inject()(injMetrics: MetricsService, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration) extends ReactiveMongoFormats {
+class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration) extends ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = PAYERegistration.format
   lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
-  val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injMetrics, injDateHelper, maxStorageDays)
+  val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
+  lazy val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injDateHelper, maxStorageDays, mongoResponseTimer)
+
 }
 
 trait RegistrationRepository {
@@ -89,9 +92,8 @@ trait RegistrationRepository {
 
 class RegistrationMongoRepository(mongo: () => DB,
                                   format: Format[PAYERegistration],
-                                  metricsService: MetricsService,
                                   dh: DateHelper,
-                                  maxStorageDays: Int) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+                                  maxStorageDays: Int, val mongoResponseTimer: Timer) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format) with RegistrationRepository with AuthorisationResource[String] {
@@ -140,7 +142,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   )
 
   override def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     val newReg = newRegistrationObject(registrationID, transactionID, internalId)
     collection.insert[PAYERegistration](newReg) map {
       _ =>
@@ -155,7 +157,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.find(selector).one[PAYERegistration] map { found =>
       mongoTimer.stop()
@@ -169,7 +171,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     val selector = transactionIDSelector(transactionID)
     collection.find(selector).one[PAYERegistration] map { found =>
       mongoTimer.stop()
@@ -183,7 +185,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   def retrieveRegistrationByAckRef(ackRef: String): Future[Option[PAYERegistration]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     val selector = ackRefSelector(ackRef)
     collection.find(selector).one[PAYERegistration] map { found =>
       mongoTimer.stop()
@@ -197,7 +199,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -210,7 +212,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     val timestamp = dh.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
@@ -238,7 +240,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def getEligibility(registrationID: String): Future[Option[Eligibility]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(regDoc) =>
         mongoTimer.stop()
@@ -251,7 +253,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertEligibility(registrationID: String, eligibility: Eligibility): Future[Eligibility] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registrationDocument) =>
         updateRegistrationObject[Eligibility](registrationIDSelector(registrationID), registrationDocument.copy(eligibility = Some(eligibility))) {
@@ -302,7 +304,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -315,7 +317,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) =>
         updateRegistrationObject[CompanyDetails](registrationIDSelector(registrationID), registration.copy(companyDetails = Some(details))) {
@@ -337,7 +339,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveEmployment(registrationID: String): Future[Option[Employment]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -350,7 +352,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertEmployment(registrationID: String, details: Employment): Future[PAYERegistration] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), reg.copy(employment = Some(details))) {
@@ -371,7 +373,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveDirectors(registrationID: String): Future[Seq[Director]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -384,7 +386,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertDirectors(registrationID: String, directors: Seq[Director]): Future[Seq[Director]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         updateRegistrationObject[Seq[Director]](registrationIDSelector(registrationID), reg.copy(directors = directors)) {
@@ -405,7 +407,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveSICCodes(registrationID: String): Future[Seq[SICCode]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -418,7 +420,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         updateRegistrationObject[Seq[SICCode]](registrationIDSelector(registrationID), reg.copy(sicCodes = sicCodes)) {
@@ -439,7 +441,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -452,7 +454,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertPAYEContact(registrationID: String, payeContact: PAYEContact): Future[PAYEContact] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         updateRegistrationObject[PAYEContact](registrationIDSelector(registrationID), reg.copy(payeContact = Some(payeContact))) {
@@ -473,7 +475,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveCompletionCapacity(registrationID: String): Future[Option[String]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -486,7 +488,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         updateRegistrationObject[String](registrationIDSelector(registrationID), reg.copy(completionCapacity = Some(capacity))) {
@@ -507,7 +509,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def cleardownRegistration(registrationID: String): Future[PAYERegistration] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         val clearedDocument = reg.copy(completionCapacity = None,
@@ -534,7 +536,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistrationByAckRef(ackRef) flatMap {
       case Some(regDoc) =>
         updateRegistrationObject[EmpRefNotification](ackRefSelector(ackRef), regDoc.copy(registrationConfirmation = Some(etmpRefNotification), status = applicationStatus)) {
@@ -555,7 +557,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def retrieveTransactionId(registrationID: String): Future[String] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(regDoc) =>
         mongoTimer.stop()
@@ -567,7 +569,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(id) map {
       case Some(registration) =>
         mongoTimer.stop()
@@ -579,7 +581,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   override def deleteRegistration(registrationID: String): Future[Boolean] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.remove(selector) map { writeResult =>
       mongoTimer.stop()
@@ -596,7 +598,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   def updateRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
-    val mongoTimer = metricsService.mongoResponseTimer.time()
+    val mongoTimer = mongoResponseTimer.time()
     collection.findAndUpdate[BSONDocument, PAYERegistration](registrationIDSelector(payeReg.registrationID), payeReg, fetchNewObject = true, upsert = true) map {
       _ => {
         mongoTimer.stop()

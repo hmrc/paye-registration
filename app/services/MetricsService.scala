@@ -16,16 +16,51 @@
 
 package services
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 
-import com.codahale.metrics.Timer
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.{Gauge, Timer}
+import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
+import play.api.Logger
+import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
-@Singleton
-class MetricsService @Inject()(injMetrics: Metrics) extends MetricsSrv {
-  override val mongoResponseTimer = injMetrics.defaultRegistry.timer("mongo-call-timer")
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class MetricsService @Inject()(injRegRepo: RegistrationMongo,
+                               val metrics: Metrics) extends MetricsSrv {
+
+  override lazy val regRepo = injRegRepo.store
+  override val mongoResponseTimer = metrics.defaultRegistry.timer("mongo-call-timer")
 }
 
 trait MetricsSrv {
   val mongoResponseTimer: Timer
+  protected val metrics: Metrics
+  protected val regRepo: RegistrationMongoRepository
+
+  def updateDocumentMetrics(): Future[Map[String, Int]] = {
+    regRepo.getRegistrationStats() map {
+      stats => {
+        for( (status, count) <- stats ) {
+          recordStatusCountStat(status, count)
+        }
+        stats
+      }
+    }
+  }
+
+  private def recordStatusCountStat(status: String, count: Int) = {
+    val metricName = s"status-count-stat.$status"
+    try {
+      val gauge = new Gauge[Int] {
+        val getValue: Int = count
+      }
+      metrics.defaultRegistry.remove(metricName)
+      metrics.defaultRegistry.register(metricName, gauge)
+    } catch {
+      case ex: MetricsDisabledException => {
+        Logger.warn(s"[MetricsService] [recordStatusCountStat] Metrics disabled - $metricName -> $count")
+      }
+    }
+  }
 }

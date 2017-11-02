@@ -17,8 +17,10 @@
 package controllers
 
 import java.time.LocalDate
+import javax.inject.Provider
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
@@ -26,7 +28,7 @@ import models._
 import models.external.BusinessProfile
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.{Configuration, Application}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 import services.MetricsService
@@ -78,7 +80,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
   private val subscriber = "SCRS"
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[MetricsService]
+    lazy val mockMetrics = app.injector.instanceOf[Metrics]
     val timestamp = "2017-01-01T00:00:00"
     lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)

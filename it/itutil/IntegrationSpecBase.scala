@@ -27,7 +27,8 @@ trait IntegrationSpecBase extends UnitSpec
 
   def setupFeatures(
                      desService: Boolean = false,
-                     removeStaleDocumentsJob: Boolean = false
+                     removeStaleDocumentsJob: Boolean = false,
+                     metricsJob: Boolean = false
                      ) = {
     def enableFeature(fs: FeatureSwitch, enabled: Boolean) = {
       enabled match {
@@ -37,6 +38,7 @@ trait IntegrationSpecBase extends UnitSpec
     }
     enableFeature(PAYEFeatureSwitches.desService, desService)
     enableFeature(PAYEFeatureSwitches.removeStaleDocuments, removeStaleDocumentsJob)
+    enableFeature(PAYEFeatureSwitches.graphiteMetrics, metricsJob)
   }
 
   override def beforeEach() = {
