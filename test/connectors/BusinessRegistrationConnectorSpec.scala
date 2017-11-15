@@ -21,9 +21,9 @@ import mocks.WSHTTPMock
 import models.external.BusinessProfile
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import uk.gov.hmrc.play.http.{ForbiddenException, HeaderCarrier, NotFoundException}
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.{ ForbiddenException, HeaderCarrier, NotFoundException }
 
 class BusinessRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
   val mockBusRegConnector = mock[BusinessRegistrationConnector]
@@ -51,21 +51,21 @@ class BusinessRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
   }
 
     "return a Not Found response when a CurrentProfile record can not be found" in new Setup {
-    when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
     .thenReturn(Future.failed(new NotFoundException("Bad request")))
 
     intercept[NotFoundException](await(connector.retrieveCurrentProfile("12345")))
   }
 
     "return a Forbidden response when a CurrentProfile record can not be accessed by the user" in new Setup {
-    when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
     .thenReturn(Future.failed(new ForbiddenException("Forbidden")))
 
     intercept[ForbiddenException](await(connector.retrieveCurrentProfile("12345")))
   }
 
     "return an Exception response when an unspecified error has occurred" in new Setup {
-    when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
     .thenReturn(Future.failed(new RuntimeException("Runtime Exception")))
 
     intercept[RuntimeException](await(connector.retrieveCurrentProfile("12345")))

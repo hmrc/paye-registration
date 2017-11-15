@@ -31,7 +31,6 @@ import play.api.libs.json.Json
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
-import services.MetricsService
 import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global

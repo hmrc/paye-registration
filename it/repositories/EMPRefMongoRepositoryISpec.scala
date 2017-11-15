@@ -27,7 +27,6 @@ import play.api.Configuration
 import play.api.libs.json.JsObject
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.json.ImplicitBSONHandlers
-import services.MetricsService
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

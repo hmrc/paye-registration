@@ -23,8 +23,7 @@ import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
 import play.api.Logger
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 class MetricsService @Inject()(injRegRepo: RegistrationMongo,
                                val metrics: Metrics) extends MetricsSrv {
@@ -38,7 +37,7 @@ trait MetricsSrv {
   protected val metrics: Metrics
   protected val regRepo: RegistrationMongoRepository
 
-  def updateDocumentMetrics(): Future[Map[String, Int]] = {
+  def updateDocumentMetrics()(implicit ec: ExecutionContext): Future[Map[String, Int]] = {
     regRepo.getRegistrationStats() map {
       stats => {
         for( (status, count) <- stats ) {

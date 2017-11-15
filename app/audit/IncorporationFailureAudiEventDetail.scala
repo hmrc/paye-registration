@@ -18,7 +18,8 @@ package audit
 
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import audit.RegistrationAuditEvent.JOURNEY_ID
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 case class IncorporationFailureAuditEventDetail(regId: String,
                                                acknowledgementReference: String)
@@ -39,3 +40,7 @@ object IncorporationFailureAuditEventDetail {
 
 class IncorporationFailureEvent(details: IncorporationFailureAuditEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("incorporationFailure", None, Json.toJson(details).as[JsObject])(hc)
+
+object IncorporationFailureEvent {
+  implicit val format = Json.format[ExtendedDataEvent]
+}

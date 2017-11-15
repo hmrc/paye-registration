@@ -22,7 +22,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
-import enums.{AddressTypes, IncorporationStatus, PAYEStatus}
+import enums.{IncorporationStatus, PAYEStatus}
 import models._
 import models.submission._
 import helpers.PAYERegSpec
@@ -33,12 +33,12 @@ import org.mockito.Mockito._
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
-import uk.gov.hmrc.play.http.logging.SessionId
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.logging.SessionId
 
 class SubmissionServiceSpec extends PAYERegSpec {
 
@@ -321,18 +321,18 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling assertOrGenerateAcknowledgementReference" should {
     "return an ack ref if there is one in the registration" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some("tstAckRef")))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "tstAckRef"
     }
 
     "generate an ack ref if there isn't one in the registration" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
-      when(mockSequenceRepository.getNext(ArgumentMatchers.contains("AcknowledgementID")))
+      when(mockSequenceRepository.getNext(ArgumentMatchers.contains("AcknowledgementID"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(1234))
-      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.anyString(), ArgumentMatchers.contains("1234")))
+      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.anyString(), ArgumentMatchers.contains("1234"))(ArgumentMatchers.any()))
       .thenReturn(Future.successful("BRPY00000001234"))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "BRPY00000001234"
@@ -341,14 +341,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling buildADesSubmission" should {
     "throw the correct exception when there is no registration in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
 
     "throw the correct exception when PAYE status is in an incorrect state" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
 
       intercept[RegistrationInvalidStatus](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
@@ -357,21 +357,21 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling buildTopUpDESSubmission" should {
     "throw the correct exception when there is no registration in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is not yet submitted" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
       intercept[RegistrationInvalidStatus](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
       intercept[ErrorRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
@@ -459,10 +459,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(okResponse))
 
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some("ackRef")))
 
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
       when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
@@ -471,10 +471,10 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Success))
 
-      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(PAYEStatus.submitted))
 
-      when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
+      when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
       await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted

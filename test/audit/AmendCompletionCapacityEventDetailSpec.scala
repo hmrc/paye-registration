@@ -18,8 +18,6 @@ package audit
 
 import models.submission.DESCompletionCapacity
 import play.api.libs.json.Json
-import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.test.UnitSpec
 
 class AmendCompletionCapacityEventDetailSpec extends UnitSpec {

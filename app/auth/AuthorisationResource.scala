@@ -16,9 +16,9 @@
 
 package auth
 
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 trait AuthorisationResource[I] {
   def getInternalId(id:I)(implicit hc : HeaderCarrier) : Future[Option[(I,String)]]

@@ -27,10 +27,10 @@ import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
 import play.api.libs.json.{JsObject, Json}
 import repositories.{RegistrationMongo, RegistrationRepository}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class AuditService @Inject()(injRegistrationMongoRepository: RegistrationMongo,
@@ -56,11 +56,11 @@ trait AuditSrv {
                                                                                   regID,
                                                                                   DESCompletionCapacity.buildDESCompletionCapacity(Some(previousCC)),
                                                                                   DESCompletionCapacity.buildDESCompletionCapacity(Some(newCC))))
-      auditRes <- auditConnector.sendEvent(event)
+      auditRes <- auditConnector.sendExtendedEvent(event)
     } yield auditRes
   }
 
-  private[services] def fetchAddressAuditRefs(regId: String): Future[Map[AddressTypes.Value, String]] = {
+  private[services] def fetchAddressAuditRefs(regId: String)(implicit ec: ExecutionContext): Future[Map[AddressTypes.Value, String]] = {
     registrationRepository.retrieveRegistration(regId) map { oReg =>
       oReg.map { reg =>
         List(
@@ -79,7 +79,7 @@ trait AuditSrv {
       authProviderId = userDetails.get.authProviderId
       auditRefs <- fetchAddressAuditRefs(regId)
       event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(authority.get.ids.externalId, authProviderId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs))
-      auditRes <- auditConnector.sendEvent(event)
+      auditRes <- auditConnector.sendExtendedEvent(event)
     } yield auditRes
   }
 
@@ -88,6 +88,6 @@ trait AuditSrv {
       case IncorporationStatus.accepted => new DesTopUpEvent(DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]))
       case IncorporationStatus.rejected => new IncorporationFailureEvent(IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference))
     }
-    auditConnector.sendEvent(event)
+    auditConnector.sendExtendedEvent(event)
   }
 }

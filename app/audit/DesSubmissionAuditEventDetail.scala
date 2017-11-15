@@ -17,10 +17,11 @@
 package audit
 
 import play.api.libs.json.{JsObject, Json, Writes}
-import uk.gov.hmrc.play.http.HeaderCarrier
 import enums.AddressTypes
 import models.submission.DESSubmission
 import RegistrationAuditEvent.JOURNEY_ID
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 case class DesSubmissionAuditEventDetail(externalId: String,
                                          authProviderId: String,
@@ -82,6 +83,14 @@ object DesSubmissionAuditEventDetail {
 class DesSubmissionEvent(details: DesSubmissionAuditEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("payeRegistrationSubmission", None, Json.toJson(details).as[JsObject])(hc)
 
+object DesSubmissionEvent {
+  implicit val format = Json.format[ExtendedDataEvent]
+}
+
 
 class FailedDesSubmissionEvent(regId: String, details: DESSubmission)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("payeRegistrationSubmissionFailure", None, Json.obj("submission" -> details, JOURNEY_ID -> regId))(hc)
+
+object FailedDesSubmissionEvent {
+  implicit val format = Json.format[ExtendedDataEvent]
+}

@@ -24,7 +24,6 @@ import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.api.DefaultDB
 import services.MetricsService
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.scheduling.ExclusiveScheduledJob
 import utils.PAYEFeatureSwitches
 

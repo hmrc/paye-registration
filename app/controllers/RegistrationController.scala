@@ -34,9 +34,10 @@ import models.validation.APIValidation
 import play.api.Logger
 import play.api.libs.json._
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 @Singleton
 class RegistrationController @Inject()(injAuthConnector: AuthConnector,
@@ -396,7 +397,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
     }
   }
 
-  def registrationInvalidStatusHandler(regInvalidError: RegistrationInvalidStatus, transactionId: String):Future[Result] ={
+  def registrationInvalidStatusHandler(regInvalidError: RegistrationInvalidStatus, transactionId: String)(implicit hc: HeaderCarrier):Future[Result] ={
     counterService.updateIncorpCount(regInvalidError.regId) map {
         case true => Logger.info(s"[RegistrationController] - [processIncorporationData] - II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
           Ok(s" II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")

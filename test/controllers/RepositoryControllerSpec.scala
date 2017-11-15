@@ -18,7 +18,6 @@ package controllers
 
 import auth.AuthorisationResource
 import connectors.AuthConnect
-import enums.PAYEStatus
 import fixtures.AuthFixture
 import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
@@ -27,9 +26,10 @@ import services.RegistrationService
 import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.test.FakeRequest
-import uk.gov.hmrc.play.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 class RepositoryControllerSpec extends PAYERegSpec with AuthFixture {
 
@@ -99,7 +99,7 @@ class RepositoryControllerSpec extends PAYERegSpec with AuthFixture {
       "there is a mongo problem" in new Setup {
         validAuth()
 
-        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
+        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(false))
 
         val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
@@ -111,7 +111,7 @@ class RepositoryControllerSpec extends PAYERegSpec with AuthFixture {
       "an invalid or draft document has been deleted" in new Setup {
         validAuth()
 
-        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
+        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(true))
 
         val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
