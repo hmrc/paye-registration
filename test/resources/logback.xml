@@ -44,25 +44,24 @@
         <appender-ref ref="STDOUT_IGNORE_NETTY" />
     </logger>
 
-    <logger name="com.google.inject" level="INFO"/>
-    <logger name="javax.management.mbeanserver" level="INFO"/>
-    <logger name="javax.management.misc" level="INFO"/>
-    <logger name="akka.event.EventStream" level="INFO"/>
-    <logger name="play.api.libs.concurrent.ActorSystemProvider" level="INFO"/>
-    <logger name="org.jboss.netty.channel.socket.nio.SelectorUtil" level="INFO"/>
-    <logger name="uk.gov" level="INFO"/>
-    <logger name="org.asynchttpclient.netty" level="INFO"/>
-    <logger name="org.eclipse.jetty" level="INFO"/>
-    <logger name="io.netty" level="INFO"/>
-    <logger name="org.apache.http" level="INFO"/>
+    <logger name="com.google.inject" level="OFF"/>
+    <logger name="javax.management.mbeanserver" level="OFF"/>
+    <logger name="javax.management.misc" level="OFF"/>
+    <logger name="akka.event.EventStream" level="OFF"/>
+    <logger name="play.api.libs.concurrent.ActorSystemProvider" level="OFF"/>
+    <logger name="org.jboss.netty.channel.socket.nio.SelectorUtil" level="OFF"/>
+    <logger name="uk.gov" level="OFF"/>
+    <logger name="org.asynchttpclient.netty" level="OFF"/>
+    <logger name="org.eclipse.jetty" level="OFF"/>
+    <logger name="io.netty" level="OFF"/>
+    <logger name="org.apache.http" level="OFF"/>
 
-
-    <logger name="application" level="INFO"/>
-    <logger name="connector" level="INFO">
+    <logger name="application" level="ERROR"/>
+    <logger name="connector" level="ERROR">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <root level="DEBUG">
+    <root level="ERROR">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>

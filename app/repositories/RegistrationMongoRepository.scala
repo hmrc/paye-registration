@@ -41,10 +41,10 @@ import reactivemongo.bson.BSONObjectID
 import services.{MetricsService, MetricsSrv}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.play.http.HeaderCarrier
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.http.HeaderCarrier
 
 class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration) extends ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = PAYERegistration.format
@@ -56,37 +56,37 @@ class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelpe
 
 trait RegistrationRepository {
 
-  def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration]
+  def createNewRegistration(registrationID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration]
   //TODO: Rename to something more generic and remove the above two retrieve functions
-  def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]]
-  def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]]
-  def retrieveRegistrationByAckRef(ackRef: String): Future[Option[PAYERegistration]]
-  def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value]
-  def getEligibility(registrationID: String): Future[Option[Eligibility]]
-  def upsertEligibility(registrationID: String, eligibility: Eligibility): Future[Eligibility]
-  def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value): Future[PAYEStatus.Value]
-  def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]]
-  def saveAcknowledgementReference(registrationID: String, ackRef: String): Future[String]
-  def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]]
-  def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails]
-  def retrieveEmployment(registrationID: String): Future[Option[Employment]]
-  def upsertEmployment(registrationID: String, details: Employment): Future[PAYERegistration]
-  def retrieveDirectors(registrationID: String): Future[Seq[Director]]
-  def upsertDirectors(registrationID: String, directors: Seq[Director]): Future[Seq[Director]]
-  def retrieveSICCodes(registrationID: String): Future[Seq[SICCode]]
-  def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]]
-  def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]]
-  def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact): Future[PAYEContact]
-  def retrieveCompletionCapacity(registrationID: String): Future[Option[String]]
-  def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String]
-  def retrieveTransactionId(registrationID: String): Future[String]
-  def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification): Future[EmpRefNotification]
-  def dropCollection: Future[Unit]
-  def cleardownRegistration(registrationID: String): Future[PAYERegistration]
-  def deleteRegistration(registrationID: String): Future[Boolean]
-  def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration]):Future[WriteResult]
-  def removeStaleDocuments(): Future[(ZonedDateTime, Int)]
-  def getRegistrationStats(): Future[Map[String, Int]]
+  def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
+  def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
+  def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
+  def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value]
+  def getEligibility(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Eligibility]]
+  def upsertEligibility(registrationID: String, eligibility: Eligibility)(implicit ec: ExecutionContext): Future[Eligibility]
+  def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value]
+  def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]]
+  def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String]
+  def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]]
+  def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails]
+  def retrieveEmployment(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Employment]]
+  def upsertEmployment(registrationID: String, details: Employment)(implicit ec: ExecutionContext): Future[PAYERegistration]
+  def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]]
+  def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]]
+  def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]]
+  def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]]
+  def retrievePAYEContact(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]]
+  def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact]
+  def retrieveCompletionCapacity(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]]
+  def upsertCompletionCapacity(registrationID: String, capacity: String)(implicit ec: ExecutionContext): Future[String]
+  def retrieveTransactionId(registrationID: String)(implicit ec: ExecutionContext): Future[String]
+  def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification)(implicit ec: ExecutionContext): Future[EmpRefNotification]
+  def dropCollection(implicit ec: ExecutionContext): Future[Unit]
+  def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration]
+  def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean]
+  def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration])(implicit ec: ExecutionContext):Future[WriteResult]
+  def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)]
+  def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]]
 
 }
 
@@ -141,7 +141,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     "acknowledgementReference" -> BSONString(ackRef)
   )
 
-  override def createNewRegistration(registrationID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
+  override def createNewRegistration(registrationID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     val newReg = newRegistrationObject(registrationID, transactionID, internalId)
     collection.insert[PAYERegistration](newReg) map {
@@ -156,7 +156,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
+  override def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.find(selector).one[PAYERegistration] map { found =>
@@ -170,7 +170,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
+  override def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = transactionIDSelector(transactionID)
     collection.find(selector).one[PAYERegistration] map { found =>
@@ -184,7 +184,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  def retrieveRegistrationByAckRef(ackRef: String): Future[Option[PAYERegistration]] = {
+  override def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = ackRefSelector(ackRef)
     collection.find(selector).one[PAYERegistration] map { found =>
@@ -198,7 +198,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]] = {
+  override def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -211,7 +211,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
+  override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
     val mongoTimer = mongoResponseTimer.time()
     val timestamp = dh.getTimestampString
     retrieveRegistration(registrationID) flatMap {
@@ -239,7 +239,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def getEligibility(registrationID: String): Future[Option[Eligibility]] = {
+  override def getEligibility(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Eligibility]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(regDoc) =>
@@ -252,7 +252,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertEligibility(registrationID: String, eligibility: Eligibility): Future[Eligibility] = {
+  override def upsertEligibility(registrationID: String, eligibility: Eligibility)(implicit ec: ExecutionContext): Future[Eligibility] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registrationDocument) =>
@@ -273,7 +273,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]] = {
+  override def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     retrieveRegistration(registrationID) map {
       case Some(registration) => registration.acknowledgementReference
       case None =>
@@ -282,7 +282,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def saveAcknowledgementReference(registrationID: String, ackRef: String): Future[String] = {
+  override def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String] = {
     retrieveRegistration(registrationID) flatMap  {
       case Some(registration) => registration.acknowledgementReference.isDefined match {
         case false =>
@@ -303,7 +303,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value] = {
+  override def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -316,7 +316,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
+  override def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) =>
@@ -338,7 +338,7 @@ class RegistrationMongoRepository(mongo: () => DB,
 
   }
 
-  override def retrieveEmployment(registrationID: String): Future[Option[Employment]] = {
+  override def retrieveEmployment(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -351,7 +351,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertEmployment(registrationID: String, details: Employment): Future[PAYERegistration] = {
+  override def upsertEmployment(registrationID: String, details: Employment)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -372,7 +372,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveDirectors(registrationID: String): Future[Seq[Director]] = {
+  override def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -385,7 +385,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertDirectors(registrationID: String, directors: Seq[Director]): Future[Seq[Director]] = {
+  override def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -406,7 +406,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveSICCodes(registrationID: String): Future[Seq[SICCode]] = {
+  override def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -419,7 +419,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]] = {
+  override def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -440,7 +440,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]] = {
+  override def retrievePAYEContact(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -453,7 +453,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertPAYEContact(registrationID: String, payeContact: PAYEContact): Future[PAYEContact] = {
+  override def upsertPAYEContact(registrationID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -474,7 +474,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveCompletionCapacity(registrationID: String): Future[Option[String]] = {
+  override def retrieveCompletionCapacity(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -487,7 +487,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String] = {
+  override def upsertCompletionCapacity(registrationID: String, capacity: String)(implicit ec: ExecutionContext): Future[String] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -508,7 +508,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def cleardownRegistration(registrationID: String): Future[PAYERegistration] = {
+  override def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -535,7 +535,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
+  override def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification)(implicit ec: ExecutionContext): Future[EmpRefNotification] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistrationByAckRef(ackRef) flatMap {
       case Some(regDoc) =>
@@ -556,7 +556,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveTransactionId(registrationID: String): Future[String] = {
+  override def retrieveTransactionId(registrationID: String)(implicit ec: ExecutionContext): Future[String] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(regDoc) =>
@@ -580,7 +580,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def deleteRegistration(registrationID: String): Future[Boolean] = {
+  override def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.remove(selector) map { writeResult =>
@@ -593,11 +593,11 @@ class RegistrationMongoRepository(mongo: () => DB,
   // TODO - rename the test repo methods
   // Test endpoints
 
-  override def dropCollection: Future[Unit] = {
+  override def dropCollection(implicit ec: ExecutionContext): Future[Unit] = {
     collection.drop()
   }
 
-  def updateRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
+  def updateRegistration(payeReg: PAYERegistration)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     collection.findAndUpdate[BSONDocument, PAYERegistration](registrationIDSelector(payeReg.registrationID), payeReg, fetchNewObject = true, upsert = true) map {
       _ => {
@@ -638,13 +638,13 @@ class RegistrationMongoRepository(mongo: () => DB,
     )
   }
 
-  private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
+  private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T)(implicit ec: ExecutionContext): Future[T] = {
     val timestamp = dh.getTimestamp
 
     collection.update(doc, reg.copy(lastUpdate = dh.formatTimestamp(timestamp), lastAction = Some(timestamp))).map(f)
   }
 
-  def removeStaleDocuments(): Future[(ZonedDateTime, Int)] = {
+  def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)] = {
     val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
 
     collection.remove(staleDocumentSelector(cuttOffDate)).map {
@@ -658,16 +658,16 @@ class RegistrationMongoRepository(mongo: () => DB,
     BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
   }
 
-  private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
+  private def updateLastAction(reg: PAYERegistration)(implicit ec: ExecutionContext): Future[UpdateWriteResult] = {
     val res = dh.zonedDateTimeFromString(reg.lastUpdate)
     collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
   }
 
-  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.format(MongoValidation)):Future[WriteResult] = {
+  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.format(MongoValidation))(implicit ec: ExecutionContext):Future[WriteResult] = {
     collection.insert[JsObject](w.writes(p))
   }
 
-  override def getRegistrationStats(): Future[Map[String, Int]] = {
+  override def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]] = {
 
     import play.api.libs.json._
     import reactivemongo.json.collection.JSONBatchCommands.AggregationFramework.{Group, Match, SumValue, Project}

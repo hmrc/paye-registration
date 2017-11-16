@@ -17,7 +17,8 @@
 package audit
 
 import play.api.libs.json.{JsObject, JsString, Json, Writes}
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 case class DesTopUpAuditEventDetail(regId: String,
                                     jsSubmission: JsObject)
@@ -36,3 +37,7 @@ object DesTopUpAuditEventDetail {
 
 class DesTopUpEvent(details: DesTopUpAuditEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("payeRegistrationAdditionalData", None, Json.toJson(details).as[JsObject])(hc)
+
+object DesTopUpEvent {
+  implicit val format = Json.format[ExtendedDataEvent]
+}

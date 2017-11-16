@@ -17,10 +17,11 @@
 package services
 
 import javax.inject.Inject
+
 import play.api.Configuration
 import repositories.{IICounterMongo, IICounterMongoRepository}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+
+import scala.concurrent.{ExecutionContext, Future}
 
 class IICounterService @Inject()(injIICounterMongo: IICounterMongo,
                                  config: Configuration) extends IICounterSrv{
@@ -34,7 +35,7 @@ trait IICounterSrv{
   val counterRepository: IICounterMongoRepository
   val maxIICounterCount: Int
 
-  def updateIncorpCount(regID: String): Future[Boolean] = counterRepository.getNext(regID) map {
+  def updateIncorpCount(regID: String)(implicit ec: ExecutionContext): Future[Boolean] = counterRepository.getNext(regID) map {
     count => count > maxIICounterCount
   }
 

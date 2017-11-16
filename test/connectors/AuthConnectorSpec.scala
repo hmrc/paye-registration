@@ -23,10 +23,11 @@ import org.mockito.{ArgumentMatchers, Matchers}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Json
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse, _}
-import uk.gov.hmrc.play.http.logging.SessionId
+import uk.gov.hmrc.play.http._
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpPost, HttpResponse }
+import uk.gov.hmrc.http.logging.SessionId
 
 class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
@@ -73,10 +74,10 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
       val userIDs = UserIds("foo", "bar")
       val expected = Authority(uri, ggid, userDetailsLink, userIDs)
 
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq("localhost/auth/authority"))(ArgumentMatchers.any(), ArgumentMatchers.any())).
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq("localhost/auth/authority"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(200, Some(authResponseJson(uri, userDetailsLink, ggid, idsLink)))))
 
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(s"localhost${idsLink}"))(ArgumentMatchers.any(), ArgumentMatchers.any())).
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(s"localhost${idsLink}"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(200, Some(idsResponseJson(userIDs.internalId, userIDs.externalId)))))
 
 
@@ -89,7 +90,7 @@ class AuthConnectorSpec extends PAYERegSpec with BeforeAndAfter {
 
     "return None when an authority isn't found" in {
 
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq("localhost/auth/authority"))(ArgumentMatchers.any(), ArgumentMatchers.any())).
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq("localhost/auth/authority"))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(404, None)))
 
       implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))

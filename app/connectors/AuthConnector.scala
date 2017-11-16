@@ -17,16 +17,15 @@
 package connectors
 
 import javax.inject.Singleton
+
 import config.WSHttp
 import play.api.http.Status._
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http._
-import play.api.Logger
 import play.api.libs.json.Json
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import scala.concurrent.Future
+import uk.gov.hmrc.http._
 
 case class Authority(uri: String,
                      gatewayId: String,
@@ -58,7 +57,7 @@ object UserIds {
 class AuthConnector extends AuthConnect with ServicesConfig {
   lazy val serviceUrl: String = baseUrl("auth")
   val authorityUri = "auth/authority"
-  val http: HttpGet with HttpPost = WSHttp
+  val http: CoreGet = WSHttp
 }
 
 trait AuthConnect extends RawResponseReads {
@@ -67,7 +66,7 @@ trait AuthConnect extends RawResponseReads {
 
   def authorityUri: String
 
-  def http: HttpGet with HttpPost
+  def http: CoreGet
 
   def getCurrentAuthority()(implicit headerCarrier: HeaderCarrier): Future[Option[Authority]] = {
     val getUrl = s"""$serviceUrl/$authorityUri"""

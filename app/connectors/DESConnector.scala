@@ -26,12 +26,12 @@ import play.api.Logger
 import play.api.libs.json.Writes
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http._
-import uk.gov.hmrc.play.http.logging.Authorization
 import utils.PAYEFeatureSwitches
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.logging.Authorization
 
 @Singleton
 class DESConnector extends DESConnect with ServicesConfig {
@@ -59,7 +59,7 @@ trait DESConnect extends HttpErrorFunctions {
   val desStubURI: String
   val desStubTopUpURI: String
 
-  def http: HttpPost
+  def http: CorePost
   val featureSwitch: PAYEFeatureSwitches
 
   val urlHeaderEnvironment: String
@@ -99,7 +99,7 @@ trait DESConnect extends HttpErrorFunctions {
     } recoverWith {
       case e: Upstream4xxResponse =>
         val event = new FailedDesSubmissionEvent(regId, submission)
-        auditConnector.sendEvent(event)
+        auditConnector.sendExtendedEvent(event)
         Future.failed(e)
     }
   }
@@ -118,8 +118,8 @@ trait DESConnect extends HttpErrorFunctions {
   }
 
   @inline
-  private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
-    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
+  private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext) =
+    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc), ec = ec)
 
   private[connectors] def useDESStubFeature: Boolean = !featureSwitch.desService.enabled
 

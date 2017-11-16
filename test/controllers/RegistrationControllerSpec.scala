@@ -34,13 +34,12 @@ import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import play.api.test.FakeRequest
-import play.api.mvc.Results.{Ok, BadRequest}
-import play.api.http.Status.{OK, BAD_REQUEST}
 import repositories.RegistrationMongoRepository
 import services._
-import uk.gov.hmrc.play.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with RegistrationFixture {
 
@@ -52,6 +51,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
   implicit val system = ActorSystem("PR")
   implicit val materializer = ActorMaterializer()
+  implicit val hc = HeaderCarrier()
 
 
   class Setup {
@@ -104,7 +104,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
     "return a PAYERegistration for a successful creation" in new Setup {
       AuthorisationMocks.mockSuccessfulAuthorisation("AC123456", validAuthority)
-      when(mockRegistrationService.createNewPAYERegistration(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.contains("NNASD9789F"), ArgumentMatchers.eq(validAuthority.ids.internalId)))
+      when(mockRegistrationService.createNewPAYERegistration(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.contains("NNASD9789F"), ArgumentMatchers.eq(validAuthority.ids.internalId))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration))
 
       val response = controller.newPAYERegistration("AC123456")(FakeRequest().withBody(Json.toJson[String]("NNASD9789F")))
@@ -157,7 +157,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.fetchPAYERegistration(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.fetchPAYERegistration(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
@@ -172,7 +172,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.fetchPAYERegistration(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.fetchPAYERegistration(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration)))
 
       val response = controller.getPAYERegistration("AC123456")(FakeRequest())
@@ -225,7 +225,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getCompanyDetails(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationService.getCompanyDetails(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getCompanyDetails("AC123456")(FakeRequest())
 
@@ -239,7 +240,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getCompanyDetails(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration.companyDetails))
+      when(mockRegistrationService.getCompanyDetails(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(validRegistration.companyDetails))
 
       val response = controller.getCompanyDetails("AC123456")(FakeRequest())
 
@@ -307,7 +309,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]()))
+      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertCompanyDetails("AC123456")(
@@ -327,7 +329,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]()))
+      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RegistrationFormatException("tstMessage")))
 
       val response = await(controller.upsertCompanyDetails("AC123456")(
@@ -349,7 +351,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]()))
+      when(mockRegistrationService.upsertCompanyDetails(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[CompanyDetails]())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validCompanyDetails))
 
       val response = controller.upsertCompanyDetails("AC123456")(
@@ -407,7 +409,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getEmployment(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.getEmployment(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
       val response = controller.getEmployment("AC123456")(FakeRequest())
@@ -422,7 +424,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getEmployment(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.getEmployment(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration.employment))
 
       val response = controller.getEmployment("AC123456")(FakeRequest())
@@ -477,7 +479,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]()))
+      when(mockRegistrationService.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
@@ -493,7 +495,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]()))
+      when(mockRegistrationService.upsertEmployment(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Employment]())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validEmployment))
 
       val response = controller.upsertEmployment("AC123456")(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
@@ -546,7 +548,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getDirectors(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.getDirectors(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Seq.empty))
 
       val response = controller.getDirectors("AC123456")(FakeRequest())
@@ -561,7 +563,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getDirectors(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.getDirectors(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration.directors))
 
       val response = controller.getDirectors("AC123456")(FakeRequest())
@@ -616,7 +618,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
@@ -632,7 +634,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RegistrationFormatException("test message")))
 
       val response = await(controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation)))))
@@ -649,7 +651,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]()))
+      when(mockRegistrationService.upsertDirectors(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[Director]]())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validDirectors))
 
       val response = controller.upsertDirectors("AC123456")(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
@@ -702,7 +704,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getSICCodes(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.getSICCodes(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Seq.empty))
 
       val response = controller.getSICCodes("AC123456")(FakeRequest())
@@ -717,7 +719,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getSICCodes(ArgumentMatchers.contains("AC123456")))
+      when(mockRegistrationService.getSICCodes(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration.sicCodes))
 
       val response = controller.getSICCodes("AC123456")(FakeRequest())
@@ -772,7 +774,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]()))
+      when(mockRegistrationService.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertSICCodes("AC123456")(FakeRequest().withBody(Json.toJson[Seq[SICCode]](validSICCodes)))
@@ -788,7 +790,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]()))
+      when(mockRegistrationService.upsertSICCodes(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[Seq[SICCode]]())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validSICCodes))
 
       val response = controller.upsertSICCodes("AC123456")(FakeRequest().withBody(Json.toJson[Seq[SICCode]](validSICCodes)))
@@ -841,7 +843,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getPAYEContact(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationService.getPAYEContact(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getPAYEContact("AC123456")(FakeRequest())
 
@@ -855,7 +858,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getPAYEContact(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration.payeContact))
+      when(mockRegistrationService.getPAYEContact(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(validRegistration.payeContact))
 
       val response = controller.getPAYEContact("AC123456")(FakeRequest())
 
@@ -907,7 +911,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
@@ -922,7 +926,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RegistrationFormatException("contact exception msg")))
 
       val response = await(controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation)))))
@@ -938,7 +942,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]()))
+      when(mockRegistrationService.upsertPAYEContact(ArgumentMatchers.contains("AC123456"), ArgumentMatchers.any[PAYEContact]())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validPAYEContact))
 
       val response = controller.upsertPAYEContact("AC123456")(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
@@ -991,7 +995,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getCompletionCapacity(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationService.getCompletionCapacity(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getCompletionCapacity("AC123456")(FakeRequest())
 
@@ -1005,7 +1010,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getCompletionCapacity(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(validRegistration.completionCapacity))
+      when(mockRegistrationService.getCompletionCapacity(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(validRegistration.completionCapacity))
 
       val response = controller.getCompletionCapacity("AC123456")(FakeRequest())
 
@@ -1211,7 +1217,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getAcknowledgementReference(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(None))
+      when(mockRegistrationService.getAcknowledgementReference(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
 
       val response = controller.getAcknowledgementReference("AC123456")(FakeRequest())
 
@@ -1225,7 +1232,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getAcknowledgementReference(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.successful(Some("TESTBRPY001")))
+      when(mockRegistrationService.getAcknowledgementReference(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some("TESTBRPY001")))
 
       val response = controller.getAcknowledgementReference("AC123456")(FakeRequest())
 
@@ -1242,7 +1250,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
           .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-        when(mockRegistrationService.getEligibility("AC123456"))
+        when(mockRegistrationService.getEligibility(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(Eligibility(false, false))))
 
         val result = controller.getEligibility("AC123456")(FakeRequest())
@@ -1258,7 +1266,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
           .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-        when(mockRegistrationService.getEligibility("AC123456"))
+        when(mockRegistrationService.getEligibility(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
 
         val result = controller.getEligibility("AC123456")(FakeRequest())
@@ -1311,7 +1319,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
           .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-        when(mockRegistrationService.updateEligibility(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
+        when(mockRegistrationService.updateEligibility(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Eligibility(false, false)))
 
         val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
@@ -1338,7 +1346,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
           .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-        when(mockRegistrationService.updateEligibility(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockRegistrationService.updateEligibility(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
         val result = controller.updateEligibility("AC123456")(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
@@ -1377,7 +1385,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
         val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
         val request = FakeRequest().withBody(Json.toJson(testNotification))
 
-        when(mockNotificationService.processNotification(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockNotificationService.processNotification(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(testNotification))
 
         val result = controller.updateRegistrationWithEmpRef("testAckRef")(request)
@@ -1430,7 +1438,8 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.getStatus(ArgumentMatchers.contains("AC123456"))).thenReturn(Future.failed(new MissingRegDocument("AC123456")))
+      when(mockRegistrationService.getStatus(ArgumentMatchers.contains("AC123456"))(ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new MissingRegDocument("AC123456")))
 
       val response = controller.getDocumentStatus("AC123456")(FakeRequest())
 
@@ -1482,7 +1491,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
@@ -1497,7 +1506,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(false))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
@@ -1512,7 +1521,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
       when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
         .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
 
-      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new UnmatchedStatusException))
 
       val response = controller.deletePAYERegistration("AC123456")(FakeRequest())
@@ -1548,7 +1557,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     val jsonIncorpStatusUpdate = Json.parse(incorpUpdate("accepted"))
 
     "return a 500 response when the registration we try to incorporate is in invalid status and the II call count is < config value" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
@@ -1556,7 +1565,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
       when(mockCounterService.maxIICounterCount).thenReturn(2)
 
-      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(false))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
@@ -1564,7 +1573,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 200 response when the registration we try to incorporate is in invalid status and the II call count is > the config value" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
@@ -1572,7 +1581,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
 
       when(mockCounterService.maxIICounterCount).thenReturn(2)
 
-      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
@@ -1580,7 +1589,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 200 response when the registration we try to incorporate is in acknowledge status" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
 
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
@@ -1591,7 +1600,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 200 response when the registration we try to incorporate is in rejected status" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.rejected))))
 
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
@@ -1602,7 +1611,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 200 response when the registration we try to incorporate is in cancelled status" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.cancelled))))
 
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
@@ -1613,7 +1622,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 500 response when the mongo retrieve failed" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RetrieveFailed(validRegistration.registrationID)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
@@ -1622,7 +1631,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 500 response when the mongo update failed" in new Setup {
-      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any()))
+      when(mockRegistrationService.fetchPAYERegistrationByTransactionID(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
 
       when(mockSubmissionService.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
@@ -1636,7 +1645,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
   "calling registrationInvalidStatusHandler" should {
 
     "return a 500 response when the error is an invalid status and the II call count is < config value" in new Setup {
-      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(false))
 
       val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
@@ -1647,7 +1656,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 500 response when error is an invalid status and an UpdateFailed Error is Encountered" in new Setup {
-      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new UpdateFailed(validRegistration.registrationID, "IICounter")))
 
       val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
@@ -1658,7 +1667,7 @@ class RegistrationControllerSpec extends PAYERegSpec with AuthFixture with Regis
     }
 
     "return a 200 response when the error is an invalid status and the II call count is > config value" in new Setup {
-      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any()))
+      when(mockCounterService.updateIncorpCount(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
 
       val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)

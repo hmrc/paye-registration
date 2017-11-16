@@ -22,22 +22,21 @@ import config.WSHttp
 import models.external.BusinessProfile
 import play.api.Logger
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.{ForbiddenException, HeaderCarrier, HttpReads, NotFoundException}
-import uk.gov.hmrc.play.http.ws.WSHttp
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import scala.concurrent.Future
+import uk.gov.hmrc.http._
 
 @Singleton
 class BusinessRegistrationConnector @Inject()() extends BusinessRegistrationConnect with ServicesConfig {
   val businessRegUrl = baseUrl("business-registration")
-  val http : WSHttp = WSHttp
+  val http : CoreGet = WSHttp
 }
 
 trait BusinessRegistrationConnect {
 
   val businessRegUrl: String
-  val http: WSHttp
+  val http: CoreGet
 
   def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
     http.GET[BusinessProfile](s"$businessRegUrl/business-registration/business-tax-registration") recover {

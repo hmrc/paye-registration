@@ -22,6 +22,7 @@ import mocks.MetricsMock
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
@@ -33,7 +34,8 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
   "Metrics" should {
     "update no metrics if no registration stats" in new Setup() {
-      when(service.regRepo.getRegistrationStats()).thenReturn(Map[String, Int]())
+      when(service.regRepo.getRegistrationStats()(ArgumentMatchers.any()))
+        .thenReturn(Map[String, Int]())
 
       val result: Map[String, Int] = await(service.updateDocumentMetrics())
 
@@ -44,7 +46,8 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
     "update a single metric when one is supplied" in new Setup() {
       when(service.metrics.defaultRegistry).thenReturn(mockRegistry)
-      when(service.regRepo.getRegistrationStats()).thenReturn(Map[String, Int]("test" -> 1))
+      when(service.regRepo.getRegistrationStats()(ArgumentMatchers.any()))
+        .thenReturn(Map[String, Int]("test" -> 1))
 
       await(service.updateDocumentMetrics()) shouldBe Map("test" -> 1)
 
@@ -55,7 +58,8 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
     "update multiple metrics when required" in new Setup() {
       when(service.metrics.defaultRegistry).thenReturn(mockRegistry)
-      when(service.regRepo.getRegistrationStats()).thenReturn(Map[String, Int]("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3))
+      when(service.regRepo.getRegistrationStats()(ArgumentMatchers.any()))
+        .thenReturn(Map[String, Int]("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3))
 
       val result = await(service.updateDocumentMetrics())
 

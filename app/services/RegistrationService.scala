@@ -27,10 +27,10 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import common.exceptions.DBExceptions.MissingRegDocument
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.HeaderCarrier
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo,
@@ -48,7 +48,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   val payeCancelURL : String
   val auditService: AuditSrv
 
-  def createNewPAYERegistration(regID: String, transactionID: String, internalId : String): Future[PAYERegistration] = {
+  def createNewPAYERegistration(regID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case None => registrationRepository.createNewRegistration(regID, transactionID, internalId)
       case Some(registration) =>
@@ -57,28 +57,28 @@ trait RegistrationSrv extends PAYEBaseValidator {
     }
   }
 
-  def fetchPAYERegistration(regID: String): Future[Option[PAYERegistration]] = {
+  def fetchPAYERegistration(regID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     registrationRepository.retrieveRegistration(regID)
   }
 
-  def fetchPAYERegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
+  def fetchPAYERegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     registrationRepository.retrieveRegistrationByTransactionID(transactionID)
   }
 
-  def getCompanyDetails(regID: String): Future[Option[CompanyDetails]] = {
+  def getCompanyDetails(regID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
     registrationRepository.retrieveCompanyDetails(regID)
   }
 
-  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[CompanyDetails] = {
+  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
     if(validDigitalContactDetails(companyDetails.businessContactDetails)) registrationRepository.upsertCompanyDetails(regID, companyDetails)
     else throw new RegistrationFormatException(s"No business contact method submitted for regID $regID")
   }
 
-  def getEmployment(regID: String): Future[Option[Employment]] = {
+  def getEmployment(regID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
     registrationRepository.retrieveEmployment(regID)
   }
 
-  def upsertEmployment(regID: String, employmentDetails: Employment): Future[Employment] = {
+  def upsertEmployment(regID: String, employmentDetails: Employment)(implicit ec: ExecutionContext): Future[Employment] = {
     registrationRepository.upsertEmployment(regID, employmentDetails) flatMap {
       result =>
         (employmentDetails.subcontractors, employmentDetails.employees) match {
@@ -94,33 +94,33 @@ trait RegistrationSrv extends PAYEBaseValidator {
     }
   }
 
-  def getDirectors(regID: String): Future[Seq[Director]] = {
+  def getDirectors(regID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
     registrationRepository.retrieveDirectors(regID)
   }
 
-  def upsertDirectors(regID: String, directors: Seq[Director]): Future[Seq[Director]] = {
+  def upsertDirectors(regID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
     if(directors.exists(_.nino.isDefined)) registrationRepository.upsertDirectors(regID, directors)
     else throw new RegistrationFormatException(s"No director NINOs completed for reg ID $regID")
   }
 
-  def getSICCodes(regID: String): Future[Seq[SICCode]] = {
+  def getSICCodes(regID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
     registrationRepository.retrieveSICCodes(regID)
   }
 
-  def upsertSICCodes(regID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]] = {
+  def upsertSICCodes(regID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
     registrationRepository.upsertSICCodes(regID, sicCodes)
   }
 
-  def getPAYEContact(regID: String): Future[Option[PAYEContact]] = {
+  def getPAYEContact(regID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]] = {
     registrationRepository.retrievePAYEContact(regID)
   }
 
-  def upsertPAYEContact(regID: String, payeContact: PAYEContact): Future[PAYEContact] = {
+  def upsertPAYEContact(regID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
     if(validPAYEContact(payeContact)) registrationRepository.upsertPAYEContact(regID, payeContact)
     else throw new RegistrationFormatException(s"No PAYE contact method submitted for regID $regID")
   }
 
-  def getCompletionCapacity(regID: String): Future[Option[String]] = {
+  def getCompletionCapacity(regID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     registrationRepository.retrieveCompletionCapacity(regID)
   }
 
@@ -137,19 +137,19 @@ trait RegistrationSrv extends PAYEBaseValidator {
     }
   }
 
-  def getAcknowledgementReference(regID: String) : Future[Option[String]] = {
+  def getAcknowledgementReference(regID: String)(implicit ec: ExecutionContext) : Future[Option[String]] = {
     registrationRepository.retrieveAcknowledgementReference(regID)
   }
 
-  def getEligibility(regID: String): Future[Option[Eligibility]] = {
+  def getEligibility(regID: String)(implicit ec: ExecutionContext): Future[Option[Eligibility]] = {
     registrationRepository.getEligibility(regID)
   }
 
-  def updateEligibility(regID: String, eligibility: Eligibility): Future[Eligibility] = {
+  def updateEligibility(regID: String, eligibility: Eligibility)(implicit ec: ExecutionContext): Future[Eligibility] = {
     registrationRepository.upsertEligibility(regID, eligibility)
   }
 
-  def getStatus(regID: String): Future[JsObject] = {
+  def getStatus(regID: String)(implicit ec: ExecutionContext): Future[JsObject] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(registration) => {
         val lastUpdate = registration.status match {
@@ -178,7 +178,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
     }
   }
 
-  def deletePAYERegistration(regID: String, validStatuses: PAYEStatus.Value*): Future[Boolean] = {
+  def deletePAYERegistration(regID: String, validStatuses: PAYEStatus.Value*)(implicit ec: ExecutionContext): Future[Boolean] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(document) => document.status match {
         case documentStatus if validStatuses.contains(documentStatus) => registrationRepository.deleteRegistration(regID)

@@ -19,11 +19,13 @@ package audit
 import models.submission.DESCompletionCapacity
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
-import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.{ Authorization, ForwardedFor, RequestId, SessionId }
 
 class RegistrationAuditEventSpec extends UnitSpec {
+
+  implicit val extendedEventFormats = Json.format[ExtendedDataEvent]
 
   "RegistrationEvent" should {
     val clientIP: String = "1.2.3.4"

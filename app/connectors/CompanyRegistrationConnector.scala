@@ -21,21 +21,19 @@ import javax.inject.{Inject, Singleton}
 import config.WSHttp
 import play.api.Logger
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.ws.WSHttp
-import uk.gov.hmrc.play.http.{ForbiddenException, HeaderCarrier, HttpResponse, NotFoundException}
-
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.http._
 
 @Singleton
 class CompanyRegistrationConnector @Inject()() extends CompanyRegistrationConnect with ServicesConfig{
   val compRegUrl = baseUrl("company-registration")
-  val http: WSHttp = WSHttp
+  val http: CoreGet = WSHttp
 }
 
 trait CompanyRegistrationConnect {
   val compRegUrl: String
-  val http: WSHttp
+  val http: CoreGet
 
   def fetchCompanyRegistrationDocument(regId: String, txId: Option[String])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     http.GET[HttpResponse](s"$compRegUrl/company-registration/corporation-tax-registration/$regId/corporation-tax-registration") recover {

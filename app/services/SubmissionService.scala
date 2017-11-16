@@ -31,12 +31,13 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
-import uk.gov.hmrc.play.http.HeaderCarrier
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
+import uk.gov.hmrc.http.HeaderCarrier
 
 class RejectedIncorporationException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
@@ -113,7 +114,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
     } yield incStatus
   }
 
-  private[services] def assertOrGenerateAcknowledgementReference(regId: String): Future[String]= {
+  private[services] def assertOrGenerateAcknowledgementReference(regId: String)(implicit ec: ExecutionContext): Future[String]= {
     registrationRepository.retrieveAcknowledgementReference(regId) flatMap {
       case Some(ackRef) => Future.successful(ackRef)
       case None => for {
@@ -123,7 +124,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
     }
   }
 
-  private[services] def generateAcknowledgementReference: Future[String] = {
+  private[services] def generateAcknowledgementReference(implicit ec: ExecutionContext): Future[String] = {
     val sequenceID = "AcknowledgementID"
     sequenceRepository.getNext(sequenceID)
       .map(ref => f"BRPY$ref%011d")
@@ -148,7 +149,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
     }
   }
 
-  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
+  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit ec: ExecutionContext): Future[TopUpDESSubmission] = {
     registrationRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
@@ -163,7 +164,7 @@ trait SubmissionSrv extends ETMPStatusCodes {
     }
   }
 
-  private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
+  private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
     registrationRepository.updateRegistrationStatus(regId, newStatus) map {
       _ => if(!newStatus.equals(PAYEStatus.cancelled)) {registrationRepository.cleardownRegistration(regId)}
         newStatus

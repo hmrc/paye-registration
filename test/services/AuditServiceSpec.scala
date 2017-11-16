@@ -25,10 +25,11 @@ import models.{Address, CompanyDetails, DigitalContactDetails}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.SessionId
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.SessionId
 
 class AuditServiceSpec extends PAYERegSpec with RegistrationFixture with AuthFixture {
   val mockAuditConnector = mock[AuditConnector]
@@ -65,7 +66,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture with AuthFix
       when(mockAuthConnector.getUserDetails(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validUserDetailsModel)))
 
-      when(mockAuditConnector.sendEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(AuditResult.Success))
 
       await(service.auditCompletionCapacity(regId, previousCC, newCC)) shouldBe AuditResult.Success
@@ -74,13 +75,13 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture with AuthFix
 
   "Calling fetchAddressAuditRefs" should {
     "return a map of enums to refs" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(companyDetails = Some(validCompanyDetailsWithAuditRef)))))
 
       await(service.fetchAddressAuditRefs("regId")) shouldBe Map(AddressTypes.roAdddress -> "roAuditRef")
     }
     "throw a MissingRegDocument exception when there is no Registration object returned from mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.fetchAddressAuditRefs("regId")))

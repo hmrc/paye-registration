@@ -27,7 +27,7 @@ import play.api.mvc.{Action, AnyContent}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import scala.concurrent.Future
 
 @Singleton

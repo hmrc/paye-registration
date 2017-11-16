@@ -17,17 +17,14 @@
 package services
 
 import helpers.PAYERegSpec
-import models.IICounter
 import org.mockito.ArgumentMatchers
-import repositories.{IICounterMongo, IICounterMongoRepository}
+import repositories.IICounterMongoRepository
 import org.mockito.Mockito._
 import play.api.Configuration
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
-/**
-  * Created by eric on 29/08/17.
-  */
 class IICounterServiceSpec extends PAYERegSpec {
 
   lazy val mockCounterRepository = mock[IICounterMongoRepository]
@@ -46,7 +43,7 @@ class IICounterServiceSpec extends PAYERegSpec {
   "calling updateIncorpCount" should {
     "return false if count is less than the maxCount of 2" in new Setup{
 
-      when(mockCounterRepository.getNext(regId))
+      when(mockCounterRepository.getNext(ArgumentMatchers.eq(regId))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(1))
 
         val result = await(service.updateIncorpCount(regId))
@@ -55,7 +52,7 @@ class IICounterServiceSpec extends PAYERegSpec {
 
 
     "return true if count is more than maxCount" in new Setup{
-      when(mockCounterRepository.getNext(regId))
+      when(mockCounterRepository.getNext(ArgumentMatchers.eq(regId))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(4))
 
       val result = await(service.updateIncorpCount(regId))

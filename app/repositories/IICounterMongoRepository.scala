@@ -21,17 +21,14 @@ import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.UpdateFailed
 import models.IICounter
 import play.api.libs.json.JsValue
-import play.api.{Configuration, Logger}
-import reactivemongo.api.{DB, ReadPreference}
+import reactivemongo.api.DB
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.util.Success
-import scala.util.control.NoStackTrace
+import scala.concurrent.{ExecutionContext, Future}
+
 
 @Singleton
 class IICounterMongo @Inject()(
@@ -40,7 +37,7 @@ class IICounterMongo @Inject()(
 }
 
 trait IICounterRepository{
-  def getNext(regId: String): Future[Int]
+  def getNext(regId: String)(implicit ec: ExecutionContext): Future[Int]
 }
 
 
@@ -50,7 +47,7 @@ case class IICounterMongoRepository(mongo: () => DB)
     domainFormat = IICounter.format,
     mongo = mongo) with IICounterRepository {
 
-  def getNext(regId: String): Future[Int] = {
+  def getNext(regId: String)(implicit ec: ExecutionContext): Future[Int] = {
     val selector = BSONDocument("_id" -> regId)
     val modifier = BSONDocument("$inc" -> BSONDocument("count" -> 1))
 
