@@ -16,27 +16,29 @@
 
 package controllers.test
 
-import auth.{Authenticated, LoggedIn, NotLoggedIn}
 import javax.inject.{Inject, Singleton}
 
-import connectors.AuthConnector
+import config.AuthClientConnector
 import enums.PAYEStatus
 import models._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.internalId
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import scala.concurrent.Future
 
 @Singleton
-class TestEndpointController @Inject()(authConnector: AuthConnector, registrationMongo : RegistrationMongo) extends TestEndpointCtrl {
-  val auth: AuthConnector = authConnector
+class TestEndpointController @Inject()(registrationMongo: RegistrationMongo) extends TestEndpointCtrl {
+  override lazy val authConnector: AuthConnector = AuthClientConnector
+
   val registrationRepository: RegistrationMongoRepository = registrationMongo.store
 }
 
-trait TestEndpointCtrl extends BaseController with Authenticated {
+trait TestEndpointCtrl extends BaseController with AuthorisedFunctions {
 
   val registrationRepository: RegistrationMongoRepository
 
@@ -60,25 +62,24 @@ trait TestEndpointCtrl extends BaseController with Authenticated {
 
   def updateRegistration(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authenticated {
-        case NotLoggedIn => Future.successful(Forbidden)
-        case LoggedIn(context) =>
-          withJsonBody[JsObject] {
-            reg =>
-              val regWithId = reg ++ Json.obj("internalID" -> context.ids.internalId)
-              val regWithStatus = regWithId ++ Json.obj("status" -> "draft")
-              val regWithLastUpdate = regWithStatus ++ Json.obj("lastUpdate" -> (reg \ "formCreationTimestamp").as[String])
+      authorised().retrieve(internalId) { id =>
+        withJsonBody[JsObject] { reg =>
+          val regWithId = reg ++ Json.obj("internalID" -> id.getOrElse(throw new Exception("Missing internalId")))
+          val regWithStatus = regWithId ++ Json.obj("status" -> "draft")
+          val regWithLastUpdate = regWithStatus ++ Json.obj("lastUpdate" -> (reg \ "formCreationTimestamp").as[String])
 
-              regWithLastUpdate.validate[PAYERegistration].fold (
-                  errs => Future.successful(BadRequest(errs.toString())),
-                  registration => registrationRepository.updateRegistration(registration) map {
-                    _ => Ok(Json.toJson(reg).as[JsObject])
-                  } recover {
-                    case e => InternalServerError(e.getMessage)
-                  }
-                )
-              }
-          }
+          regWithLastUpdate.validate[PAYERegistration].fold (
+            errs => Future.successful(BadRequest(errs.toString())),
+            registration => registrationRepository.updateRegistration(registration) map {
+              _ => Ok(Json.toJson(reg).as[JsObject])
+            } recover {
+              case e => InternalServerError(e.getMessage)
+            }
+          )
+        }
+      } recoverWith {
+        case _ => Future.successful(Forbidden)
+      }
   }
 
   def newStatus(regId: String, status: String): Action[AnyContent] = Action.async {

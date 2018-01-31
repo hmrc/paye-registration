@@ -22,7 +22,9 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import common.constants.ETMPStatusCodes
-import connectors._
+import config.AuthClientConnector
+import connectors.{BusinessRegistrationConnect, BusinessRegistrationConnector, CompanyRegistrationConnect, CompanyRegistrationConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
+import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import enums.{IncorporationStatus, PAYEStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
@@ -31,6 +33,7 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -48,27 +51,26 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injRegistrationMongoRepository: RegistrationMongo,
                                   injDESConnector: DESConnector,
                                   injIncorporationInformationConnector: IncorporationInformationConnector,
-                                  injAuthConnector: AuthConnector,
                                   injBusinessRegistrationConnector: BusinessRegistrationConnector,
                                   injCompanyRegistrationConnector: CompanyRegistrationConnector,
                                   injAuditService: AuditService) extends SubmissionSrv {
+  override lazy val authConnector = AuthClientConnector
+
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store
   val desConnector = injDESConnector
   val incorporationInformationConnector = injIncorporationInformationConnector
-  val authConnector = injAuthConnector
   val businessRegistrationConnector = injBusinessRegistrationConnector
   val companyRegistrationConnector = injCompanyRegistrationConnector
   val auditService = injAuditService
 }
 
-trait SubmissionSrv extends ETMPStatusCodes {
+trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
 
   val sequenceRepository: SequenceRepository
   val registrationRepository: RegistrationRepository
   val desConnector: DESConnect
   val incorporationInformationConnector: IncorporationInformationConnect
-  val authConnector: AuthConnect
   val businessRegistrationConnector: BusinessRegistrationConnect
   val companyRegistrationConnector: CompanyRegistrationConnect
   val auditService: AuditSrv
@@ -260,8 +262,9 @@ trait SubmissionSrv extends ETMPStatusCodes {
 
   private[services] class FailedToGetCredId extends NoStackTrace
   private[services] def retrieveCredId(implicit hc: HeaderCarrier): Future[String] = {
-    authConnector.getCurrentAuthority flatMap {
-      case Some(a) => Future.successful(a.gatewayId)
+    authorised().retrieve(credentials) { cred =>
+      Future.successful(cred.providerId)
+    } recoverWith {
       case _ => Future.failed(new FailedToGetCredId)
     }
   }

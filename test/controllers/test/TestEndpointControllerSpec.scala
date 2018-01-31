@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,34 +17,32 @@
 package controllers.test
 
 import enums.PAYEStatus
-import fixtures.{AuthFixture, RegistrationFixture}
+import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models.PAYERegistration
-import play.api.libs.json.Json
-import repositories.RegistrationMongoRepository
-import play.api.test.FakeRequest
-import play.api.http.Status
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import play.api.http.Status
+import play.api.libs.json.Json
+import play.api.test.FakeRequest
+import repositories.RegistrationMongoRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
-class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with RegistrationFixture {
+class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
   val mockRepo = mock[RegistrationMongoRepository]
 
   class Setup {
     val controller = new TestEndpointCtrl {
-      override val auth = mockAuthConnector
       override val registrationRepository = mockRepo
+      val authConnector = mockAuthConnector
     }
   }
 
   override def beforeEach() {
-    reset(mockAuthConnector)
     reset(mockRepo)
+    reset(mockAuthConnector)
   }
 
   "Teardown registration collection" should {
@@ -84,37 +82,37 @@ class TestEndpointControllerSpec extends PAYERegSpec with AuthFixture with Regis
   }
 
   "Insert Registration" should {
+    val testInternalId = "testInternalID"
+
     "return a 200 response for success" in new Setup {
+      AuthorisationMocks.mockAuthenticated(testInternalId)
+
       when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration))
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some(validAuthority)))
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.OK
     }
 
     "return a 500 response for failure" in new Setup {
+      AuthorisationMocks.mockAuthenticated(testInternalId)
+
       when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some(validAuthority)))
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a Bad Request response for incorrect Json" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some(validAuthority)))
+      AuthorisationMocks.mockAuthenticated(testInternalId)
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"formCreationTimestamp":"testTimestamp","regID":"invalid"}"""))))
       status(response) shouldBe Status.BAD_REQUEST
     }
 
     "return a forbidden response for unauthorised" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(None))
+      AuthorisationMocks.mockAuthenticated(testInternalId)
 
       val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
       status(response) shouldBe Status.FORBIDDEN

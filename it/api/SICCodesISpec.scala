@@ -16,19 +16,16 @@
 
 package api
 
-import javax.inject.Provider
-
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.{Eligibility, PAYERegistration, SICCode}
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
-import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -58,18 +55,15 @@ class SICCodesISpec extends IntegrationSpecBase {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository = mongo.store
+
+    def insertToDb(data: PAYERegistration) = await(repository.insert(data))
+
     await(repository.drop)
     await(repository.ensureIndexes)
   }
 
   "PAYE Registration API - SIC Codes" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-
-    def setupSimpleAuthMocks() = {
-      stubPost("/write/audit", 200, """{"x":2}""")
-      stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
-      stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
-    }
 
     val validSICCodes = Seq(
       SICCode(code = Some("123"), description = Some("consulting")),
@@ -83,7 +77,7 @@ class SICCodesISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -120,7 +114,7 @@ class SICCodesISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -165,7 +159,7 @@ class SICCodesISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -190,6 +184,8 @@ class SICCodesISpec extends IntegrationSpecBase {
         )
       )
 
+//      await(repository.count) shouldBe 1
+
       val response = client(s"/${regID}/sic-codes").get.futureValue
       response.status shouldBe 403
     }
@@ -201,7 +197,7 @@ class SICCodesISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-abc-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
