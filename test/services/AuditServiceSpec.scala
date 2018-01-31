@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package services
 
 import common.exceptions.DBExceptions.MissingRegDocument
-import connectors.UserDetailsModel
 import enums.AddressTypes
-import fixtures.{AuthFixture, RegistrationFixture}
+import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models.{Address, CompanyDetails, DigitalContactDetails}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 
 import scala.concurrent.Future
@@ -31,20 +31,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
 
-class AuditServiceSpec extends PAYERegSpec with RegistrationFixture with AuthFixture {
+class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
   val mockAuditConnector = mock[AuditConnector]
 
   class Setup {
     val service = new AuditSrv {
+      override lazy val authConnector = mockAuthConnector
+
       override val registrationRepository = mockRegistrationRepository
       override val auditConnector = mockAuditConnector
-      override val authConnector = mockAuthConnector
     }
   }
 
   val regId = "AB123456"
-  val authProviderId = "testAuthProviderId"
-  val validUserDetailsModel = UserDetailsModel("testName", "testEmail", "testAffinityGroup", None, None, None, None, authProviderId, "testAuthProviderType")
   val validCompanyDetailsWithAuditRef = CompanyDetails(
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
@@ -59,12 +58,10 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture with AuthFix
     "send audit with correct detail" in new Setup {
       val previousCC = "director"
       val newCC = "agent"
+      val cred = Credentials("cred-123", "some-provider-type")
 
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validAuthority)))
-
-      when(mockAuthConnector.getUserDetails(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validUserDetailsModel)))
+      when(mockAuthConnector.authorise[Option[String] ~ Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(new ~(Some("some-external-id"), cred)))
 
       when(mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(AuditResult.Success))

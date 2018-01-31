@@ -17,10 +17,9 @@
 package repositories
 
 import java.time.ZonedDateTime
+import javax.inject.Inject
 
 import auth.AuthorisationResource
-import javax.inject.{Inject, Provider, Singleton}
-
 import com.codahale.metrics.Timer
 import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions._
@@ -29,22 +28,19 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import models._
 import models.validation.MongoValidation
-import play.api.{Configuration, Logger}
 import play.api.libs.json._
+import play.api.{Configuration, Logger}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.bson.BSONDocument
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson._
 import reactivemongo.api.DB
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
-import reactivemongo.bson.BSONObjectID
-import services.{MetricsService, MetricsSrv}
+import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.bson.{BSONDocument, BSONObjectID, _}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.http.HeaderCarrier
 
 class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration) extends ReactiveMongoFormats {
   val registrationFormat: Format[PAYERegistration] = PAYERegistration.format
@@ -96,7 +92,7 @@ class RegistrationMongoRepository(mongo: () => DB,
                                   maxStorageDays: Int, val mongoResponseTimer: Timer) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
-  domainFormat = format) with RegistrationRepository with AuthorisationResource[String] {
+  domainFormat = format) with RegistrationRepository with AuthorisationResource {
 
   val MAX_STORAGE_DAYS = maxStorageDays
 
@@ -568,12 +564,12 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[(String, String)]] = {
+  override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[String]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(id) map {
       case Some(registration) =>
         mongoTimer.stop()
-        Some(id -> registration.internalID)
+        Some(registration.internalID)
       case None =>
         mongoTimer.stop()
         None
@@ -670,7 +666,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   override def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]] = {
 
     import play.api.libs.json._
-    import reactivemongo.json.collection.JSONBatchCommands.AggregationFramework.{Group, Match, SumValue, Project}
+    import reactivemongo.json.collection.JSONBatchCommands.AggregationFramework.{Group, Match, Project, SumValue}
 
     // perform on all documents in the collection
     val matchQuery = Match(Json.obj())

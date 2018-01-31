@@ -20,39 +20,37 @@ import javax.inject.{Inject, Singleton}
 
 import auth._
 import common.exceptions.RegistrationExceptions.UnmatchedStatusException
-import connectors.{AuthConnect, AuthConnector}
+import config.AuthClientConnector
 import enums.PAYEStatus
 import play.api.mvc.{Action, AnyContent}
 import repositories.RegistrationMongoRepository
 import services.RegistrationService
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import scala.concurrent.Future
-
 @Singleton
-class RepositoryController @Inject()(injAuthConnector: AuthConnector,
-                                     injRegistrationService: RegistrationService) extends RepositoryCtrl {
-  val auth: AuthConnect = injAuthConnector
+class RepositoryController @Inject()(injRegistrationService: RegistrationService) extends RepositoryCtrl {
+  override lazy val authConnector: AuthConnector = AuthClientConnector
+
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
   val registraitonService: RegistrationService = injRegistrationService
 }
 
-trait RepositoryCtrl extends BaseController with Authenticated with Authorisation[String] {
+trait RepositoryCtrl extends BaseController with Authorisation {
 
   val registraitonService: RegistrationService
 
   def deleteRegistrationFromDashboard(regId: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regId) {
-        case Authorised(_) => registraitonService.deletePAYERegistration(regId, PAYEStatus.draft, PAYEStatus.invalid) map { deleted =>
-          if(deleted) Ok else InternalServerError
-        } recover {
-          case _: UnmatchedStatusException => PreconditionFailed
+      isAuthorised(regId) { authResult =>
+        authResult.ifAuthorised(regId, "RepositoryCtrl", "deleteRegistrationFromDashboard") {
+          registraitonService.deletePAYERegistration(regId, PAYEStatus.draft, PAYEStatus.invalid) map { deleted =>
+            if(deleted) Ok else InternalServerError
+          } recover {
+            case _: UnmatchedStatusException => PreconditionFailed
+          }
         }
-        case NotLoggedInOrAuthorised => Future.successful(Forbidden)
-        case NotAuthorised(_) => Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
       }
   }
 

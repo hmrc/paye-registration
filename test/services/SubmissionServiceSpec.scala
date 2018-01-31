@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,12 @@ import org.mockito.Mockito._
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.retrieve.Credentials
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.http.logging.SessionId
 
 class SubmissionServiceSpec extends PAYERegSpec {
@@ -68,6 +69,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     reset(mockRegistrationRepository)
     reset(mockSequenceRepository)
     reset(mockDESConnector)
+    reset(mockAuthConnector)
   }
 
   val lastUpdate = "2017-05-09T07:58:35Z"
@@ -287,8 +289,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
-        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
+        when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Credentials("cred-123", "someProviderType")))
 
         val result = await(service.payeReg2DESSubmission(validRegistration, None, None))
         result shouldBe validPartialDESSubmissionModel
@@ -298,8 +300,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
-        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Some(Authority("/test", "cred-123", "/test-user", UserIds("Int-xxx", "Ext-xxx")))))
+        when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Credentials("cred-123", "someProviderType")))
 
         val result = await(service.payeReg2DESSubmission(validRegistration, Some("OC123456"), None))
         result shouldBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
@@ -483,8 +485,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling retrieveCredId" should {
     "return the correct exception when credential ID is missing" in new Setup {
-      when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(None))
+      when(mockAuthConnector.authorise(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new Exception("Can't get providerId from credentials")))
 
       a[service.FailedToGetCredId] shouldBe thrownBy(await(service.retrieveCredId))
     }

@@ -17,19 +17,17 @@
 package controllers
 
 import java.time.LocalDate
-import javax.inject.Provider
 
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
-import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -204,12 +202,6 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
   }
 
   "update-registration" should {
-
-    def setupSimpleAuthMocks() = {
-      stubPost("/write/audit", 200, """{"x":2}""")
-      stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
-      stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
-    }
 
     "return a 200 when a specified registration has been updated" in new Setup {
       // Doesn't seem to work! as expected - TODO SCRS-4976
