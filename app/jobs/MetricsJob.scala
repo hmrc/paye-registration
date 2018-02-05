@@ -49,6 +49,6 @@ trait MetricsJob extends ExclusiveScheduledJob with JobConfig with JobHelper {
           Result(message)
         }
       }
-    }
+    } // TODO: Sort out IT failing
   }
 }

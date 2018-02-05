@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,107 +17,67 @@
 package controllers
 
 import auth.AuthorisationResource
-import connectors.AuthConnect
-import fixtures.AuthFixture
 import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
-import repositories.RegistrationMongoRepository
-import services.RegistrationService
 import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.test.FakeRequest
+import services.RegistrationService
+import common.exceptions.RegistrationExceptions.UnmatchedStatusException
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
-class RepositoryControllerSpec extends PAYERegSpec with AuthFixture {
+class RepositoryControllerSpec extends PAYERegSpec {
 
   val mockRegistrationService = mock[RegistrationService]
-  val mockRepo = mock[RegistrationMongoRepository]
 
   class Setup {
     val controller = new RepositoryCtrl {
       override val registraitonService: RegistrationService = mockRegistrationService
-      override val resourceConn: AuthorisationResource[String] = mockRepo
-      override val auth: AuthConnect = mockAuthConnector
+      override val resourceConn: AuthorisationResource = mockRegistrationRepository
+      val authConnector = mockAuthConnector
     }
   }
 
   override def beforeEach(): Unit = {
     reset(mockAuthConnector)
+    reset(mockRegistrationService)
+    reset(mockRegistrationRepository)
   }
 
-  def validAuth() = {
-    when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-      .thenReturn(Future.successful(Some(validAuthority)))
-
-    when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-      .thenReturn(Future.successful(Some("AC123456" -> validAuthority.ids.internalId)))
-  }
+  val regId = "AC123456"
+  val testInternalId = "testInternalID"
 
   "Calling deleteRegistrationFromDashboard" should {
-    "return a Forbidden response" when {
-      "the user is not logged in" in new Setup {
-        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-          .thenReturn(Future.successful(None))
+    "return an InternalServerError response if there is a mongo problem" in new Setup {
+      AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
-        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-          .thenReturn(Future.successful(None))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq(regId), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(false))
 
-        val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
+      val response = controller.deleteRegistrationFromDashboard(regId)(FakeRequest())
 
-        status(response) shouldBe Status.FORBIDDEN
-      }
-
-      "the user is not authorised" in new Setup {
-        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-          .thenReturn(Future.successful(Some(validAuthority)))
-
-        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-          .thenReturn(Future.successful(Some("AC123456" -> "notAuthorised")))
-
-        val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
-
-        status(response) shouldBe Status.FORBIDDEN
-      }
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
-    "return a Not Found response" when {
-      "there is no auth resource" in new Setup {
-        when(mockAuthConnector.getCurrentAuthority()(ArgumentMatchers.any[HeaderCarrier]()))
-          .thenReturn(Future.successful(Some(validAuthority)))
+    "return an Ok response if an invalid or draft document has been deleted" in new Setup {
+      AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
-        when(mockRepo.getInternalId(ArgumentMatchers.eq("AC123456"))(ArgumentMatchers.any[HeaderCarrier]()))
-          .thenReturn(Future.successful(None))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq(regId), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
 
-        val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
+      val response = controller.deleteRegistrationFromDashboard(regId)(FakeRequest())
 
-        status(response) shouldBe Status.NOT_FOUND
-      }
+      status(response) shouldBe Status.OK
     }
-    "return an InternalServerError response" when {
-      "there is a mongo problem" in new Setup {
-        validAuth()
+    "return a PreconditionFailed response of the document is not invalid or draft status" in new Setup {
+      AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
-        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(false))
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq(regId), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.failed(new UnmatchedStatusException))
 
-        val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
+      val response = controller.deleteRegistrationFromDashboard(regId)(FakeRequest())
 
-        status(response) shouldBe Status.INTERNAL_SERVER_ERROR
-      }
-    }
-    "return an Ok response" when {
-      "an invalid or draft document has been deleted" in new Setup {
-        validAuth()
-
-        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(true))
-
-        val response = controller.deleteRegistrationFromDashboard("AC123456")(FakeRequest())
-
-        status(response) shouldBe Status.OK
-      }
+      status(response) shouldBe Status.PRECONDITION_FAILED
     }
   }
 }

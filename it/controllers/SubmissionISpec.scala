@@ -17,21 +17,19 @@
 package controllers
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-import javax.inject.Provider
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
-import itutil.{IntegrationSpecBase, MongoBaseSpec, WiremockHelper}
+import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
-import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -93,6 +91,7 @@ class SubmissionISpec extends IntegrationSpecBase {
 
   val regId = "12345"
   val transactionID = "NN1234"
+  val extId = "Ext-xxx"
   val intId = "Int-xxx"
   val timestamp = "2017-01-01T00:00:00"
 
@@ -220,9 +219,21 @@ class SubmissionISpec extends IntegrationSpecBase {
 
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
 
+
+  val credId = "xxx2"
+  val authoriseData =
+    s"""{
+       | "internalId": "$intId",
+       | "externalId": "$extId",
+       | "credentials": {
+       |   "providerId": "$credId",
+       |   "providerType": "some-provider-type"
+       | }
+       |}""".stripMargin
+
   "submit-registration" should {
     "return a 200 with an ack ref when a partial DES submission completes successfully with auditing" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       val regime = "paye"
       val subscriber = "SCRS"
@@ -257,7 +268,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |    "metaData": {
              |        "businessType": "Limited company",
              |        "sessionID": "session-12345",
-             |        "credentialID": "xxx2",
+             |        "credentialID": "$credId",
              |        "language": "en",
              |        "formCreationTimestamp": "$timestamp",
              |        "submissionFromAgent": false,
@@ -336,11 +347,11 @@ class SubmissionISpec extends IntegrationSpecBase {
 
       verify(postRequestedFor(urlEqualTo("/write/audit"))
         .withRequestBody(equalToJson(Json.parse(
-          """
+          s"""
             |{
             |  "detail" : {
-            |    "externalId" : "Ext-xxx",
-            |    "authProviderId" : "123456789",
+            |    "externalId" : "$extId",
+            |    "authProviderId" : "$credId",
             |    "journeyId" : "12345",
             |    "desSubmissionState" : "partial",
             |    "acknowledgementReference" : "testAckRef",
@@ -349,7 +360,7 @@ class SubmissionISpec extends IntegrationSpecBase {
             |      "submissionFromAgent" : false,
             |      "declareAccurateAndComplete" : true,
             |      "sessionID" : "session-12345",
-            |      "credentialID" : "xxx2",
+            |      "credentialID" : "$credId",
             |      "language" : "en",
             |      "formCreationTimestamp" : "2017-01-01T00:00:00",
             |      "completionCapacity" : "Director"
@@ -438,7 +449,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -570,7 +581,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 200 with an ack ref when a full DES submission completes successfully with a company containing none standard characters" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -764,7 +775,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -803,7 +814,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 204 status when Incorporation was rejected at PAYE Submission" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 200, incorpUpdate(rejected))
 
@@ -822,7 +833,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 502 status when DES returns a 499" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -845,7 +856,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 502 status when DES returns a 5xx" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -868,7 +879,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 400 status when DES returns a 4xx" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
         .willReturn(
@@ -891,7 +902,7 @@ class SubmissionISpec extends IntegrationSpecBase {
     }
 
     "return a 500 status when registration has already been cleared post-submission in mongo" in new Setup {
-      setupSimpleAuthMocks()
+      setupAuthMocksToReturn(authoriseData)
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 

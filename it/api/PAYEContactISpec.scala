@@ -16,20 +16,17 @@
 
 package api
 
-import javax.inject.Provider
-
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.validation.{APIValidation, MongoValidation}
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
-import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -60,18 +57,18 @@ class PAYEContactISpec extends IntegrationSpecBase {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
     val repository: RegistrationMongoRepository = mongo.store
+
+    def insertToDb(paye: PAYERegistration) = {
+      await(repository.insert(paye))
+      await(repository.count) shouldBe 1
+    }
+
     await(repository.drop)
     await(repository.ensureIndexes)
   }
 
   "PAYE Registration API - PAYE Contact" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-
-    def setupSimpleAuthMocks() = {
-      stubPost("/write/audit", 200, """{"x":2}""")
-      stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
-      stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
-    }
 
     val validPAYEContact = PAYEContact(
       contactDetails = PAYEContactDetails(
@@ -99,30 +96,28 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
-        PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          None,
-          Seq.empty,
-          Some(validPAYEContact),
-          None,
-          Seq.empty,
-          lastUpdate,
-          partialSubmissionTimestamp = None,
-          fullSubmissionTimestamp = None,
-          acknowledgedTimestamp = None,
-          lastAction = None
-        )
-      )
+      insertToDb(PAYERegistration(
+        regID,
+        transactionID,
+        intID,
+        Some("testAckRef"),
+        None,
+        None,
+        timestamp,
+        Some(Eligibility(false, false)),
+        PAYEStatus.draft,
+        None,
+        None,
+        Seq.empty,
+        Some(validPAYEContact),
+        None,
+        Seq.empty,
+        lastUpdate,
+        partialSubmissionTimestamp = None,
+        fullSubmissionTimestamp = None,
+        acknowledgedTimestamp = None,
+        lastAction = None
+      ))
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
       response.status shouldBe 200
@@ -136,7 +131,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -173,7 +168,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -218,7 +213,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -254,7 +249,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      repository.insert(
+      insertToDb(
         PAYERegistration(
           regID,
           transactionID,

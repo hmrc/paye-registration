@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package auth
 
-import connectors.{AuthConnector, Authority, UserIds}
 import helpers.PAYERegSpec
-import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest._
-import play.api.mvc.{Result, Results}
+import play.api.mvc.Results
 import play.api.test.Helpers._
 
 import scala.concurrent.Future
@@ -31,34 +29,59 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
   implicit val hc = HeaderCarrier()
 
-  val mockAuth = mock[AuthConnector]
-  val mockResource = mock[AuthorisationResource[String]]
-
-  def tstResultFunc(a: Authority): Future[Result] = {
-    Future.successful(Results.Ok("tstOutcome"))
+  val authorisation = new Authorisation {
+    val resourceConn = mockRegistrationRepository
+    val authConnector = mockAuthConnector
   }
 
-  val authorisation = new Authorisation[String] {
-    val auth = mockAuth
-    val resourceConn = mockResource
+  override def beforeEach(): Unit = {
+    reset(mockRegistrationRepository)
+    reset(mockAuthConnector)
   }
 
-  before {
-    reset(mockAuth)
-    reset(mockResource)
-  }
+  val regId = "xxx"
+  val testInternalId = "foo"
 
-  "The authorisation helper" should {
+  "isAuthenticated" should {
+    "provided a logged in auth result when there is a valid bearer token" in {
+      AuthorisationMocks.mockAuthenticated(testInternalId)
+
+      val result = authorisation.isAuthenticated {
+        _ => Future.successful(Results.Ok)
+      }
+      val response = await(result)
+      response.header.status shouldBe OK
+    }
 
     "indicate there's no logged in user where there isn't a valid bearer token" in {
+      AuthorisationMocks.mockNotAuthenticated()
 
-      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(None))
+      val result = authorisation.isAuthenticated {
+        _ => Future.successful(Results.Ok)
+      }
 
-      when(mockResource.getInternalId(ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(None))
+      an[Exception] shouldBe thrownBy(await(result))
+    }
+  }
 
-      val result = authorisation.authorised("xxx") { authResult => {
+  "isAuthorised" should {
+    "throw an Exception if an error occurred other than Authorisation" in {
+      AuthorisationMocks.mockAuthorised(regId, testInternalId)
+
+      val result = authorisation.isAuthorised(regId) {
+        authResult => {
+          authResult shouldBe Authorised(testInternalId)
+          Future.failed(new Exception("Something wrong"))
+        }
+      }
+
+      an[Exception] shouldBe thrownBy(await(result))
+    }
+
+    "indicate there's no logged in user where there isn't a valid bearer token" in {
+      AuthorisationMocks.mockNotAuthenticated()
+
+      val result = authorisation.isAuthorised("xxx") { authResult => {
         authResult shouldBe NotLoggedInOrAuthorised
         Future.successful(Results.Forbidden)
       }
@@ -68,59 +91,42 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
     }
 
     "provided an authorised result when logged in and a consistent resource" in {
+      AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
-      val regId = "xxx"
-      val userIDs = UserIds("foo", "bar")
-      val a = Authority("x", "y", "z", userIDs)
-
-      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(a)))
-
-      when(mockResource.getInternalId(ArgumentMatchers.eq(regId))(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some((regId, userIDs.internalId))))
-
-      val result = authorisation.authorised(regId){ authResult => {
-        authResult shouldBe Authorised(a)
-        Future.successful(Results.Ok)
-      }
+      val result = authorisation.isAuthorised(regId) {
+        authResult => {
+          authResult shouldBe Authorised(testInternalId)
+          Future.successful(Results.Ok)
+        }
       }
       val response = await(result)
       response.header.status shouldBe OK
     }
 
     "provided a not-authorised result when logged in and an inconsistent resource" in {
-
       val regId = "xxx"
-      val userIDs = UserIds("foo", "bar")
-      val a = Authority("x", "y", "z", userIDs)
+      val testInternalId = "foo"
 
-      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(a)))
+      AuthorisationMocks.mockNotAuthorised(regId, testInternalId)
 
-      when(mockResource.getInternalId(ArgumentMatchers.eq(regId))(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Some((regId, userIDs.internalId +"xxx"))))
-
-      val result = authorisation.authorised(regId){ authResult => {
-        authResult shouldBe NotAuthorised(a)
-        Future.successful(Results.Ok)
-      }
+      val result = authorisation.isAuthorised(regId) {
+        authResult => {
+          authResult shouldBe NotAuthorised(testInternalId)
+          Future.successful(Results.Ok)
+        }
       }
       val response = await(result)
       response.header.status shouldBe OK
     }
 
     "provide a not-found result when logged in and no resource for the identifier" in {
+      val regId = "xxx"
+      val testInternalId = "tiid"
 
-      val a = Authority("x", "y", "z", UserIds("tiid","teid"))
+      AuthorisationMocks.mockAuthResourceNotFound(regId, testInternalId)
 
-      when(mockAuth.getCurrentAuthority()(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(a)))
-
-      when(mockResource.getInternalId(ArgumentMatchers.any())(ArgumentMatchers.any[HeaderCarrier]()))
-        .thenReturn(Future.successful(None))
-
-      val result = authorisation.authorised("xxx"){ authResult => {
-        authResult shouldBe AuthResourceNotFound(a)
+      val result = authorisation.isAuthorised("xxx"){ authResult => {
+        authResult shouldBe AuthResourceNotFound(testInternalId)
         Future.successful(Results.Ok)
         }
       }

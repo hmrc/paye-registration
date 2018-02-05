@@ -117,7 +117,6 @@ trait DESConnect extends HttpErrorFunctions {
     }
   }
 
-  @inline
   private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext) =
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc), ec = ec)
 

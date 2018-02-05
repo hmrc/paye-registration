@@ -17,7 +17,6 @@ package api
 
 
 import java.time.{ZoneOffset, ZonedDateTime}
-import javax.inject.Provider
 
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
@@ -25,12 +24,11 @@ import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.validation.{APIValidation, MongoValidation}
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsValue, Json}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
-import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -61,7 +59,10 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig){
       override val registrationFormat: Format[PAYERegistration] = PAYERegistration.format(MongoValidation)    }
-     val repository: RegistrationMongoRepository = mongo.store
+    val repository: RegistrationMongoRepository = mongo.store
+
+    def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
+
     await(repository.drop)
     await(repository.ensureIndexes)
   }
@@ -70,11 +71,6 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
   "PAYE Registration API - Company Details" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
     val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
-    def setupSimpleAuthMocks() = {
-      stubPost("/write/audit", 200, """{"x":2}""")
-      stubGet("/auth/authority", 200, """{"uri":"xxx","credentials":{"gatewayId":"xxx2"},"userDetailsLink":"xxx3","ids":"/auth/ids"}""")
-      stubGet("/auth/ids", 200, """{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
-    }
 
     val validCompanyDetails = CompanyDetails(
       companyName = "Test Company Name",
@@ -102,7 +98,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      await(repository.upsertRegTestOnly(
+      upsertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -125,7 +121,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      ))
+      )
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
@@ -139,7 +135,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      await(repository.upsertRegTestOnly(
+      upsertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -162,7 +158,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      ))
+      )
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 200
@@ -231,7 +227,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      await(repository.upsertRegTestOnly(
+      upsertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -254,7 +250,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt))
         )
-      )
+
 
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue
@@ -277,7 +273,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      await(repository.upsertRegTestOnly(
+      upsertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -300,7 +296,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      ))
+      )
 
       val response = client(s"/${regID}/company-details").get.futureValue
       response.status shouldBe 403
@@ -313,7 +309,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val transactionID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
-      await(repository.upsertRegTestOnly(
+      upsertToDb(
         PAYERegistration(
           regID,
           transactionID,
@@ -336,7 +332,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt)
         )
-      ))
+      )
 
       val response = client(s"/${regID}/company-details")
         .patch(Json.toJson(validCompanyDetails)(CompanyDetails.format(APIValidation)))

@@ -76,34 +76,7 @@ trait WiremockHelper {
       )
     )
 
-    stubFor(get(urlMatching("/auth/authority"))
-      .willReturn(
-        aResponse().
-          withStatus(200).
-          withBody(s"""
-                      |{
-                      |"uri":"${userId}",
-                      |"loggedInAt": "2014-06-09T14:57:09.522Z",
-                      |"previouslyLoggedInAt": "2014-06-09T14:48:24.841Z",
-                      |"credentials":{"gatewayId":"xxx2"},
-                      |"accounts":{},
-                      |"levelOfAssurance": "2",
-                      |"confidenceLevel" : 50,
-                      |"credentialStrength": "strong",
-                      |"legacyOid":"1234567890",
-                      |"userDetailsLink":"http://localhost:11111/auth/userDetails",
-                      |"ids":"/auth/ids"
-                      |}""".stripMargin)
-      )
-    )
-
-    stubFor(get(urlMatching("/auth/ids"))
-      .willReturn(
-        aResponse().
-          withStatus(200).
-          withBody("""{"internalId":"Int-xxx","externalId":"Ext-xxx"}""")
-      )
-    )
+    stubFor(post(urlMatching("/auth/authorise")).willReturn(aResponse().withStatus(200).withBody("""{"internalId": "Int-xxx"}""")))
 
     stubFor(get(urlMatching("/auth/userDetails"))
       .willReturn(
@@ -117,6 +90,34 @@ trait WiremockHelper {
                       |   "authProviderId":"123456789",
                       |   "authProviderType":"xxx"
                       |}
+                   """.stripMargin)
+      )
+    )
+  }
+
+  def setupAuthMocksToReturn(res: String) = {
+    stubFor(post(urlMatching("/write/audit"))
+      .willReturn(
+        aResponse().
+          withStatus(200).
+          withBody("""{"x":2}""")
+      )
+    )
+
+    stubFor(post(urlMatching("/auth/authorise")).willReturn(aResponse().withStatus(200).withBody(res)))
+
+    stubFor(get(urlMatching("/auth/userDetails"))
+      .willReturn(
+        aResponse().
+          withStatus(200).
+          withBody("""
+                     |{
+                     |   "name":"xxx",
+                     |   "email":"xxx",
+                     |   "affinityGroup":"xxx",
+                     |   "authProviderId":"123456789",
+                     |   "authProviderType":"xxx"
+                     |}
                    """.stripMargin)
       )
     )

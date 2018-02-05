@@ -19,7 +19,7 @@ package controllers
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.SubmissionMarshallingException
-import connectors.{AuthConnect, AuthConnector}
+import config.AuthClientConnector
 import enums.PAYEStatus
 import models._
 import play.api.mvc._
@@ -34,18 +34,19 @@ import models.validation.APIValidation
 import play.api.Logger
 import play.api.libs.json._
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 @Singleton
-class RegistrationController @Inject()(injAuthConnector: AuthConnector,
-                                       injRegistrationService: RegistrationService,
+class RegistrationController @Inject()(injRegistrationService: RegistrationService,
                                        injSubmissionService: SubmissionService,
                                        injNotificationService: NotificationService,
                                        injIICounterService: IICounterService) extends RegistrationCtrl {
-  val auth: AuthConnect = injAuthConnector
+  override lazy val authConnector: AuthConnector = AuthClientConnector
+
   val registrationService: RegistrationService = injRegistrationService
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
   val submissionService: SubmissionService = injSubmissionService
@@ -53,7 +54,7 @@ class RegistrationController @Inject()(injAuthConnector: AuthConnector,
   val counterService: IICounterService = injIICounterService
 }
 
-trait RegistrationCtrl extends BaseController with Authenticated with Authorisation[String] {
+trait RegistrationCtrl extends BaseController with Authorisation {
 
   val registrationService: RegistrationSrv
   val submissionService: SubmissionSrv
@@ -62,57 +63,45 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
 
   def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authenticated {
-        case NotLoggedIn => Future.successful(Forbidden)
-        case LoggedIn(context) =>
-          withJsonBody[String] { transactionID =>
-            registrationService.createNewPAYERegistration(regID, transactionID, context.ids.internalId) map {
-              reg => Ok(Json.toJson(reg))
-            }
+      isAuthenticated { internalId =>
+        withJsonBody[String] { transactionID =>
+          registrationService.createNewPAYERegistration(regID, transactionID, internalId) map {
+            reg => Ok(Json.toJson(reg))
           }
+        }
+      } recoverWith {
+        case _ => Future.successful(Forbidden)
       }
   }
 
   def getPAYERegistration(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getPAYERegistration") {
           registrationService.fetchPAYERegistration(regID) map {
             case Some(registration) => Ok(Json.toJson(registration))
             case None => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getPAYERegistration] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getPAYERegistration] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getCompanyDetails(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getCompanyDetails") {
           registrationService.getCompanyDetails(regID) map {
             case Some(companyDetails) => Ok(Json.toJson(companyDetails))
             case None => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getCompanyDetails] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getCompanyDetails] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def upsertCompanyDetails(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertCompanyDetails") {
           withJsonBody[CompanyDetails] { companyDetails =>
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
@@ -121,38 +110,26 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertCompanyDetails] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertCompanyDetails] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getEmployment(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getEmployment") {
           registrationService.getEmployment(regID) map {
             case Some(employment) => Ok(Json.toJson(employment)(Employment.format(APIValidation)))
             case None             => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getEmployment] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getEmployment] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def upsertEmployment(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertEmployment") {
           withJsonBody[Employment] { employmentDetails =>
             registrationService.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
               Ok(Json.toJson(employmentResponse)(Employment.format(APIValidation)))
@@ -160,40 +137,26 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case missing : MissingRegDocument => NotFound
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertEmployment] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertEmployment] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getDirectors(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getDirectors") {
           registrationService.getDirectors(regID) map {
             case s: Seq[Director] if s.isEmpty => NotFound
             case directors: Seq[Director]      => Ok(Json.toJson(directors)(Director.directorSequenceWriter(APIValidation)))
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getDirectors] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getDirectors] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) =>
-          Logger.info(s"[RegistrationController] [getDirectors] Auth resource not found for $regID")
-          Future.successful(NotFound)
+        }
       }
   }
 
   def upsertDirectors(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertDirectors") {
           withJsonBody[Seq[Director]] { directors =>
             registrationService.upsertDirectors(regID, directors) map { directorsResponse =>
               Ok(Json.toJson(directorsResponse)(Director.directorSequenceWriter(APIValidation)))
@@ -202,38 +165,26 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case noNinos : RegistrationFormatException => BadRequest(noNinos.getMessage)
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertDirectors] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertDirectors] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getSICCodes(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getSICCodes") {
           registrationService.getSICCodes(regID) map {
             case s: Seq[SICCode] if s.isEmpty => NotFound
             case sicCodes: Seq[SICCode] => Ok(Json.toJson(sicCodes))
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getSICCodes] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getSICCodes] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def upsertSICCodes(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertSICCodes") {
           withJsonBody[Seq[SICCode]] { sicCodes =>
             registrationService.upsertSICCodes(regID, sicCodes) map { sicCodesResponse =>
               Ok(Json.toJson(sicCodesResponse))
@@ -241,38 +192,26 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case missing : MissingRegDocument => NotFound
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertSICCodes] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertSICCodes] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getPAYEContact(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getPAYEContact") {
           registrationService.getPAYEContact(regID) map {
             case Some(payeContact) => Ok(Json.toJson(payeContact)(PAYEContact.format(APIValidation)))
             case None => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getPAYEContact] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getPAYEContact] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def upsertPAYEContact(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertPAYEContact") {
           withJsonBody[PAYEContact] { payeContact =>
             registrationService.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
               Ok(Json.toJson(payeContactResponse)(PAYEContact.format(APIValidation)))
@@ -281,38 +220,26 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case format  : RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertPAYEContact] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertPAYEContact] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getCompletionCapacity(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getCompletionCapacity") {
           registrationService.getCompletionCapacity(regID) map {
             case Some(capacity) => Ok(Json.toJson(capacity))
             case None => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getCompletionCapacity] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getCompletionCapacity] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def upsertCompletionCapacity(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertCompletionCapacity") {
           implicit val stringReads: Reads[String] = APIValidation.completionCapacityReads
           withJsonBody[String] { capacity =>
             registrationService.upsertCompletionCapacity(regID, capacity) map { capacityResponse =>
@@ -322,52 +249,34 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case format  : RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [upsertCompletionCapacity] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [upsertCompletionCapacity] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def submitPAYERegistration(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "submitPAYERegistration") {
           submissionService.submitToDes(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
             case e =>
-              Logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID - error:", e)
+              Logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID", e)
               throw e
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [submitPAYERegistration] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [submitPAYERegistration] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def getAcknowledgementReference(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regID) {
-        case Authorised(_) =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getAcknowledgementReference") {
           registrationService.getAcknowledgementReference(regID) map {
             case Some(ackRef) => Ok(Json.toJson(ackRef))
             case None => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getAcknowledgementReference] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getAcknowledgementReference] User logged in but not authorised for resource $regID")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
     }
 
@@ -413,26 +322,20 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
 
   def getEligibility(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regId) {
-        case Authorised(_) =>
+      isAuthorised(regId) { authResult =>
+        authResult.ifAuthorised(regId, "RegistrationCtrl", "getEligibility") {
           registrationService.getEligibility(regId) map {
             case Some(eligibility) => Ok(Json.toJson(eligibility))
             case None => NotFound
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getEligibility] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getEligibility] User logged in but not authorised for resource $regId")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def updateEligibility(regId: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      authorised(regId) {
-        case Authorised(_) =>
+      isAuthorised(regId) { authResult =>
+        authResult.ifAuthorised(regId, "RegistrationCtrl", "updateEligibility") {
           withJsonBody[Eligibility] { json =>
             registrationService.updateEligibility(regId, json) map { updated =>
               Ok(Json.toJson(updated))
@@ -440,13 +343,7 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
               case missing : MissingRegDocument => NotFound
             }
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [updateEligibility] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [updateEligibility] User logged in but not authorised for resource $regId")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
@@ -463,39 +360,27 @@ trait RegistrationCtrl extends BaseController with Authenticated with Authorisat
 
   def getDocumentStatus(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regId) {
-        case Authorised(_) =>
+      isAuthorised(regId) { authResult =>
+        authResult.ifAuthorised(regId, "RegistrationCtrl", "getDocumentStatus") {
           registrationService.getStatus(regId) map { status =>
             Ok(Json.toJson(status))
           } recover {
             case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [getDocumentStatus] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [getDocumentStatus] User logged in but not authorised for resource $regId")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 
   def deletePAYERegistration(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(regId) {
-        case Authorised(_) =>
+      isAuthorised(regId) { authResult =>
+        authResult.ifAuthorised(regId, "RegistrationCtrl", "deletePAYERegistration") {
           registrationService.deletePAYERegistration(regId, PAYEStatus.rejected) map { deleted =>
             if(deleted) Ok else InternalServerError
           } recover {
             case _: UnmatchedStatusException => PreconditionFailed
           }
-        case NotLoggedInOrAuthorised =>
-          Logger.info(s"[RegistrationController] [deletePAYERegistration] User not logged in")
-          Future.successful(Forbidden)
-        case NotAuthorised(_) =>
-          Logger.info(s"[RegistrationController] [deletePAYERegistration] User logged in but not authorised for resource $regId")
-          Future.successful(Forbidden)
-        case AuthResourceNotFound(_) => Future.successful(NotFound)
+        }
       }
   }
 }
