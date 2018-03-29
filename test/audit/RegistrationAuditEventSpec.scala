@@ -28,7 +28,7 @@ class RegistrationAuditEventSpec extends UnitSpec {
   implicit val extendedEventFormats = Json.format[ExtendedDataEvent]
 
   "RegistrationEvent" should {
-    val clientIP: String = "1.2.3.4"
+    val clientIP: String = "fooBarWizz"
     val clientPort: String = "1234"
     val auditType = "testType"
     val bearer = "Bearer 12345"
@@ -38,7 +38,7 @@ class RegistrationAuditEventSpec extends UnitSpec {
     val completeCarrier = HeaderCarrier(
       trueClientIp = Some(clientIP),
       trueClientPort = Some(clientPort),
-      forwarded = Some(ForwardedFor("2.3.4.5")),
+      forwarded = Some(ForwardedFor("fooBarWizz")),
       sessionId = Some(SessionId(session)),
       requestId = Some(RequestId(request)),
       authorization = Some(Authorization(bearer))
