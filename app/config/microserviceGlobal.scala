@@ -63,9 +63,7 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Mi
       Crypto.crypto.encrypt(PlainText("foo"))
       Logger.info("Mongo encryption key is valid")
     } catch {
-      case ex: Throwable => {
-        Logger.error("Invalid mongo encryption key", ex)
-      }
+      case ex: Throwable => Logger.error("Invalid_Mongo_Encryption_Key", ex)
     }
 
     import scala.concurrent.ExecutionContext.Implicits.global

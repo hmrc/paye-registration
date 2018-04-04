@@ -16,22 +16,21 @@
 
 package connectors
 
-import javax.inject.{Inject, Singleton}
-
 import audit.FailedDesSubmissionEvent
 import config.{MicroserviceAuditConnector, WSHttp}
+import javax.inject.Singleton
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logger
 import play.api.libs.json.Writes
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.ServicesConfig
-import utils.PAYEFeatureSwitches
-
-import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import utils.{PAYEFeatureSwitches, WorkingHoursGuard}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class DESConnector extends DESConnect with ServicesConfig {
@@ -45,16 +44,17 @@ class DESConnector extends DESConnect with ServicesConfig {
   lazy val urlHeaderEnvironment: String = getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
   lazy val urlHeaderAuthorization: String = s"Bearer ${getConfString("des-service.authorization-token",
     throw new Exception("could not find config value for des-service.authorization-token"))}"
+  lazy val alertWorkingHours = getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
+
   val http = WSHttp
   val auditConnector = MicroserviceAuditConnector
 }
 
-trait DESConnect extends HttpErrorFunctions {
+trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
 
   val desUrl: String
   val desURI: String
   val desTopUpURI: String
-
   val desStubUrl: String
   val desStubURI: String
   val desStubTopUpURI: String
@@ -75,7 +75,13 @@ trait DESConnect extends HttpErrorFunctions {
       case 499 =>
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
       case status if is4xx(status) =>
-        if(status == 400) {Logger.error("PAYE_-_400_response_returned_from_DES")} //used in alerting - DO NOT CHANGE ERROR TEXT
+        if(status == 400) {
+          if(isInWorkingDaysAndHours) {
+            Logger.error("PAYE_-_400_response_returned_from_DES") //used in alerting - DO NOT CHANGE ERROR TEXT
+          } else {
+            Logger.error("PAYE_-_400_response_returned_from_DES NON_PAGER_DUTY_LOG")
+          }
+        }
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.allHeaders)
       case _ => handleResponse(http, url)(response)
     }

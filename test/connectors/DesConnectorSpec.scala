@@ -27,10 +27,10 @@ import helpers.PAYERegSpec
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.http._
-import utils.PAYEFeatureSwitches
+import utils.{PAYEFeatureSwitches, WorkingHoursGuard}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpReads, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
 
 class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFixture {
 
@@ -53,6 +53,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override val urlHeaderEnvironment   = "env"
       override val urlHeaderAuthorization = "auth"
       override val auditConnector = mockAuditConnector
+      override val alertWorkingHours: String = "08:00:00_17:00:00"
     }
   }
 
@@ -70,7 +71,6 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   "submitToDES with a Partial DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200))
-
       await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
   }
