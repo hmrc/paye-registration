@@ -22,7 +22,7 @@ import enums.IncorporationStatus
 import models.JsonFormatValidation
 import models.validation.APIValidation
 import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsValue, JsPath, JsSuccess, Json}
+import play.api.libs.json.{JsPath, JsSuccess, JsValue, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {

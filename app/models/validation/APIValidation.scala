@@ -17,6 +17,8 @@
 package models.validation
 
 import java.time.LocalDate
+
+import enums.Employing
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
 
@@ -42,7 +44,7 @@ object APIValidation extends BaseJsonFormatting {
 
   private val invalidPrefixes = List("BG", "GB", "NK", "KN", "TN", "NT", "ZZ")
 
-
+  @deprecated("used for validation in deprecated Employment model",  "SCRS-11281")
   private val minDate = LocalDate.of(1900,1,1)
 
   private def isValidPhoneNumber(phoneNumber: String): Boolean = {
@@ -52,6 +54,10 @@ object APIValidation extends BaseJsonFormatting {
 
   private def beforeMinDate(date: LocalDate): Boolean = {
     date.isBefore(minDate)
+  }
+
+  private def paymentDateRangeValidation(now: LocalDate, date: LocalDate): Boolean = {
+    date.isBefore(now.minusYears(2)) || date.isAfter(now)
   }
 
   private def hasValidPrefix(nino: String) = !invalidPrefixes.exists(nino.startsWith)
@@ -87,9 +93,36 @@ object APIValidation extends BaseJsonFormatting {
   override val postcodeValidate     = Reads.StringReads.filter(ValidationError("Invalid postcode"))(_.matches(postcodeRegex))
   override val countryValidate      = Reads.StringReads.filter(ValidationError("Invalid country"))(_.matches(countryRegex))
 
+  @deprecated("validation for old Employment model", "SCRS-11281")
   override val firstPaymentDateFormat: Format[LocalDate] = {
     val rds = Reads.DefaultLocalDateReads.filter(ValidationError("invalid date - too early"))(date => !beforeMinDate(date))
     Format(rds, Writes.DefaultLocalDateWrites)
+  }
+
+  override def employmentPaymentDateFormat(now: LocalDate = LocalDate.now, employees: Employing.Value): Format[LocalDate] = {
+    val rds = employees match {
+      case Employing.alreadyEmploying =>
+        Reads.DefaultLocalDateReads.filter(ValidationError("invalid date - must be in the range of today - 2 years"))(date => !paymentDateRangeValidation(now, date))
+      case Employing.willEmployThisYear | Employing.notEmploying =>
+        Reads.DefaultLocalDateReads.filter(ValidationError("invalid date - must be today"))(date => date.isEqual(now))
+      case Employing.willEmployNextYear =>
+        Reads.DefaultLocalDateReads.filter(ValidationError("invalid date - must be in the range of today - 2 years"))(date => date.isEqual(LocalDate.of(now.getYear,4,6)))
+    }
+
+    Format(rds, Writes.DefaultLocalDateWrites)
+  }
+
+  override def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean] = {
+    val rds = Reads.BooleanReads.filter(ValidationError("invalid value for subcontractors"))(subcontractors => !(!construction && subcontractors))
+
+    Format(rds, Writes.BooleanWrites)
+  }
+
+  override def employeesFormat(companyPension: Option[Boolean]): Format[Employing.Value] = {
+    val rds = Reads.enumNameReads(Employing)
+      .filter(ValidationError("invalid values for pair employees/companyPension"))(employees => !(employees == Employing.alreadyEmploying && companyPension.isEmpty))
+
+    Format(rds, Writes.enumNameWrites)
   }
 
   override val directorNameFormat   = readToFmt(Reads.StringReads.filter(ValidationError("error.pattern"))(_.matches(directorNameRegex)))

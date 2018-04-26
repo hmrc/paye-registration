@@ -95,27 +95,27 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val transactionID = "NN1234"
+      val txID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
       upsertToDb(
         PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          Some(validCompanyDetails),
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
+          registrationID = regID,
+          transactionID = txID,
+          internalID = intID,
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = timestamp,
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.draft,
+          completionCapacity = None,
+          companyDetails = Some(validCompanyDetails),
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
@@ -132,27 +132,27 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val transactionID = "NN1234"
+      val txID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
       upsertToDb(
         PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          Some(oldFormatCompanyDetails),
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
+          registrationID = regID,
+          transactionID = txID,
+          internalID = intID,
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = timestamp,
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.draft,
+          completionCapacity = None,
+          companyDetails = Some(oldFormatCompanyDetails),
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
@@ -169,27 +169,27 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val transactionID = "NN1234"
+      val txID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
       repository.upsertRegTestOnly(
         PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          None,
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
+          registrationID = regID,
+          transactionID = txID,
+          internalID = intID,
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = timestamp,
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.draft,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
@@ -224,27 +224,27 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val transactionID = "NN1234"
+      val txID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
       upsertToDb(
         PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          None,
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
+          registrationID = regID,
+          transactionID = txID,
+          internalID = intID,
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = timestamp,
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.draft,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
@@ -270,27 +270,27 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val transactionID = "NN1234"
+      val txID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
       upsertToDb(
         PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          None,
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
+          registrationID = regID,
+          transactionID = txID,
+          internalID = intID,
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = timestamp,
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.draft,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
@@ -306,27 +306,27 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       setupSimpleAuthMocks()
 
       val regID = "12345"
-      val transactionID = "NN1234"
+      val txID = "NN1234"
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
       upsertToDb(
         PAYERegistration(
-          regID,
-          transactionID,
-          intID,
-          Some("testAckRef"),
-          None,
-          None,
-          timestamp,
-          Some(Eligibility(false, false)),
-          PAYEStatus.draft,
-          None,
-          None,
-          Seq.empty,
-          None,
-          None,
-          Seq.empty,
-          lastUpdate,
+          registrationID = regID,
+          transactionID = txID,
+          internalID = intID,
+          acknowledgementReference = Some("testAckRef"),
+          crn = None,
+          registrationConfirmation = None,
+          formCreationTimestamp = timestamp,
+          eligibility = Some(Eligibility(false, false)),
+          status = PAYEStatus.draft,
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Seq.empty,
+          payeContact = None,
+          employment = None,
+          sicCodes = Seq.empty,
+          lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,

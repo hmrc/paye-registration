@@ -20,7 +20,7 @@ import java.text.Normalizer
 import java.text.Normalizer.Form
 import java.time.{LocalDate, ZonedDateTime}
 
-import enums.IncorporationStatus
+import enums.{Employing, IncorporationStatus}
 import helpers.DateHelper
 import models.Address
 import models.incorporation.IncorpStatusUpdate
@@ -84,7 +84,13 @@ trait BaseJsonFormatting extends DateHelper {
   val postcodeValidate: Reads[String]
   val countryValidate: Reads[String]
 
+  @deprecated("validation for old Employment model", "SCRS-11281")
   val firstPaymentDateFormat: Format[LocalDate]
+
+  def employmentPaymentDateFormat(now: LocalDate = LocalDate.now, employees: Employing.Value): Format[LocalDate]
+  def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean]
+  def employeesFormat(companyPension: Option[Boolean]): Format[Employing.Value]
+
   val directorNameFormat: Format[String]
   val directorTitleFormat: Format[String]
   val directorNinoFormat: Format[String]

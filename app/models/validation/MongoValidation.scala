@@ -16,9 +16,10 @@
 
 package models.validation
 
-import java.time.{Instant, ZoneOffset, ZonedDateTime}
+import java.time.{Instant, LocalDate, ZoneOffset, ZonedDateTime}
 
 import auth.Crypto
+import enums.Employing
 import models.Address
 import models.incorporation.IncorpStatusUpdate
 import play.api.libs.json.{Format, JsValue, Json, Reads, Writes, __}
@@ -39,7 +40,12 @@ object MongoValidation extends BaseJsonFormatting {
   override val postcodeValidate     = standardRead
   override val countryValidate      = standardRead
 
+  @deprecated("validation for old Employment model", "SCRS-11281")
   override val firstPaymentDateFormat = Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
+
+  override def employmentPaymentDateFormat(now: LocalDate = LocalDate.now, employees: Employing.Value) = Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
+  override def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean] = Format(Reads.BooleanReads, Writes.BooleanWrites)
+  override def employeesFormat(companyPension: Option[Boolean]): Format[Employing.Value] = Format(Reads.enumNameReads(Employing), Writes.enumNameWrites)
 
   override val directorNameFormat   = readToFmt(standardRead)
   override val directorTitleFormat  = readToFmt(standardRead)

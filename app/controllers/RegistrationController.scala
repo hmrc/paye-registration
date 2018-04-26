@@ -114,6 +114,37 @@ trait RegistrationCtrl extends BaseController with Authorisation {
       }
   }
 
+  def getEmploymentInfo(regID: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getEmploymentInfo") {
+          registrationService.getEmploymentInfo(regID) map {
+            case Some(employmentInfo) => Ok(Json.toJson(employmentInfo)(EmploymentInfo.apiFormat))
+            case None => NoContent
+          } recover {
+            case missing: MissingRegDocument => NotFound
+          }
+        }
+      }
+  }
+
+  def upsertEmploymentInfo(regID: String): Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertEmploymentInfo") {
+          withJsonBody[EmploymentInfo] { employmentDetails =>
+            registrationService.upsertEmploymentInfo(regID, employmentDetails) map { employmentResponse =>
+              Ok(Json.toJson(employmentResponse)(EmploymentInfo.apiFormat))
+            } recover {
+              case missing: MissingRegDocument => NotFound
+            }
+          }
+        }
+      }
+  }
+
+
+  @deprecated("Please use getEmploymentInfo", "SCRS-11281")
   def getEmployment(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
@@ -125,7 +156,7 @@ trait RegistrationCtrl extends BaseController with Authorisation {
         }
       }
   }
-
+  @deprecated("Please use upsertEmploymentInfo", "SCRS-11281")
   def upsertEmployment(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>

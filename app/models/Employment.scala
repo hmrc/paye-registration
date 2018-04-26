@@ -18,15 +18,20 @@ package models
 
 import java.time.LocalDate
 
-import models.validation.{APIValidation, BaseJsonFormatting}
+import enums.Employing
+import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
+import scala.collection.Seq
+
+@deprecated("Please use EmploymentInfo", "SCRS-11281")
 case class Employment(employees: Boolean,
                       companyPension: Option[Boolean],
                       subcontractors: Boolean,
                       firstPaymentDate: LocalDate)
 
+@deprecated("Please use EmploymentInfo", "SCRS-11281")
 object Employment {
   def format(formatter: BaseJsonFormatting): Format[Employment] = (
     (__ \ "employees").format[Boolean] and
@@ -36,4 +41,44 @@ object Employment {
   )(Employment.apply, unlift(Employment.unapply))
 
   implicit val format: Format[Employment] = format(APIValidation)
+}
+
+case class EmploymentInfo(employees: Employing.Value,
+                          firstPaymentDate: LocalDate,
+                          construction: Boolean,
+                          subcontractors: Boolean,
+                          companyPension: Option[Boolean])
+
+object EmploymentInfo {
+  def format(formatter: BaseJsonFormatting, now: LocalDate = LocalDate.now): Format[EmploymentInfo] = new Format[EmploymentInfo] {
+    override def reads(json: JsValue): JsResult[EmploymentInfo] = {
+      for {
+        companyPension   <- (json \ "companyPension").validateOpt[Boolean]
+        employees        <- (json \ "employees").validate[Employing.Value](formatter.employeesFormat(companyPension))
+        firstPaymentDate <- (json \ "firstPaymentDate").validate[LocalDate](formatter.employmentPaymentDateFormat(now, employees))
+        construction     <- (json \ "construction").validate[Boolean]
+        subcontractors   <- (json \ "subcontractors").validate[Boolean](formatter.employmentSubcontractorsFormat(construction))
+      } yield {
+        EmploymentInfo(
+          employees = employees,
+          firstPaymentDate = firstPaymentDate,
+          construction = construction,
+          subcontractors = subcontractors,
+          companyPension = companyPension
+        )
+      }
+    }
+
+    override def writes(o: EmploymentInfo): JsValue = {
+      Json.obj(
+        "employees" -> o.employees,
+        "firstPaymentDate" -> o.firstPaymentDate,
+        "construction" -> o.construction,
+        "subcontractors" -> o.subcontractors
+      ) ++ o.companyPension.fold(Json.obj())(cp => Json.obj("companyPension" -> cp))
+    }
+  }
+
+  implicit val apiFormat: Format[EmploymentInfo] = format(APIValidation)
+  lazy val mongoFormat: Format[EmploymentInfo]   = format(MongoValidation)
 }
