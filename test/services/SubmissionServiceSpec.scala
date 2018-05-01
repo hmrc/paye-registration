@@ -22,7 +22,7 @@ import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
-import enums.{IncorporationStatus, PAYEStatus}
+import enums.{Employing, IncorporationStatus, PAYEStatus}
 import models._
 import models.submission._
 import helpers.PAYERegSpec
@@ -273,6 +273,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
     status = IncorporationStatus.accepted,
     crn = Some("123456")
   )
+  val validEmploymentInfo = EmploymentInfo(
+    employees = Employing.alreadyEmploying,
+    firstPaymentDate = LocalDate.of(2016, 12, 20),
+    construction = true,
+    subcontractors = true,
+    companyPension = Some(false)
+  )
 
   "RejectedIncorporationException" should {
     "return the message" when {
@@ -380,27 +387,62 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
   }
 
-  "Building DES Limited Company" should {
+  "Building DES Limited Company with deprecated Left(Employment(..))" should {
     "throw the correct exception when Directors list is empty" in new Setup {
-      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, Some(validEmployment), None))
+      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, Left(Some(validEmployment)), None))
     }
-    "throw the correct exception for SIC Code when missing" in new Setup {
-      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, Some(validEmployment), None))
+    "throw the correct exception for SIC Code when missing)" in new Setup {
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, Left(Some(validEmployment)), None))
     }
     "throw the correct exception for Employment when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, validDirectors, None, None))
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, validDirectors, Left(None), None))
     }
   }
 
+  "Building DES Limited Company with Right(EmploymentInfo(..))" should {
+    "throw the correct exception when Directors list is empty" in new Setup {
+      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, Right(Some(validEmploymentInfo)), None))
+    }
+    "throw the correct exception for SIC Code when missing)" in new Setup {
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, Right(Some(validEmploymentInfo)), None))
+    }
+    "throw the correct exception for Employment when missing" in new Setup {
+      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, validDirectors, Right(None), None))
+    }
+
+
+  }
+
   "Building DES Employing People" should {
+
     "throw the correct exception for PAYE Contact when missing" in new Setup {
-      intercept[PAYEContactNotDefinedException](service.buildDESEmployingPeople("regId", Some(validEmployment), None))
+      intercept[PAYEContactNotDefinedException](service.buildDESEmployingPeople("regId", Left(Some(validEmployment)), None))
     }
-    "throw the correct exception for Employment Details when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESEmployingPeople("regId", None, Some(validPAYEContact)))
+    "throw the correct exception for Employment Details" when {
+      "old model is missing" in new Setup {
+        intercept[EmploymentDetailsNotDefinedException](service.buildDESEmployingPeople("regId", Left(None), Some(validPAYEContact)))
+      }
+
+      "new model is missing" in new Setup {
+        intercept[EmploymentDetailsNotDefinedException](service.buildDESEmployingPeople("regId", Right(None), Some(validPAYEContact)))
+      }
     }
-    "return the correct DES Employing People model" in new Setup {
-      service.buildDESEmployingPeople("regId", Some(validEmployment.copy(employees = false)), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
+    "return the correct DES Employing People model" when {
+      "using the old model - Left(Some(Employment(...)))" in new Setup {
+        service.buildDESEmployingPeople("regId", Left(Some(validEmployment.copy(employees = false))), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
+      }
+
+      "using the new model - Right(Some(EmploymentInfo(...))) - employees is willEmployThisYear" in new Setup {
+        service.buildDESEmployingPeople("regId", Right(Some(validEmploymentInfo.copy(employees = Employing.willEmployThisYear))), Some(validPAYEContact)) shouldBe validDESEmployingPeople
+      }
+
+      "using the new model - Right(Some(EmploymentInfo(...))) - employees is willEmployNextYear" in new Setup {
+        service.buildDESEmployingPeople("regId", Right(Some(validEmploymentInfo.copy(employees = Employing.willEmployNextYear))), Some(validPAYEContact)) shouldBe validDESEmployingPeople
+      }
+
+      "using the new model - Right(Some(EmploymentInfo(...))) - employees is notEmploying" in new Setup {
+        service.buildDESEmployingPeople("regId", Right(Some(validEmploymentInfo.copy(employees = Employing.notEmploying))), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
+      }
     }
   }
 

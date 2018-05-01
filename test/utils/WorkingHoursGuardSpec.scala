@@ -16,7 +16,7 @@
 
 package utils
 
-import java.time.LocalTime
+import java.time.{LocalDate, LocalTime}
 
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -24,6 +24,8 @@ class WorkingHoursGuardSpec extends UnitSpec {
 
   trait Setup extends WorkingHoursGuard {
     override val alertWorkingHours: String = "08:00:00_18:00:00"
+    override protected val currentDate: LocalDate = LocalDate.now
+    override protected val currentTime: LocalTime = LocalTime.now
   }
 
   "isWorkingHours" should {

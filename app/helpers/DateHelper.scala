@@ -17,8 +17,10 @@
 package helpers
 
 import javax.inject.Singleton
-import java.time.{ZoneId, ZonedDateTime}
+import java.time.{ZoneId, ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
+
+import utils.SystemDate
 
 @Singleton
 class DateHelper {
@@ -31,7 +33,7 @@ class DateHelper {
 
   def zonedDateTimeFromString(d:String) = ZonedDateTime.parse(d,dtFormat).withZoneSameInstant(ZoneId.of("Z"))
 
-  def getTimestamp: ZonedDateTime = ZonedDateTime.now(ZoneId.of("Z"))
+  def getTimestamp: ZonedDateTime = ZonedDateTime.ofInstant(SystemDate.getSystemDate.toInstant(ZoneOffset.UTC), ZoneId.of("Z"))
 
   def getTimestampString: String = formatTimestamp(getTimestamp)
 

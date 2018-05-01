@@ -37,8 +37,10 @@ trait FeatureSwitchCtrl extends BaseController {
     implicit request =>
 
       def feature: FeatureSwitch = featureState match {
-        case "true" => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
-        case _ => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
+        case "true"                                         => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
+        case x if x.matches(FeatureSwitch.datePatternRegex) => fs.setSystemDate(ValueSetFeatureSwitch(featureName, featureState))
+        case x@"time-clear"                                 => fs.clearSystemDate(ValueSetFeatureSwitch(featureName, x))
+        case _                                              => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
       }
 
       PAYEFeatureSwitches(featureName) match {

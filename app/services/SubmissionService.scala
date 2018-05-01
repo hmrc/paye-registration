@@ -17,7 +17,6 @@
 package services
 
 import javax.inject.{Inject, Singleton}
-
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
@@ -25,7 +24,7 @@ import common.constants.ETMPStatusCodes
 import config.AuthClientConnector
 import connectors.{BusinessRegistrationConnect, BusinessRegistrationConnector, CompanyRegistrationConnect, CompanyRegistrationConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
-import enums.{IncorporationStatus, PAYEStatus}
+import enums.{Employing, IncorporationStatus, PAYEStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -182,14 +181,18 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
       Logger.warn(s"[SubmissionService] - [payeReg2PartialDESSubmission]: Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
       throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
     }
+    val employmentInfo = payeReg.employmentInfo.fold[Either[Option[Employment], Option[EmploymentInfo]]](Left(payeReg.employment))(emp => Right(Some(emp)))
 
     buildDESMetaData(payeReg.registrationID,payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
       desMetaData => {
         DESSubmission(
           acknowledgementReference = ackRef,
           metaData = desMetaData,
-          limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, payeReg.employment, ctutr),
-          employingPeople = buildDESEmployingPeople(payeReg.registrationID, payeReg.employment, payeReg.payeContact)
+          limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, employmentInfo, ctutr),
+          employingPeople = buildDESEmployingPeople(
+            payeReg.registrationID,
+            employmentInfo,
+            payeReg.payeContact)
         )
       }
     }
@@ -227,9 +230,14 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
                                                sicCodes: Seq[SICCode],
                                                incorpUpdateCrn: Option[String],
                                                directors: Seq[Director],
-                                               employment: Option[Employment],
+                                               employment: Either[Option[Employment],Option[EmploymentInfo]],
                                                ctutr: Option[String]): DESLimitedCompany = {
-    val EmploymentDetails = employment.getOrElse(throw new EmploymentDetailsNotDefinedException("Employment details not defined"))
+    val companyPension = employment match{
+      case Right(Some(empInfo)) => empInfo.companyPension
+      case Left(Some(empInfo)) => empInfo.companyPension
+      case _ => throw new EmploymentDetailsNotDefinedException("Employment details not defined")
+    }
+
     if(directors.isEmpty) throw new DirectorsNotCompletedException("No director details provided") else {
       DESLimitedCompany(
         companyUTR = ctutr,
@@ -241,23 +249,40 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
         crn = incorpUpdateCrn,
         directors = directors,
         registeredOfficeAddress = companyDetails.roAddress,
-        operatingOccPensionScheme = EmploymentDetails.companyPension
+        operatingOccPensionScheme = companyPension
       )
     }
   }
 
-  private[services] def buildDESEmployingPeople(regId: String, employment: Option[Employment], payeContact: Option[PAYEContact]): DESEmployingPeople = {
-    val employmentDetails = employment.getOrElse(throw new EmploymentDetailsNotDefinedException("Employment details not defined"))
-    val payeContactDetails = payeContact.getOrElse(throw new PAYEContactNotDefinedException("PAYE Contact not defined"))
-
+  private def buildDesEmployment(employmentDetails: Employment, payeContactDetails: PAYEContact): DESEmployingPeople = {
     DESEmployingPeople(
       dateOfFirstEXBForEmployees = employmentDetails.firstPaymentDate,
-      numberOfEmployeesExpectedThisYear = if( employmentDetails.employees ) "1" else "0",
+      numberOfEmployeesExpectedThisYear = if (employmentDetails.employees) "1" else "0",
       engageSubcontractors = employmentDetails.subcontractors,
       correspondenceName = payeContactDetails.contactDetails.name,
       correspondenceContactDetails = payeContactDetails.contactDetails.digitalContactDetails,
       payeCorrespondenceAddress = payeContactDetails.correspondenceAddress
     )
+  }
+
+  private def buildDesEmploymentInfo(employmentDetails: EmploymentInfo, payeContactDetails: PAYEContact): DESEmployingPeople = {
+    DESEmployingPeople(
+      dateOfFirstEXBForEmployees = employmentDetails.firstPaymentDate,
+      numberOfEmployeesExpectedThisYear = if (employmentDetails.employees != Employing.notEmploying ) "1" else "0",
+      engageSubcontractors = employmentDetails.subcontractors,
+      correspondenceName = payeContactDetails.contactDetails.name,
+      correspondenceContactDetails = payeContactDetails.contactDetails.digitalContactDetails,
+      payeCorrespondenceAddress = payeContactDetails.correspondenceAddress
+    )
+  }
+
+  private[services] def buildDESEmployingPeople(regId: String, employment: Either[Option[Employment], Option[EmploymentInfo]], payeContact: Option[PAYEContact]): DESEmployingPeople = {
+    val payeContactDetails = payeContact.getOrElse(throw new PAYEContactNotDefinedException("PAYE Contact not defined"))
+   employment match {
+      case Right(Some(emp)) => buildDesEmploymentInfo(emp, payeContactDetails)
+      case Left(Some(emp))  => buildDesEmployment(emp, payeContactDetails)
+      case _                => throw new EmploymentDetailsNotDefinedException("Employment details not defined")
+    }
   }
 
   private[services] class FailedToGetCredId extends NoStackTrace

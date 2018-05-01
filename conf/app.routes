@@ -7,8 +7,12 @@ PATCH      /:regID/new                              controllers.RegistrationCont
 GET        /:regID/company-details                  controllers.RegistrationController.getCompanyDetails(regID)
 PATCH      /:regID/company-details                  controllers.RegistrationController.upsertCompanyDetails(regID)
 
+# Deprecated needs to be removed as part of clean up
 GET        /:regID/employment                       controllers.RegistrationController.getEmployment(regID)
 PATCH      /:regID/employment                       controllers.RegistrationController.upsertEmployment(regID)
+
+GET        /:regID/employment-info                  controllers.RegistrationController.getEmploymentInfo(regID)
+PATCH      /:regID/employment-info                  controllers.RegistrationController.upsertEmploymentInfo(regID)
 
 GET        /:regID/directors                        controllers.RegistrationController.getDirectors(regID)
 PATCH      /:regID/directors                        controllers.RegistrationController.upsertDirectors(regID)

@@ -22,8 +22,11 @@ import java.time.{LocalDate, LocalTime}
 trait WorkingHoursGuard {
   val alertWorkingHours: String
 
-  private[utils] def localTimeNow: LocalTime = LocalTime.now
-  private[utils] def localDayNow: Int = LocalDate.now().getDayOfWeek.getValue
+  protected val currentDate: LocalDate
+  protected val currentTime: LocalTime
+
+  private[utils] def localTimeNow: LocalTime = currentTime
+  private[utils] def localDayNow: Int = currentDate.getDayOfWeek.getValue
 
   private def isBetweenLoggingTimes: Boolean = {
     implicit val format: String => LocalTime = LocalTime.parse(_: String, DateTimeFormatter.ofPattern("HH:mm:ss"))
