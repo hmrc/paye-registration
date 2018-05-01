@@ -17,8 +17,7 @@
 package services
 
 import javax.inject.{Inject, Singleton}
-
-import enums.PAYEStatus
+import enums.{Employing, PAYEStatus}
 import helpers.PAYEBaseValidator
 import models._
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
@@ -74,10 +73,27 @@ trait RegistrationSrv extends PAYEBaseValidator {
     else throw new RegistrationFormatException(s"No business contact method submitted for regID $regID")
   }
 
+  def getEmploymentInfo(regID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
+    registrationRepository.retrieveEmploymentInfo(regID)
+  }
+
+  def upsertEmploymentInfo(regID: String, employmentDetails: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
+    registrationRepository.upsertEmploymentInfo(regID, employmentDetails) flatMap { res =>
+      val status = (res.employees, res.construction) match {
+        case (Employing.notEmploying, false) => PAYEStatus.invalid
+        case _ => PAYEStatus.draft
+      }
+
+      registrationRepository.updateRegistrationStatus(regID, status) map (_ => res)
+    }
+  }
+
+  @deprecated("use getEmploymentInfo instead for the new model",  "SCRS-11281")
   def getEmployment(regID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
     registrationRepository.retrieveEmployment(regID)
   }
 
+  @deprecated("use upsertEmploymentInfo instead for the new model",  "SCRS-11281")
   def upsertEmployment(regID: String, employmentDetails: Employment)(implicit ec: ExecutionContext): Future[Employment] = {
     registrationRepository.upsertEmployment(regID, employmentDetails) flatMap {
       result =>

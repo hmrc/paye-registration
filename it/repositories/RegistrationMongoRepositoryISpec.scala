@@ -17,21 +17,19 @@
 package repositories
 
 import java.time._
-import javax.inject.Provider
 
 import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
-import enums.PAYEStatus
+import enums.{Employing, PAYEStatus}
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models._
 import play.api.Configuration
 import reactivemongo.api.commands.WriteResult
-import services.MetricsService
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
@@ -480,6 +478,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     acknowledgedTimestamp = None,
     lastAction = Some(lastUpdateZDT)
   )
+  val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018,4,9), true, true, Some(true))
 
   class Setup(timestampZDT: ZonedDateTime = lastUpdateZDT) {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
@@ -646,6 +645,64 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertEmployment("AC123456", employmentDetails)))
 
+    }
+  }
+
+  "calling retrieveEmploymentInfo" should {
+    val payeReg: PAYERegistration = reg.copy(employmentInfo = Some(empInfo))
+    "return EmploymentInfo and old employment model is deleted" in new Setup {
+      await(setupCollection(repository, payeReg.copy(employment = Some(employmentDetails))))
+
+      val oldModelCheck = await(repository.retrieveEmployment(payeReg.registrationID))
+      oldModelCheck shouldBe Some(employmentDetails)
+
+      val res = await(repository.retrieveEmploymentInfo(payeReg.registrationID))
+      res shouldBe Some(empInfo)
+
+      val oldModelNoLongerExists = await(repository.retrieveEmployment(payeReg.registrationID))
+      oldModelNoLongerExists shouldBe None
+    }
+
+    "return EmploymentInfo" in new Setup {
+      await(setupCollection(repository, payeReg))
+
+      val res = await(repository.retrieveEmploymentInfo(payeReg.registrationID))
+      res shouldBe Some(empInfo)
+    }
+    "return None when there is no EmploymentInfo in mongo" in new Setup {
+      await(setupCollection(repository, reg.copy(employmentInfo = None)))
+
+      val res = await(repository.retrieveEmploymentInfo(reg.registrationID))
+      res shouldBe None
+    }
+  }
+
+  "calling upsertEmploymentInfo" should {
+    "upsert successfully when a reg doc already exists and Employment Info does not exist" in new Setup {
+      await(setupCollection(repository, reg.copy(employmentInfo = None)))
+
+      val res = await(repository.upsertEmploymentInfo(reg.registrationID, empInfo))
+      res shouldBe empInfo
+
+      val updated = await(repository.retrieveEmploymentInfo(reg.registrationID))
+      updated shouldBe Some(empInfo)
+    }
+
+    "modify an existing EmploymentInfo successfully and also read with invalid date according to APIValidation" in new Setup {
+      val empInfoModified = EmploymentInfo(
+        employees        = Employing.alreadyEmploying,
+        firstPaymentDate = LocalDate.of(1934,1,1),
+        construction     = false,
+        subcontractors   = false,
+        companyPension   = None
+      )
+      await(setupCollection(repository, reg.copy(employmentInfo = Some(empInfo))))
+
+      val res = await(repository.upsertEmploymentInfo(reg.registrationID, empInfoModified))
+      res shouldBe empInfoModified
+
+      val updated = await(repository.retrieveEmploymentInfo(reg.registrationID))
+      updated shouldBe Some(empInfoModified)
     }
   }
 

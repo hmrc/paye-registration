@@ -18,7 +18,6 @@ package models
 
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsError, JsPath, JsResult, JsSuccess}
-import play.api.libs.openid.Errors
 import uk.gov.hmrc.play.test.UnitSpec
 
 trait JsonFormatValidation {
@@ -53,15 +52,6 @@ trait JsonFormatValidation {
             }
           }
         }
-
-
-//        errors(0) match {
-//          case (path, error) => {
-//            path shouldBe errorPath
-//            error.length shouldBe 1
-//            error(0) shouldBe expectedError
-//          }
-//        }
       }
     }
   }
