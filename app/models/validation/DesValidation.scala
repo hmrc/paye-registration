@@ -16,6 +16,9 @@
 
 package models.validation
 
+import java.time.LocalDate
+
+import enums.Employing
 import play.api.Logger
 import play.api.libs.json.{Format, JsValue, Reads, Writes}
 
@@ -48,7 +51,13 @@ object DesValidation extends BaseJsonFormatting {
   override val postcodeValidate     = standardRead
   override val countryValidate      = standardRead
 
+  @deprecated("validation for old Employment model", "SCRS-11281")
   override val firstPaymentDateFormat = Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
+
+  override def employmentPaymentDateFormat(incorpDate: Option[LocalDate] = None, employees: Employing.Value) =
+    Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
+  override def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean] = Format(Reads.BooleanReads, Writes.BooleanWrites)
+  override def employeesFormat(companyPension: Option[Boolean]): Format[Employing.Value] = Format(Reads.enumNameReads(Employing), Writes.enumNameWrites)
 
   override val directorNameFormat  = readToFmt(standardRead)
   override val directorTitleFormat = readToFmt(standardRead)

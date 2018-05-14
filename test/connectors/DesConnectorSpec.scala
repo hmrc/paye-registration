@@ -16,21 +16,22 @@
 
 package connectors
 
+import java.time.{LocalDate, LocalTime}
+
 import fixtures.SubmissionFixture
+import helpers.PAYERegSpec
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
-import helpers.PAYERegSpec
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
-import uk.gov.hmrc.play.http._
-import utils.{PAYEFeatureSwitches, WorkingHoursGuard}
+import utils.PAYEFeatureSwitches
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
 
 class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFixture {
 
@@ -54,6 +55,8 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override val urlHeaderAuthorization = "auth"
       override val auditConnector = mockAuditConnector
       override val alertWorkingHours: String = "08:00:00_17:00:00"
+      override val currentTime: LocalTime = LocalTime.now
+      override val currentDate: LocalDate = LocalDate.now
     }
   }
 

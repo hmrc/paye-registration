@@ -17,8 +17,8 @@
 package repositories
 
 import java.time.ZonedDateTime
-import javax.inject.Inject
 
+import javax.inject.Inject
 import auth.AuthorisationResource
 import com.codahale.metrics.Timer
 import com.kenshoo.play.metrics.Metrics
@@ -39,6 +39,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -65,8 +66,12 @@ trait RegistrationRepository {
   def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String]
   def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails]
+  @deprecated("use retrieveEmploymentInfo instead for the new model",  "SCRS-11281")
   def retrieveEmployment(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Employment]]
+  def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]]
+  @deprecated("use upsertEmploymentInfo instead for the new model",  "SCRS-11281")
   def upsertEmployment(registrationID: String, details: Employment)(implicit ec: ExecutionContext): Future[PAYERegistration]
+  def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo]
   def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]]
   def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]]
   def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]]
@@ -151,6 +156,56 @@ class RegistrationMongoRepository(mongo: () => DB,
         throw new InsertFailed(registrationID, "PAYERegistration")
     }
   }
+  private def toCamelCase(str: String): String = str.head.toLower + str.tail
+
+  private def fetchBlock[T: TypeTag](registrationID: String, key: String = "")(implicit ec: ExecutionContext, rds: Reads[T]): Future[Option[T]] = {
+    val selectorKey = if (key.isEmpty) toCamelCase(typeOf[T].typeSymbol.name.toString) else key
+
+    val projection = Json.obj(selectorKey -> 1)
+    val mongoTimer = mongoResponseTimer.time()
+    collection.find(registrationIDSelector(registrationID), projection).one[JsObject].map { doc =>
+      mongoTimer.stop()
+      doc.fold(throw new MissingRegDocument(registrationID)) { js =>
+        (js \ selectorKey).validateOpt[T].get
+      }
+    } recover {
+      case e : Throwable =>
+        mongoTimer.stop()
+        Logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID - data block: $selectorKey, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+        throw new RetrieveFailed(registrationID)
+    }
+  }
+
+  private[repositories] def updateBlock[T](registrationID: String, data: T, key: String = "")(implicit ec: ExecutionContext, writes: Writes[T]): Future[T] = {
+    val mongoTimer = mongoResponseTimer.time()
+    lazy val className = data.getClass.getSimpleName
+    val selectorKey = if (key.isEmpty) toCamelCase(className) else key
+
+    val setDoc = Json.obj("$set" -> Json.obj(selectorKey -> Json.toJson(data)))
+    collection.update(registrationIDSelector(registrationID), setDoc) map { updateResult =>
+      mongoTimer.stop()
+      if (updateResult.n == 0) {
+        Logger.error(s"[$className] updating for regId : $registrationID - No document found")
+        throw new MissingRegDocument(registrationID)
+      } else {
+        Logger.info(s"[$className] updating for regId : $registrationID - documents modified : ${updateResult.nModified}")
+        data
+      }
+    } recover {
+      case e =>
+        mongoTimer.stop()
+        Logger.error(s"Unable to update ${toCamelCase(className)} for regId: $registrationID, Error: ${e.getMessage}")
+        throw new UpdateFailed(registrationID, className)
+    }
+  }
+   private def unsetElement(registrationID: String, element: String)(implicit ex: ExecutionContext): Future[Boolean] = {
+    collection.findAndUpdate(registrationIDSelector(registrationID), BSONDocument("$unset" -> BSONDocument(element -> "")))
+      .map(_.value.fold {
+        logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
+        throw new UpdateFailed(registrationID, element)
+      }(_ => true))
+    }
+
 
   override def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
@@ -165,6 +220,7 @@ class RegistrationMongoRepository(mongo: () => DB,
         throw new RetrieveFailed(registrationID)
     }
   }
+
 
   override def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
@@ -331,7 +387,6 @@ class RegistrationMongoRepository(mongo: () => DB,
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
-
   }
 
   override def retrieveEmployment(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
@@ -345,6 +400,18 @@ class RegistrationMongoRepository(mongo: () => DB,
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
+  }
+
+  override def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
+    implicit val empInfoMongoFormat = EmploymentInfo.mongoFormat
+    for {
+      empInfo <- fetchBlock[EmploymentInfo](registrationID)
+      _       <- unsetElement(registrationID,"employment")
+    }yield empInfo
+  }
+
+  override def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
+    updateBlock[EmploymentInfo](registrationID,empInfo)
   }
 
   override def upsertEmployment(registrationID: String, details: Employment)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
@@ -513,7 +580,8 @@ class RegistrationMongoRepository(mongo: () => DB,
                                        directors = Nil,
                                        payeContact = None,
                                        employment = None,
-                                       sicCodes = Nil)
+                                       sicCodes = Nil,
+                                       employmentInfo = None)
         updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), clearedDocument) {
           _ =>
             mongoTimer.stop()

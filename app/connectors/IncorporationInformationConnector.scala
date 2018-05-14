@@ -16,20 +16,22 @@
 
 package connectors
 
-import javax.inject.{Inject, Singleton}
+import java.time.LocalDate
 
+import javax.inject.{Inject, Singleton}
 import config.WSHttp
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
-import play.api.http.Status.{ACCEPTED, OK}
+import play.api.libs.json.{JsObject, Json, Reads}
+import play.api.http.Status.{ACCEPTED, NO_CONTENT, OK}
 import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.Future
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+
 import scala.util.control.NoStackTrace
-import uk.gov.hmrc.http.{CorePost, HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{CoreGet, CorePost, HeaderCarrier, HttpResponse}
 
 class IncorporationInformationResponseException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
@@ -43,12 +45,29 @@ class IncorporationInformationConnector extends IncorporationInformationConnect 
 }
 
 trait IncorporationInformationConnect {
-  val http: CorePost
+  val http: CoreGet with CorePost
   val incorporationInformationUri: String
   val payeRegUri: String
 
   private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String = {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
+  }
+
+  def getIncorporationDate(transactionId: String)(implicit hc: HeaderCarrier): Future[Option[LocalDate]] = {
+    val url = s"$incorporationInformationUri/incorporation-information/$transactionId/incorporation-update"
+    http.GET[HttpResponse](url) map { res =>
+      res.status match {
+        case OK => (res.json \ "incorporationDate").asOpt[LocalDate]
+        case NO_CONTENT => None
+        case _ =>
+          Logger.error(s"[IncorporationInformationConnect] - [getIncorporationDate] returned a ${res.status} response code for txId: $transactionId")
+          throw new IncorporationInformationResponseException(s"Calling II on $url returned a ${res.status}")
+      }
+    } recover {
+      case e =>
+        Logger.error(s"[IncorporationInformationConnector] [getIncorporationDate] has encountered an error using transactionId: $transactionId with message: ${e.getMessage}")
+        throw e
+    }
   }
 
   def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {

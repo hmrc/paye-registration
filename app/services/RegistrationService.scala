@@ -16,29 +16,33 @@
 
 package services
 
-import javax.inject.{Inject, Singleton}
+import java.time.LocalDate
 
-import enums.PAYEStatus
-import helpers.PAYEBaseValidator
-import models._
-import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
+import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
+import connectors.{IncorporationInformationConnect, IncorporationInformationConnector}
+import enums.{Employing, PAYEStatus}
+import helpers.PAYEBaseValidator
+import javax.inject.{Inject, Singleton}
+import models._
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
-import common.exceptions.DBExceptions.MissingRegDocument
+import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo,
-                                    injAuditService: AuditService) extends RegistrationSrv with ServicesConfig {
+                                    injAuditService: AuditService,
+                                    injIncorporationInformationConnector: IncorporationInformationConnector) extends RegistrationSrv with ServicesConfig {
   val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
   lazy val payeRestartURL = getString("api.payeRestartURL")
   lazy val payeCancelURL = getString("api.payeCancelURL")
   val auditService = injAuditService
+  val incorporationInformationConnector = injIncorporationInformationConnector
 }
 
 trait RegistrationSrv extends PAYEBaseValidator {
@@ -47,6 +51,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   val payeRestartURL : String
   val payeCancelURL : String
   val auditService: AuditSrv
+  val incorporationInformationConnector: IncorporationInformationConnect
 
   def createNewPAYERegistration(regID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
@@ -74,10 +79,34 @@ trait RegistrationSrv extends PAYEBaseValidator {
     else throw new RegistrationFormatException(s"No business contact method submitted for regID $regID")
   }
 
+  def getEmploymentInfo(regID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
+    registrationRepository.retrieveEmploymentInfo(regID)
+  }
+
+  def upsertEmploymentInfo(regID: String, employmentDetails: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
+    registrationRepository.upsertEmploymentInfo(regID, employmentDetails) flatMap { res =>
+      val status = (res.employees, res.construction) match {
+        case (Employing.notEmploying, false) => PAYEStatus.invalid
+        case _ => PAYEStatus.draft
+      }
+
+      registrationRepository.updateRegistrationStatus(regID, status) map (_ => res)
+    }
+  }
+
+  def getIncorporationDate(regId: String)(implicit hc: HeaderCarrier): Future[Option[LocalDate]] = {
+    for {
+      txId       <- registrationRepository.retrieveTransactionId(regId)
+      incorpDate <- incorporationInformationConnector.getIncorporationDate(txId)
+    } yield incorpDate
+  }
+
+  @deprecated("use getEmploymentInfo instead for the new model",  "SCRS-11281")
   def getEmployment(regID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
     registrationRepository.retrieveEmployment(regID)
   }
 
+  @deprecated("use upsertEmploymentInfo instead for the new model",  "SCRS-11281")
   def upsertEmployment(regID: String, employmentDetails: Employment)(implicit ec: ExecutionContext): Future[Employment] = {
     registrationRepository.upsertEmployment(regID, employmentDetails) flatMap {
       result =>

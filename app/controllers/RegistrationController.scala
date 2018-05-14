@@ -16,6 +16,8 @@
 
 package controllers
 
+import java.time.LocalDate
+
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.SubmissionMarshallingException
@@ -27,7 +29,6 @@ import services._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import auth._
 import javax.inject.{Inject, Singleton}
-
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
@@ -114,6 +115,43 @@ trait RegistrationCtrl extends BaseController with Authorisation {
       }
   }
 
+  def getEmploymentInfo(regID: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "getEmploymentInfo") {
+          registrationService.getEmploymentInfo(regID) map {
+            case Some(employmentInfo) => Ok(Json.toJson(employmentInfo)(EmploymentInfo.apiFormat))
+            case None => NoContent
+          } recover {
+            case missing: MissingRegDocument => NotFound
+          }
+        }
+      }
+  }
+
+  def upsertEmploymentInfo(regID: String): Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      isAuthorised(regID) { authResult =>
+        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertEmploymentInfo") {
+          withIncorporationDate(regID) { incorpDate =>
+            implicit val apiFormat: Format[EmploymentInfo] = EmploymentInfo.format(formatter = APIValidation, incorpDate = incorpDate)
+            withJsonBody[EmploymentInfo] { employmentDetails =>
+              registrationService.upsertEmploymentInfo(regID, employmentDetails) map { employmentResponse =>
+                Ok(Json.toJson(employmentResponse))
+              } recover {
+                case missing: MissingRegDocument => NotFound
+              }
+            }
+          }
+        }
+      }
+  }
+
+  private def withIncorporationDate(regID: String)(f: Option[LocalDate] => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    registrationService.getIncorporationDate(regID) flatMap (f(_))
+  }
+
+  @deprecated("Please use getEmploymentInfo", "SCRS-11281")
   def getEmployment(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
@@ -125,7 +163,7 @@ trait RegistrationCtrl extends BaseController with Authorisation {
         }
       }
   }
-
+  @deprecated("Please use upsertEmploymentInfo", "SCRS-11281")
   def upsertEmployment(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>

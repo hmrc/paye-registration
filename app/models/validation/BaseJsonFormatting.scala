@@ -20,17 +20,20 @@ import java.text.Normalizer
 import java.text.Normalizer.Form
 import java.time.{LocalDate, ZonedDateTime}
 
-import enums.IncorporationStatus
+import enums.{Employing, IncorporationStatus}
 import helpers.DateHelper
 import models.Address
 import models.incorporation.IncorpStatusUpdate
 import play.api.data.validation.ValidationError
 import play.api.libs.json.Reads._
 import play.api.libs.json._
+import utils.SystemDate
 
 import scala.collection.Seq
 
 trait BaseJsonFormatting extends DateHelper {
+  protected def currentDate: LocalDate = SystemDate.getSystemDate.toLocalDate
+
   private val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
   private val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
   private val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
@@ -84,7 +87,13 @@ trait BaseJsonFormatting extends DateHelper {
   val postcodeValidate: Reads[String]
   val countryValidate: Reads[String]
 
+  @deprecated("validation for old Employment model", "SCRS-11281")
   val firstPaymentDateFormat: Format[LocalDate]
+
+  def employmentPaymentDateFormat(incorpDate: Option[LocalDate], employees: Employing.Value): Format[LocalDate]
+  def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean]
+  def employeesFormat(companyPension: Option[Boolean]): Format[Employing.Value]
+
   val directorNameFormat: Format[String]
   val directorTitleFormat: Format[String]
   val directorNinoFormat: Format[String]

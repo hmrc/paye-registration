@@ -36,13 +36,15 @@ case class PAYERegistration(registrationID: String,
                             companyDetails: Option[CompanyDetails],
                             directors: Seq[Director],
                             payeContact: Option[PAYEContact],
+                            @deprecated("use employmentInfo instead", "SCRS-11281")
                             employment: Option[Employment],
                             sicCodes: Seq[SICCode],
                             lastUpdate: String,
                             partialSubmissionTimestamp: Option[String],
                             fullSubmissionTimestamp: Option[String],
                             acknowledgedTimestamp: Option[String],
-                            lastAction:Option[ZonedDateTime])
+                            lastAction:Option[ZonedDateTime],
+                            employmentInfo: Option[EmploymentInfo] = None)
 
 object PAYERegistration {
   implicit val format: OFormat[PAYERegistration] = format(APIValidation)
@@ -67,6 +69,7 @@ object PAYERegistration {
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and
     (__ \ "fullSubmissionTimestamp").formatNullable[String] and
     (__ \ "acknowledgedTimestamp").formatNullable[String] and
-    (__ \ "lastAction").formatNullable[ZonedDateTime](formatter.dateFormat)
+    (__ \ "lastAction").formatNullable[ZonedDateTime](formatter.dateFormat) and
+    (__ \ "employmentInfo").formatNullable[EmploymentInfo](EmploymentInfo.format(formatter))
   )(PAYERegistration.apply, unlift(PAYERegistration.unapply))
 }

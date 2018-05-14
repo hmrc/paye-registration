@@ -16,6 +16,8 @@
 
 package connectors
 
+import java.time.{LocalDate, LocalTime}
+
 import audit.FailedDesSubmissionEvent
 import config.{MicroserviceAuditConnector, WSHttp}
 import javax.inject.Singleton
@@ -28,7 +30,7 @@ import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import utils.{PAYEFeatureSwitches, WorkingHoursGuard}
+import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,6 +50,9 @@ class DESConnector extends DESConnect with ServicesConfig {
 
   val http = WSHttp
   val auditConnector = MicroserviceAuditConnector
+
+  override protected val currentDate = SystemDate.getSystemDate.toLocalDate
+  override protected val currentTime = SystemDate.getSystemDate.toLocalTime
 }
 
 trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
