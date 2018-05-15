@@ -199,12 +199,16 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
    private def unsetElement(registrationID: String, element: String)(implicit ex: ExecutionContext): Future[Boolean] = {
-    collection.findAndUpdate(registrationIDSelector(registrationID), BSONDocument("$unset" -> BSONDocument(element -> "")))
-      .map(_.value.fold {
-        logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
-        throw new UpdateFailed(registrationID, element)
-      }(_ => true))
-    }
+     collection.findAndUpdate(registrationIDSelector(registrationID), BSONDocument("$unset" -> BSONDocument(element -> ""))) map {
+       _.value.fold {
+         logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
+         throw new UpdateFailed(registrationID, element)
+       }{ _ =>
+         Logger.info(s"[RegistrationMongoRepository] [unsetElement] element: $element was unset for regId: $registrationID successfully")
+         true
+       }
+     }
+   }
 
 
   override def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
