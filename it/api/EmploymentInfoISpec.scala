@@ -107,14 +107,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
           lastAction = Some(dt),
-          Some(validEmploymentInfo)
+          employmentInfo = Some(validEmploymentInfo)
         )
       )
 
@@ -145,13 +144,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -192,13 +191,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -228,13 +227,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -273,13 +272,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -330,13 +329,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -386,13 +385,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -443,13 +442,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 

@@ -19,11 +19,12 @@ package models
 
 import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
-import enums.PAYEStatus
+import enums.{Employing, PAYEStatus}
 import models.validation.MongoValidation
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
+import utils.SystemDate
 
 class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
@@ -115,11 +116,11 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "country":"UK"
            |    }
            |  },
-           |  "employment": {
-           |    "first-payment-date": "$date",
-           |    "cis": true,
-           |    "employees": true,
-           |    "ocpn": true
+           |  "employmentInfo": {
+           |    "employees": "notEmploying",
+           |    "firstPaymentDate": "${SystemDate.getSystemDate.toLocalDate}",
+           |    "construction": true,
+           |    "subcontractors": true
            |  },
            |  "sicCodes": [
            |    {
@@ -195,7 +196,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
             correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
           )
         ),
-        employment = Some(Employment(employees = true, Some(true), subcontractors = true, firstPaymentDate = date)),
+
         sicCodes = Seq(
           SICCode(code = Some("666"), description = Some("demolition")),
           SICCode(code = None, description = Some("laundring"))
@@ -204,7 +205,8 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = Some(zDtNow)
+        lastAction = Some(zDtNow),
+        employmentInfo = Some(EmploymentInfo(Employing.notEmploying,SystemDate.getSystemDate.toLocalDate,true, true,None))
       )
 
       Json.fromJson[PAYERegistration](json)(PAYERegistration.format) shouldBe JsSuccess(tstPAYERegistration)
@@ -286,11 +288,12 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |      "country":"UK"
            |    }
            |  },
-           |  "employment": {
-           |    "first-payment-date": "2016-12-20",
-           |    "cis": true,
-           |    "employees": true,
-           |    "ocpn": true
+           |  "employmentInfo": {
+           |  "employees": "alreadyEmploying",
+           |    "firstPaymentDate": "2016-12-20",
+           |    "construction": true,
+           |    "subcontractors": true,
+           |    "companyPension": true
            |  },
            |  "sicCodes": [
            |    {
@@ -338,13 +341,13 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         companyDetails = None,
         directors = Seq.empty,
         payeContact = None,
-        employment = None,
         sicCodes = Seq.empty,
         lastUpdate = timestamp,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = None
+        lastAction = None,
+        employmentInfo = None
       )
 
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)

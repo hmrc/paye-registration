@@ -16,23 +16,20 @@
 
 package controllers
 
-import java.time.LocalDate
-import javax.inject.Provider
-
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
+import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
-import play.api.{Application, Configuration}
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
-import services.MetricsService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RepositoryControllerISpec extends IntegrationSpecBase {
+class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -121,14 +118,6 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
         correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
       )
     ),
-    Some(
-      Employment(
-        employees = true,
-        companyPension = Some(true),
-        subcontractors = true,
-        firstPaymentDate = LocalDate.of(2016, 12, 20)
-      )
-    ),
     Seq(
       SICCode(code = None, description = Some("consulting"))
     ),
@@ -136,7 +125,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase {
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = None
+    lastAction = None,
+    employmentInfo = Some(validEmployment)
   )
 
   "deletePAYERegistration" should {

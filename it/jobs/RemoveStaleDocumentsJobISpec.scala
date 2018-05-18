@@ -79,13 +79,13 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     companyDetails = None,
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate = timestampString,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = lastAction
+    lastAction = lastAction,
+    employmentInfo = None
   )
 
   val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 3, 3, 12, 30, 0, 0), ZoneId.of("Z"))

@@ -23,6 +23,7 @@ import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
+import fixtures.SubmissionFixture
 import models._
 import models.submission._
 import helpers.PAYERegSpec
@@ -48,6 +49,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   val mockAuditService = mock[AuditService]
   val mockBusinessRegistrationConnector = mock[BusinessRegistrationConnector]
   val mockCompanyRegistrationConnector = mock[CompanyRegistrationConnector]
+  val mockRegistrationService = mock[RegistrationService]
 
   implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
   implicit val req = FakeRequest("GET", "/test-path")
@@ -62,6 +64,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       override val auditService = mockAuditService
       override val businessRegistrationConnector = mockBusinessRegistrationConnector
       override val companyRegistrationConnector = mockCompanyRegistrationConnector
+      override val registrationService = mockRegistrationService
     }
   }
 
@@ -70,6 +73,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     reset(mockSequenceRepository)
     reset(mockDESConnector)
     reset(mockAuthConnector)
+    reset(mockRegistrationService)
   }
 
   val lastUpdate = "2017-05-09T07:58:35Z"
@@ -91,11 +95,12 @@ class SubmissionServiceSpec extends PAYERegSpec {
     DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
-  val validEmployment = Employment(
-    employees = true,
-    companyPension = Some(true),
+  val validEmployment = EmploymentInfo(
+    employees = Employing.alreadyEmploying,
+    firstPaymentDate = LocalDate.of(2016, 12, 20),
+    construction = true,
     subcontractors = true,
-    firstPaymentDate = LocalDate.of(2016, 12, 20)
+    companyPension = Some(true)
   )
 
   val validDirectors = Seq(
@@ -156,13 +161,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
     completionCapacity = Some("director"),
     directors = validDirectors,
     payeContact = Some(validPAYEContact),
-    employment = Some(validEmployment),
     sicCodes = validSICCodes,
     lastUpdate = lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(zDtNow)
+    lastAction = Some(zDtNow),
+    employmentInfo = Some(validEmployment)
   )
 
   val validRegistrationAfterPartialSubmission = PAYERegistration(
@@ -179,13 +184,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
     completionCapacity = None,
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate = lastUpdate,
     partialSubmissionTimestamp = Some(lastUpdate),
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(zDtNow)
+    lastAction = Some(zDtNow),
+    employmentInfo = None
   )
 
   val validRegistrationAfterTopUpSubmission = PAYERegistration(
@@ -206,13 +211,13 @@ class SubmissionServiceSpec extends PAYERegSpec {
     completionCapacity = None,
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate = lastUpdate,
     partialSubmissionTimestamp = Some(lastUpdate),
     fullSubmissionTimestamp = Some(lastUpdate),
     acknowledgedTimestamp = None,
-    lastAction = Some(zDtNow)
+    lastAction = Some(zDtNow),
+    employmentInfo = None
   )
 
   val validDESCompletionCapacity = DESCompletionCapacity(
@@ -326,6 +331,12 @@ class SubmissionServiceSpec extends PAYERegSpec {
         intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), None, None))
       }
     }
+
+    "throw a EmploymentDetailsNotDefinedException" when {
+      "a paye reg doc is passed in that doesn't have an employment info block" in new Setup {
+        intercept[EmploymentDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(employmentInfo = None), None, None))
+      }
+    }
   }
 
   "Calling assertOrGenerateAcknowledgementReference" should {
@@ -387,61 +398,32 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
   }
 
-  "Building DES Limited Company with deprecated Left(Employment(..))" should {
+  "Building DES Limited Company" should {
     "throw the correct exception when Directors list is empty" in new Setup {
-      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, Left(Some(validEmployment)), None))
+      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, validEmploymentInfo, None))
     }
     "throw the correct exception for SIC Code when missing)" in new Setup {
-      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, Left(Some(validEmployment)), None))
+      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, validEmploymentInfo, None))
     }
-    "throw the correct exception for Employment when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, validDirectors, Left(None), None))
-    }
-  }
-
-  "Building DES Limited Company with Right(EmploymentInfo(..))" should {
-    "throw the correct exception when Directors list is empty" in new Setup {
-      intercept[DirectorsNotCompletedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, Seq.empty, Right(Some(validEmploymentInfo)), None))
-    }
-    "throw the correct exception for SIC Code when missing)" in new Setup {
-      intercept[SICCodeNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, Seq.empty, None, validDirectors, Right(Some(validEmploymentInfo)), None))
-    }
-    "throw the correct exception for Employment when missing" in new Setup {
-      intercept[EmploymentDetailsNotDefinedException](service.buildDESLimitedCompany(validCompanyDetails, validSICCodes, None, validDirectors, Right(None), None))
-    }
-
-
   }
 
   "Building DES Employing People" should {
 
     "throw the correct exception for PAYE Contact when missing" in new Setup {
-      intercept[PAYEContactNotDefinedException](service.buildDESEmployingPeople("regId", Left(Some(validEmployment)), None))
+      intercept[PAYEContactNotDefinedException](service.buildDESEmployingPeople("regId", validEmployment, None))
     }
-    "throw the correct exception for Employment Details" when {
-      "old model is missing" in new Setup {
-        intercept[EmploymentDetailsNotDefinedException](service.buildDESEmployingPeople("regId", Left(None), Some(validPAYEContact)))
-      }
 
-      "new model is missing" in new Setup {
-        intercept[EmploymentDetailsNotDefinedException](service.buildDESEmployingPeople("regId", Right(None), Some(validPAYEContact)))
-      }
-    }
     "return the correct DES Employing People model" when {
-      "using the old model - Left(Some(Employment(...)))" in new Setup {
-        service.buildDESEmployingPeople("regId", Left(Some(validEmployment.copy(employees = false))), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
+      "employees is willEmployThisYear" in new Setup {
+        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.willEmployThisYear), Some(validPAYEContact)) shouldBe validDESEmployingPeople
       }
 
-      "using the new model - Right(Some(EmploymentInfo(...))) - employees is willEmployThisYear" in new Setup {
-        service.buildDESEmployingPeople("regId", Right(Some(validEmploymentInfo.copy(employees = Employing.willEmployThisYear))), Some(validPAYEContact)) shouldBe validDESEmployingPeople
+      "employees is willEmployNextYear" in new Setup {
+        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.willEmployNextYear), Some(validPAYEContact)) shouldBe validDESEmployingPeople
       }
 
-      "using the new model - Right(Some(EmploymentInfo(...))) - employees is willEmployNextYear" in new Setup {
-        service.buildDESEmployingPeople("regId", Right(Some(validEmploymentInfo.copy(employees = Employing.willEmployNextYear))), Some(validPAYEContact)) shouldBe validDESEmployingPeople
-      }
-
-      "using the new model - Right(Some(EmploymentInfo(...))) - employees is notEmploying" in new Setup {
-        service.buildDESEmployingPeople("regId", Right(Some(validEmploymentInfo.copy(employees = Employing.notEmploying))), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
+      "employees is notEmploying" in new Setup {
+        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.notEmploying), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
       }
     }
   }
@@ -485,43 +467,165 @@ class SubmissionServiceSpec extends PAYERegSpec {
     }
   }
 
-  "Calling submitTopUpToDES" should {
-    "return the PAYE status" in new Setup {
-      val okResponse = new HttpResponse {
-        override def status: Int = OK
-        override def json: JsValue = Json.parse(
-          """
-            |{
-            | "acknowledgementReferences" : {
-            |   "ctUtr" : "testCtUtr"
-            | }
-            |}
-          """.stripMargin
-        )
+  "Calling submitToDes" should {
+    "throw an Exception when the incorporation is rejected" in new Setup {
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
+      when(mockSequenceRepository.getNext(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(1))
+      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful("foo"))
+      when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful("bar"))
+      when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(incorpStatusUpdate.copy(status = IncorporationStatus.rejected))))
+
+      intercept[RejectedIncorporationException](await(service.submitToDes("regID")))
+      verify(mockRegistrationService,times(1)).deletePAYERegistration(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any())
+    }
+    "return an ackref" when {
+      "there is no incorporation" in new Setup {
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+        when(mockSequenceRepository.getNext(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(1))
+        when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful("foo"))
+        when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful("bar"))
+        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(validRegistration)))
+        when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Credentials("some-provider-id", "some-provider-type")))
+        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(200)))
+        when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Success))
+        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(PAYEStatus.held))
+
+        await(service.submitToDes("regID")) shouldBe "BRPY00000000001"
       }
 
-      when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(okResponse))
+      "the incorporation is accepted" in new Setup {
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
 
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some("ackRef")))
+          override def json: JsValue = Json.parse(
+            """
+              |{
+              | "acknowledgementReferences" : {
+              |   "ctUtr" : "testCtUtr"
+              | }
+              |}
+            """.stripMargin
+          )
+        }
 
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
+        when(mockSequenceRepository.getNext(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(1))
+        when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful("foo"))
+        when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful("bar"))
+        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(incorpStatusUpdate)))
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(validRegistration)))
+        when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Credentials("some-provider-id", "some-provider-type")))
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
+        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(200)))
+        when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Success))
+        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(PAYEStatus.submitted))
 
-      when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(200)))
+        await(service.submitToDes("regID")) shouldBe "BRPY00000000001"
+      }
+    }
+  }
 
-      when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Success))
+  "Calling submitTopUpToDES" should {
+    "return the correct PAYE status" when {
+      "incorporation is accepted" in new Setup {
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
 
-      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(PAYEStatus.submitted))
+          override def json: JsValue = Json.parse(
+            """
+              |{
+              | "acknowledgementReferences" : {
+              |   "ctUtr" : "testCtUtr"
+              | }
+              |}
+            """.stripMargin
+          )
+        }
 
-      when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
 
-      await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some("ackRef")))
+
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
+
+        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(200)))
+
+        when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Success))
+
+        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(PAYEStatus.submitted))
+
+        when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
+
+        await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
+      }
+
+      "incorporation is rejected" in new Setup {
+        val okResponse = new HttpResponse {
+          override def status: Int = OK
+
+          override def json: JsValue = Json.parse(
+            """
+              |{
+              | "acknowledgementReferences" : {}
+              |}
+            """.stripMargin
+          )
+        }
+
+        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(okResponse))
+
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some("ackRef")))
+
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
+
+        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(200)))
+
+        when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Success))
+
+        when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+          .thenReturn(Future.successful(true))
+
+        await(service.submitTopUpToDES("regID", incorpStatusUpdate.copy(status = IncorporationStatus.rejected))) shouldBe PAYEStatus.cancelled
+      }
     }
   }
 

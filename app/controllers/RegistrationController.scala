@@ -87,6 +87,22 @@ trait RegistrationCtrl extends BaseController with Authorisation {
       }
   }
 
+  def getRegistrationId(txId: String): Action[AnyContent] = Action.async { implicit request =>
+    registrationService.getRegistrationId(txId) map { regId =>
+      Ok(regId)
+    } recover {
+      case _: MissingRegDocument =>
+        Logger.warn(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
+        NotFound
+      case _: IllegalStateException =>
+        Logger.error(s"[RegistrationController] - [getRegistrationId] - Registration found for txId $txId but no regId was found")
+        Conflict
+      case _ =>
+        Logger.error(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
+        InternalServerError
+    }
+  }
+
   def getCompanyDetails(regID: String) : Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
@@ -149,34 +165,6 @@ trait RegistrationCtrl extends BaseController with Authorisation {
 
   private def withIncorporationDate(regID: String)(f: Option[LocalDate] => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
     registrationService.getIncorporationDate(regID) flatMap (f(_))
-  }
-
-  @deprecated("Please use getEmploymentInfo", "SCRS-11281")
-  def getEmployment(regID: String) : Action[AnyContent] = Action.async {
-    implicit request =>
-      isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getEmployment") {
-          registrationService.getEmployment(regID) map {
-            case Some(employment) => Ok(Json.toJson(employment)(Employment.format(APIValidation)))
-            case None             => NotFound
-          }
-        }
-      }
-  }
-  @deprecated("Please use upsertEmploymentInfo", "SCRS-11281")
-  def upsertEmployment(regID: String) : Action[JsValue] = Action.async(parse.json) {
-    implicit request =>
-      isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertEmployment") {
-          withJsonBody[Employment] { employmentDetails =>
-            registrationService.upsertEmployment(regID, employmentDetails) map { employmentResponse =>
-              Ok(Json.toJson(employmentResponse)(Employment.format(APIValidation)))
-            } recover {
-              case missing : MissingRegDocument => NotFound
-            }
-          }
-        }
-      }
   }
 
   def getDirectors(regID: String) : Action[AnyContent] = Action.async {
@@ -406,6 +394,22 @@ trait RegistrationCtrl extends BaseController with Authorisation {
             case missing: MissingRegDocument => NotFound(s"No PAYE registration document found for registration ID $regId")
           }
         }
+      }
+  }
+
+  def deletePAYERegistrationIncorpRejected(regId: String) : Action[AnyContent] = Action.async {
+    implicit request =>
+      registrationService.deletePAYERegistration(regId,PAYEStatus.invalid, PAYEStatus.draft) map {
+        if (_) {
+          Logger.info(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Rejected Registration Document deleted for regId: $regId")
+          Ok
+        } else {
+          Logger.warn(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Registration Document not deleted when expected for regId: $regId")
+          InternalServerError
+        }
+      } recover {
+        case _: UnmatchedStatusException => PreconditionFailed
+        case _: MissingRegDocument       => NotFound
       }
   }
 

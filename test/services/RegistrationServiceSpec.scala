@@ -261,91 +261,6 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
-  "Calling getEmployment" should {
-
-    "return a None response when there is no registration in mongo for the reg ID" in new Setup {
-      when(mockRegistrationRepository.retrieveEmployment(eqTo(regId))(any()))
-        .thenReturn(Future.successful(None))
-
-      val actual = await(service.getEmployment(regId))
-      actual shouldBe None
-    }
-
-    "return a failed future with exception when the database errors" in new Setup {
-      val exception = new RuntimeException("tst message")
-      when(mockRegistrationRepository.retrieveEmployment(eqTo(regId))(any()))
-        .thenReturn(Future.failed(exception))
-
-      intercept[RuntimeException] { await(service.getEmployment(regId)) }
-    }
-
-    "return a registration there is one matching the reg ID in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveEmployment(eqTo(regId))(any()))
-        .thenReturn(Future.successful(Some(validEmployment)))
-
-      val actual = await(service.getEmployment(regId))
-      actual shouldBe validRegistration.employment
-    }
-  }
-
-  "Calling upsertEmployment" should {
-
-    "return a DBNotFound response when there is no registration in mongo with the user's ID" in new Setup {
-      when(mockRegistrationRepository.upsertEmployment(eqTo(regId), any[Employment]())(any()))
-        .thenReturn(Future.failed(new MissingRegDocument(regId)))
-
-      intercept[MissingRegDocument] { await(service.upsertEmployment(regId, validEmployment)) }
-    }
-
-    "return a DBSuccess response when the company details are successfully updated" in new Setup {
-      when(mockRegistrationRepository.upsertEmployment(eqTo(regId), any[Employment]())(any()))
-        .thenReturn(Future.successful(validRegistration))
-
-      await(service.upsertEmployment(regId, validEmployment)) shouldBe validEmployment
-      verify(mockRegistrationRepository, times(0)).updateRegistrationStatus(eqTo(regId), any())(any())
-    }
-
-    "return a DBSuccess response when the company details are successfully updated from previously invalid" in new Setup {
-      when(mockRegistrationRepository.upsertEmployment(eqTo(regId), any[Employment]())(any()))
-        .thenReturn(Future.successful(validRegistration.copy(status = PAYEStatus.invalid)))
-
-      when(mockRegistrationRepository.updateRegistrationStatus(eqTo(regId), any[PAYEStatus.Value]())(any()))
-        .thenReturn(Future.successful(PAYEStatus.draft))
-
-      val captor: ArgumentCaptor[PAYEStatus.Value]  = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
-
-      await(service.upsertEmployment(regId, validEmployment)) shouldBe validEmployment
-      verify(mockRegistrationRepository, times(1)).updateRegistrationStatus(eqTo(regId), captor.capture())(any())
-      captor.getValue shouldBe PAYEStatus.draft
-    }
-
-    "set status to INVALID when false is recorded for both Subcontractors and Employees" in new Setup {
-      val invalidEmployment = Employment(employees = false, None, subcontractors = false, validEmployment.firstPaymentDate)
-      when(mockRegistrationRepository.upsertEmployment(eqTo(regId), any[Employment]())(any()))
-        .thenReturn(Future.successful(validRegistration))
-
-      when(mockRegistrationRepository.updateRegistrationStatus(eqTo(regId), any[PAYEStatus.Value]())(any()))
-        .thenReturn(Future.successful(PAYEStatus.invalid))
-
-      val captor: ArgumentCaptor[PAYEStatus.Value]  = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
-
-      await(service.upsertEmployment(regId, invalidEmployment)) shouldBe invalidEmployment
-      verify(mockRegistrationRepository, times(1)).updateRegistrationStatus(eqTo(regId), captor.capture())(any())
-      captor.getValue shouldBe PAYEStatus.invalid
-    }
-
-    "not set status to INVALID when false is recorded for both Subcontractors and Employees if already INVALID" in new Setup {
-      val invalidEmployment = Employment(employees = false, None, subcontractors = false, validEmployment.firstPaymentDate)
-      when(mockRegistrationRepository.upsertEmployment(eqTo(regId), any[Employment]())(any()))
-        .thenReturn(Future.successful(validRegistration.copy(status = PAYEStatus.invalid)))
-
-      val captor = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
-
-      await(service.upsertEmployment(regId, invalidEmployment)) shouldBe invalidEmployment
-      verify(mockRegistrationRepository, times(0)).updateRegistrationStatus(eqTo(regId), captor.capture())(any())
-    }
-  }
-
   "Calling getDirectors" should {
 
     "return a None response when there is no registration in mongo for the reg ID" in new Setup {
@@ -649,6 +564,29 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
         intercept[MissingRegDocument](await(service.deletePAYERegistration(validRegistration.registrationID)))
       }
+    }
+  }
+
+  "getRegistrationId" should {
+    "return the regId" in new Setup {
+      when(service.getRegistrationId(any())(any()))
+        .thenReturn(Future("testRegId"))
+
+      await(service.getRegistrationId("txId")) shouldBe "testRegId"
+    }
+
+    "throw a MissingRegDocException" in new Setup {
+      when(service.getRegistrationId(any())(any()))
+        .thenReturn(Future.failed(new MissingRegDocument("")))
+
+      intercept[MissingRegDocument](await(service.getRegistrationId("txId")))
+    }
+
+    "throw an IllegalStateException" in new Setup {
+      when(service.getRegistrationId(any())(any()))
+        .thenReturn(Future.failed(new IllegalStateException()))
+
+      intercept[IllegalStateException](await(service.getRegistrationId("txId")))
     }
   }
 }

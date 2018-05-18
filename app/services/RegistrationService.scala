@@ -70,6 +70,10 @@ trait RegistrationSrv extends PAYEBaseValidator {
     registrationRepository.retrieveRegistrationByTransactionID(transactionID)
   }
 
+  def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String] = {
+    registrationRepository.getRegistrationId(txId)
+  }
+
   def getCompanyDetails(regID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
     registrationRepository.retrieveCompanyDetails(regID)
   }
@@ -99,28 +103,6 @@ trait RegistrationSrv extends PAYEBaseValidator {
       txId       <- registrationRepository.retrieveTransactionId(regId)
       incorpDate <- incorporationInformationConnector.getIncorporationDate(txId)
     } yield incorpDate
-  }
-
-  @deprecated("use getEmploymentInfo instead for the new model",  "SCRS-11281")
-  def getEmployment(regID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
-    registrationRepository.retrieveEmployment(regID)
-  }
-
-  @deprecated("use upsertEmploymentInfo instead for the new model",  "SCRS-11281")
-  def upsertEmployment(regID: String, employmentDetails: Employment)(implicit ec: ExecutionContext): Future[Employment] = {
-    registrationRepository.upsertEmployment(regID, employmentDetails) flatMap {
-      result =>
-        (employmentDetails.subcontractors, employmentDetails.employees) match {
-          case (false, false) =>
-            if(!result.status.equals(PAYEStatus.invalid)) {
-                registrationRepository.updateRegistrationStatus(regID, PAYEStatus.invalid) map { _ => employmentDetails}
-              }else {Future.successful(employmentDetails)}
-          case _ =>
-            if(!result.status.equals(PAYEStatus.draft)) {
-                registrationRepository.updateRegistrationStatus(regID, PAYEStatus.draft) map {_ => employmentDetails}
-            } else {Future.successful(employmentDetails)}
-        }
-    }
   }
 
   def getDirectors(regID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {

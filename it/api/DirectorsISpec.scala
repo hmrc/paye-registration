@@ -114,13 +114,13 @@ class DirectorsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = validDirectors,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
       )
       upsertToDb(mongoFormattedRegDoc)
 
@@ -152,13 +152,13 @@ class DirectorsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -197,13 +197,13 @@ class DirectorsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -234,13 +234,13 @@ class DirectorsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 

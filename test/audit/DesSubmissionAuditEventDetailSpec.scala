@@ -18,8 +18,9 @@ package audit
 
 import java.time.LocalDate
 
-import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name}
+import enums.Employing
 import models.submission._
+import models._
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -62,11 +63,12 @@ class DesSubmissionAuditEventDetailSpec extends UnitSpec {
         )
       )
 
-      val validEmployment = Employment(
-        employees = true,
-        companyPension = Some(true),
+      val validEmployment = EmploymentInfo(
+        employees = Employing.alreadyEmploying,
+        firstPaymentDate = LocalDate.of(2016, 12, 20),
+        construction = true,
         subcontractors = true,
-        firstPaymentDate = LocalDate.of(2016, 12, 20)
+        companyPension = Some(true)
       )
 
       val validDESCompletionCapacity = DESCompletionCapacity(

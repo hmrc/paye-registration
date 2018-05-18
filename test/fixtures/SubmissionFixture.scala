@@ -18,11 +18,10 @@ package fixtures
 
 import java.time.LocalDate
 
-import enums.IncorporationStatus
-import models.{Address, CompanyDetails, DigitalContactDetails, Director, Employment, Name, SICCode}
+import enums.{Employing, IncorporationStatus}
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
-import play.api.libs.json.Json
+import models._
 
 trait SubmissionFixture {
   val validCompanyDetails = CompanyDetails(
@@ -33,16 +32,17 @@ trait SubmissionFixture {
     DigitalContactDetails(Some("test@email.com"), Some("012345"), Some("543210"))
   )
 
-  val validEmployment = Employment(
-    employees = true,
-    companyPension = Some(true),
-    subcontractors = true,
-    firstPaymentDate = LocalDate.of(2016, 12, 20)
-  )
-
   val validDESCompletionCapacity = DESCompletionCapacity(
     capacity = "other",
     otherCapacity = Some("friend")
+  )
+
+  val validEmployment = EmploymentInfo(
+    employees = Employing.alreadyEmploying,
+    firstPaymentDate = LocalDate.of(2016, 12, 20),
+    construction = true,
+    subcontractors = true,
+    companyPension = Some(true)
   )
 
   val validDirectors = Seq(

@@ -31,13 +31,6 @@ trait RegistrationFixture {
     DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
   )
 
-  val validEmployment = Employment(
-    employees = true,
-    companyPension = Some(true),
-    subcontractors = true,
-    firstPaymentDate = LocalDate.of(2016, 12, 20)
-  )
-
   val validDirectors = Seq(
     Director(
       Name(
@@ -96,7 +89,6 @@ trait RegistrationFixture {
     companyDetails = Some(validCompanyDetails),
     directors = validDirectors,
     payeContact = Some(validPAYEContact),
-    employment = Some(validEmployment),
     sicCodes = validSICCodes,
     lastUpdate = "2017-05-09T07:58:35Z",
     partialSubmissionTimestamp = None,
@@ -104,6 +96,4 @@ trait RegistrationFixture {
     acknowledgedTimestamp = None,
     lastAction = Some(zDtNow)
   )
-
-
 }
