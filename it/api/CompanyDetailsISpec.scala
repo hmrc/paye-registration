@@ -113,13 +113,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           companyDetails = Some(validCompanyDetails),
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -150,13 +150,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           companyDetails = Some(oldFormatCompanyDetails),
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -187,13 +187,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -242,13 +242,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt))
+          lastAction = Some(dt),
+          employmentInfo = None)
         )
 
 
@@ -288,13 +288,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 
@@ -324,13 +324,13 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           companyDetails = None,
           directors = Seq.empty,
           payeContact = None,
-          employment = None,
           sicCodes = Seq.empty,
           lastUpdate = lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = Some(dt)
+          lastAction = Some(dt),
+          employmentInfo = None
         )
       )
 

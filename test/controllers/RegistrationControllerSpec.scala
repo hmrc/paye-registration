@@ -41,6 +41,7 @@ import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
@@ -301,56 +302,6 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val res = controller.upsertEmploymentInfo(regId)(FakeRequest().withBody(Json.toJson[EmploymentInfo](empInfo)(apiFormatForTest)))
       status(res) shouldBe 403
-    }
-  }
-
-  "Calling getEmployment" should {
-    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-      AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-      when(mockRegistrationService.getEmployment(contains(regId))(any()))
-        .thenReturn(Future.successful(None))
-
-      val response = controller.getEmployment(regId)(FakeRequest())
-
-      status(response) shouldBe Status.NOT_FOUND
-    }
-
-    "return a PAYERegistration for a successful query" in new Setup {
-      AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-      when(mockRegistrationService.getEmployment(contains(regId))(any()))
-        .thenReturn(Future.successful(validRegistration.employment))
-
-      val response = controller.getEmployment(regId)(FakeRequest())
-
-      status(response) shouldBe Status.OK
-    }
-  }
-
-  "Calling upsertEmployment" should {
-    "return a Not Found response if there is no PAYE Registration for the user's ID" in new Setup {
-
-      AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-      when(mockRegistrationService.upsertEmployment(contains(regId), any[Employment]())(any()))
-        .thenReturn(Future.failed(new MissingRegDocument(regId)))
-
-      val response = controller.upsertEmployment(regId)(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
-
-      status(response) shouldBe Status.NOT_FOUND
-    }
-
-    "return an OK response for a valid upsert" in new Setup {
-
-      AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-      when(mockRegistrationService.upsertEmployment(contains(regId), any[Employment]())(any()))
-        .thenReturn(Future.successful(validEmployment))
-
-      val response = controller.upsertEmployment(regId)(FakeRequest().withBody(Json.toJson[Employment](validEmployment)(Employment.format(APIValidation))))
-
-      status(response) shouldBe Status.OK
     }
   }
 
@@ -752,6 +703,44 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
+  "Calling deletePAYERegistrationIncorpRejected" should {
+    "return an Ok response if the document has been deleted" in new Setup {
+      when(mockRegistrationService.deletePAYERegistration(anyString(), any())(any()))
+        .thenReturn(Future.successful(true))
+
+      val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
+
+      status(response) shouldBe Status.OK
+    }
+
+    "return an InternalServerError response if there was a mongo problem" in new Setup {
+      when(mockRegistrationService.deletePAYERegistration(any(), any())(any()))
+        .thenReturn(Future.successful(false))
+
+      val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
+
+      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+    }
+
+    "return a Pre condition failed response if the document status is not draft, invalid or cancelled" in new Setup {
+      when(mockRegistrationService.deletePAYERegistration(any(), any())(any()))
+        .thenReturn(Future.failed(new UnmatchedStatusException))
+
+      val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
+
+      status(response) shouldBe Status.PRECONDITION_FAILED
+    }
+
+    "return a Not found response if the document status is not rejected" in new Setup {
+      when(mockRegistrationService.deletePAYERegistration(any(), any())(any()))
+        .thenReturn(Future.failed(new MissingRegDocument("foo")))
+
+      val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
+
+      status(response) shouldBe Status.NOT_FOUND
+    }
+  }
+
   "Calling processIncorporationData" should {
     def incorpUpdate(status: String) = {
       s"""
@@ -897,6 +886,41 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
 
       status(response) shouldBe Status.OK
+    }
+  }
+
+  "getRegistrationId" should {
+    "return an Ok" in new Setup {
+      when(mockRegistrationService.getRegistrationId(any())(any()))
+        .thenReturn(Future("testRegId"))
+
+      val result = controller.getRegistrationId("txId")(FakeRequest())
+      status(result)          shouldBe OK
+      contentAsString(result) shouldBe "testRegId"
+    }
+
+    "return a NotFound" in new Setup {
+      when(mockRegistrationService.getRegistrationId(any())(any()))
+        .thenReturn(Future.failed(new MissingRegDocument("")))
+
+      val result = controller.getRegistrationId("txId")(FakeRequest())
+      status(result) shouldBe NOT_FOUND
+    }
+
+    "return a Conflict" in new Setup {
+      when(mockRegistrationService.getRegistrationId(any())(any()))
+        .thenReturn(Future.failed(new IllegalStateException))
+
+      val result = controller.getRegistrationId("txId")(FakeRequest())
+      status(result) shouldBe CONFLICT
+    }
+
+    "return an InternalServerError" in new Setup {
+      when(mockRegistrationService.getRegistrationId(any())(any()))
+        .thenReturn(Future.failed(new Exception))
+
+      val result = controller.getRegistrationId("txId")(FakeRequest())
+      status(result) shouldBe INTERNAL_SERVER_ERROR
     }
   }
 }

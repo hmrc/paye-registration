@@ -92,13 +92,13 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           validSICCodes,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 
@@ -129,13 +129,13 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 
@@ -174,17 +174,15 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
-
-//      await(repository.count) shouldBe 1
 
       val response = client(s"/${regID}/sic-codes").get.futureValue
       response.status shouldBe 403
@@ -212,13 +210,13 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 

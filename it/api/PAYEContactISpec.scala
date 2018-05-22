@@ -110,13 +110,13 @@ class PAYEContactISpec extends IntegrationSpecBase {
         None,
         Seq.empty,
         Some(validPAYEContact),
-        None,
         Seq.empty,
         lastUpdate,
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = None
+        lastAction = None,
+        employmentInfo = None
       ))
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
@@ -146,13 +146,13 @@ class PAYEContactISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           Some(oldFormatPAYEContact),
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 
@@ -183,13 +183,13 @@ class PAYEContactISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 
@@ -228,13 +228,13 @@ class PAYEContactISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 
@@ -264,13 +264,13 @@ class PAYEContactISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       )
 

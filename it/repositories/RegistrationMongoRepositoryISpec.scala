@@ -25,8 +25,12 @@ import enums.{Employing, PAYEStatus}
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models._
+import models.validation.MongoValidation
 import play.api.Configuration
+import play.api.libs.json.{JsObject, Json}
 import reactivemongo.api.commands.WriteResult
+import reactivemongo.bson.BSONDocument
+import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -69,11 +73,12 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     businessContactDetails = businessContact
   )
 
-  private val employmentDetails: Employment = Employment(
-    employees = false,
+  private val employmentDetails: EmploymentInfo = EmploymentInfo(
+    employees = Employing.notEmploying,
     companyPension = None,
+    construction = true,
     subcontractors = false,
-    firstPaymentDate= date
+    firstPaymentDate = SystemDate.getSystemDate.toLocalDate
   )
 
   private val reg = PAYERegistration(
@@ -90,13 +95,14 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT))
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
+  )
 
   private val reg2 = PAYERegistration(
     registrationID = "AC234567",
@@ -112,13 +118,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   // Company Details
@@ -136,13 +142,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = None,
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   private val companyDetails2: CompanyDetails = CompanyDetails(
@@ -167,13 +173,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails2),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   // Employment
@@ -191,17 +197,18 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
-  private val employmentDetails2: Employment = Employment(
-    employees = true,
+  private val employmentDetails2: EmploymentInfo = EmploymentInfo(
+    employees = Employing.alreadyEmploying,
     companyPension = Some(false),
+    construction = true,
     subcontractors = true,
     firstPaymentDate = date
   )
@@ -220,13 +227,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = Some(employmentDetails2),
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = Some(employmentDetails2)
   )
 
   // Directors
@@ -244,13 +251,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   private val directors: Seq[Director] = Seq(
@@ -287,13 +294,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = directors,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   //SIC Codes
@@ -311,13 +318,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   private val sicCodes: Seq[SICCode] = Seq(
@@ -339,13 +346,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = sicCodes,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   //PAYE Contact
@@ -363,13 +370,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   private val payeContact = PAYEContact(
@@ -398,13 +405,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = Some(payeContact),
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   //Completion Capacity
@@ -422,13 +429,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
   private val completionCapacity = "Director"
 
@@ -446,13 +453,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
 
   //Registration Status
@@ -470,13 +477,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = Some(companyDetails),
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = Some(lastUpdate),
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(lastUpdateZDT)
+    lastAction = Some(lastUpdateZDT),
+    employmentInfo = None
   )
   val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018,4,9), true, true, Some(true))
 
@@ -597,70 +604,34 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     }
   }
 
-
-  "Calling retrieveEmployment" should {
-
-    "retrieve employment" in new Setup {
-
-      await(setupCollection(repository, regUpdatedEmployment))
-
-      val actual = await(repository.retrieveEmployment("AC123456"))
-
-      actual shouldBe Some(employmentDetails2)
-    }
-
-    "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
-
-      intercept[MissingRegDocument](await(repository.retrieveEmployment("AC123456")))
-    }
-  }
-
-  "Calling upsertEmployment" should {
-
-    "upsert employment details when there is no existing Employment object" in new Setup {
-
-      await(setupCollection(repository, regNoEmployment))
-
-      val actual = await(repository.upsertEmployment("AC123456", employmentDetails2))
-      actual shouldBe regNoEmployment
-
-      val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedEmployment)
-
-    }
-
-    "upsert employment details when the Registration already contains an Employment object" in new Setup {
-
-      await(setupCollection(repository, reg))
-
-      val actual = await(repository.upsertEmployment("AC123456", employmentDetails2))
-      actual shouldBe reg
-
-      val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedEmployment)
-
-    }
-
-    "throw a Missing Reg Document exception when updating employment for a nonexistent registration" in new Setup {
-
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertEmployment("AC123456", employmentDetails)))
-
-    }
-  }
-
   "calling retrieveEmploymentInfo" should {
     val payeReg: PAYERegistration = reg.copy(employmentInfo = Some(empInfo))
     "return EmploymentInfo and old employment model is deleted" in new Setup {
-      await(setupCollection(repository, payeReg.copy(employment = Some(employmentDetails))))
+      import reactivemongo.json.ImplicitBSONHandlers._
+      val json = Json.parse(
+        """
+          |{
+          |  "employment" : {
+          |    "foo" : "bar",
+          |    "wizz" : "buzz"
+          |  }
+          |}
+        """.stripMargin).as[JsObject]
+      val payeRegJson = Json.toJson(payeReg)(PAYERegistration.format(MongoValidation)).as[JsObject] ++ json
 
-      val oldModelCheck = await(repository.retrieveEmployment(payeReg.registrationID))
-      oldModelCheck shouldBe Some(employmentDetails)
+
+      await(repository.collection.insert[JsObject](payeRegJson))
+
+      val selector = BSONDocument("registrationID" -> payeReg.registrationID)
+      val projector = BSONDocument("_id" -> 0)
+      val oldModelCheck = await(repository.collection.find(selector, projector).one[JsObject])
+      oldModelCheck shouldBe Some(payeRegJson)
 
       val res = await(repository.retrieveEmploymentInfo(payeReg.registrationID))
       res shouldBe Some(empInfo)
 
-      val oldModelNoLongerExists = await(repository.retrieveEmployment(payeReg.registrationID))
-      oldModelNoLongerExists shouldBe None
+      val oldModelCheckDoesNotExist = await(repository.collection.find(selector, projector).one[JsObject])
+      oldModelCheckDoesNotExist.get shouldBe payeRegJson - "employment"
     }
 
     "return EmploymentInfo" in new Setup {
@@ -970,7 +941,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     companyDetails = None,
     directors = Seq.empty,
     payeContact = None,
-    employment = None,
     sicCodes = Seq.empty,
     lastUpdate,
     partialSubmissionTimestamp = None,
@@ -984,7 +954,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     "clear all information apart from Status and Ackref" in new Setup {
       await(setupCollection(repository, reg.copy(
         status = PAYEStatus.held,
-        employment = Some(employmentDetails),
         employmentInfo = Some(empInfo)))
       )
 
@@ -1088,13 +1057,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       companyDetails = None,
       directors = Seq.empty,
       payeContact = None,
-      employment = None,
       sicCodes = Seq.empty,
       lastUpdate,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
       acknowledgedTimestamp = None,
-      lastAction = lastAction
+      lastAction = lastAction,
+      employmentInfo = None
     )
 
     def dt = ZonedDateTime.of(LocalDateTime.of(2017, 6, 30, 12, 0, 0), ZoneId.of("Z"))
@@ -1126,6 +1095,17 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(repository.upsertRegTestOnly(timedReg("123", None, PAYEStatus.draft)))
       await(repository.removeStaleDocuments())
       await(repository.retrieveRegistration("123")) shouldBe Some(timedReg("123", None, PAYEStatus.draft))
+    }
+  }
+
+  "getRegistrationId" should {
+    "return the registrationId" in new Setup {
+      await(setupCollection(repository, reg))
+      await(repository.getRegistrationId(reg.transactionID)) shouldBe reg.registrationID
+    }
+
+    "throw a MissingRegDoc exception" in new Setup {
+      intercept[MissingRegDocument](await(repository.getRegistrationId(reg.transactionID)))
     }
   }
 }

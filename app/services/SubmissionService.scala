@@ -52,7 +52,8 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injIncorporationInformationConnector: IncorporationInformationConnector,
                                   injBusinessRegistrationConnector: BusinessRegistrationConnector,
                                   injCompanyRegistrationConnector: CompanyRegistrationConnector,
-                                  injAuditService: AuditService) extends SubmissionSrv {
+                                  injAuditService: AuditService,
+                                  injRegistrationService: RegistrationService) extends SubmissionSrv {
   override lazy val authConnector = AuthClientConnector
 
   val sequenceRepository = injSequenceMongoRepository.store
@@ -62,6 +63,7 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
   val businessRegistrationConnector = injBusinessRegistrationConnector
   val companyRegistrationConnector = injCompanyRegistrationConnector
   val auditService = injAuditService
+  val registrationService = injRegistrationService
 }
 
 trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
@@ -73,6 +75,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   val businessRegistrationConnector: BusinessRegistrationConnect
   val companyRegistrationConnector: CompanyRegistrationConnect
   val auditService: AuditSrv
+  val registrationService: RegistrationSrv
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
@@ -82,7 +85,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
       incUpdate     <- getIncorporationUpdate(regId) recover {
                           case ex: RejectedIncorporationException =>
-                            updatePAYERegistrationDocument(regId, PAYEStatus.cancelled)
+                            registrationService.deletePAYERegistration(regId, PAYEStatus.draft)
                             throw ex
                         }
       ctutr         <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
@@ -100,9 +103,15 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _             <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
       _             <- auditService.auditDESTopUp(regId, desSubmission)
-      updatedStatus = if(incorpStatusUpdate.status == IncorporationStatus.rejected) PAYEStatus.cancelled else PAYEStatus.submitted
-      status        <- updatePAYERegistrationDocument(regId, updatedStatus)
-    } yield status
+    } yield {
+      if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
+        registrationService.deletePAYERegistration(regId, PAYEStatus.held)
+        PAYEStatus.cancelled
+      } else {
+        updatePAYERegistrationDocument(regId, PAYEStatus.submitted)
+        PAYEStatus.submitted
+      }
+    }
   }
 
   def getIncorporationUpdate(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
@@ -181,7 +190,10 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
       Logger.warn(s"[SubmissionService] - [payeReg2PartialDESSubmission]: Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
       throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
     }
-    val employmentInfo = payeReg.employmentInfo.fold[Either[Option[Employment], Option[EmploymentInfo]]](Left(payeReg.employment))(emp => Right(Some(emp)))
+
+    val employmentInfo = payeReg.employmentInfo.getOrElse {
+      throw new EmploymentDetailsNotDefinedException("Employment Info not defined")
+    }
 
     buildDESMetaData(payeReg.registrationID,payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
       desMetaData => {
@@ -230,14 +242,8 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
                                                sicCodes: Seq[SICCode],
                                                incorpUpdateCrn: Option[String],
                                                directors: Seq[Director],
-                                               employment: Either[Option[Employment],Option[EmploymentInfo]],
+                                               employment: EmploymentInfo,
                                                ctutr: Option[String]): DESLimitedCompany = {
-    val companyPension = employment match{
-      case Right(Some(empInfo)) => empInfo.companyPension
-      case Left(Some(empInfo)) => empInfo.companyPension
-      case _ => throw new EmploymentDetailsNotDefinedException("Employment details not defined")
-    }
-
     if(directors.isEmpty) throw new DirectorsNotCompletedException("No director details provided") else {
       DESLimitedCompany(
         companyUTR = ctutr,
@@ -249,20 +255,9 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
         crn = incorpUpdateCrn,
         directors = directors,
         registeredOfficeAddress = companyDetails.roAddress,
-        operatingOccPensionScheme = companyPension
+        operatingOccPensionScheme = employment.companyPension
       )
     }
-  }
-
-  private def buildDesEmployment(employmentDetails: Employment, payeContactDetails: PAYEContact): DESEmployingPeople = {
-    DESEmployingPeople(
-      dateOfFirstEXBForEmployees = employmentDetails.firstPaymentDate,
-      numberOfEmployeesExpectedThisYear = if (employmentDetails.employees) "1" else "0",
-      engageSubcontractors = employmentDetails.subcontractors,
-      correspondenceName = payeContactDetails.contactDetails.name,
-      correspondenceContactDetails = payeContactDetails.contactDetails.digitalContactDetails,
-      payeCorrespondenceAddress = payeContactDetails.correspondenceAddress
-    )
   }
 
   private def buildDesEmploymentInfo(employmentDetails: EmploymentInfo, payeContactDetails: PAYEContact): DESEmployingPeople = {
@@ -276,13 +271,9 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
     )
   }
 
-  private[services] def buildDESEmployingPeople(regId: String, employment: Either[Option[Employment], Option[EmploymentInfo]], payeContact: Option[PAYEContact]): DESEmployingPeople = {
+  private[services] def buildDESEmployingPeople(regId: String, employment: EmploymentInfo, payeContact: Option[PAYEContact]): DESEmployingPeople = {
     val payeContactDetails = payeContact.getOrElse(throw new PAYEContactNotDefinedException("PAYE Contact not defined"))
-   employment match {
-      case Right(Some(emp)) => buildDesEmploymentInfo(emp, payeContactDetails)
-      case Left(Some(emp))  => buildDesEmployment(emp, payeContactDetails)
-      case _                => throw new EmploymentDetailsNotDefinedException("Employment details not defined")
-    }
+    buildDesEmploymentInfo(employment, payeContactDetails)
   }
 
   private[services] class FailedToGetCredId extends NoStackTrace
@@ -292,11 +283,6 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
     } recoverWith {
       case _ => Future.failed(new FailedToGetCredId)
     }
-
-//    authConnector.getCurrentAuthority flatMap {
-//      case Some(a) => Future.successful(a.gatewayId)
-//      case _ => Future.failed(new FailedToGetCredId)
-//    }
   }
 
   private[services] class FailedToGetLanguage extends NoStackTrace

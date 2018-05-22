@@ -20,29 +20,7 @@ import java.time.LocalDate
 
 import enums.Employing
 import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
-import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import utils.SystemDate
-
-import scala.collection.Seq
-
-@deprecated("Please use EmploymentInfo", "SCRS-11281")
-case class Employment(employees: Boolean,
-                      companyPension: Option[Boolean],
-                      subcontractors: Boolean,
-                      firstPaymentDate: LocalDate)
-
-@deprecated("Please use EmploymentInfo", "SCRS-11281")
-object Employment {
-  def format(formatter: BaseJsonFormatting): Format[Employment] = (
-    (__ \ "employees").format[Boolean] and
-    (__ \ "ocpn").formatNullable[Boolean] and
-    (__ \ "cis").format[Boolean] and
-    (__ \ "first-payment-date").format[LocalDate](formatter.firstPaymentDateFormat)
-  )(Employment.apply, unlift(Employment.unapply))
-
-  implicit val format: Format[Employment] = format(APIValidation)
-}
 
 case class EmploymentInfo(employees: Employing.Value,
                           firstPaymentDate: LocalDate,

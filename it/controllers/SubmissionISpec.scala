@@ -21,6 +21,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
 import enums.{Employing, PAYEStatus}
+import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
@@ -30,10 +31,11 @@ import play.api.libs.json.Json
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
+import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SubmissionISpec extends IntegrationSpecBase {
+class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -150,14 +152,6 @@ class SubmissionISpec extends IntegrationSpecBase {
         correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
       )
     ),
-    Some(
-      Employment(
-        employees = true,
-        companyPension = Some(true),
-        subcontractors = true,
-        firstPaymentDate = LocalDate.of(2016, 12, 20)
-      )
-    ),
     Seq(
       SICCode(code = None, description = Some("consulting"))
     ),
@@ -165,7 +159,8 @@ class SubmissionISpec extends IntegrationSpecBase {
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = Some(dt)
+    lastAction = Some(dt),
+    employmentInfo = Some(validEmployment)
   )
   val processedSubmission = PAYERegistration(
     regId,
@@ -181,13 +176,13 @@ class SubmissionISpec extends IntegrationSpecBase {
     None,
     Nil,
     None,
-    None,
     Nil,
     lastUpdate,
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = None
+    lastAction = None,
+    employmentInfo = None
   )
 
   val crn = "OC123456"
@@ -321,7 +316,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |            "operatingOccPensionScheme": true
              |        },
              |        "employingPeople": {
-             |            "dateOfFirstEXBForEmployees": "2016-12-20",
+             |            "dateOfFirstEXBForEmployees": "${SystemDate.getSystemDate.toLocalDate}",
              |            "numberOfEmployeesExpectedThisYear": "1",
              |            "engageSubcontractors": true,
              |            "correspondenceName": "Thierry Henry",
@@ -410,7 +405,7 @@ class SubmissionISpec extends IntegrationSpecBase {
             |        "operatingOccPensionScheme" : true
             |      },
             |      "employingPeople" : {
-            |        "dateOfFirstEXBForEmployees" : "2016-12-20",
+            |        "dateOfFirstEXBForEmployees" : "${SystemDate.getSystemDate.toLocalDate}",
             |        "numberOfEmployeesExpectedThisYear" : "1",
             |        "engageSubcontractors" : true,
             |        "correspondenceName" : "Thierry Henry",
@@ -547,7 +542,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |            "operatingOccPensionScheme": true
              |        },
              |        "employingPeople": {
-             |            "dateOfFirstEXBForEmployees": "2016-12-20",
+             |            "dateOfFirstEXBForEmployees": "${SystemDate.getSystemDate.toLocalDate}",
              |            "numberOfEmployeesExpectedThisYear": "1",
              |            "engageSubcontractors": true,
              |            "correspondenceName": "Thierry Henry",
@@ -661,14 +656,6 @@ class SubmissionISpec extends IntegrationSpecBase {
             correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
           )
         ),
-        Some(
-          Employment(
-            employees = true,
-            companyPension = Some(true),
-            subcontractors = true,
-            firstPaymentDate = LocalDate.of(2016, 12, 20)
-          )
-        ),
         Seq(
           SICCode(code = None, description = Some("consulting"))
         ),
@@ -676,7 +663,8 @@ class SubmissionISpec extends IntegrationSpecBase {
         partialSubmissionTimestamp = None,
         fullSubmissionTimestamp = None,
         acknowledgedTimestamp = None,
-        lastAction = Some(dt)
+        lastAction = Some(dt),
+        employmentInfo = Some(validEmployment)
       )
 
       await(repository.upsertRegTestOnly(submission))
@@ -741,7 +729,7 @@ class SubmissionISpec extends IntegrationSpecBase {
              |            "operatingOccPensionScheme": true
              |        },
              |        "employingPeople": {
-             |            "dateOfFirstEXBForEmployees": "2016-12-20",
+             |            "dateOfFirstEXBForEmployees": "${SystemDate.getSystemDate.toLocalDate}",
              |            "numberOfEmployeesExpectedThisYear": "1",
              |            "engageSubcontractors": true,
              |            "correspondenceName": "Thierry Henry",
@@ -824,12 +812,7 @@ class SubmissionISpec extends IntegrationSpecBase {
       response.status shouldBe 204
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(rejectedSubmission.copy(lastUpdate = reg.get.lastUpdate, lastAction = reg.get.lastAction))
-
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
-
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg shouldBe None
     }
 
     "return a 502 status when DES returns a 499" in new Setup {
@@ -997,7 +980,6 @@ class SubmissionISpec extends IntegrationSpecBase {
           correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"), Some("correspondenceAuditRef"))
         )
       ),
-      None,
       Seq(
         SICCode(code = None, description = Some("consulting"))
       ),
@@ -1006,7 +988,7 @@ class SubmissionISpec extends IntegrationSpecBase {
       fullSubmissionTimestamp = None,
       acknowledgedTimestamp = None,
       lastAction = Some(dt),
-      Some(
+      employmentInfo =  Some(
         EmploymentInfo(
           employees = Employing.willEmployNextYear,
           companyPension = Some(true),

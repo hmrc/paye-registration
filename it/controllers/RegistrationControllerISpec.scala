@@ -17,11 +17,11 @@
 package controllers
 
 import java.time.LocalDate
-import javax.inject.Provider
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
+import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
 import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
 import models._
@@ -35,7 +35,7 @@ import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper {
+class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper with EmploymentInfoFixture {
 
   override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
 
@@ -145,14 +145,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
         correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
       )
     ),
-    Some(
-      Employment(
-        employees = true,
-        companyPension = Some(true),
-        subcontractors = true,
-        firstPaymentDate = LocalDate.of(2016, 12, 20)
-      )
-    ),
     Seq(
       SICCode(code = None, description = Some("consulting"))
     ),
@@ -160,7 +152,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     partialSubmissionTimestamp = None,
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = None
+    lastAction = None,
+    employmentInfo = Some(validEmployment)
   )
 
   val processedSubmission = PAYERegistration(
@@ -177,13 +170,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     None,
     Nil,
     None,
-    None,
     Nil,
     lastUpdate,
     partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
     fullSubmissionTimestamp = None,
     acknowledgedTimestamp = None,
-    lastAction = None
+    lastAction = None,
+    employmentInfo = None
   )
 
   val rejectedSubmission = submission.copy(status = PAYEStatus.cancelled)
@@ -202,13 +195,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     None,
     Nil,
     None,
-    None,
     Nil,
     lastUpdate,
     partialSubmissionTimestamp = Some(partialSubmissionTimestamp),
     fullSubmissionTimestamp = Some(fullSubmissionTimestamp),
     acknowledgedTimestamp = None,
-    lastAction = None
+    lastAction = None,
+    employmentInfo = None
   )
 
   val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
@@ -389,12 +382,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       )
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate, lastAction = reg.get.lastAction))
-
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
-
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg shouldBe None
     }
 
     "return a 200 status when registration is not found" in new Setup {
@@ -579,12 +567,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       response.json shouldBe Json.toJson(none)
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(status = PAYEStatus.cancelled, lastUpdate = reg.get.lastUpdate, lastAction = reg.get.lastAction))
-
-      val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
-      val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
-
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
+      reg shouldBe None
     }
   }
 
@@ -919,6 +902,35 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
       val response = client(s"invalidRegId/delete").delete().futureValue
+      response.status shouldBe 404
+    }
+  }
+  "deletePAYERegistrationIncorpRejected" should {
+    "return an OK after deleting the document" in new Setup {
+
+      await(repository.insert(submission.copy(status = PAYEStatus.draft, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+
+      val response = client(s"$regId/delete-rejected-incorp").delete().futureValue
+      response.status shouldBe 200
+
+      await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
+    }
+
+    "return a PreconditionFailed response if the document status is not draft or invalid'" in new Setup {
+
+      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+
+      val response = client(s"$regId/delete-rejected-incorp").delete().futureValue
+      response.status shouldBe 412
+
+      await(repository.retrieveRegistration(submission.registrationID)) shouldBe Some(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp)))
+    }
+
+    "return a NotFound trying deleting a non existing document" in new Setup {
+
+      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+
+      val response = client(s"invalidRegId/delete-rejected-incorp").delete().futureValue
       response.status shouldBe 404
     }
   }

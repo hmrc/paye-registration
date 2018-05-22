@@ -74,13 +74,13 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
       None,
       Nil,
       None,
-      None,
       Nil,
       lastUpdate,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
       acknowledgedTimestamp = None,
-      lastAction = None
+      lastAction = None,
+      employmentInfo = None
     )
 
     "store the plain EMP Ref in encrypted form" in new Setup {

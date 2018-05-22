@@ -36,8 +36,6 @@ case class PAYERegistration(registrationID: String,
                             companyDetails: Option[CompanyDetails],
                             directors: Seq[Director],
                             payeContact: Option[PAYEContact],
-                            @deprecated("use employmentInfo instead", "SCRS-11281")
-                            employment: Option[Employment],
                             sicCodes: Seq[SICCode],
                             lastUpdate: String,
                             partialSubmissionTimestamp: Option[String],
@@ -63,7 +61,6 @@ object PAYERegistration {
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.format(formatter)) and
     (__ \ "directors").format[Seq[Director]](Director.seqFormat(formatter)) and
     (__ \ "payeContact").formatNullable[PAYEContact](PAYEContact.format(formatter)) and
-    (__ \ "employment").formatNullable[Employment](Employment.format(formatter)) and
     (__ \ "sicCodes").format[Seq[SICCode]](SICCode.seqFormat(formatter)) and
     (__ \ "lastUpdate").format[String] and
     (__ \ "partialSubmissionTimestamp").formatNullable[String] and

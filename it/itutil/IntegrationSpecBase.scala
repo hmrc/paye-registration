@@ -19,7 +19,7 @@ import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import uk.gov.hmrc.play.test.UnitSpec
-import utils.{PAYEFeatureSwitches, FeatureSwitch}
+import utils.{FeatureSwitch, PAYEFeatureSwitches}
 
 trait IntegrationSpecBase extends UnitSpec
   with GuiceOneServerPerSuite with ScalaFutures with IntegrationPatience with Matchers

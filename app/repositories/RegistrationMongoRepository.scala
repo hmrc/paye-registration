@@ -66,11 +66,7 @@ trait RegistrationRepository {
   def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String]
   def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]]
   def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails]
-  @deprecated("use retrieveEmploymentInfo instead for the new model",  "SCRS-11281")
-  def retrieveEmployment(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Employment]]
   def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]]
-  @deprecated("use upsertEmploymentInfo instead for the new model",  "SCRS-11281")
-  def upsertEmployment(registrationID: String, details: Employment)(implicit ec: ExecutionContext): Future[PAYERegistration]
   def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo]
   def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]]
   def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]]
@@ -88,7 +84,7 @@ trait RegistrationRepository {
   def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration])(implicit ec: ExecutionContext):Future[WriteResult]
   def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)]
   def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]]
-
+  def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String]
 }
 
 class RegistrationMongoRepository(mongo: () => DB,
@@ -393,18 +389,6 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveEmployment(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Employment]] = {
-    val mongoTimer = mongoResponseTimer.time()
-    retrieveRegistration(registrationID) map {
-      case Some(registration) =>
-        mongoTimer.stop()
-        registration.employment
-      case None =>
-        Logger.warn(s"Unable to retrieve Employment for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
-        mongoTimer.stop()
-        throw new MissingRegDocument(registrationID)
-    }
-  }
 
   override def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
     implicit val empInfoMongoFormat = EmploymentInfo.mongoFormat
@@ -416,27 +400,6 @@ class RegistrationMongoRepository(mongo: () => DB,
 
   override def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
     updateBlock[EmploymentInfo](registrationID,empInfo)
-  }
-
-  override def upsertEmployment(registrationID: String, details: Employment)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
-    val mongoTimer = mongoResponseTimer.time()
-    retrieveRegistration(registrationID) flatMap {
-      case Some(reg) =>
-        updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), reg.copy(employment = Some(details))) {
-          _ =>
-            mongoTimer.stop()
-            reg
-        } recover {
-          case e =>
-            Logger.warn(s"Unable to update Employment for reg ID $registrationID, Error: ${e.getMessage}")
-            mongoTimer.stop()
-            throw new UpdateFailed(registrationID, "Employment")
-        }
-      case None =>
-        Logger.warn(s"Unable to update Employment for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
-        mongoTimer.stop()
-        throw new MissingRegDocument(registrationID)
-    }
   }
 
   override def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
@@ -583,7 +546,6 @@ class RegistrationMongoRepository(mongo: () => DB,
                                        companyDetails = None,
                                        directors = Nil,
                                        payeContact = None,
-                                       employment = None,
                                        sicCodes = Nil,
                                        employmentInfo = None)
         updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), clearedDocument) {
@@ -621,6 +583,16 @@ class RegistrationMongoRepository(mongo: () => DB,
         Logger.warn(s"Unable to update emp ref for ack ref $ackRef, Error: Couldn't retrieve an existing registration with that ack ref")
         mongoTimer.stop()
         throw new MissingRegDocument(ackRef)
+    }
+  }
+
+  override def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String] = {
+    val projection = BSONDocument("registrationID" -> 1, "_id" -> 0)
+    collection.find(transactionIDSelector(txId), projection).one[JsValue] map {
+      _.fold(throw new MissingRegDocument(txId))(_.\("registrationID").validate[String].fold(
+        _ => throw new IllegalStateException(s"There was a problem getting the registrationId for txId $txId"),
+        identity
+      ))
     }
   }
 
@@ -696,13 +668,13 @@ class RegistrationMongoRepository(mongo: () => DB,
       companyDetails = None,
       directors = Seq.empty,
       payeContact = None,
-      employment = None,
       sicCodes = Seq.empty,
       lastUpdate = timeStamp,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
       acknowledgedTimestamp = None,
-      lastAction = Some(dh.getTimestamp)
+      lastAction = Some(dh.getTimestamp),
+      employmentInfo = None
     )
   }
 

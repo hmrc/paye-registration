@@ -16,10 +16,9 @@
 
 package controllers
 
-import java.time.LocalDate
-
 import com.kenshoo.play.metrics.Metrics
-import enums.PAYEStatus
+import enums.{Employing, PAYEStatus}
+import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
@@ -28,10 +27,11 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TestEndpointControllerISpec extends IntegrationSpecBase {
+class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -89,13 +89,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       ))
 
@@ -114,13 +114,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       ))
 
@@ -157,13 +157,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       ))
 
@@ -182,13 +182,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       ))
 
@@ -226,13 +226,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       ))
       await(repository.count) shouldBe 1
@@ -282,14 +282,6 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
               correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
             )
           ),
-          Some(
-            Employment(
-              employees = true,
-              companyPension = Some(true),
-              subcontractors = true,
-              firstPaymentDate = LocalDate.of(2016, 12, 20)
-            )
-          ),
           Seq(
             SICCode(code = Some("123"), description = Some("consulting")),
             SICCode(code = None, description = Some("something"))
@@ -298,7 +290,14 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = Some(EmploymentInfo(
+            employees = Employing.notEmploying,
+            firstPaymentDate = SystemDate.getSystemDate.toLocalDate,
+            construction = true,
+            subcontractors = true,
+            companyPension = None
+          ))
         )
       )
 
@@ -328,13 +327,13 @@ class TestEndpointControllerISpec extends IntegrationSpecBase {
           None,
           Seq.empty,
           None,
-          None,
           Seq.empty,
           lastUpdate,
           partialSubmissionTimestamp = None,
           fullSubmissionTimestamp = None,
           acknowledgedTimestamp = None,
-          lastAction = None
+          lastAction = None,
+          employmentInfo = None
         )
       ))
       await(repository.count) shouldBe 1
