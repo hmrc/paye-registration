@@ -108,7 +108,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       )
     )
 
-  val submission = PAYERegistration(
+  def submission = PAYERegistration(
     regId,
     transactionID,
     intId,
@@ -896,6 +896,240 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       response.status shouldBe 500
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+    }
+
+    "return a 400 when in working hours" in new Setup {
+      setupAuthMocksToReturn(authoriseData)
+      await(client(s"test-only/feature-flag/system-date/2018-01-01T12:00:00Z").get())
+
+      val regime = "paye"
+      val subscriber = "SCRS"
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(400)
+        )
+      )
+
+      stubBusinessProfile()
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
+
+      val extraDirectorList = submission.directors :+ Director(
+        name = Name(forename = Some("Malcolm"), surname = Some("Test"), otherForenames = Some("Testing"), title = Some("Mr")),
+        nino = None
+      )
+      await(repository.upsertRegTestOnly(submission.copy(directors = extraDirectorList)))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+
+      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             | "acknowledgementReference": "testAckRef",
+             |    "metaData": {
+             |        "businessType": "Limited company",
+             |        "sessionID": "session-12345",
+             |        "credentialID": "$credId",
+             |        "language": "en",
+             |        "formCreationTimestamp": "$timestamp",
+             |        "submissionFromAgent": false,
+             |        "completionCapacity": "Director",
+             |        "declareAccurateAndComplete": true
+             |    },
+             |    "payAsYouEarn": {
+             |        "limitedCompany": {
+             |            "companiesHouseCompanyName": "testCompanyName",
+             |            "nameOfBusiness": "test",
+             |            "registeredOfficeAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "postcode": "TE1 1ST"
+             |            },
+             |            "businessAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            },
+             |            "businessContactDetails": {
+             |                "phoneNumber": "0123459999",
+             |                "mobileNumber": "5432109999",
+             |                "email": "test@email.com"
+             |            },
+             |            "natureOfBusiness": "consulting",
+             |            "directors": [
+             |                {
+             |                   "directorName": {
+             |                     "title": "Sir",
+             |              	      "firstName": "Thierry",
+             |              	      "lastName": "Henry",
+             |              	      "middleName": "Dominique"
+             |                   },
+             |                   "directorNINO": "SR123456C"
+             |                },
+             |                {
+             |                   "directorName": {
+             |                     "title": "Mr",
+             |              	      "firstName": "Malcolm",
+             |              	      "lastName": "Test",
+             |              	      "middleName": "Testing"
+             |                   }
+             |                }
+             |            ],
+             |            "operatingOccPensionScheme": true
+             |        },
+             |        "employingPeople": {
+             |            "dateOfFirstEXBForEmployees": "${SystemDate.getSystemDate.toLocalDate}",
+             |            "numberOfEmployeesExpectedThisYear": "1",
+             |            "engageSubcontractors": true,
+             |            "correspondenceName": "Thierry Henry",
+             |            "correspondenceContactDetails": {
+             |                "phoneNumber": "1234999999",
+             |                "mobileNumber": "4358475999",
+             |                "email": "test@test.com"
+             |            },
+             |            "payeCorrespondenceAddress": {
+             |                "addressLine1": "19 St Walk",
+             |                "addressLine2": "Testley CA",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            }
+             |        }
+             |    }
+             |}
+          """.stripMargin).toString())
+        )
+      )
+      response.status shouldBe 400
+      await(client(s"test-only/feature-flag/system-date/time-clear").get())
+
+    }
+
+    "return a 400 when out of working hours" in new Setup {
+      setupAuthMocksToReturn(authoriseData)
+      await(client(s"test-only/feature-flag/system-date/2018-01-01T20:00:00Z").get())
+
+      val regime = "paye"
+      val subscriber = "SCRS"
+
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(400)
+        )
+      )
+
+      stubBusinessProfile()
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
+
+      val extraDirectorList = submission.directors :+ Director(
+        name = Name(forename = Some("Malcolm"), surname = Some("Test"), otherForenames = Some("Testing"), title = Some("Mr")),
+        nino = None
+      )
+      await(repository.upsertRegTestOnly(submission.copy(directors = extraDirectorList)))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+
+      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             | "acknowledgementReference": "testAckRef",
+             |    "metaData": {
+             |        "businessType": "Limited company",
+             |        "sessionID": "session-12345",
+             |        "credentialID": "$credId",
+             |        "language": "en",
+             |        "formCreationTimestamp": "$timestamp",
+             |        "submissionFromAgent": false,
+             |        "completionCapacity": "Director",
+             |        "declareAccurateAndComplete": true
+             |    },
+             |    "payAsYouEarn": {
+             |        "limitedCompany": {
+             |            "companiesHouseCompanyName": "testCompanyName",
+             |            "nameOfBusiness": "test",
+             |            "registeredOfficeAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "postcode": "TE1 1ST"
+             |            },
+             |            "businessAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            },
+             |            "businessContactDetails": {
+             |                "phoneNumber": "0123459999",
+             |                "mobileNumber": "5432109999",
+             |                "email": "test@email.com"
+             |            },
+             |            "natureOfBusiness": "consulting",
+             |            "directors": [
+             |                {
+             |                   "directorName": {
+             |                     "title": "Sir",
+             |              	      "firstName": "Thierry",
+             |              	      "lastName": "Henry",
+             |              	      "middleName": "Dominique"
+             |                   },
+             |                   "directorNINO": "SR123456C"
+             |                },
+             |                {
+             |                   "directorName": {
+             |                     "title": "Mr",
+             |              	      "firstName": "Malcolm",
+             |              	      "lastName": "Test",
+             |              	      "middleName": "Testing"
+             |                   }
+             |                }
+             |            ],
+             |            "operatingOccPensionScheme": true
+             |        },
+             |        "employingPeople": {
+             |            "dateOfFirstEXBForEmployees": "${SystemDate.getSystemDate.toLocalDate}",
+             |            "numberOfEmployeesExpectedThisYear": "1",
+             |            "engageSubcontractors": true,
+             |            "correspondenceName": "Thierry Henry",
+             |            "correspondenceContactDetails": {
+             |                "phoneNumber": "1234999999",
+             |                "mobileNumber": "4358475999",
+             |                "email": "test@test.com"
+             |            },
+             |            "payeCorrespondenceAddress": {
+             |                "addressLine1": "19 St Walk",
+             |                "addressLine2": "Testley CA",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            }
+             |        }
+             |    }
+             |}
+          """.stripMargin).toString())
+        )
+      )
+      response.status shouldBe 400
+      await(client(s"test-only/feature-flag/system-date/time-clear").get())
     }
   }
 

@@ -26,7 +26,7 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse, Upstream4xxResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
 import utils.PAYEFeatureSwitches
@@ -76,6 +76,12 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200))
       await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
+    "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
+      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}",  Upstream4xxResponse("OOPS", 400, 400))
+
+      intercept[Upstream4xxResponse](await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
+    }
+
   }
 
   "submitToDES with a Top Up DES Submission Model" should {
@@ -83,6 +89,12 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", HttpResponse(200))
 
       await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
+    }
+
+    "throw exception if a 400 is encountered with proxy" in new SetupWithProxy(true) {
+      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
+
+      intercept[Upstream4xxResponse](await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
   }
 
@@ -92,6 +104,11 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
       await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
+    "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
+      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}",  Upstream4xxResponse("OOPS", 400, 400))
+
+      intercept[Upstream4xxResponse](await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
+    }
   }
 
   "submitToDES with a Top Up DES Submission Model - feature switch disabled" should {
@@ -99,6 +116,11 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desTopUpURI}", HttpResponse(200))
 
       await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
+    }
+    "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
+      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
+
+      intercept[Upstream4xxResponse](await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
   }
 }
