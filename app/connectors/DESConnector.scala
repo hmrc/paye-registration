@@ -51,8 +51,8 @@ class DESConnector extends DESConnect with ServicesConfig {
   val http = WSHttp
   val auditConnector = MicroserviceAuditConnector
 
-  override protected val currentDate = SystemDate.getSystemDate.toLocalDate
-  override protected val currentTime = SystemDate.getSystemDate.toLocalTime
+  override protected def currentDate = SystemDate.getSystemDate.toLocalDate
+  override protected def currentTime = SystemDate.getSystemDate.toLocalTime
 }
 
 trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
@@ -80,15 +80,16 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
       case 499 =>
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
       case status if is4xx(status) =>
-        if(status == 400) {
-          if(isInWorkingDaysAndHours) {
-            Logger.error("PAYE_-_400_response_returned_from_DES") //used in alerting - DO NOT CHANGE ERROR TEXT
-          } else {
-            Logger.error("PAYE_-_400_response_returned_from_DES NON_PAGER_DUTY_LOG")
-          }
-        }
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.allHeaders)
       case _ => handleResponse(http, url)(response)
+    }
+  }
+
+  private def logDes400PagerDuty(responce: Upstream4xxResponse, regId: String): Unit = if(responce.upstreamResponseCode == 400) {
+    if(isInWorkingDaysAndHours) {
+      Logger.error(s"PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
+    } else {
+      Logger.error(s"NON_PAGER_DUTY_LOG PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime")
     }
   }
 
@@ -109,6 +110,7 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
       resp
     } recoverWith {
       case e: Upstream4xxResponse =>
+        logDes400PagerDuty(e, regId)
         val event = new FailedDesSubmissionEvent(regId, submission)
         auditConnector.sendExtendedEvent(event)
         Future.failed(e)
@@ -125,6 +127,10 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
     payePOST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
       Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
+    } recoverWith {
+      case e: Upstream4xxResponse =>
+        logDes400PagerDuty(e, regId)
+        Future.failed(e)
     }
   }
 

@@ -6,7 +6,7 @@ import models.EmploymentInfo
 import utils.SystemDate
 
 trait EmploymentInfoFixture {
-  val validEmployment = EmploymentInfo(
+  def validEmployment = EmploymentInfo(
     employees = Employing.alreadyEmploying,
     firstPaymentDate = SystemDate.getSystemDate.toLocalDate,
     construction = true,

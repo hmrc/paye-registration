@@ -22,8 +22,8 @@ import java.time.{LocalDate, LocalTime}
 trait WorkingHoursGuard {
   val alertWorkingHours: String
 
-  protected val currentDate: LocalDate
-  protected val currentTime: LocalTime
+  protected def currentDate: LocalDate
+  protected def currentTime: LocalTime
 
   private[utils] def localTimeNow: LocalTime = currentTime
   private[utils] def localDayNow: Int = currentDate.getDayOfWeek.getValue
