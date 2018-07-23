@@ -24,8 +24,11 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 trait PAYERegSpec extends UnitSpec with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
   override def beforeEach() {
-    reset(mockRegistrationRepository)
-    reset(mockSequenceRepository)
-    reset(mockAuthConnector)
+    reset(
+      mockRegistrationRepository,
+      mockSequenceRepository,
+      mockAuthConnector,
+      mockPlayConfiguraton
+    )
   }
 }
