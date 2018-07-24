@@ -20,6 +20,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.mockito.MockitoSugar
+import play.api.Configuration
 import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, InvalidBearerToken}
 
@@ -33,6 +34,7 @@ trait PAYEMocks {
   lazy val mockRegistrationRepository = mock[RegistrationMongoRepository]
   lazy val mockSequenceRepository     = mock[SequenceMongoRepository]
   lazy val mockAuthConnector          = mock[AuthConnector]
+  lazy val mockPlayConfiguraton       = mock[Configuration]
 
   object AuthorisationMocks {
     def mockAuthenticated(internalId: String): OngoingStubbing[Future[Option[String]]] = {
