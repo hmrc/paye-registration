@@ -19,7 +19,7 @@ package config
 import javax.inject.{Inject, Named, Singleton}
 import auth.Crypto
 import com.typesafe.config.Config
-import jobs.RetrieveRegIdFromTxIdJob
+import jobs.RetrieveRegInfoFromTxIdJob
 import net.ceedubs.ficus.Ficus._
 import play.api.{Application, Configuration, Logger, Play}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
@@ -72,7 +72,7 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Mi
       stats => Logger.info(s"[RegStats] ${stats}")
     }
 
-    new RetrieveRegIdFromTxIdJob(repo.store, Play.configuration(app)).logRegIdsFromTxId()
+    new RetrieveRegInfoFromTxIdJob(repo.store, Play.configuration(app)).logRegInfoFromTxId()
 
     super.onStart(app)
   }
