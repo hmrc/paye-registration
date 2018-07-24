@@ -24,19 +24,23 @@ import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-class RetrieveRegIdFromTxIdJob(registrationRepo: RegistrationMongoRepository, configuration: Configuration) {
+class RetrieveRegInfoFromTxIdJob(registrationRepo: RegistrationMongoRepository, configuration: Configuration) {
 
   lazy val txIds: List[String] = Some(new String(Base64.getDecoder
     .decode(configuration.getString("txIdListToRegIdForStartupJob").getOrElse("")), "UTF-8"))
     .fold(Array.empty[String])(_.split(",").filter(_.nonEmpty)).toList
 
-  def logRegIdsFromTxId(): Unit = {
+  def logRegInfoFromTxId(): Unit = {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     txIds.foreach ( txId =>
-      registrationRepo.getRegistrationId(txId) map (regId => Logger.info(s"[RetrieveRegIdFromTxIdJob] txId: $txId returned a regId: $regId") ) recover {
-        case _: MissingRegDocument => Logger.warn(s"[RetrieveRegIdFromTxIdJob] txId: $txId has no registration document")
-        case e => Logger.warn(s"[RetrieveRegIdFromTxIdJob] an error occurred while retrieving regId for txId: $txId", e)
-      }
+      registrationRepo.retrieveRegistrationByTransactionID(txId) map { oDoc =>
+          oDoc.fold(Logger.warn(s"[RetrieveRegInfoFromTxIdJob] txId: $txId has no registration document")) { doc =>
+            val (regId, status, lastUpdated, lastAction) = (doc.registrationID, doc.status, doc.lastUpdate, doc.lastAction)
+            Logger.info(s"[RetrieveRegInfoFromTxIdJob] txId: $txId returned a document with regId: $regId, status: $status, lastUpdated: $lastUpdated and lastAction: $lastAction")
+          }
+        } recover {
+          case e => Logger.warn(s"[RetrieveRegInfoFromTxIdJob] an error occurred while retrieving regId for txId: $txId", e)
+        }
     )
   }
 }
