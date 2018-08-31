@@ -116,7 +116,6 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     None,
     None,
     timestamp,
-    Some(Eligibility(false, false)),
     PAYEStatus.draft,
     Some("Director"),
     Some(
@@ -170,7 +169,6 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     None,
     None,
     timestamp,
-    eligibility = Some(Eligibility(false, false)),
     PAYEStatus.held,
     None,
     None,
@@ -620,7 +618,6 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         None,
         None,
         timestamp,
-        Some(Eligibility(false, false)),
         PAYEStatus.draft,
         Some("Director"),
         Some(
@@ -1178,7 +1175,6 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       None,
       None,
       timestamp,
-      Some(Eligibility(false, false)),
       PAYEStatus.draft,
       Some("Director"),
       Some(

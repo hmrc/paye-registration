@@ -21,7 +21,7 @@ import com.kenshoo.play.metrics.Metrics
 import enums.{Employing, PAYEStatus}
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, EmploymentInfo, PAYERegistration}
+import models.{EmploymentInfo, PAYERegistration}
 import models.validation.APIValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Application, Configuration}
@@ -101,7 +101,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -138,7 +137,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -185,7 +183,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -221,7 +218,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -266,7 +262,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -323,7 +318,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -379,7 +373,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -436,7 +429,6 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,

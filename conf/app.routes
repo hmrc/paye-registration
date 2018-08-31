@@ -29,9 +29,6 @@ POST       /incorporation-data                      controllers.RegistrationCont
 
 GET        /:regID/acknowledgement-reference        controllers.RegistrationController.getAcknowledgementReference(regID)
 
-GET        /:regID/eligibility                      controllers.RegistrationController.getEligibility(regID)
-PATCH      /:regID/eligibility                      controllers.RegistrationController.updateEligibility(regID)
-
 POST       /registration-processed-confirmation     controllers.RegistrationController.updateRegistrationWithEmpRef(ackref: String)
 
 GET        /:regID/status                           controllers.RegistrationController.getDocumentStatus(regID)

@@ -21,7 +21,7 @@ import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, PAYERegistration}
+import models.PAYERegistration
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.{Application, Configuration}
@@ -85,7 +85,6 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          None,
           PAYEStatus.draft,
           None,
           None,
@@ -135,7 +134,6 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,

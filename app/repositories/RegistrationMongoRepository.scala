@@ -59,8 +59,6 @@ trait RegistrationRepository {
   def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
   def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
   def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value]
-  def getEligibility(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Eligibility]]
-  def upsertEligibility(registrationID: String, eligibility: Eligibility)(implicit ec: ExecutionContext): Future[Eligibility]
   def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value]
   def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]]
   def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String]
@@ -287,40 +285,6 @@ class RegistrationMongoRepository(mongo: () => DB,
       case None =>
         Logger.error(s"Unable to update registration status for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
-        throw new MissingRegDocument(registrationID)
-    }
-  }
-
-  override def getEligibility(registrationID: String)(implicit ec: ExecutionContext): Future[Option[Eligibility]] = {
-    val mongoTimer = mongoResponseTimer.time()
-    retrieveRegistration(registrationID) map {
-      case Some(regDoc) =>
-        mongoTimer.stop()
-        regDoc.eligibility
-      case None =>
-        Logger.error(s"[RegistrationMongoRepository] - [getEligibility]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
-        mongoTimer.stop()
-        throw new MissingRegDocument(registrationID)
-    }
-  }
-
-  override def upsertEligibility(registrationID: String, eligibility: Eligibility)(implicit ec: ExecutionContext): Future[Eligibility] = {
-    val mongoTimer = mongoResponseTimer.time()
-    retrieveRegistration(registrationID) flatMap {
-      case Some(registrationDocument) =>
-        updateRegistrationObject[Eligibility](registrationIDSelector(registrationID), registrationDocument.copy(eligibility = Some(eligibility))) {
-          _ =>
-            mongoTimer.stop()
-            eligibility
-        } recover {
-          case e =>
-            Logger.error(s"Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
-            mongoTimer.stop()
-            throw new UpdateFailed(registrationID, "Registration status")
-        }
-      case None =>
-        mongoTimer.stop()
-        Logger.error(s"[RegistrationMongoRepository] - [upsertEligibility]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
     }
   }
@@ -662,7 +626,6 @@ class RegistrationMongoRepository(mongo: () => DB,
       crn = None,
       registrationConfirmation = None,
       formCreationTimestamp = timeStamp,
-      eligibility = None,
       status = PAYEStatus.draft,
       completionCapacity = None,
       companyDetails = None,

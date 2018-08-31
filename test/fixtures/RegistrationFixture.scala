@@ -80,10 +80,6 @@ trait RegistrationFixture {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "20161021-16:00:00",
-    eligibility = Some(Eligibility(
-      companyEligibility = false,
-      directorEligibility = false
-    )),
     status = PAYEStatus.draft,
     completionCapacity = Some("Director"),
     companyDetails = Some(validCompanyDetails),

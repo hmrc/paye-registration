@@ -588,58 +588,6 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
-  "getEligibility" should {
-    "return an OK" when {
-      "the users eligibility has been found" in new Setup {
-        AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-        when(mockRegistrationService.getEligibility(eqTo(regId))(any()))
-          .thenReturn(Future.successful(Some(Eligibility(false, false))))
-
-        val result = controller.getEligibility(regId)(FakeRequest())
-        status(result) shouldBe Status.OK
-      }
-    }
-
-    "return a NOT FOUND" when {
-      "the eligibility cannot be found" in new Setup {
-        AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-        when(mockRegistrationService.getEligibility(eqTo(regId))(any()))
-          .thenReturn(Future.successful(None))
-
-        val result = controller.getEligibility(regId)(FakeRequest())
-        status(result) shouldBe Status.NOT_FOUND
-      }
-    }
-  }
-
-  "updateEligibility" should {
-    "return an OK" when {
-      "the eligibility has been updated" in new Setup {
-        AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-        when(mockRegistrationService.updateEligibility(eqTo(regId), any())(any()))
-          .thenReturn(Future.successful(Eligibility(false, false)))
-
-        val result = controller.updateEligibility(regId)(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
-        status(result) shouldBe Status.OK
-      }
-    }
-
-    "return a NOT FOUND" when {
-      "the reg document cannot found against the reg id" in new Setup {
-        AuthorisationMocks.mockAuthorised(regId, testInternalId)
-
-        when(mockRegistrationService.updateEligibility(any(), any())(any()))
-          .thenReturn(Future.failed(new MissingRegDocument(regId)))
-
-        val result = controller.updateEligibility(regId)(FakeRequest().withBody(Json.toJson(Eligibility(false, false))))
-        status(result) shouldBe Status.NOT_FOUND
-      }
-    }
-  }
-
   "updateRegistrationWithEmpRef" should {
     "return an OK" when {
       "the reg doc has been updated with the emp ref" in new Setup {

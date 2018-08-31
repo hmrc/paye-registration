@@ -75,7 +75,6 @@ class MetricsJobISpec extends IntegrationSpecBase {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = timestampString,
-    eligibility = None,
     status = status,
     completionCapacity = Some("Director"),
     companyDetails = None,

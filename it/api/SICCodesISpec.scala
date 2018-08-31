@@ -20,7 +20,7 @@ import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{Eligibility, PAYERegistration, SICCode}
+import models.{PAYERegistration, SICCode}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.{Application, Configuration}
@@ -86,7 +86,6 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -123,7 +122,6 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -168,7 +166,6 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,
@@ -204,7 +201,6 @@ class SICCodesISpec extends IntegrationSpecBase {
           None,
           None,
           timestamp,
-          Some(Eligibility(false, false)),
           PAYEStatus.draft,
           None,
           None,

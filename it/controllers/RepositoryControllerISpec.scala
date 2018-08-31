@@ -82,7 +82,6 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
     None,
     None,
     timestamp,
-    Some(Eligibility(false, false)),
     PAYEStatus.draft,
     Some("Director"),
     Some(
