@@ -16,13 +16,11 @@
 
 package repositories
 
-import javax.inject.Provider
-
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.MongoBaseSpec
-import models.{Eligibility, EmpRefNotification, PAYERegistration}
+import models.{EmpRefNotification, PAYERegistration}
 import play.api.Configuration
 import play.api.libs.json.JsObject
 import reactivemongo.api.commands.WriteResult
@@ -68,7 +66,6 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
       None,
       Some(validEmpRefNotification),
       timeStamp,
-      eligibility = Some(Eligibility(false, false)),
       PAYEStatus.acknowledged,
       None,
       None,

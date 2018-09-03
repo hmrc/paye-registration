@@ -73,7 +73,6 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = timestampString,
-    eligibility = None,
     status = PAYEStatus.draft,
     completionCapacity = Some("Director"),
     companyDetails = None,

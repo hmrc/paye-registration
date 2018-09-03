@@ -32,7 +32,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
 
   val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
   "Creating a PAYERegistration model from Json" should {
-    "complete successfully from full Json" in {
+    "complete successfully from full Json that has the old eligibility block in" in {
 
       val date = LocalDate.of(2016, 12, 20)
 
@@ -143,10 +143,178 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         acknowledgementReference = None,
         crn = None,
         formCreationTimestamp = "2016-05-31",
-        eligibility = Some(Eligibility(
-          companyEligibility = false,
-          directorEligibility = false
+        registrationConfirmation = Some(EmpRefNotification(
+          empRef = Some("testEmpRef"),
+          timestamp = "2017-01-01T12:00:00Z",
+          status = "testStatus"
         )),
+        status = PAYEStatus.draft,
+        completionCapacity = Some("Director"),
+        companyDetails = Some(
+          CompanyDetails(
+            companyName = "Test Company",
+            tradingName = Some("Test Trading Name"),
+            Address("14 St Test Walk", "Testley", Some("Testford"), Some("Testshire"), Some("TE1 1ST"), None, Some("testAudit")),
+            Address("15 St Walk", "Testley", Some("Testford"), Some("Testshire"), None, Some("UK")),
+            DigitalContactDetails(Some("email@test.co.uk"), Some("9999999999"), Some("0000000000"))
+          )
+        ),
+        directors = Seq(
+          Director(
+            Name(
+              forename = Some("Thierry"),
+              otherForenames = Some("Dominique"),
+              surname = Some("Henry"),
+              title = Some("Sir")
+            ),
+            Some("SR123456C")
+          ),
+          Director(
+            Name(
+              forename = Some("David"),
+              otherForenames = Some("Jesus"),
+              surname = Some("Trezeguet"),
+              title = Some("Mr")
+            ),
+            Some("SR000009C")
+          )
+        ),
+        payeContact = Some(
+          PAYEContact(
+            contactDetails = PAYEContactDetails(
+              name = "toto tata",
+              digitalContactDetails = DigitalContactDetails(
+                Some("payeemail@test.co.uk"),
+                Some("6549999999"),
+                Some("1234599999")
+              )
+            ),
+            correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), None, Some("UK"))
+          )
+        ),
+
+        sicCodes = Seq(
+          SICCode(code = Some("666"), description = Some("demolition")),
+          SICCode(code = None, description = Some("laundring"))
+        ),
+        lastUpdate = timestamp,
+        partialSubmissionTimestamp = None,
+        fullSubmissionTimestamp = None,
+        acknowledgedTimestamp = None,
+        lastAction = Some(zDtNow),
+        employmentInfo = Some(EmploymentInfo(Employing.notEmploying,SystemDate.getSystemDate.toLocalDate,true, true,None))
+      )
+
+      Json.fromJson[PAYERegistration](json)(PAYERegistration.format) shouldBe JsSuccess(tstPAYERegistration)
+    }
+
+    "complete successfully from full Json that doesn't include an eligibility block which is the as-is position" in {
+
+      val date = LocalDate.of(2016, 12, 20)
+
+      val json = Json.parse(
+        s"""
+           |{
+           |  "registrationID":"12345",
+           |  "transactionID" : "NNASD9789F",
+           |  "internalID" : "09876",
+           |  "formCreationTimestamp":"2016-05-31",
+           |  "registrationConfirmation" : {
+           |    "empRef":"testEmpRef",
+           |    "timestamp":"2017-01-01T12:00:00Z",
+           |    "status":"testStatus"
+           |  },
+           |  "status":"draft",
+           |  "completionCapacity":"Director",
+           |  "companyDetails":
+           |    {
+           |      "companyName":"Test Company",
+           |      "tradingName":"Test Trading Name",
+           |      "roAddress": {
+           |        "line1":"14 St Test Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "postCode":"TE1 1ST",
+           |        "auditRef":"testAudit"
+           |      },
+           |      "ppobAddress": {
+           |        "line1":"15 St Walk",
+           |        "line2":"Testley",
+           |        "line3":"Testford",
+           |        "line4":"Testshire",
+           |        "country":"UK"
+           |      },
+           |      "businessContactDetails": {
+           |        "email":"email@test.co.uk",
+           |        "phoneNumber":"9999999999",
+           |        "mobileNumber":"0000000000"
+           |      }
+           |    },
+           |  "directors" : [
+           |    {
+           |      "nino":"SR123456C",
+           |      "director": {
+           |        "forename":"Thierry",
+           |        "other_forenames":"Dominique",
+           |        "surname":"Henry",
+           |        "title":"Sir"
+           |      }
+           |    },
+           |    {
+           |      "nino":"SR000009C",
+           |      "director": {
+           |        "forename":"David",
+           |        "other_forenames":"Jesus",
+           |        "surname":"Trezeguet",
+           |        "title":"Mr"
+           |      }
+           |    }
+           |  ],
+           |  "payeContact": {
+           |    "contactDetails": {
+           |      "name": "toto tata",
+           |      "digitalContactDetails": {
+           |        "email": "payeemail@test.co.uk",
+           |        "phoneNumber": "6549999999",
+           |        "mobileNumber": "1234599999"
+           |      }
+           |    },
+           |    "correspondenceAddress": {
+           |      "line1":"19 St Walk",
+           |      "line2":"Testley CA",
+           |      "line3":"Testford",
+           |      "line4":"Testshire",
+           |      "country":"UK"
+           |    }
+           |  },
+           |  "employmentInfo": {
+           |    "employees": "notEmploying",
+           |    "firstPaymentDate": "${SystemDate.getSystemDate.toLocalDate}",
+           |    "construction": true,
+           |    "subcontractors": true
+           |  },
+           |  "sicCodes": [
+           |    {
+           |      "code":"666",
+           |      "description":"demolition"
+           |    },
+           |    {
+           |      "description":"laundring"
+           |    }
+           |  ],
+           |  "lastUpdate": "$timestamp",
+           |  "lastAction": "2000-01-20T16:00:00Z"
+           |}
+        """.stripMargin)
+
+      val tstPAYERegistration = PAYERegistration(
+        registrationID = "12345",
+        transactionID = "NNASD9789F",
+        internalID = "09876",
+        acknowledgementReference = None,
+        crn = None,
+        formCreationTimestamp = "2016-05-31",
         registrationConfirmation = Some(EmpRefNotification(
           empRef = Some("testEmpRef"),
           timestamp = "2017-01-01T12:00:00Z",
@@ -335,7 +503,6 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         crn = None,
         registrationConfirmation = None,
         formCreationTimestamp = "2016-05-31",
-        eligibility = None,
         status = PAYEStatus.draft,
         completionCapacity = None,
         companyDetails = None,

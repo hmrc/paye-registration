@@ -152,14 +152,6 @@ trait RegistrationSrv extends PAYEBaseValidator {
     registrationRepository.retrieveAcknowledgementReference(regID)
   }
 
-  def getEligibility(regID: String)(implicit ec: ExecutionContext): Future[Option[Eligibility]] = {
-    registrationRepository.getEligibility(regID)
-  }
-
-  def updateEligibility(regID: String, eligibility: Eligibility)(implicit ec: ExecutionContext): Future[Eligibility] = {
-    registrationRepository.upsertEligibility(regID, eligibility)
-  }
-
   def getStatus(regID: String)(implicit ec: ExecutionContext): Future[JsObject] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(registration) => {

@@ -30,7 +30,6 @@ case class PAYERegistration(registrationID: String,
                             crn: Option[String],
                             registrationConfirmation: Option[EmpRefNotification],
                             formCreationTimestamp: String,
-                            eligibility: Option[Eligibility],
                             status: PAYEStatus.Value,
                             completionCapacity: Option[String],
                             companyDetails: Option[CompanyDetails],
@@ -55,7 +54,6 @@ object PAYERegistration {
     (__ \ "crn").formatNullable[String] and
     (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.format(formatter)) and
     (__ \ "formCreationTimestamp").format[String] and
-    (__ \ "eligibility").formatNullable[Eligibility] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and
     (__ \ "companyDetails").formatNullable[CompanyDetails](CompanyDetails.format(formatter)) and

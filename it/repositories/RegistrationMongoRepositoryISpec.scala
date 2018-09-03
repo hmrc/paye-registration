@@ -89,7 +89,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -112,7 +111,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.held,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -136,7 +134,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = None,
@@ -167,7 +164,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails2),
@@ -191,7 +187,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -221,7 +216,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -245,7 +239,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -288,7 +281,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -312,7 +304,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -340,7 +331,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -364,7 +354,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -399,7 +388,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -423,7 +411,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -447,7 +434,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.draft,
     completionCapacity = Some(completionCapacity),
     companyDetails = Some(companyDetails),
@@ -471,7 +457,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.held,
     completionCapacity = None,
     companyDetails = Some(companyDetails),
@@ -935,7 +920,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = "timestamp",
-    eligibility = Some(Eligibility(false, false)),
     status = PAYEStatus.held,
     completionCapacity = None,
     companyDetails = None,
@@ -959,52 +943,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val result = await(repository.cleardownRegistration(reg.registrationID))
       result shouldBe clearedRegistration
-    }
-  }
-
-  "getEligibility" should {
-    "return an eligibility model" when {
-      "there is a valid reg document matching the given reg id" in new Setup {
-        await(setupCollection(repository, reg))
-
-        val result = await(repository.getEligibility(reg.registrationID))
-        result shouldBe Some(Eligibility(false, false))
-      }
-    }
-
-    "return None" when {
-      "there is a valid reg document matching the given reg id but no eligibility section" in new Setup {
-        await(setupCollection(repository, reg.copy(eligibility = None)))
-
-        val result = await(repository.getEligibility(reg.registrationID))
-        result shouldBe None
-      }
-    }
-
-    "throw a missing document exception" when {
-      "there is a no reg doc against the given reg id" in new Setup {
-        intercept[MissingRegDocument](await(repository.getEligibility("testRegId")))
-      }
-    }
-  }
-
-  "upsertEligibility" should {
-    "update the registration document with an eligibility block" when {
-      "given a registrationId and an eligibility model" in new Setup {
-        await(setupCollection(repository, reg.copy(eligibility = None)))
-
-        val testEligibility = Eligibility(false, false)
-
-        val result = await(repository.upsertEligibility("AC123456", Eligibility(false, false)))
-        result shouldBe testEligibility
-      }
-    }
-
-    "throw a MissingRegDocument exception" when {
-      "a registration document cannot be found against the given regId" in new Setup {
-        val testEligibility = Eligibility(false, false)
-        intercept[MissingRegDocument](await(repository.upsertEligibility("AC123456", Eligibility(false, false))))
-      }
     }
   }
 
@@ -1051,7 +989,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       crn = None,
       registrationConfirmation = None,
       formCreationTimestamp = "timestamp",
-      eligibility = Some(Eligibility(false, false)),
       status = status,
       completionCapacity = None,
       companyDetails = None,

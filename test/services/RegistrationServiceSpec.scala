@@ -500,40 +500,6 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
 
-  "getEligibility" should {
-    "return an optional eligibility model" when {
-      "given a valid registration Id" in new Setup {
-        when(mockRegistrationRepository.getEligibility(any[String]())(any()))
-          .thenReturn(Future.successful(Some(Eligibility(false, false))))
-
-        val result = await(service.getEligibility("testRegId"))
-        result shouldBe Some(Eligibility(false, false))
-      }
-    }
-
-    "return None" when {
-      "given a valid registration Id but the eligibility section is not defined" in new Setup {
-        when(mockRegistrationRepository.getEligibility(any[String]())(any()))
-          .thenReturn(Future.successful(None))
-
-        val result = await(service.getEligibility("testRegId"))
-        result shouldBe None
-      }
-    }
-  }
-
-  "updateEligibility" should {
-    "return an eligibility model" when {
-      "given a valid regId and an eligibility model" in new Setup {
-        when(mockRegistrationRepository.upsertEligibility(any[String](), any())(any()))
-          .thenReturn(Future.successful(Eligibility(false, false)))
-
-        val result = await(service.updateEligibility("testRegId", Eligibility(false, false)))
-        result shouldBe Eligibility(false, false)
-      }
-    }
-  }
-
   "deletePAYERegistration" should {
     "return true" when {
       "the document has been deleted as the users document was rejected" in new Setup {

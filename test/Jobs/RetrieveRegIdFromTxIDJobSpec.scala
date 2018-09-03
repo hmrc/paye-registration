@@ -48,10 +48,6 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     acknowledgementReference = None,
     crn = None,
     formCreationTimestamp = "2016-05-31",
-    eligibility = Some(Eligibility(
-      companyEligibility = false,
-      directorEligibility = false
-    )),
     registrationConfirmation = Some(EmpRefNotification(
       empRef = Some("testEmpRef"),
       timestamp = "2017-01-01T12:00:00Z",

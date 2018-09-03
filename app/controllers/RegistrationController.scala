@@ -345,34 +345,6 @@ trait RegistrationCtrl extends BaseController with Authorisation {
     }
   }
 
-
-  def getEligibility(regId: String): Action[AnyContent] = Action.async {
-    implicit request =>
-      isAuthorised(regId) { authResult =>
-        authResult.ifAuthorised(regId, "RegistrationCtrl", "getEligibility") {
-          registrationService.getEligibility(regId) map {
-            case Some(eligibility) => Ok(Json.toJson(eligibility))
-            case None => NotFound
-          }
-        }
-      }
-  }
-
-  def updateEligibility(regId: String): Action[JsValue] = Action.async(parse.json) {
-    implicit request =>
-      isAuthorised(regId) { authResult =>
-        authResult.ifAuthorised(regId, "RegistrationCtrl", "updateEligibility") {
-          withJsonBody[Eligibility] { json =>
-            registrationService.updateEligibility(regId, json) map { updated =>
-              Ok(Json.toJson(updated))
-            } recover {
-              case missing : MissingRegDocument => NotFound
-            }
-          }
-        }
-      }
-  }
-
   def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[EmpRefNotification] { notification =>
