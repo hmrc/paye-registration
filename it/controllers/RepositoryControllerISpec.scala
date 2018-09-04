@@ -23,6 +23,7 @@ import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
@@ -150,13 +151,14 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
       await(repository.retrieveRegistration(rejected.registrationID)) shouldBe Some(rejected)
     }
 
-    "return an OK after deleting an invalid document" in new Setup {
+    "return an OK after deleting an invalid document with a json body" in new Setup {
       setupSimpleAuthMocks()
 
       await(repository.insert(submission.copy(status = PAYEStatus.invalid)))
 
       val response = await(client(s"$regId/delete-in-progress").delete())
       response.status shouldBe 200
+      response.json shouldBe Json.parse("""{"deleted": true}""")
 
       await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
     }
@@ -168,6 +170,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
       val response = await(client(s"$regId/delete-in-progress").delete())
       response.status shouldBe 200
+      response.json shouldBe Json.parse("""{"deleted": true}""")
 
       await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
     }

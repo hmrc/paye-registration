@@ -16,12 +16,12 @@
 
 package controllers
 
-import javax.inject.{Inject, Singleton}
-
 import auth._
 import common.exceptions.RegistrationExceptions.UnmatchedStatusException
 import config.AuthClientConnector
 import enums.PAYEStatus
+import javax.inject.{Inject, Singleton}
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent}
 import repositories.RegistrationMongoRepository
 import services.RegistrationService
@@ -46,12 +46,11 @@ trait RepositoryCtrl extends BaseController with Authorisation {
       isAuthorised(regId) { authResult =>
         authResult.ifAuthorised(regId, "RepositoryCtrl", "deleteRegistrationFromDashboard") {
           registraitonService.deletePAYERegistration(regId, PAYEStatus.draft, PAYEStatus.invalid) map { deleted =>
-            if(deleted) Ok else InternalServerError
+            if(deleted) Ok(Json.obj("deleted" -> true)) else InternalServerError
           } recover {
             case _: UnmatchedStatusException => PreconditionFailed
           }
         }
       }
   }
-
 }
