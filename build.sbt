@@ -1,8 +1,8 @@
 
 import scoverage.ScoverageKeys
-import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, defaultSettings, scalaSettings}
+import uk.gov.hmrc.DefaultBuildSettings.{integrationTestSettings, defaultSettings, scalaSettings}
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
-import TestPhases.oneForkedJvmPerTest
+import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 
 val appName = "paye-registration"
 
@@ -14,14 +14,15 @@ lazy val scoverageSettings = Seq(
 )
 
 lazy val microservice = Project(appName, file("."))
-  .enablePlugins(Seq(play.sbt.PlayScala,SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin): _*)
+  .enablePlugins(Seq(play.sbt.PlayScala,SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory): _*)
   .settings(scalaSettings: _*)
   .settings(scoverageSettings : _*)
   .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
+  .settings(integrationTestSettings(): _*)
   .settings(PlayKeys.playDefaultPort := 9873)
   .configs(IntegrationTest)
-  .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
+  .settings( majorVersion := 1 )
   .settings(
     scalaVersion                                        := "2.11.11",
     libraryDependencies                                 ++= AppDependencies(),
@@ -30,9 +31,5 @@ lazy val microservice = Project(appName, file("."))
     resolvers                                           += Resolver.bintrayRepo("hmrc", "releases"),
     resolvers                                           += Resolver.jcenterRepo,
     evictionWarningOptions in update                    := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
-    routesGenerator                                     := InjectedRoutesGenerator,
-    Keys.fork in IntegrationTest                        := false,
-    unmanagedSourceDirectories in IntegrationTest       := (baseDirectory in IntegrationTest)(base => Seq(base / "it")).value,
-    testGrouping in IntegrationTest                     := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
-    addTestReportOption(IntegrationTest, "int-test-reports")
+    routesGenerator                                     := InjectedRoutesGenerator
   )
