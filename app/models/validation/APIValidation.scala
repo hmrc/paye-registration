@@ -25,7 +25,7 @@ import play.api.libs.json._
 import scala.collection.Seq
 
 object APIValidation extends BaseJsonFormatting {
-  private val emailRegex              = """^(?!.{71,})([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{2,4})$"""
+  private val emailRegex              = """^(?!.{71,})([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{1,11})$"""
   private val phoneNumberRegex        = """^[0-9 ]{1,20}$"""
   private val nameRegex               = """^[A-Za-z 0-9\-']{1,100}$"""
   private val natureOfBusinessRegex   = """^[A-Za-z 0-9\-,/&']{1,100}$"""

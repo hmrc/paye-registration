@@ -83,6 +83,24 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
 
         Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
       }
+
+      "only email is completed and it has a suffix of 11 characters" in {
+        val json = Json.parse(
+          s"""
+             |{
+             |  "email":"test@test.jumble.ccoommccoom"
+             |}
+        """.stripMargin)
+
+        val tstDigitalContactDetails = DigitalContactDetails(
+          email = Some("test@test.jumble.ccoommccoom"),
+          mobileNumber = None,
+          phoneNumber = None
+        )
+
+        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
+      }
+
       "only mobile number is completed" in {
         val json = Json.parse(
           s"""
@@ -189,26 +207,12 @@ class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
         shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
       }
     }
-    "email has short domain suffix" in {
+
+    "email has a domain suffix of 12 chars" in {
       val json = Json.parse(
         s"""
            |{
-           |  "email":"test@test.c",
-           |  "mobileNumber":"07123456789",
-           |  "phoneNumber":"0123456789"
-           |}
-        """.stripMargin)
-
-      val res = Json.fromJson[DigitalContactDetails](json)(dcdFormatter)
-      val expectedErrs = Map(JsPath() \ "email" -> Seq(ValidationError("Invalid email pattern")))
-      shouldHaveErrors[DigitalContactDetails](res, expectedErrs)
-    }
-
-    "email has wacky domain suffix" in {
-      val json = Json.parse(
-        s"""
-           |{
-           |  "email":"test@test.coomm",
+           |  "email":"test@test.ccoommccoomm",
            |  "mobileNumber":"07123456789",
            |  "phoneNumber":"0123456789"
            |}
