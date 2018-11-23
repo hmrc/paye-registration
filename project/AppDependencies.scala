@@ -6,12 +6,12 @@ private object AppDependencies {
 }
 
 object MainDependencies {
-  private val microserviceBootstrapVersion  = "8.5.0"
+  private val microserviceBootstrapVersion  = "8.7.0"
   private val domainVersion                 = "5.2.0"
   private val playReactivemongoVersion      = "5.2.0"
   private val mongoLockVersion              = "4.1.0"
   private val playSchedulingVersion         = "4.1.0"
-  private val authClientVersion             = "2.16.0-play-25"
+  private val authClientVersion             = "2.17.0-play-25"
 
   def apply() = Seq(
     "uk.gov.hmrc" %% "play-reactivemongo"     % playReactivemongoVersion,
