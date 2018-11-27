@@ -857,8 +857,29 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
     }
+    "return a 502 status when DES returns a 429" in new Setup {
+      setupAuthMocksToReturn(authoriseData)
 
-    "return a 400 status when DES returns a 4xx" in new Setup {
+      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+        .willReturn(
+          aResponse().
+            withStatus(429)
+        )
+      )
+
+      stubBusinessProfile()
+
+      stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
+
+      await(repository.upsertRegTestOnly(submission))
+      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+
+      val response = client(s"$regId/submit-registration").put("").futureValue
+      response.status shouldBe 502
+
+      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+    }
+    "return a 400 status when DES returns a 4xx (apart from 429)" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))

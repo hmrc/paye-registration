@@ -26,7 +26,7 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse, Upstream4xxResponse}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp
 import utils.PAYEFeatureSwitches
@@ -84,7 +84,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   }
 
-  "submitToDES with a Top Up DES Submission Model" should {
+  "submitToDES with a Top Up DES Submission Model (submitTopUpToDES)" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
       mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", HttpResponse(200))
 
@@ -96,9 +96,10 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
       intercept[Upstream4xxResponse](await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
+
   }
 
-  "submitToDES with a Partial DES Submission Model - feature switch disabled" should {
+  "submitToDES with a Partial DES Submission Model - feature switch disabled (submitToDES)" should {
     "successfully POST" in new SetupWithProxy(false) {
       mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200))
 
