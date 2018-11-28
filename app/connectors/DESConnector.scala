@@ -78,7 +78,7 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
         Logger.warn("[DESConnect] - [customDESRead] Received 409 from DES - converting to 200")
         HttpResponse(200, Some(response.json), response.allHeaders, Option(response.body))
       case 429 =>
-        throw new Upstream5xxResponse(upstreamResponseMessage(http, url, response.status, response.body),429, reportAs = 502)
+        throw new Upstream5xxResponse(upstreamResponseMessage(http, url, response.status, response.body),429, reportAs = 503)
       case 499 =>
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
       case status if is4xx(status) =>
