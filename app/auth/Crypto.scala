@@ -16,8 +16,9 @@
 
 package auth
 
+import com.typesafe.config.ConfigFactory
 import play.api.libs.json.{JsString, Reads, Writes}
-import uk.gov.hmrc.crypto.{CryptoWithKeysFromConfig, CompositeSymmetricCrypto, Crypted, PlainText}
+import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, CryptoWithKeysFromConfig, PlainText}
 
 
 trait Crypto {
@@ -40,5 +41,5 @@ trait Crypto {
 }
 
 object Crypto extends Crypto {
-  override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
+  override lazy val crypto = new CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
 }

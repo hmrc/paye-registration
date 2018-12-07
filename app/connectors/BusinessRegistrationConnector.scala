@@ -17,13 +17,13 @@
 package connectors
 
 import javax.inject.{Inject, Singleton}
-
 import config.WSHttp
 import models.external.BusinessProfile
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import uk.gov.hmrc.play.config.ServicesConfig
-
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+
 import scala.concurrent.Future
 import uk.gov.hmrc.http._
 
@@ -31,6 +31,10 @@ import uk.gov.hmrc.http._
 class BusinessRegistrationConnector @Inject()() extends BusinessRegistrationConnect with ServicesConfig {
   val businessRegUrl = baseUrl("business-registration")
   val http : CoreGet = WSHttp
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait BusinessRegistrationConnect {

@@ -21,6 +21,7 @@ import auth.Crypto
 import com.typesafe.config.Config
 import jobs.RetrieveRegInfoFromTxIdJob
 import net.ceedubs.ficus.Ficus._
+import play.api.Mode.Mode
 import play.api.{Application, Configuration, Logger, Play}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
@@ -39,6 +40,8 @@ object ControllerConfiguration extends ControllerConfig {
 object MicroserviceAuditFilter extends AuditFilter with AppName with MicroserviceFilterSupport {
   override val auditConnector = MicroserviceAuditConnector
   override def controllerNeedsAuditing(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsAuditing
+
+  override protected def appNameConfiguration: Configuration = Play.current.configuration
 }
 
 object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
@@ -76,6 +79,10 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Mi
 
     super.onStart(app)
   }
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait JobsList {

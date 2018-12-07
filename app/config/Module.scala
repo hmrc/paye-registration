@@ -18,6 +18,7 @@ package config
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
+import com.typesafe.config.{Config, ConfigFactory}
 import jobs.{MetricsJob, MetricsJobImpl, RemoveStaleDocumentsJobImpl}
 import services.{MetricsService, MetricsSrv}
 import uk.gov.hmrc.play.scheduling.ScheduledJob
@@ -33,5 +34,7 @@ class Module extends AbstractModule {
     // jobs
     bind(classOf[ScheduledJob]).annotatedWith(Names.named("remove-stale-documents-job")).to(classOf[RemoveStaleDocumentsJobImpl])
     bind(classOf[ScheduledJob]).annotatedWith(Names.named("metrics-job")).to(classOf[MetricsJobImpl])
+
+    bind(classOf[Config]).toInstance(ConfigFactory.load())
   }
 }

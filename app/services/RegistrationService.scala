@@ -25,7 +25,8 @@ import enums.{Employing, PAYEStatus}
 import helpers.PAYEBaseValidator
 import javax.inject.{Inject, Singleton}
 import models._
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.api.libs.json.{JsObject, Json}
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -43,6 +44,10 @@ class RegistrationService @Inject()(injRegistrationMongoRepository: Registration
   lazy val payeCancelURL = getString("api.payeCancelURL")
   val auditService = injAuditService
   val incorporationInformationConnector = injIncorporationInformationConnector
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait RegistrationSrv extends PAYEBaseValidator {

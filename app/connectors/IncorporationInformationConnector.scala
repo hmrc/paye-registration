@@ -22,7 +22,8 @@ import javax.inject.{Inject, Singleton}
 import config.WSHttp
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.api.libs.json.{JsObject, Json, Reads}
 import play.api.http.Status.{ACCEPTED, NO_CONTENT, OK}
 import uk.gov.hmrc.play.config.ServicesConfig
@@ -42,6 +43,10 @@ class IncorporationInformationConnector extends IncorporationInformationConnect 
   val http = WSHttp
   lazy val incorporationInformationUri: String = baseUrl("incorporation-information")
   lazy val payeRegUri: String = baseUrl("paye-registration")
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait IncorporationInformationConnect {

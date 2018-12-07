@@ -16,8 +16,10 @@
 
 package jobs
 
+import com.typesafe.config.ConfigFactory
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.modules.reactivemongo.MongoDbConnection
 import reactivemongo.api.DefaultDB
 import services.MetricsService
@@ -31,6 +33,10 @@ class MetricsJobImpl @Inject()(val metricsService: MetricsService
                                ) extends MetricsJob {
   val name = "metrics-job"
   lazy val db: () => DefaultDB = new MongoDbConnection{}.db
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait MetricsJob extends ExclusiveScheduledJob with JobConfig with JobHelper {

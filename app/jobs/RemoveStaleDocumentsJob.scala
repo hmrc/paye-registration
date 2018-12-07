@@ -17,16 +17,16 @@
 package jobs
 
 import javax.inject.{Inject, Singleton}
-
 import org.joda.time.Duration
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.modules.reactivemongo.MongoDbConnection
 import repositories.RegistrationMongo
-import uk.gov.hmrc.lock.{LockRepository, LockKeeper}
+import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.play.scheduling.ExclusiveScheduledJob
 import utils.PAYEFeatureSwitches
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
@@ -39,6 +39,10 @@ class RemoveStaleDocumentsJobImpl @Inject()(mRepo: RegistrationMongo) extends Re
     private implicit val mongo = new MongoDbConnection {}.db
     override val repo = new LockRepository
   }
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait RemoveStaleDocumentsJob extends ExclusiveScheduledJob with JobConfig {

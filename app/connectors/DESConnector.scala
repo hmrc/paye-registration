@@ -23,7 +23,8 @@ import config.{MicroserviceAuditConnector, WSHttp}
 import javax.inject.Singleton
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
-import play.api.Logger
+import play.api.Mode.Mode
+import play.api.{Configuration, Logger, Play}
 import play.api.libs.json.Writes
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
@@ -53,6 +54,10 @@ class DESConnector extends DESConnect with ServicesConfig {
 
   override protected def currentDate = SystemDate.getSystemDate.toLocalDate
   override protected def currentTime = SystemDate.getSystemDate.toLocalTime
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
