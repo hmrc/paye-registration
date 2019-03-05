@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package repositories
 
 import java.time.ZonedDateTime
-
 import javax.inject.Inject
-import auth.AuthorisationResource
+
+import auth.{AuthorisationResource, CryptoSCRS}
 import com.codahale.metrics.Timer
 import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions._
@@ -31,23 +31,24 @@ import models.validation.MongoValidation
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.DB
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.bson.{BSONDocument, BSONObjectID, _}
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration) extends ReactiveMongoFormats {
-  val registrationFormat: Format[PAYERegistration] = PAYERegistration.format
+class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration, cryptoSCRS: CryptoSCRS) extends ReactiveMongoFormats {
+  val registrationFormat: Format[PAYERegistration] = PAYERegistration.format(crypto = cryptoSCRS, formatter = MongoValidation)
   lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
   val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
-  lazy val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injDateHelper, maxStorageDays, mongoResponseTimer)
+  lazy val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injDateHelper, maxStorageDays, mongoResponseTimer, cryptoSCRS)
 
 }
 
@@ -79,7 +80,7 @@ trait RegistrationRepository {
   def dropCollection(implicit ec: ExecutionContext): Future[Unit]
   def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration]
   def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean]
-  def upsertRegTestOnly(p:PAYERegistration,w:OFormat[PAYERegistration])(implicit ec: ExecutionContext):Future[WriteResult]
+  def upsertRegTestOnly(p:PAYERegistration,w:Format[PAYERegistration])(implicit ec: ExecutionContext):Future[WriteResult]
   def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)]
   def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]]
   def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String]
@@ -88,11 +89,10 @@ trait RegistrationRepository {
 class RegistrationMongoRepository(mongo: () => DB,
                                   format: Format[PAYERegistration],
                                   dh: DateHelper,
-                                  maxStorageDays: Int, val mongoResponseTimer: Timer) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+                                  maxStorageDays: Int, val mongoResponseTimer: Timer, cryptoSCRS: CryptoSCRS) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo,
   domainFormat = format) with RegistrationRepository with AuthorisationResource {
-
   val MAX_STORAGE_DAYS = maxStorageDays
 
   override def indexes: Seq[Index] = Seq(
@@ -121,8 +121,14 @@ class RegistrationMongoRepository(mongo: () => DB,
       sparse = false
     )
   )
+    private def startupJob = getRegistrationStats() map {
+          stats => Logger.info(s"[RegStats] ${stats}")
+        }
 
-  implicit val mongoFormat = PAYERegistration.format(MongoValidation)
+
+  startupJob
+  implicit val mongoFormat: OFormat[PAYERegistration] = OFormat.apply[PAYERegistration](j => format.reads(j),(p:PAYERegistration) => format.writes(p).as[JsObject])
+
 
   private[repositories] def registrationIDSelector(registrationID: String): BSONDocument = BSONDocument(
     "registrationID" -> BSONString(registrationID)
@@ -208,9 +214,9 @@ class RegistrationMongoRepository(mongo: () => DB,
   override def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
-    collection.find(selector).one[PAYERegistration] map { found =>
+    collection.find(selector).one[JsObject] map { found =>
       mongoTimer.stop()
-      found
+      found.map(_.as[PAYERegistration](PAYERegistration.format(crypto = cryptoSCRS, formatter = MongoValidation)))
     } recover {
       case e : Throwable =>
         mongoTimer.stop()
@@ -589,7 +595,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     val selector = registrationIDSelector(registrationID)
     collection.remove(selector) map { writeResult =>
       mongoTimer.stop()
-      if(!writeResult.ok) {Logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${writeResult.message}")}
+      if(!writeResult.ok) {Logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${reactivemongo.api.commands.WriteResult.Message}")}
       writeResult.ok
     }
   }
@@ -648,8 +654,8 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
   def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)] = {
-    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
 
+    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
     collection.remove(staleDocumentSelector(cuttOffDate)).map {
       res => (cuttOffDate, res.n)
     }
@@ -666,35 +672,27 @@ class RegistrationMongoRepository(mongo: () => DB,
     collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
   }
 
-  def upsertRegTestOnly(p:PAYERegistration, w: OFormat[PAYERegistration] = PAYERegistration.format(MongoValidation))(implicit ec: ExecutionContext):Future[WriteResult] = {
-    collection.insert[JsObject](w.writes(p))
+  def upsertRegTestOnly(p:PAYERegistration, w: Format[PAYERegistration] = format)(implicit ec: ExecutionContext):Future[WriteResult] = {
+    collection.insert[JsObject](w.writes(p).as[JsObject])
   }
 
-  override def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]] = {
+  def getRegistrationStats()(implicit ec: scala.concurrent.ExecutionContext): Future[Map[String, Int]] = {
 
-    import play.api.libs.json._
-    import reactivemongo.json.collection.JSONBatchCommands.AggregationFramework.{Group, Match, Project, SumValue}
+    // needed to make it pick up the index
+    val matchQuery: collection.PipelineOperator = collection.BatchCommands.AggregationFramework.Match(Json.obj("status" -> Json.obj("$ne" -> "")))
+    val project = collection.BatchCommands.AggregationFramework.Project(Json.obj("status" -> 1, "_id" -> 0))
+    // calculate the regime counts
+    val group = collection.BatchCommands.AggregationFramework.Group(JsString("$status"))("count" -> collection.BatchCommands.AggregationFramework.SumValue(1))
 
-    // perform on all documents in the collection
-    val matchQuery = Match(Json.obj())
-    // covering query to minimise doc fetch (optimiser would probably spot this anyway and transform the query)
-    val project = Project(Json.obj("status" -> 1, "_id" -> 0))
-    // calculate the status counts
-    val group = Group(JsString("$status"))("count" -> SumValue(1))
-
-    val metrics = collection.aggregate(matchQuery, List(project, group)) map {
-      _.documents map {
-        d => {
-          val regime = (d \ "_id").as[String]
-          val count = (d \ "count").as[Int]
-          regime -> count
-        }
+    val query = collection.aggregateWith[JsObject]()(_ => (matchQuery, List(project, group)))
+    val fList =  query.collect(Int.MaxValue, Cursor.FailOnError[List[JsObject]]())
+    fList.map{ _.map {
+      documentWithStatusAndCount =>{
+        val status = (documentWithStatusAndCount \ "_id").as[String]
+        val count = (documentWithStatusAndCount \ "count").as[Int]
+        status -> count
       }
-    }
-
-    metrics map {
-      _.toMap
+    }.toMap
     }
   }
-
 }

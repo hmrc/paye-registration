@@ -16,6 +16,7 @@
 
 package controllers
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import fixtures.EmploymentInfoFixture
@@ -61,10 +62,11 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
      val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
      }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store

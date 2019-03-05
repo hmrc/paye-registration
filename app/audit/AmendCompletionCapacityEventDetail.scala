@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ case class AmendCompletionCapacityEventDetail(externalUserId: String,
                                              )
 
 object AmendCompletionCapacityEventDetail {
-  import RegistrationAuditEvent.{JOURNEY_ID, EXTERNAL_USER_ID, AUTH_PROVIDER_ID}
+  import RegistrationAuditEvent.{AUTH_PROVIDER_ID, EXTERNAL_USER_ID, JOURNEY_ID}
 
   implicit val writes = new Writes[AmendCompletionCapacityEventDetail] {
     val writesPreviousCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {

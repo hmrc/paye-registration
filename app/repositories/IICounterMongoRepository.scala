@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.UpdateFailed
 import models.IICounter
 import play.api.libs.json.JsValue
-import reactivemongo.api.DB
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.DB
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,7 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class IICounterMongo @Inject()(
                                 injReactiveMongoComponent: ReactiveMongoComponent) {
-  val store = IICounterMongoRepository(injReactiveMongoComponent.mongoConnector.db)
+  val store = new IICounterMongoRepository(injReactiveMongoComponent.mongoConnector.db)
 }
 
 trait IICounterRepository{
@@ -41,7 +41,7 @@ trait IICounterRepository{
 }
 
 
-case class IICounterMongoRepository(mongo: () => DB)
+ class IICounterMongoRepository(mongo: () => DB)
   extends ReactiveRepository[IICounter, BSONObjectID](
     collectionName = "IICounterCollection",
     domainFormat = IICounter.format,

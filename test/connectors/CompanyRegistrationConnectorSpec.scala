@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import models.external.BusinessProfile
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.play.http.ws.WSHttp
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpResponse, NotFoundException}
+import uk.gov.hmrc.play.http.ws.WSHttp
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ ForbiddenException, HeaderCarrier, HttpResponse, NotFoundException }
 
 class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
 

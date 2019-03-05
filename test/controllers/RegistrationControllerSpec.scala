@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.LocalDate
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import auth.CryptoSCRSImpl
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
@@ -30,25 +31,25 @@ import models._
 import models.validation.APIValidation
 import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqTo}
 import org.mockito.Mockito._
+import play.api.Configuration
 import play.api.http.Status
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import play.api.test.Helpers._
 import play.api.test.FakeRequest
-import repositories.RegistrationMongoRepository
+import play.api.test.Helpers._
 import services._
-import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
   val mockRegistrationService = mock[RegistrationService]
-  val mockSubmissionService   = mock[SubmissionService]
+  val mockSubmissionService = mock[SubmissionService]
   val mockNotificationService = mock[NotificationService]
-  val mockCounterService      = mock[IICounterService]
+  val mockCounterService = mock[IICounterService]
+
 
   implicit val system = ActorSystem("PR")
   implicit val materializer = ActorMaterializer()
@@ -57,12 +58,13 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
   class Setup {
     val controller = new RegistrationCtrl {
-      override val resourceConn         = mockRegistrationRepository
-      override val registrationService  = mockRegistrationService
-      override val submissionService    = mockSubmissionService
-      override val notificationService  = mockNotificationService
-      override val counterService       = mockCounterService
-      override val authConnector        = mockAuthConnector
+      override val resourceConn = mockRegistrationRepository
+      override val registrationService = mockRegistrationService
+      override val submissionService = mockSubmissionService
+      override val notificationService = mockNotificationService
+      override val counterService = mockCounterService
+      override val authConnector = mockAuthConnector
+      override val crypto = mockCrypto
     }
   }
 
@@ -73,10 +75,11 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   }
 
   case class TestModel(str: String, int: Int)
+
   implicit val format: Format[TestModel] = (
     (__ \ "str").format[String] and
-    (__ \ "int").format[Int]
-  )(TestModel.apply, unlift(TestModel.unapply))
+      (__ \ "int").format[Int]
+    ) (TestModel.apply, unlift(TestModel.unapply))
 
   val testModel = TestModel(str = "testString", int = 616)
   val testJsonValid = Json.parse(
@@ -95,7 +98,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       |}
     """.stripMargin
   )
-  val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018,4,9), true, true, Some(true))
+  val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018, 4, 9), true, true, Some(true))
   val jsonEmpInfo = Json.parse(
     """|{
        |   "employees": "alreadyEmploying",
@@ -203,7 +206,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
           .withBody(
             Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
-        )
+      )
       )
 
       status(response) shouldBe Status.BAD_REQUEST
@@ -227,7 +230,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
   "Calling getEmploymentInfo" should {
-    val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018,4,9), true, true, Some(true))
+    val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018, 4, 9), true, true, Some(true))
     val jsonEmpInfo = Json.parse(
       """|{
          |   "employees": "alreadyEmploying",
@@ -591,6 +594,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   "updateRegistrationWithEmpRef" should {
     "return an OK" when {
       "the reg doc has been updated with the emp ref" in new Setup {
+        implicit val f = EmpRefNotification.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
         val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
         val request = FakeRequest().withBody(Json.toJson(testNotification))
 
@@ -807,9 +811,9 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockCounterService.updateIncorpCount(any())(any()))
         .thenReturn(Future.successful(false))
 
-      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
+      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.draft.toString)
 
-      val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
+      val response = controller.registrationInvalidStatusHandler(errorStatus, "NN1234")
 
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
@@ -818,9 +822,9 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockCounterService.updateIncorpCount(any())(any()))
         .thenReturn(Future.failed(new UpdateFailed(validRegistration.registrationID, "IICounter")))
 
-      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
+      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.draft.toString)
 
-      val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
+      val response = controller.registrationInvalidStatusHandler(errorStatus, "NN1234")
 
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
@@ -829,9 +833,9 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockCounterService.updateIncorpCount(any())(any()))
         .thenReturn(Future.successful(true))
 
-      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID,PAYEStatus.draft.toString)
+      val errorStatus = RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.draft.toString)
 
-      val response = controller.registrationInvalidStatusHandler(errorStatus,"NN1234")
+      val response = controller.registrationInvalidStatusHandler(errorStatus, "NN1234")
 
       status(response) shouldBe Status.OK
     }
@@ -843,7 +847,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future("testRegId"))
 
       val result = controller.getRegistrationId("txId")(FakeRequest())
-      status(result)          shouldBe OK
+      status(result) shouldBe OK
       contentAsString(result) shouldBe "testRegId"
     }
 

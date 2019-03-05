@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models.EmpRefNotification
-import repositories.RegistrationMongoRepository
-import org.mockito.Mockito.when
 import org.mockito.ArgumentMatchers
+import org.mockito.Mockito.when
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.concurrent.Future
 
 class NotificationServiceSpec extends PAYERegSpec with RegistrationFixture {

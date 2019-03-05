@@ -16,20 +16,12 @@
 
 package jobs
 
-import org.joda.time.{Duration => JodaDuration}
-import uk.gov.hmrc.play.config.ServicesConfig
+import scala.concurrent.{ExecutionContext, Future}
 
-import scala.concurrent.duration.{FiniteDuration, Duration => ScalaDuration}
+sealed trait LockResponse
+case object MongoLocked extends LockResponse
+case object UnlockingFailed extends LockResponse
 
-trait JobConfig {
-  val servicesConfig: ServicesConfig
-  val name: String
-
-  lazy val LOCK_TIMEOUT        = s"$name.schedule.lockTimeout"
-
-  lazy val lockTimeout : JodaDuration = {
-    val dur = ScalaDuration.create(servicesConfig.getConfString(LOCK_TIMEOUT,
-      throw new RuntimeException(s"Could not find config $LOCK_TIMEOUT")))
-    JodaDuration.standardSeconds( FiniteDuration(dur.length, dur.unit).toSeconds )
-  }
+trait ScheduledService[R] {
+  def invoke(implicit ec : ExecutionContext) : Future[R]
 }

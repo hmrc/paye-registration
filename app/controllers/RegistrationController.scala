@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,36 +17,36 @@
 package controllers
 
 import java.time.LocalDate
+import javax.inject.{Inject, Singleton}
 
+import auth._
+import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.SubmissionMarshallingException
-import config.AuthClientConnector
 import enums.PAYEStatus
 import models._
-import play.api.mvc._
-import services._
-import uk.gov.hmrc.play.microservice.controller.BaseController
-import auth._
-import javax.inject.{Inject, Singleton}
-import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
 import play.api.Logger
 import play.api.libs.json._
+import play.api.mvc._
 import repositories.RegistrationMongoRepository
+import services._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 @Singleton
 class RegistrationController @Inject()(injRegistrationService: RegistrationService,
                                        injSubmissionService: SubmissionService,
                                        injNotificationService: NotificationService,
-                                       injIICounterService: IICounterService) extends RegistrationCtrl {
-  override lazy val authConnector: AuthConnector = AuthClientConnector
+                                       injIICounterService: IICounterService,
+                                       val crypto: CryptoSCRS,
+                                       val authConnector: AuthConnector) extends RegistrationCtrl {
 
   val registrationService: RegistrationService = injRegistrationService
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
@@ -61,13 +61,14 @@ trait RegistrationCtrl extends BaseController with Authorisation {
   val submissionService: SubmissionSrv
   val notificationService: NotificationService
   val counterService: IICounterSrv
+  val crypto: CryptoSCRS
 
   def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthenticated { internalId =>
         withJsonBody[String] { transactionID =>
           registrationService.createNewPAYERegistration(regID, transactionID, internalId) map {
-            reg => Ok(Json.toJson(reg))
+            reg => Ok(Json.toJson(reg)(PAYERegistration.format(APIValidation,crypto)))
           }
         }
       } recoverWith {
@@ -80,7 +81,7 @@ trait RegistrationCtrl extends BaseController with Authorisation {
       isAuthorised(regID) { authResult =>
         authResult.ifAuthorised(regID, "RegistrationCtrl", "getPAYERegistration") {
           registrationService.fetchPAYERegistration(regID) map {
-            case Some(registration) => Ok(Json.toJson(registration))
+            case Some(registration) => Ok(Json.toJson(registration)(PAYERegistration.format(APIValidation,crypto)))
             case None => NotFound
           }
         }
@@ -347,6 +348,7 @@ trait RegistrationCtrl extends BaseController with Authorisation {
 
   def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
+      implicit val fmt = EmpRefNotification.format(APIValidation,crypto)
       withJsonBody[EmpRefNotification] { notification =>
         notificationService.processNotification(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))

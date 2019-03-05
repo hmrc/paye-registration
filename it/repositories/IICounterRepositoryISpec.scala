@@ -2,13 +2,9 @@
 
 package repositories
 
-import common.exceptions.DBExceptions.{DeleteFailed, InsertFailed}
 import itutil.MongoBaseSpec
 import models.IICounter
-import play.api.Configuration
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 
 

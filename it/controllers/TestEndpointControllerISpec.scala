@@ -16,12 +16,14 @@
 
 package controllers
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.{Employing, PAYEStatus}
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
+import models.validation.MongoValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.{Application, Configuration}
@@ -51,6 +53,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
+  lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/test-only$path").withFollowRedirects(false)
 
@@ -59,7 +62,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository: RegistrationMongoRepository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -293,7 +296,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
             companyPension = None
           ))
         )
-      )
+      )(PAYERegistration.format(MongoValidation, mockcryptoSCRS))
 
       val response = client(s"/update-registration/$regID1").post[JsObject](jsonBody.as[JsObject]).futureValue
       response.status shouldBe 200

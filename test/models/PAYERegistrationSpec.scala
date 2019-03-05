@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@ package models
 
 import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
+import auth.CryptoSCRSImpl
 import enums.{Employing, PAYEStatus}
-import models.validation.MongoValidation
+import helpers.PAYERegSpec
+import models.validation.{APIValidation, MongoValidation}
+import play.api.Configuration
 import play.api.data.validation.ValidationError
 import play.api.libs.json.{JsPath, JsSuccess, Json}
 import uk.gov.hmrc.play.test.UnitSpec
 import utils.SystemDate
 
-class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
-
+class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation with PAYERegSpec {
+  val cryptoSCRS = mockCrypto
   val timestamp = "2017-05-09T07:58:35.000Z"
 
   val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
@@ -205,7 +208,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         employmentInfo = Some(EmploymentInfo(Employing.notEmploying,SystemDate.getSystemDate.toLocalDate,true, true,None))
       )
 
-      Json.fromJson[PAYERegistration](json)(PAYERegistration.format) shouldBe JsSuccess(tstPAYERegistration)
+      Json.fromJson[PAYERegistration](json)(PAYERegistration.format(APIValidation, cryptoSCRS)) shouldBe JsSuccess(tstPAYERegistration)
     }
 
     "complete successfully from full Json that doesn't include an eligibility block which is the as-is position" in {
@@ -377,7 +380,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         employmentInfo = Some(EmploymentInfo(Employing.notEmploying,SystemDate.getSystemDate.toLocalDate,true, true,None))
       )
 
-      Json.fromJson[PAYERegistration](json)(PAYERegistration.format) shouldBe JsSuccess(tstPAYERegistration)
+      Json.fromJson[PAYERegistration](json)(PAYERegistration.format(APIValidation, cryptoSCRS)) shouldBe JsSuccess(tstPAYERegistration)
     }
 
     "complete successfully from json when lastAction is in mongo Format (using mongo reads)" in {
@@ -477,7 +480,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |}
         """.stripMargin)
 
-      Json.fromJson[PAYERegistration](json1)(PAYERegistration.format(MongoValidation)).map(s => s.lastAction).get shouldBe Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
+      Json.fromJson[PAYERegistration](json1)(PAYERegistration.format(MongoValidation, cryptoSCRS)).map(s => s.lastAction).get shouldBe Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
     }
 
     "complete successfully from Json with no companyDetails" in {
@@ -516,7 +519,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
         lastAction = None,
         employmentInfo = None
       )
-
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
     }
 
@@ -566,7 +569,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
-
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "registrationID", Seq(ValidationError("error.path.missing")))
     }
@@ -617,7 +620,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
-
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "transactionID", Seq(ValidationError("error.path.missing")))
     }
@@ -669,7 +672,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
-
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "status", Seq(ValidationError("error.expected.validenumvalue")))
     }
@@ -720,7 +723,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation {
            |  "sicCodes": []
            |}
         """.stripMargin)
-
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "lastUpdate", Seq(ValidationError("error.path.missing")))
     }

@@ -17,18 +17,20 @@
 package jobs
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
+
+import auth.CryptoSCRS
 import com.google.inject.name.Names
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.PAYERegistration
-import play.api.{Application, Configuration}
-import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.{BindingKey, QualifierInstance}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
-import uk.gov.hmrc.play.scheduling.ScheduledJob
+import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -46,7 +48,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     "constants.maxStorageDays" -> 60
   )
 
-  override def beforeEach() = new Setup(timestamp) {
+  override def beforeEach() = new Setup {
     resetWiremock()
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -58,6 +60,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
+  lazy val servConfig = app.injector.instanceOf[ServicesConfig]
 
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
@@ -87,36 +90,43 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     employmentInfo = None
   )
 
-  val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 3, 3, 12, 30, 0, 0), ZoneId.of("Z"))
-  val timestampString = "2017-03-03T12:30:00Z"
+  val timestampString = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z")).toString
 
-  class Setup(ts: ZonedDateTime) {
+  class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = new DateHelper{ override def getTimestamp: ZonedDateTime = ts }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
-    val repository = mongo.store
+    lazy val mockDateHelper = new DateHelper{ override def getTimestamp: ZonedDateTime = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z")) }
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+    lazy val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    lazy val repository = mongo.store
+    lazy val lockRepository = app.injector.instanceOf[LockRepositoryProvider].repo
   }
 
   "Remove Stale Documents Job" should {
-    "take no action when job is disabled" in new Setup(timestamp) {
+    "take no action when job is disabled" in new Setup {
       setupFeatures(removeStaleDocumentsJob = false)
 
       val job = lookupJob("remove-stale-documents-job")
-      val res = await(job.execute)
-      res shouldBe job.Result("Remove stale documents feature is turned off")
+      val res = await(job.schedule)
+      res shouldBe false
     }
 
-    "remove documents older than a config specified length of time" in new Setup(timestamp) {
-      val deleteDT = ZonedDateTime.of(LocalDateTime.of(2016, 12, 1, 12, 0), ZoneId.of("Z"))
-      val keepDT = ZonedDateTime.of(LocalDateTime.of(2017, 3, 1, 12, 0), ZoneId.of("Z"))
+
+
+    "remove documents older than a config specified length of time" in new Setup {
+      val deleteDT = ZonedDateTime.of(LocalDateTime.now.minusDays(61), ZoneId.of("Z"))
+      val keepDT = ZonedDateTime.of(LocalDateTime.now.minusDays(59), ZoneId.of("Z"))
+
       await(repository.upsertRegTestOnly(reg("123", Some(deleteDT))))
       await(repository.upsertRegTestOnly(reg("223", Some(keepDT))))
 
       setupFeatures(removeStaleDocumentsJob = true)
-      val job = new RemoveStaleDocumentsJobImpl(mongo)
-      val res = await(job.execute)
 
-      res shouldBe job.Result("remove-stale-documents-job: Successfully removed 1 documents that were last updated before 2017-01-02T12:30Z")
+
+      val job = lookupJob("remove-stale-documents-job")
+      await(lockRepository.drop)
+      val  f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[(ZonedDateTime, Int), LockResponse]])
+      val res = await(f)
+
       await(repository.retrieveRegistration("123")) shouldBe None
       await(repository.retrieveRegistration("223")) shouldBe Some(reg("223", Some(keepDT)))
     }

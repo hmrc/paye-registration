@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,32 +20,32 @@ import javax.inject.{Inject, Singleton}
 
 import auth._
 import common.exceptions.RegistrationExceptions.UnmatchedStatusException
-import config.AuthClientConnector
 import enums.PAYEStatus
 import play.api.mvc.{Action, AnyContent}
 import repositories.RegistrationMongoRepository
 import services.RegistrationService
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RepositoryController @Inject()(injRegistrationService: RegistrationService) extends RepositoryCtrl {
-  override lazy val authConnector: AuthConnector = AuthClientConnector
+class RepositoryController @Inject()(injRegistrationService: RegistrationService, val authConnector: AuthConnector) extends RepositoryCtrl {
+
 
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
-  val registraitonService: RegistrationService = injRegistrationService
+  val registrationService: RegistrationService = injRegistrationService
 }
 
 trait RepositoryCtrl extends BaseController with Authorisation {
 
-  val registraitonService: RegistrationService
+  val registrationService: RegistrationService
 
   def deleteRegistrationFromDashboard(regId: String) : Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regId) { authResult =>
         authResult.ifAuthorised(regId, "RepositoryCtrl", "deleteRegistrationFromDashboard") {
-          registraitonService.deletePAYERegistration(regId, PAYEStatus.draft, PAYEStatus.invalid) map { deleted =>
+          registrationService.deletePAYERegistration(regId, PAYEStatus.draft, PAYEStatus.invalid) map { deleted =>
             if(deleted) Ok else InternalServerError
           } recover {
             case _: UnmatchedStatusException => PreconditionFailed

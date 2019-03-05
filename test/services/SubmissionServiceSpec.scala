@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,24 +23,23 @@ import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
-import fixtures.SubmissionFixture
-import models._
-import models.submission._
 import helpers.PAYERegSpec
+import models._
 import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
+import models.submission._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.retrieve.Credentials
+import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.http.logging.SessionId
+import scala.concurrent.Future
 
 class SubmissionServiceSpec extends PAYERegSpec {
 

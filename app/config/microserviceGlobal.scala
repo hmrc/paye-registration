@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,80 +16,35 @@
 
 package config
 
-import javax.inject.{Inject, Named, Singleton}
-import auth.Crypto
-import com.typesafe.config.Config
-import jobs.RetrieveRegInfoFromTxIdJob
-import net.ceedubs.ficus.Ficus._
-import play.api.{Application, Configuration, Logger, Play}
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
-import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
-import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
-import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
-import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
-import uk.gov.hmrc.crypto.PlainText
-import uk.gov.hmrc.play.scheduling.{RunningOfScheduledJobs, ScheduledJob}
-import uk.gov.hmrc.play.microservice.filters.{AuditFilter, LoggingFilter, MicroserviceFilterSupport}
+import java.util.Base64
+import javax.inject.Inject
+import play.api.{Configuration, Logger}
+import repositories._
+import uk.gov.hmrc.http.HeaderCarrier
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
-object ControllerConfiguration extends ControllerConfig {
-  lazy val controllerConfigs = Play.current.configuration.underlying.as[Config]("controllers")
-}
+class StartUpJobsImpl @Inject()(val registrationRepo: RegistrationMongo,val  configuration: Configuration) extends StartUpJobs
 
-object MicroserviceAuditFilter extends AuditFilter with AppName with MicroserviceFilterSupport {
-  override val auditConnector = MicroserviceAuditConnector
-  override def controllerNeedsAuditing(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsAuditing
-}
+trait StartUpJobs {
+  val  registrationRepo: RegistrationMongo
+  val configuration: Configuration
+  lazy val txIds: List[String] = Some(new String(Base64.getDecoder
+    .decode(configuration.getString("txIdListToRegIdForStartupJob").getOrElse("")), "UTF-8"))
+    .fold(Array.empty[String])(_.split(",").filter(_.nonEmpty)).toList
 
-object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
-  override def controllerNeedsLogging(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsLogging
-}
-
-object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with MicroserviceFilterSupport with RunningOfScheduledJobs {
-  override lazy val scheduledJobs = Play.current.injector.instanceOf[Jobs].lookupJobs()
-  override val auditConnector = MicroserviceAuditConnector
-
-  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
-
-  override val loggingFilter = MicroserviceLoggingFilter
-
-  override val microserviceAuditFilter = MicroserviceAuditFilter
-
-  override val authFilter = None
-
-  override def onStart(app : play.api.Application) : scala.Unit = {
-
-    try {
-      Crypto.crypto.encrypt(PlainText("foo"))
-      Logger.info("Mongo encryption key is valid")
-    } catch {
-      case ex: Throwable => Logger.error("Invalid_Mongo_Encryption_Key", ex)
-    }
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val repo = Play.current.injector.instanceOf[RegistrationMongo]
-    repo.store.getRegistrationStats() map {
-      stats => Logger.info(s"[RegStats] ${stats}")
-    }
-
-    new RetrieveRegInfoFromTxIdJob(repo.store, Play.configuration(app)).logRegInfoFromTxId()
-
-    super.onStart(app)
-  }
-}
-
-trait JobsList {
-  def lookupJobs(): Seq[ScheduledJob] = Seq()
-}
-
-@Singleton
-class Jobs @Inject()(
-                      @Named("remove-stale-documents-job") removeStaleDocsJob: ScheduledJob,
-                      @Named("metrics-job") graphiteMetrics: ScheduledJob
-                      ) extends JobsList {
-  override def lookupJobs(): Seq[ScheduledJob] =
-    Seq(
-      removeStaleDocsJob,
-      graphiteMetrics
+  def logRegInfoFromTxId(): Unit = {
+    implicit val hc: HeaderCarrier = HeaderCarrier()
+    txIds.foreach ( txId =>
+      registrationRepo.store.retrieveRegistrationByTransactionID(txId) map { oDoc =>
+        oDoc.fold(Logger.warn(s"[RetrieveRegInfoFromTxIdJob] txId: $txId has no registration document")) { doc =>
+          val (regId, status, lastUpdated, lastAction) = (doc.registrationID, doc.status, doc.lastUpdate, doc.lastAction)
+          Logger.info(s"[RetrieveRegInfoFromTxIdJob] txId: $txId returned a document with regId: $regId, status: $status, lastUpdated: $lastUpdated and lastAction: $lastAction")
+        }
+      } recover {
+        case e => Logger.warn(s"[RetrieveRegInfoFromTxIdJob] an error occurred while retrieving regId for txId: $txId", e)
+      }
     )
+  }
+  logRegInfoFromTxId
 }

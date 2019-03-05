@@ -16,6 +16,7 @@
 
 package repositories
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -24,10 +25,10 @@ import models.{EmpRefNotification, PAYERegistration}
 import play.api.Configuration
 import play.api.libs.json.JsObject
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.json.ImplicitBSONHandlers
+import reactivemongo.play.json.ImplicitBSONHandlers._
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
 
@@ -35,7 +36,8 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
     lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
     lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
     lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    lazy val mockcryptoSCRS = fakeApplication.injector.instanceOf[CryptoSCRS]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -82,15 +84,16 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
 
     "store the plain EMP Ref in encrypted form" in new Setup {
       import reactivemongo.bson.{BSONDocument, BSONInteger, BSONString}
-      import ImplicitBSONHandlers._
 
       await(setupCollection(repository, validAcknowledgedPAYERegistration))
+
       val result = await(repository.updateRegistrationEmpRef(ackRef, PAYEStatus.acknowledged, validEmpRefNotification))
       result shouldBe validEmpRefNotification
 
       // check the value isn't the EMP Ref when fetched direct from the DB
       val query = BSONDocument("acknowledgementReference" -> BSONString(ackRef))
       val project = BSONDocument("registrationConfirmation.empRef" -> BSONInteger(1), "_id" -> BSONInteger(0))
+
       val stored: Option[JsObject] = await(repository.collection.find(query, project).one[JsObject])
       stored shouldBe defined
       (stored.get \ "registrationConfirmation" \ "empRef").as[String] shouldNot be(empRef)

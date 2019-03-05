@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.text.Normalizer
 import java.text.Normalizer.Form
 import java.time.{LocalDate, ZonedDateTime}
 
+import auth.CryptoSCRS
 import enums.{Employing, IncorporationStatus}
 import helpers.DateHelper
 import models.Address
@@ -100,7 +101,7 @@ trait BaseJsonFormatting extends DateHelper {
 
   val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadApi, dateTimeWriteApi)
 
-  val cryptoFormat: Format[String] = readToFmt(standardRead)
+  def cryptoFormat(cryptoSCRS: CryptoSCRS): Format[String] = readToFmt(standardRead)
 
   def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = {
     readsDef.filter(ValidationError("neither postcode nor country was completed")) {

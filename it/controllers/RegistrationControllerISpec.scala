@@ -18,26 +18,27 @@ package controllers
 
 import java.time.LocalDate
 
+import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
-import itutil.{EncryptionHelper, IntegrationSpecBase, WiremockHelper}
+import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.external.BusinessProfile
+import models.validation.APIValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
-import uk.gov.hmrc.crypto.CryptoWithKeysFromConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHelper with EmploymentInfoFixture {
+class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
-  override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
+  lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -71,6 +72,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
+
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
                                         .withFollowRedirects(false)
                                         .withHeaders(("X-Session-ID","session-12345"))
@@ -82,7 +84,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     val timestamp = "2017-01-01T00:00:00"
     lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
@@ -574,7 +576,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
         setupSimpleAuthMocks()
 
         await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
         val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -597,7 +599,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
         setupSimpleAuthMocks()
 
         await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "05"))
 
         val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -620,7 +622,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
         setupSimpleAuthMocks()
 
         await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "06"))
 
         val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -643,7 +645,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
         setupSimpleAuthMocks()
 
         await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "07"))
 
         val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -667,7 +669,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       setupSimpleAuthMocks()
 
       await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+      implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "08"))
 
       val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -690,7 +692,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       setupSimpleAuthMocks()
 
       await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+      implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "09"))
 
       val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -713,7 +715,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
       setupSimpleAuthMocks()
 
       await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-
+      implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "10"))
 
       val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
@@ -735,7 +737,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
     "return a not found" when {
       "a matching reg doc cannot be found" in new Setup {
         setupSimpleAuthMocks()
-
+        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
         val response = client("registration-processed-confirmation?ackref=invalidackref").post(testNotification).futureValue
@@ -757,7 +759,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EncryptionHel
 
       setupSimpleAuthMocks()
 
-      val testNotification = EmpRefNotification(Some(encrypt("testEmpRef")), "2017-01-01T12:00:00Z", "04")
+     val fudge = Json.toJson("testEmpRef")(mockcryptoSCRS.wts)
+     val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
+     val doc = submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))
 
       await(repository.insert(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 

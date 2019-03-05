@@ -18,6 +18,7 @@ package repositories
 
 import java.time._
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
@@ -30,6 +31,7 @@ import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONDocument
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -473,12 +475,15 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
   val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018,4,9), true, true, Some(true))
 
   class Setup(timestampZDT: ZonedDateTime = lastUpdateZDT) {
+    lazy val mockcryptoSCRS = fakeApplication.injector.instanceOf[CryptoSCRS]
+
+
     lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
     lazy val mockDateHelper = new DateHelper {
       override def getTimestamp: ZonedDateTime = timestampZDT
     }
     lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
     await(repository.drop)
     await(repository.ensureIndexes)
@@ -592,7 +597,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
   "calling retrieveEmploymentInfo" should {
     val payeReg: PAYERegistration = reg.copy(employmentInfo = Some(empInfo))
     "return EmploymentInfo and old employment model is deleted" in new Setup {
-      import reactivemongo.json.ImplicitBSONHandlers._
       val json = Json.parse(
         """
           |{
@@ -602,7 +606,8 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
           |  }
           |}
         """.stripMargin).as[JsObject]
-      val payeRegJson = Json.toJson(payeReg)(PAYERegistration.format(MongoValidation)).as[JsObject] ++ json
+
+      val payeRegJson = Json.toJson(payeReg)(PAYERegistration.format(MongoValidation, mockcryptoSCRS)).as[JsObject] ++ json
 
 
       await(repository.collection.insert[JsObject](payeRegJson))

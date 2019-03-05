@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package fixtures
 import java.time.LocalDate
 
 import enums.{Employing, IncorporationStatus}
+import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
-import models._
 
 trait SubmissionFixture {
   val validCompanyDetails = CompanyDetails(

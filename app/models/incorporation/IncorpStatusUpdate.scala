@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.time.LocalDate
 
 import enums.IncorporationStatus
 import models.validation.{APIValidation, BaseJsonFormatting}
-import play.api.libs.json.{Reads, __}
 import play.api.libs.functional.syntax._
+import play.api.libs.json.{Reads, __}
 
 case class IncorpStatusUpdate(transactionId: String,
                               status: IncorporationStatus.Value,
