@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package controllers
 
 import auth.AuthorisationResource
+import common.exceptions.RegistrationExceptions.UnmatchedStatusException
 import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.test.FakeRequest
 import services.RegistrationService
-import common.exceptions.RegistrationExceptions.UnmatchedStatusException
 
 import scala.concurrent.Future
 
@@ -33,7 +33,7 @@ class RepositoryControllerSpec extends PAYERegSpec {
 
   class Setup {
     val controller = new RepositoryCtrl {
-      override val registraitonService: RegistrationService = mockRegistrationService
+      override val registrationService: RegistrationService = mockRegistrationService
       override val resourceConn: AuthorisationResource = mockRegistrationRepository
       val authConnector = mockAuthConnector
     }

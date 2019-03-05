@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package itutil
+package jobs
 
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, PlainText}
+import javax.inject.Inject
 
-trait EncryptionHelper {
-  def crypto: CompositeSymmetricCrypto
+import play.modules.reactivemongo.ReactiveMongoComponent
+import uk.gov.hmrc.lock.{LockMongoRepository, LockRepository}
 
-  def encrypt(str: String): String = {
-
-    val crypted = crypto.encrypt(PlainText(str))
-    new String(crypted.toBase64)
-  }
-
+class LockRepositoryProviderImpl @Inject()(reactiveMongoComponent: ReactiveMongoComponent) extends LockRepositoryProvider {
+  lazy val repo = LockMongoRepository(reactiveMongoComponent.mongoConnector.db)
+}
+trait LockRepositoryProvider {
+  val repo: LockRepository
 }

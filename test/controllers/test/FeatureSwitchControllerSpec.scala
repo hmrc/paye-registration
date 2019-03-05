@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +18,95 @@ package controllers.test
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
+import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import helpers.PAYERegSpec
+import jobs.ScheduledJob
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito._
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, OK}
-import helpers.PAYERegSpec
-import utils.{BooleanFeatureSwitch, PAYEFeatureSwitches}
+import utils.BooleanFeatureSwitch
 
-import scala.concurrent.Future
 class FeatureSwitchControllerSpec extends PAYERegSpec {
 
   implicit val system = ActorSystem("PR")
   implicit val materializer = ActorMaterializer()
+  val mockRemoveStaleDocsJob: ScheduledJob = mock[ScheduledJob]
+  val mockGraphiteMetrics: ScheduledJob = mock[ScheduledJob]
+  val mockQuartz = mock[QuartzSchedulerExtension]
+
+
   override def beforeEach(): Unit = {
     System.clearProperty("feature.desServiceFeature")
   }
+
   class Setup {
     val controller = new FeatureSwitchCtrl {
+      val removeStaleDocsJob = mockRemoveStaleDocsJob
+      val graphiteMetrics = mockGraphiteMetrics
+
     }
   }
+
   val testFeatureSwitch = BooleanFeatureSwitch(name = "desServiceFeature", enabled = true)
   val testDisabledSwitch = BooleanFeatureSwitch(name = "desServiceFeature", enabled = false)
+  val testRemoveStaleDocFeatureSwitchTrue = BooleanFeatureSwitch(name = "removeStaleDocumentsFeature", enabled = true)
+  val testRemoveStaleDocFeatureSwitchFalse = BooleanFeatureSwitch(name = "removeStaleDocumentsFeature", enabled = false)
+  val testGraphiteMetricsFeatureSwitchTrue = BooleanFeatureSwitch(name = "graphiteMetrics", enabled = true)
+  val testGraphiteMetricsFeatureSwitchFalse = BooleanFeatureSwitch(name = "graphiteMetrics", enabled = false)
 
   "switch" should {
-    "enable the desServiceFeature and return an OK" when {
+    "enable a ServiceFeature and return an OK" when {
       "desStubFeature and true are passed in the url" in new Setup {
-        val result = controller.switch("desServiceFeature","true")(FakeRequest())
+        val result = controller.switch("desServiceFeature", "true")(FakeRequest())
         status(result) shouldBe OK
         bodyOf(await(result)) shouldBe testFeatureSwitch.toString
+      }
+
+      "removeStaleDocumentsFeature and true is passed in the url" in new Setup {
+        when(mockRemoveStaleDocsJob.scheduler).thenReturn(mockQuartz)
+        when(mockQuartz.resumeJob(any())).thenReturn(true)
+
+        val result = controller.switch("removeStaleDocumentsFeature", "true")(FakeRequest())
+
+        status(result) shouldBe OK
+        bodyOf(await(result)) shouldBe testRemoveStaleDocFeatureSwitchTrue.toString
+      }
+
+      "removeStaleDocumentsFeature and false is passed in the url" in new Setup {
+        when(mockRemoveStaleDocsJob.scheduler).thenReturn(mockQuartz)
+        when(mockQuartz.suspendJob(any())).thenReturn(false)
+
+        val result = controller.switch("removeStaleDocumentsFeature", "false")(FakeRequest())
+
+        status(result) shouldBe OK
+        bodyOf(await(result)) shouldBe testRemoveStaleDocFeatureSwitchFalse.toString
+      }
+
+      "graphiteMetrics and true is passed in the url" in new Setup {
+        when(mockGraphiteMetrics.scheduler).thenReturn(mockQuartz)
+        when(mockQuartz.resumeJob(any())).thenReturn(true)
+
+        val result = controller.switch("graphiteMetrics", "true")(FakeRequest())
+
+        status(result) shouldBe OK
+        bodyOf(await(result)) shouldBe testGraphiteMetricsFeatureSwitchTrue.toString
+      }
+
+      "graphiteMetrics and false is passed in the url" in new Setup {
+        when(mockGraphiteMetrics.scheduler).thenReturn(mockQuartz)
+        when(mockQuartz.suspendJob(any())).thenReturn(false)
+
+        val result = controller.switch("graphiteMetrics", "false")(FakeRequest())
+
+        status(result) shouldBe OK
+        bodyOf(await(result)) shouldBe testGraphiteMetricsFeatureSwitchFalse.toString
       }
     }
 
     "disable the desServiceFeature and return an OK" when {
       "desStubFeature and some other featureState is passed into the URL" in new Setup {
-        val result = await(controller.switch("desServiceFeature","someOtherState")(FakeRequest()))
+        val result = await(controller.switch("desServiceFeature", "someOtherState")(FakeRequest()))
         status(result) shouldBe OK
         bodyOf(await(result)) shouldBe testDisabledSwitch.toString
       }
@@ -60,7 +115,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
     "return a bad request" when {
       "an unknown feature is trying to be enabled" in new Setup {
 
-        val result = controller.switch("invalidName","invalidState")(FakeRequest())
+        val result = controller.switch("invalidName", "invalidState")(FakeRequest())
         status(result) shouldBe BAD_REQUEST
       }
     }

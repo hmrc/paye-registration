@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package connectors
 
-import java.time.{LocalDate, LocalTime}
+import javax.inject.{Inject, Singleton}
 
 import audit.FailedDesSubmissionEvent
-import config.{MicroserviceAuditConnector, WSHttp}
-import javax.inject.Singleton
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logger
@@ -28,28 +26,26 @@ import play.api.libs.json.Writes
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import scala.concurrent.ExecutionContext.Implicits.global
 import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector extends DESConnect with ServicesConfig {
+class DESConnector @Inject()(val http: HttpClient, val servicesConfig: ServicesConfig, val auditConnector: AuditConnector ) extends DESConnect {
   val featureSwitch = PAYEFeatureSwitches
-  lazy val desUrl = getConfString("des-service.url", "")
-  lazy val desURI = getConfString("des-service.uri", "")
-  lazy val desTopUpURI = getConfString("des-service.top-up-uri", "")
-  lazy val desStubUrl = baseUrl("des-stub")
-  lazy val desStubURI = getConfString("des-stub.uri", "")
-  lazy val desStubTopUpURI = getConfString("des-stub.top-up-uri", "")
-  lazy val urlHeaderEnvironment: String = getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
-  lazy val urlHeaderAuthorization: String = s"Bearer ${getConfString("des-service.authorization-token",
+  lazy val desUrl = servicesConfig.getConfString("des-service.url", "")
+  lazy val desURI = servicesConfig.getConfString("des-service.uri", "")
+  lazy val desTopUpURI = servicesConfig.getConfString("des-service.top-up-uri", "")
+  lazy val desStubUrl = servicesConfig.baseUrl("des-stub")
+  lazy val desStubURI = servicesConfig.getConfString("des-stub.uri", "")
+  lazy val desStubTopUpURI = servicesConfig.getConfString("des-stub.top-up-uri", "")
+  lazy val urlHeaderEnvironment: String = servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
+  lazy val urlHeaderAuthorization: String = s"Bearer ${servicesConfig.getConfString("des-service.authorization-token",
     throw new Exception("could not find config value for des-service.authorization-token"))}"
-  lazy val alertWorkingHours = getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
-
-  val http = WSHttp
-  val auditConnector = MicroserviceAuditConnector
+  lazy val alertWorkingHours = servicesConfig.getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
 
   override protected def currentDate = SystemDate.getSystemDate.toLocalDate
   override protected def currentTime = SystemDate.getSystemDate.toLocalTime

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import common.exceptions.DBExceptions.MissingRegDocument
 import common.constants.ETMPStatusCodes
+import common.exceptions.DBExceptions.MissingRegDocument
 import enums.PAYEStatus
 import models.EmpRefNotification
 import play.api.Logger

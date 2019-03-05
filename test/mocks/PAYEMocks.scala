@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,28 @@
 
 package mocks
 
+import auth.CryptoSCRS
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.mockito.MockitoSugar
 import play.api.Configuration
-import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
+import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, InvalidBearerToken}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
 trait PAYEMocks {
 
   this: MockitoSugar =>
 
   lazy val mockRegistrationRepository = mock[RegistrationMongoRepository]
+  lazy val mockRegistrationMongo      = mock[RegistrationMongo]
   lazy val mockSequenceRepository     = mock[SequenceMongoRepository]
   lazy val mockAuthConnector          = mock[AuthConnector]
   lazy val mockPlayConfiguraton       = mock[Configuration]
+  lazy val mockCrypto                 = mock[CryptoSCRS]
 
   object AuthorisationMocks {
     def mockAuthenticated(internalId: String): OngoingStubbing[Future[Option[String]]] = {

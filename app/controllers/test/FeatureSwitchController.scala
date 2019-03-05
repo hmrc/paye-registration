@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,47 @@
 
 package controllers.test
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 
+import jobs.ScheduledJob
 import play.api.mvc.Action
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import utils._
 
 import scala.concurrent.Future
 
 @Singleton
-class FeatureSwitchController extends FeatureSwitchCtrl
+class FeatureSwitchController @Inject()(@Named("remove-stale-documents-job") val removeStaleDocsJob: ScheduledJob,
+                                        @Named("metrics-job") val graphiteMetrics: ScheduledJob) extends FeatureSwitchCtrl {
 
-
-
+}
 trait FeatureSwitchCtrl extends BaseController {
+  val removeStaleDocsJob: ScheduledJob
+  val graphiteMetrics: ScheduledJob
 
   val fs =  FeatureSwitch
 
   def switch(featureName: String, featureState: String) = Action.async {
     implicit request =>
 
-      def feature: FeatureSwitch = featureState match {
-        case "true"                                         => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
-        case x if x.matches(FeatureSwitch.datePatternRegex) => fs.setSystemDate(ValueSetFeatureSwitch(featureName, featureState))
-        case x@"time-clear"                                 => fs.clearSystemDate(ValueSetFeatureSwitch(featureName, x))
-        case _                                              => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
+      def feature: FeatureSwitch = (featureName, featureState) match {
+        case ("removeStaleDocumentsFeature", "true")  =>
+          removeStaleDocsJob.scheduler.resumeJob("remove-stale-documents-job")
+          BooleanFeatureSwitch("removeStaleDocumentsFeature",true)
+        case ("removeStaleDocumentsFeature", "false") =>
+          removeStaleDocsJob.scheduler.suspendJob("remove-stale-documents-job")
+          BooleanFeatureSwitch("removeStaleDocumentsFeature",false)
+        case ("graphiteMetrics", "true")              =>
+          graphiteMetrics.scheduler.resumeJob("metrics-job")
+          BooleanFeatureSwitch("graphiteMetrics",true)
+        case ("graphiteMetrics", "false")             =>
+          graphiteMetrics.scheduler.suspendJob("metrics-job")
+          BooleanFeatureSwitch("graphiteMetrics",false)
+        case (_, "true")                                          => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
+        case (_, x) if x.matches(FeatureSwitch.datePatternRegex)  => fs.setSystemDate(ValueSetFeatureSwitch(featureName, featureState))
+        case (_, x@"time-clear")  => fs.clearSystemDate(ValueSetFeatureSwitch(featureName, x))
+        case _                                                    => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
       }
-
       PAYEFeatureSwitches(featureName) match {
         case Some(_) => Future.successful(Ok(feature.toString))
         case None => Future.successful(BadRequest)

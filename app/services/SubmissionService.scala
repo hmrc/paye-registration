@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 package services
 
 import javax.inject.{Inject, Singleton}
+
+import common.constants.ETMPStatusCodes
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
-import common.constants.ETMPStatusCodes
-import config.AuthClientConnector
-import connectors.{BusinessRegistrationConnect, BusinessRegistrationConnector, CompanyRegistrationConnect, CompanyRegistrationConnector, DESConnect, DESConnector, IncorporationInformationConnect, IncorporationInformationConnector}
-import uk.gov.hmrc.auth.core.retrieve.Retrievals._
+import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
@@ -32,14 +31,13 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
-import uk.gov.hmrc.auth.core.AuthorisedFunctions
-
-import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-
-import scala.util.{Failure, Success, Try}
-import scala.util.control.NoStackTrace
+import uk.gov.hmrc.auth.core.retrieve.Retrievals._
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NoStackTrace
+import scala.util.{Failure, Success, Try}
 
 class RejectedIncorporationException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
@@ -53,8 +51,9 @@ class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
                                   injBusinessRegistrationConnector: BusinessRegistrationConnector,
                                   injCompanyRegistrationConnector: CompanyRegistrationConnector,
                                   injAuditService: AuditService,
-                                  injRegistrationService: RegistrationService) extends SubmissionSrv {
-  override lazy val authConnector = AuthClientConnector
+                                  injRegistrationService: RegistrationService,
+                                  val authConnector: AuthConnector) extends SubmissionSrv {
+
 
   val sequenceRepository = injSequenceMongoRepository.store
   val registrationRepository = injRegistrationMongoRepository.store

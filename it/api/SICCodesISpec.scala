@@ -16,6 +16,7 @@
 
 package api
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -53,7 +54,8 @@ class SICCodesISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
 
     def insertToDb(data: PAYERegistration) = await(repository.insert(data))

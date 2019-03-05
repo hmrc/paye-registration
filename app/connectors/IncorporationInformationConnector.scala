@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,29 @@
 package connectors
 
 import java.time.LocalDate
-
 import javax.inject.{Inject, Singleton}
-import config.WSHttp
+
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json, Reads}
 import play.api.http.Status.{ACCEPTED, NO_CONTENT, OK}
+import play.api.libs.json.{JsObject, Json}
+import uk.gov.hmrc.http.{CoreGet, CorePost, HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.ServicesConfig
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-
 import scala.util.control.NoStackTrace
-import uk.gov.hmrc.http.{CoreGet, CorePost, HeaderCarrier, HttpResponse}
 
 class IncorporationInformationResponseException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
 }
 
 @Singleton
-class IncorporationInformationConnector extends IncorporationInformationConnect with ServicesConfig {
-  val http = WSHttp
-  lazy val incorporationInformationUri: String = baseUrl("incorporation-information")
-  lazy val payeRegUri: String = baseUrl("paye-registration")
+class IncorporationInformationConnector @Inject()(val http: HttpClient, val servicesConfig: ServicesConfig) extends IncorporationInformationConnect  {
+  lazy val incorporationInformationUri: String = servicesConfig.baseUrl("incorporation-information")
+  lazy val payeRegUri: String = servicesConfig.baseUrl("paye-registration")
 }
 
 trait IncorporationInformationConnect {

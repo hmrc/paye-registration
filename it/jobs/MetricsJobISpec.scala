@@ -18,18 +18,19 @@ package jobs
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 
+import auth.CryptoSCRS
 import com.google.inject.name.Names
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.PAYERegistration
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
-import uk.gov.hmrc.play.scheduling.ScheduledJob
+import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -60,6 +61,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
+  lazy val servConfig = app.injector.instanceOf[ServicesConfig]
 
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
@@ -95,8 +97,10 @@ class MetricsJobISpec extends IntegrationSpecBase {
   class Setup(ts: ZonedDateTime) {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = new DateHelper{ override def getTimestamp: ZonedDateTime = ts }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
+    lazy val lockRepository = app.injector.instanceOf[LockRepositoryProvider].repo
   }
 
   "Metrics Job" should {
@@ -104,8 +108,10 @@ class MetricsJobISpec extends IntegrationSpecBase {
       setupFeatures(metricsJob = false)
 
       val job = lookupJob("metrics-job")
-      val res = await(job.execute)
-      res shouldBe job.Result("Feature metrics-job is turned off")
+      val res = await(job.schedule)
+
+      res shouldBe false
+//      res shouldBe job.Result("Feature metrics-job is turned off")
     }
 
     "return what documents are currently in PAYE" in new Setup(timestamp) {
@@ -118,11 +124,14 @@ class MetricsJobISpec extends IntegrationSpecBase {
       await(repository.upsertRegTestOnly(reg("225", Some(dateTime), PAYEStatus.cancelled)))
 
       val job = lookupJob("metrics-job")
-      val res = await(job.execute)
+      await(lockRepository.drop)
+      val  f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[Map[String, Int],LockResponse]])
+      val res = await(f)
 
-      val docMap = Map("cancelled" -> 1, "draft" -> 2)
+      val docMap = Left(Map("cancelled" -> 1, "draft" -> 2))
 
-      res shouldBe job.Result(s"metrics-job - Result(Feature is turned on - result = Updated document stats - $docMap)")
+      res shouldBe docMap
+
     }
   }
 

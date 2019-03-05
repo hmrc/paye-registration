@@ -17,15 +17,16 @@ package api
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.{Employing, PAYEStatus}
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
-import models.{EmploymentInfo, PAYERegistration}
 import models.validation.APIValidation
+import models.{EmploymentInfo, PAYERegistration}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.{Application, Configuration}
 import play.api.libs.json.{JsValue, Json}
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
 import utils.SystemDate
@@ -53,12 +54,13 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
+  lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
 
     def insertToDb(paye: PAYERegistration) = {

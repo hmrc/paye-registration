@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,18 @@ package connectors
 
 import javax.inject.{Inject, Singleton}
 
-import config.WSHttp
 import play.api.Logger
-import uk.gov.hmrc.play.config.ServicesConfig
-import scala.concurrent.Future
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.play.config.ServicesConfig
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.concurrent.Future
 
 @Singleton
-class CompanyRegistrationConnector @Inject()() extends CompanyRegistrationConnect with ServicesConfig{
-  val compRegUrl = baseUrl("company-registration")
-  val http: CoreGet = WSHttp
+class CompanyRegistrationConnector @Inject()(val http: HttpClient, val servicesConfig: ServicesConfig) extends CompanyRegistrationConnect {
+  val compRegUrl = servicesConfig.baseUrl("company-registration")
+
 }
 
 trait CompanyRegistrationConnect {

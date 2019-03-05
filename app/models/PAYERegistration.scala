@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package models
 
-import enums.PAYEStatus
 import java.time.ZonedDateTime
 
-import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
+import auth.CryptoSCRS
+import enums.PAYEStatus
+import models.validation.BaseJsonFormatting
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -44,15 +45,14 @@ case class PAYERegistration(registrationID: String,
                             employmentInfo: Option[EmploymentInfo] = None)
 
 object PAYERegistration {
-  implicit val format: OFormat[PAYERegistration] = format(APIValidation)
 
-  def format(formatter: BaseJsonFormatting): OFormat[PAYERegistration] = (
+  def format(formatter: BaseJsonFormatting, crypto: CryptoSCRS): OFormat[PAYERegistration] = (
     (__ \ "registrationID").format[String] and
     (__ \ "transactionID").format[String] and
     (__ \ "internalID").format[String] and
     (__ \ "acknowledgementReference").formatNullable[String] and
     (__ \ "crn").formatNullable[String] and
-    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.format(formatter)) and
+    (__ \ "registrationConfirmation").formatNullable[EmpRefNotification](EmpRefNotification.format(formatter,crypto)) and
     (__ \ "formCreationTimestamp").format[String] and
     (__ \ "status").format[PAYEStatus.Value] and
     (__ \ "completionCapacity").formatNullable[String] and

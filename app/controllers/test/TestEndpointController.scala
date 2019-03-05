@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,22 @@ package controllers.test
 
 import javax.inject.{Inject, Singleton}
 
-import config.AuthClientConnector
+import auth.CryptoSCRS
 import enums.PAYEStatus
 import models._
+import models.validation.APIValidation
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import uk.gov.hmrc.auth.core.retrieve.Retrievals.internalId
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class TestEndpointController @Inject()(registrationMongo: RegistrationMongo) extends TestEndpointCtrl {
-  override lazy val authConnector: AuthConnector = AuthClientConnector
+class TestEndpointController @Inject()(registrationMongo: RegistrationMongo, val authConnector: AuthConnector, val cryptoSCRS: CryptoSCRS) extends TestEndpointCtrl {
 
   val registrationRepository: RegistrationMongoRepository = registrationMongo.store
 }
@@ -41,6 +41,7 @@ class TestEndpointController @Inject()(registrationMongo: RegistrationMongo) ext
 trait TestEndpointCtrl extends BaseController with AuthorisedFunctions {
 
   val registrationRepository: RegistrationMongoRepository
+  val cryptoSCRS: CryptoSCRS
 
   def registrationTeardown: Action[AnyContent] = Action.async {
     implicit request =>
@@ -62,6 +63,7 @@ trait TestEndpointCtrl extends BaseController with AuthorisedFunctions {
 
   def updateRegistration(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
+      implicit val fmt = PAYERegistration.format(APIValidation, cryptoSCRS)
       authorised().retrieve(internalId) { id =>
         withJsonBody[JsObject] { reg =>
           val regWithId = reg ++ Json.obj("internalID" -> id.getOrElse(throw new Exception("Missing internalId")))

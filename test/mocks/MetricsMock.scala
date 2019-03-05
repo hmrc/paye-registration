@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.kenshoo.play.metrics.Metrics
 import helpers.PAYERegSpec
 import repositories.RegistrationMongoRepository
 import services.MetricsSrv
+import uk.gov.hmrc.lock.LockKeeper
 
 object MetricsMock extends MetricsSrv with PAYERegSpec {
   lazy val mockContext = mock[Timer.Context]
@@ -28,6 +29,7 @@ object MetricsMock extends MetricsSrv with PAYERegSpec {
   val mockCounter = mock[Counter]
   val metrics = mock[Metrics]
   val regRepo = mock[RegistrationMongoRepository]
+  val lock = mock[LockKeeper]
 
   override val mongoResponseTimer = mockTimer
 }

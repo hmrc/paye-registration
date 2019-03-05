@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,18 @@
 
 package jobs
 
-import javax.inject.{Inject, Singleton}
-import play.api.Logger
-import play.modules.reactivemongo.MongoDbConnection
-import reactivemongo.api.DefaultDB
+import javax.inject.Inject
+
+import akka.actor.ActorSystem
+import jobs.SchedulingActor.MetricsJob
+import play.api.Configuration
 import services.MetricsService
-import uk.gov.hmrc.play.scheduling.ExclusiveScheduledJob
-import utils.PAYEFeatureSwitches
 
-import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class MetricsJobImpl @Inject()(val metricsService: MetricsService
-                               ) extends MetricsJob {
-  val name = "metrics-job"
-  lazy val db: () => DefaultDB = new MongoDbConnection{}.db
-}
-
-trait MetricsJob extends ExclusiveScheduledJob with JobConfig with JobHelper {
-
-  val metricsService: MetricsService
-
-  override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
-    ifFeatureEnabled(PAYEFeatureSwitches.graphiteMetrics) {
-      whenLockAcquired {
-        metricsService.updateDocumentMetrics() map { result =>
-          val message = s"Feature is turned on - result = Updated document stats - $result"
-          Logger.info(message)
-          Result(message)
-        }
-      }
-    } // TODO: Sort out IT failing
-  }
+class MetricsJobs @Inject()(metricsService: MetricsService,
+                           val config: Configuration) extends ScheduledJob {
+  val jobName = "metrics-job"
+  val actorSystem = ActorSystem(jobName)
+  val scheduledMessage = MetricsJob(metricsService)
+  schedule
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,19 @@
 
 package models
 
-import models.validation.{APIValidation, BaseJsonFormatting}
-import play.api.libs.json.{Format, __}
+import auth.CryptoSCRS
+import models.validation.BaseJsonFormatting
 import play.api.libs.functional.syntax._
+import play.api.libs.json.{Format, __}
 
 case class EmpRefNotification(empRef: Option[String],
                               timestamp: String,
                               status: String)
 
 object EmpRefNotification {
-  implicit val apiFormat: Format[EmpRefNotification] = format(APIValidation)
 
-  def format(formatter: BaseJsonFormatting): Format[EmpRefNotification] = (
-    (__ \ "empRef").formatNullable[String](formatter.cryptoFormat) and
+  def format(formatter: BaseJsonFormatting, crypto: CryptoSCRS): Format[EmpRefNotification] = (
+    (__ \ "empRef").formatNullable[String](formatter.cryptoFormat(crypto)) and
     (__ \ "timestamp").format[String] and
     (__ \ "status").format[String]
   )(EmpRefNotification.apply, unlift(EmpRefNotification.unapply))

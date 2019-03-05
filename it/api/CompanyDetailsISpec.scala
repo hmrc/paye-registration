@@ -18,6 +18,7 @@ package api
 
 import java.time.{ZoneOffset, ZonedDateTime}
 
+import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -52,13 +53,16 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
+
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
   class Setup  {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig){
-      override val registrationFormat: Format[PAYERegistration] = PAYERegistration.format(MongoValidation)    }
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS){
+      override val registrationFormat: Format[PAYERegistration] = PAYERegistration.format(MongoValidation, mockcryptoSCRS)    }
     val repository: RegistrationMongoRepository = mongo.store
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))

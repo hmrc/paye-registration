@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,26 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
-import common.exceptions.DBExceptions.MissingRegDocument
 import audit._
-import config.{AuthClientConnector, MicroserviceAuditConnector}
+import common.exceptions.DBExceptions.MissingRegDocument
 import enums.{AddressTypes, IncorporationStatus}
 import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
 import play.api.libs.json.{JsObject, Json}
 import repositories.{RegistrationMongo, RegistrationRepository}
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.{credentials, externalId}
 import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{externalId, credentials}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class AuditService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends AuditSrv {
-  override lazy val authConnector: AuthConnector = AuthClientConnector
+class AuditService @Inject()(injRegistrationMongoRepository: RegistrationMongo, val authConnector: AuthConnector, val auditConnector: AuditConnector) extends AuditSrv {
 
   val registrationRepository = injRegistrationMongoRepository.store
-  val auditConnector = MicroserviceAuditConnector
+
 }
 
 trait AuditSrv extends AuthorisedFunctions {

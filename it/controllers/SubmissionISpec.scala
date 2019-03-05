@@ -18,6 +18,7 @@ package controllers
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
 import enums.{Employing, PAYEStatus}
@@ -67,6 +68,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
+  lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
     .withFollowRedirects(false)
@@ -81,7 +83,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig)
+    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store

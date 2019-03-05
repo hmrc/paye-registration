@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,53 @@
 
 package services
 
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.Inject
 
 import com.codahale.metrics.{Gauge, Timer}
 import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
+import jobs._
+import org.joda.time.Duration
 import play.api.Logger
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import uk.gov.hmrc.lock.LockKeeper
+import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MetricsService @Inject()(injRegRepo: RegistrationMongo,
+                               val lockRepository: LockRepositoryProvider,
+                               val servicesConfig: ServicesConfig,
                                val metrics: Metrics) extends MetricsSrv {
 
   override lazy val regRepo = injRegRepo.store
   override val mongoResponseTimer = metrics.defaultRegistry.timer("mongo-call-timer")
+  lazy val lockoutTimeout = servicesConfig.getInt("schedules.metrics-job.lockTimeout")
+  lazy val lock: LockKeeper = new LockKeeper() {
+    override val lockId = "remove-stale-documents-job"
+    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)
+    override lazy val repo = lockRepository.repo
+  }
 }
 
-trait MetricsSrv {
+trait MetricsSrv extends ScheduledService[Either[Map[String, Int],LockResponse]]{
   val mongoResponseTimer: Timer
+  val lock: LockKeeper
   protected val metrics: Metrics
   protected val regRepo: RegistrationMongoRepository
+
+  def invoke(implicit ec:ExecutionContext):Future[Either[Map[String, Int],LockResponse]] = {
+    lock.tryLock(updateDocumentMetrics).map {
+      case Some(res) =>
+        Logger.info("MetricsService acquired lock and returned results")
+        Left(res)
+      case None =>
+        Logger.info("MetricsService cant acquire lock")
+        Right(MongoLocked)
+    }.recover {
+      case e => Logger.error(s"Error running updateSubscriptionMetrics with message: ${e.getMessage}")
+        Right(UnlockingFailed)
+    }
+  }
 
   def updateDocumentMetrics()(implicit ec: ExecutionContext): Future[Map[String, Int]] = {
     regRepo.getRegistrationStats() map {

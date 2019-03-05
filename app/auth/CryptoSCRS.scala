@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,17 @@
 
 package auth
 
+import com.google.inject.Inject
+import play.api.Configuration
 import play.api.libs.json.{JsString, Reads, Writes}
-import uk.gov.hmrc.crypto.{CryptoWithKeysFromConfig, CompositeSymmetricCrypto, Crypted, PlainText}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, Crypted, PlainText}
 
+class CryptoSCRSImpl @Inject()(config: Configuration) extends CryptoSCRS {
+  override lazy val crypto: CompositeSymmetricCrypto = new ApplicationCrypto(config.underlying).JsonCrypto
 
-trait Crypto {
+}
+
+trait CryptoSCRS {
   def crypto: CompositeSymmetricCrypto
 
   val rds: Reads[String] = Reads[String](js =>
@@ -39,6 +45,3 @@ trait Crypto {
   )
 }
 
-object Crypto extends Crypto {
-  override lazy val crypto = CryptoWithKeysFromConfig(baseConfigKey = "mongo-encryption")
-}

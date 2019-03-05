@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package models.validation
 
 import java.time.{Instant, LocalDate, ZoneOffset, ZonedDateTime}
 
-import auth.Crypto
+import auth.CryptoSCRS
 import enums.Employing
 import models.Address
 import models.incorporation.IncorpStatusUpdate
-import play.api.libs.json.{Format, JsValue, Json, Reads, Writes, __}
+import play.api.libs.json._
 
 object MongoValidation extends BaseJsonFormatting {
   override val phoneNumberReads        = standardRead
@@ -61,7 +61,7 @@ object MongoValidation extends BaseJsonFormatting {
 
   override val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadMongo, dateTimeWriteMongo)
 
-  override val cryptoFormat: Format[String] = Format(Crypto.rds, Crypto.wts)
+  override def cryptoFormat(crypto: CryptoSCRS): Format[String] = Format(crypto.rds, crypto.wts)
 
   override def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = readsDef
 
