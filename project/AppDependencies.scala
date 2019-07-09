@@ -6,12 +6,12 @@ private object AppDependencies {
 }
 
 object MainDependencies {
-  private val bootstrapVersion              = "4.9.0"
-  private val domainVersion                 = "5.3.0"
-  private val mongoLockVersion              = "6.10.0-play-25"
-  private val playSchedulingVersion         = "5.4.0"
-  private val simpleReactivemongoVersion    = "7.12.0-play-25"
-  private val authClientVersion             = "2.20.0-play-25"
+  private val bootstrapVersion              = "4.13.0"
+  private val domainVersion                 = "5.6.0-play-25"
+  private val mongoLockVersion              = "6.15.0-play-25"
+  private val playSchedulingVersion         = "6.0.0"
+  private val simpleReactivemongoVersion    = "7.20.0-play-25"
+  private val authClientVersion             = "2.22.0-play-25"
 
   def apply() = Seq(
     "com.enragedginger" %% "akka-quartz-scheduler" % "1.8.0-akka-2.5.x",
@@ -27,10 +27,10 @@ object MainDependencies {
 trait TestDependencies {
   val scalaTestVersion      = "3.0.0"
   val scalaTestPlusVersion  = "2.0.0"
-  val hmrcTestVersion       = "3.5.0-play-25"
+  val hmrcTestVersion       = "3.9.0-play-25"
   val mocklitoCoreVersion   = "2.13.0"
   val wireMockVersion       = "2.21.0"
-  val reactiveTestVersion   = "4.7.0-play-25"
+  val reactiveTestVersion   = "4.15.0-play-25"
 
   val scope: Configuration
   val test : Seq[ModuleID]
