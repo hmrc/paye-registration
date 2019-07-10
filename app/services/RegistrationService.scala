@@ -187,6 +187,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
       case Some(document) => document.status match {
         case documentStatus if validStatuses.contains(documentStatus) => registrationRepository.deleteRegistration(regID)
         case _ =>
+
           Logger.warn(s"[RegistrationService] - [deletePAYERegistration] PAYE Reg document for regId $regID was not deleted as the document status was ${document.status}, not ${validStatuses.toString}")
           throw new UnmatchedStatusException
       }

@@ -808,7 +808,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       await(repository.upsertRegTestOnly(submission))
       await(repository.count).shouldBe(1)
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = await(client(s"$regId/submit-registration").put(""))
       response.status shouldBe 204
 
       val reg = await(repository.retrieveRegistration(regId))
