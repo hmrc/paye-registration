@@ -472,7 +472,8 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful("bar"))
       when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(incorpStatusUpdate.copy(status = IncorporationStatus.rejected))))
-
+      when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(true))
       intercept[RejectedIncorporationException](await(service.submitToDes("regID")))
       verify(mockRegistrationService,times(1)).deletePAYERegistration(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any())
     }

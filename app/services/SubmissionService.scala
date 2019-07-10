@@ -80,20 +80,28 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   private val SUBSCRIBER = "SCRS"
 
   def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
-    for {
+    val futureAckRefIncUpdate = { for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
-      incUpdate     <- getIncorporationUpdate(regId) recoverWith {
-                          case ex: RejectedIncorporationException =>
-                            registrationService.deletePAYERegistration(regId, PAYEStatus.draft)
-                            throw ex
-                        }
-      ctutr         <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
-      submission    <- buildADesSubmission(regId, incUpdate, ctutr)
-      _             <- desConnector.submitToDES(submission, regId, incUpdate)
-      _             <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
-      updatedStatus =  incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
-      _             <- updatePAYERegistrationDocument(regId, updatedStatus)
-    } yield ackRef
+      incUpdate     <- getIncorporationUpdate(regId)
+      } yield {
+      (ackRef, incUpdate)
+     }
+    }.recoverWith {
+      case ex: RejectedIncorporationException =>
+      registrationService.deletePAYERegistration(regId, PAYEStatus.draft).map(_ => throw ex)
+    }
+
+         futureAckRefIncUpdate.flatMap { ackRefAndIncUpdate =>
+           val (ackRef, incUpdate) = ackRefAndIncUpdate
+           for {
+             ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
+             submission <- buildADesSubmission(regId, incUpdate, ctutr)
+             _ <- desConnector.submitToDES(submission, regId, incUpdate)
+             _ <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
+             updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
+             _ <- updatePAYERegistrationDocument(regId, updatedStatus)
+           } yield ackRef
+         }
   }
 
 
@@ -116,11 +124,13 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   def getIncorporationUpdate(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     for {
       txId      <- registrationRepository.retrieveTransactionId(regId)
-      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, regId) map {
-        case Some(update) if update.status == IncorporationStatus.rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
-        case response => response
+      incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, regId)
+    } yield {
+      incStatus match {
+      case Some(update) if update.status == IncorporationStatus.rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
+      case response => response
       }
-    } yield incStatus
+    }
   }
 
   private[services] def assertOrGenerateAcknowledgementReference(regId: String)(implicit ec: ExecutionContext): Future[String]= {
