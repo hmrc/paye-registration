@@ -87,9 +87,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
     val repository: RegistrationMongoRepository = mongo.store
     val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
-    await(repository.drop)
+    await(repository.removeAll())
     await(repository.ensureIndexes)
-    await(sequenceRepository.drop)
+    await(sequenceRepository.removeAll())
     await(sequenceRepository.ensureIndexes)
   }
 
@@ -806,8 +806,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 200, incorpUpdate(rejected))
 
       await(repository.upsertRegTestOnly(submission))
+      await(repository.count).shouldBe(1)
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = await(client(s"$regId/submit-registration").put(""))
       response.status shouldBe 204
 
       val reg = await(repository.retrieveRegistration(regId))

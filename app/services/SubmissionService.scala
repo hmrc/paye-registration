@@ -82,7 +82,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     for {
       ackRef        <- assertOrGenerateAcknowledgementReference(regId)
-      incUpdate     <- getIncorporationUpdate(regId) recover {
+      incUpdate     <- getIncorporationUpdate(regId) recoverWith {
                           case ex: RejectedIncorporationException =>
                             registrationService.deletePAYERegistration(regId, PAYEStatus.draft)
                             throw ex
