@@ -593,7 +593,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   override def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
-    collection.remove(selector) map { writeResult =>
+    collection.delete().one(selector) map { writeResult =>
       mongoTimer.stop()
       if(!writeResult.ok) {Logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${reactivemongo.api.commands.WriteResult.Message}")}
       writeResult.ok
