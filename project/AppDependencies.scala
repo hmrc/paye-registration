@@ -6,12 +6,12 @@ private object AppDependencies {
 }
 
 object MainDependencies {
-  private val bootstrapVersion              = "4.13.0"
+  private val bootstrapVersion              = "5.1.0"
   private val domainVersion                 = "5.6.0-play-25"
   private val mongoLockVersion              = "6.15.0-play-25"
-  private val playSchedulingVersion         = "6.0.0"
-  private val simpleReactivemongoVersion    = "7.20.0-play-25"
-  private val authClientVersion             = "2.22.0-play-25"
+  private val playSchedulingVersion         = "7.1.0-play-25"
+  private val simpleReactivemongoVersion    = "7.22.0-play-25"
+  private val authClientVersion             = "2.32.0-play-25"
 
   def apply() = Seq(
     "com.enragedginger" %% "akka-quartz-scheduler" % "1.8.0-akka-2.5.x",
