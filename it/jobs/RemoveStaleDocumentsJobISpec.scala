@@ -21,6 +21,7 @@ import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import auth.CryptoSCRS
 import com.google.inject.name.Names
 import com.kenshoo.play.metrics.Metrics
+import config.AppConfig
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
@@ -30,7 +31,6 @@ import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
-import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -41,10 +41,10 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
   val mockUrl = s"http://$mockHost:$mockPort"
 
   val additionalConfiguration = Map(
-    "auditing.consumer.baseUri.host" -> s"$mockHost",
-    "auditing.consumer.baseUri.port" -> s"$mockPort",
-    "Test.auditing.consumer.baseUri.host" -> s"$mockHost",
-    "Test.auditing.consumer.baseUri.port" -> s"$mockPort",
+    "auditing.consumer.baseUri.host" -> mockHost,
+    "auditing.consumer.baseUri.port" -> mockPort,
+    "Test.auditing.consumer.baseUri.host" -> mockHost,
+    "Test.auditing.consumer.baseUri.port" -> mockPort,
     "constants.maxStorageDays" -> 60
   )
 
@@ -60,7 +60,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
-  lazy val servConfig = app.injector.instanceOf[ServicesConfig]
+  lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
@@ -94,7 +94,9 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = new DateHelper{ override def getTimestamp: ZonedDateTime = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z")) }
+    lazy val mockDateHelper = new DateHelper {
+      override def getTimestamp: ZonedDateTime = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z"))
+    }
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
     lazy val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     lazy val repository = mongo.store
@@ -111,7 +113,6 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
     }
 
 
-
     "remove documents older than a config specified length of time" in new Setup {
       val deleteDT = ZonedDateTime.of(LocalDateTime.now.minusDays(61), ZoneId.of("Z"))
       val keepDT = ZonedDateTime.of(LocalDateTime.now.minusDays(59), ZoneId.of("Z"))
@@ -124,7 +125,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
       val job = lookupJob("remove-stale-documents-job")
       await(lockRepository.drop)
-      val  f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[(ZonedDateTime, Int), LockResponse]])
+      val f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[(ZonedDateTime, Int), LockResponse]])
       val res = await(f)
 
       await(repository.retrieveRegistration("123")) shouldBe None

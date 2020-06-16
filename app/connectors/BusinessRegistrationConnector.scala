@@ -16,21 +16,20 @@
 
 package connectors
 
+import config.AppConfig
 import javax.inject.{Inject, Singleton}
-
 import models.external.BusinessProfile
 import play.api.Logger
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.ServicesConfig
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class BusinessRegistrationConnector @Inject()(val http: HttpClient, val servicesConfig: ServicesConfig) extends BusinessRegistrationConnect {
+class BusinessRegistrationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends BusinessRegistrationConnect {
 
-  val businessRegUrl = servicesConfig.baseUrl("business-registration")
+  val businessRegUrl = appConfig.servicesConfig.baseUrl("business-registration") //TODO move to appConfig and call directly
 }
 
 trait BusinessRegistrationConnect {

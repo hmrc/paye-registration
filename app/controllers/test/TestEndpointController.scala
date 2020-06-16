@@ -17,28 +17,31 @@
 package controllers.test
 
 import javax.inject.{Inject, Singleton}
-
 import auth.CryptoSCRS
 import enums.PAYEStatus
 import models._
 import models.validation.APIValidation
 import play.api.libs.json._
-import play.api.mvc.{Action, AnyContent}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import uk.gov.hmrc.auth.core.retrieve.Retrievals.internalId
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class TestEndpointController @Inject()(registrationMongo: RegistrationMongo, val authConnector: AuthConnector, val cryptoSCRS: CryptoSCRS) extends TestEndpointCtrl {
+class TestEndpointController @Inject()(registrationMongo: RegistrationMongo,
+                                       val authConnector: AuthConnector,
+                                       val cryptoSCRS: CryptoSCRS,
+                                       controllerComponents: ControllerComponents
+                                      ) extends TestEndpointCtrl(controllerComponents) {
 
   val registrationRepository: RegistrationMongoRepository = registrationMongo.store
 }
 
-trait TestEndpointCtrl extends BaseController with AuthorisedFunctions {
+abstract class TestEndpointCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with AuthorisedFunctions {
 
   val registrationRepository: RegistrationMongoRepository
   val cryptoSCRS: CryptoSCRS

@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package config
+package helpers
 
-import javax.inject.Inject
+import org.joda.time.DateTime
+import play.api.libs.json.Format
+import play.api.libs.json.JodaReads.DefaultJodaDateTimeReads
+import play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
 
-import play.api.Mode.Mode
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.play.config.ServicesConfig
+trait JodaTimeJsonFormatHelper {
 
-class BackendConfig @Inject()(environment: Environment, val runModeConfiguration: Configuration) extends ServicesConfig {
-  override protected def mode: Mode = environment.mode
+  implicit val jodaDateTimeFormat: Format[DateTime] = Format(DefaultJodaDateTimeReads, JodaDateTimeNumberWrites)
+
 }

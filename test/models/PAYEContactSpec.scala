@@ -17,8 +17,7 @@
 package models
 
 import models.validation.APIValidation
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsPath, JsSuccess, Json}
+import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
@@ -90,19 +89,19 @@ class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
         val json = contact("Luis@Fernandez")
 
         val result = Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter)
-        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("Invalid name")))
+        shouldHaveErrors(result, JsPath() \ "name", Seq(JsonValidationError("Invalid name")))
       }
       "contact name is too long" in {
         val json = contact(List.fill(101)('a').mkString)
 
         val result = Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter)
-        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("Invalid name")))
+        shouldHaveErrors(result, JsPath() \ "name", Seq(JsonValidationError("Invalid name")))
       }
       "contact name is too short" in {
         val json = contact("")
 
         val result = Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter)
-        shouldHaveErrors(result, JsPath() \ "name", Seq(ValidationError("Invalid name")))
+        shouldHaveErrors(result, JsPath() \ "name", Seq(JsonValidationError("Invalid name")))
       }
     }
   }

@@ -27,7 +27,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,7 +36,7 @@ import scala.concurrent.Future
 class AuthClient101Spec extends UnitSpec with MockitoSugar {
   val mockAuthConnector = mock[AuthConnector]
 
-  object TestController extends BaseController with AuthorisedFunctions {
+  object TestController extends BackendController(stubControllerComponents()) with AuthorisedFunctions {
     override val authConnector = mockAuthConnector
 
     def isAuthorised = Action.async { implicit request =>

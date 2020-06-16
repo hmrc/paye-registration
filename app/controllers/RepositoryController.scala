@@ -17,27 +17,28 @@
 package controllers
 
 import javax.inject.{Inject, Singleton}
-
 import auth._
 import common.exceptions.RegistrationExceptions.UnmatchedStatusException
 import enums.PAYEStatus
-import play.api.mvc.{Action, AnyContent}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repositories.RegistrationMongoRepository
 import services.RegistrationService
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class RepositoryController @Inject()(injRegistrationService: RegistrationService, val authConnector: AuthConnector) extends RepositoryCtrl {
-
+class RepositoryController @Inject()(injRegistrationService: RegistrationService,
+                                     val authConnector: AuthConnector,
+                                     controllerComponents: ControllerComponents
+                                    ) extends RepositoryCtrl(controllerComponents) {
 
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
   val registrationService: RegistrationService = injRegistrationService
 }
 
-trait RepositoryCtrl extends BaseController with Authorisation {
+abstract class RepositoryCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation {
 
   val registrationService: RegistrationService
 

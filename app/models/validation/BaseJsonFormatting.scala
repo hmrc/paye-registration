@@ -25,7 +25,6 @@ import enums.{Employing, IncorporationStatus}
 import helpers.DateHelper
 import models.Address
 import models.incorporation.IncorpStatusUpdate
-import play.api.data.validation.ValidationError
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 import utils.SystemDate
@@ -44,12 +43,12 @@ trait BaseJsonFormatting extends DateHelper {
         JsSuccess(zonedDateTimeFromString(js.as[String]))
       }
       catch {
-        case e: Throwable =>  JsError(error = e.getMessage)
+        case e: Throwable => JsError(error = e.getMessage)
       }
   }
 
   private val dateTimeWriteApi: Writes[ZonedDateTime] = new Writes[ZonedDateTime] {
-    def writes(z:ZonedDateTime) = JsString(formatTimestamp(z))
+    def writes(z: ZonedDateTime) = JsString(formatTimestamp(z))
   }
 
   def readToFmt(rds: Reads[String])(implicit wts: Writes[String]): Format[String] = Format(rds, wts)
@@ -57,18 +56,18 @@ trait BaseJsonFormatting extends DateHelper {
   def standardRead = Reads.StringReads
 
   def cleanseCompanyName(companyName: String): String = Normalizer.normalize(
-    companyName.map(c => if(illegalCharacters.contains(c)) illegalCharacters(c) else c).mkString,
+    companyName.map(c => if (illegalCharacters.contains(c)) illegalCharacters(c) else c).mkString,
     Form.NFD
   ).replaceAll("[^\\p{ASCII}]", "").filterNot(forbiddenPunctuation)
 
   val companyNameFormatter = new Format[String] {
     override def reads(json: JsValue) = json match {
-      case JsString(companyName) => if(cleanseCompanyName(companyName).matches(companyNameRegex)) {
+      case JsString(companyName) => if (cleanseCompanyName(companyName).matches(companyNameRegex)) {
         JsSuccess(companyName)
       } else {
-        JsError(Seq(JsPath() -> Seq(ValidationError("Invalid company name"))))
+        JsError(Seq(JsPath() -> Seq(JsonValidationError("Invalid company name"))))
       }
-      case _ => JsError(Seq(JsPath() -> Seq(ValidationError("error.expected.jsstring"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("error.expected.jsstring"))))
     }
 
     override def writes(o: String) = Writes.StringWrites.writes(o)
@@ -92,7 +91,9 @@ trait BaseJsonFormatting extends DateHelper {
   val firstPaymentDateFormat: Format[LocalDate]
 
   def employmentPaymentDateFormat(incorpDate: Option[LocalDate], employees: Employing.Value): Format[LocalDate]
+
   def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean]
+
   def employeesFormat(companyPension: Option[Boolean]): Format[Employing.Value]
 
   val directorNameFormat: Format[String]
@@ -104,15 +105,15 @@ trait BaseJsonFormatting extends DateHelper {
   def cryptoFormat(cryptoSCRS: CryptoSCRS): Format[String] = readToFmt(standardRead)
 
   def addressReadsWithFilter(readsDef: Reads[Address]): Reads[Address] = {
-    readsDef.filter(ValidationError("neither postcode nor country was completed")) {
+    readsDef.filter(JsonValidationError("neither postcode nor country was completed")) {
       addr => addr.postCode.isDefined || addr.country.isDefined
-    }.filter(ValidationError("both postcode and country were completed")) {
+    }.filter(JsonValidationError("both postcode and country were completed")) {
       addr => !(addr.postCode.isDefined && addr.country.isDefined)
     }
   }
 
   def incorpStatusUpdateReadsWithFilter(readsDef: Reads[IncorpStatusUpdate]): Reads[IncorpStatusUpdate] = {
-    readsDef.filter(ValidationError("no CRN defined when expected"))(
+    readsDef.filter(JsonValidationError("no CRN defined when expected"))(
       update => update.status == IncorporationStatus.rejected || update.crn.isDefined
     )
   }

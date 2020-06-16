@@ -16,6 +16,7 @@
 
 package audit
 
+import helpers.JodaTimeJsonFormatHelper
 import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -38,6 +39,6 @@ object DesTopUpAuditEventDetail {
 class DesTopUpEvent(details: DesTopUpAuditEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("payeRegistrationAdditionalData", None, Json.toJson(details).as[JsObject])(hc)
 
-object DesTopUpEvent {
+object DesTopUpEvent extends JodaTimeJsonFormatHelper {
   implicit val format = Json.format[ExtendedDataEvent]
 }
