@@ -18,12 +18,12 @@ package helpers
 
 import mocks.PAYEMocks
 import org.mockito.Mockito.reset
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 
-trait PAYERegSpec extends UnitSpec with MockitoSugar with PAYEMocks with BeforeAndAfterEach {
-  override def beforeEach() {
+trait PAYERegSpec extends UnitSpec with MockitoSugar with PAYEMocks with BeforeAndAfterEach with BeforeAndAfterAll {
+  override def beforeEach() = {
     reset(
       mockRegistrationRepository,
       mockSequenceRepository,
@@ -32,4 +32,7 @@ trait PAYERegSpec extends UnitSpec with MockitoSugar with PAYEMocks with BeforeA
       mockCrypto
     )
   }
+
+  override def beforeAll() = System.clearProperty("feature.system-date")
+
 }

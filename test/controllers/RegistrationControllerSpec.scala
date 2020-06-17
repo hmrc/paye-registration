@@ -73,7 +73,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     reset(mockAuthConnector)
   }
 
-  val curentDate = LocalDate.now
+  val currentDate = LocalDate.now
 
   case class TestModel(str: String, int: Int)
 
@@ -101,14 +101,14 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   )
   val empInfo = EmploymentInfo(
     employees = Employing.alreadyEmploying,
-    firstPaymentDate = curentDate,
+    firstPaymentDate = currentDate,
     construction = true,
     subcontractors = true,
     companyPension = Some(true)
   )
   val jsonEmpInfo = Json.obj(
     "employees" -> "alreadyEmploying",
-    "firstPaymentDate" -> curentDate,
+    "firstPaymentDate" -> currentDate,
     "construction" -> true,
     "subcontractors" -> true,
     "companyPension" -> true
@@ -277,7 +277,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
   "Calling upsertEmploymentInfo" should {
-    val incorpDate = curentDate
+    val incorpDate = currentDate
     val apiFormatForTest = EmploymentInfo.format(APIValidation, Some(incorpDate))
 
     "return 200 with the employmentInfo" in new Setup {
