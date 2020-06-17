@@ -18,6 +18,7 @@ package repositories
 
 import itutil.MongoBaseSpec
 import models.IICounter
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

@@ -29,6 +29,7 @@ import models._
 import models.validation.MongoValidation
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
+import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONDocument
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -475,14 +476,14 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
   val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018,4,9), true, true, Some(true))
 
   class Setup(timestampZDT: ZonedDateTime = lastUpdateZDT) {
-    lazy val mockcryptoSCRS = fakeApplication.injector.instanceOf[CryptoSCRS]
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
 
-    lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
+    lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = new DateHelper {
       override def getTimestamp: ZonedDateTime = timestampZDT
     }
-    lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
+    lazy val sConfig = app.injector.instanceOf[Configuration]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
     await(repository.drop)

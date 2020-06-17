@@ -25,10 +25,9 @@ import helpers.PAYERegSpec
 import models.validation.{APIValidation, MongoValidation}
 import play.api.Configuration
 import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
-import uk.gov.hmrc.play.test.UnitSpec
 import utils.SystemDate
 
-class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation with PAYERegSpec {
+class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
   val cryptoSCRS = mockCrypto
   val timestamp = "2017-05-09T07:58:35.000Z"
 

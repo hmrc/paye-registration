@@ -29,6 +29,7 @@ import models.PAYERegistration
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
+import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
 
@@ -108,7 +109,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
       setupFeatures(removeStaleDocumentsJob = false)
 
       val job = lookupJob("remove-stale-documents-job")
-      val res = await(job.schedule)
+      val res = job.schedule
       res shouldBe false
     }
 

@@ -25,6 +25,7 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Application, Configuration}
+import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
 

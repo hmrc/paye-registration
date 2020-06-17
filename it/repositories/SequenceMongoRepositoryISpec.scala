@@ -17,11 +17,12 @@
 package repositories
 
 import itutil.MongoBaseSpec
+import org.scalatest.BeforeAndAfterAll
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SequenceMongoRepositoryISpec
-  extends MongoBaseSpec {
+class SequenceMongoRepositoryISpec extends MongoBaseSpec with BeforeAndAfterAll {
 
   class Setup {
     val mongo = new SequenceMongo(reactiveMongoComponent)

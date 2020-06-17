@@ -19,9 +19,7 @@ package helpers
 import java.time.format.DateTimeParseException
 import java.time.{LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
 
-import uk.gov.hmrc.play.test.UnitSpec
-
-class DateHelperSpec extends UnitSpec {
+class DateHelperSpec extends PAYERegSpec {
 
   object TestDateHelper extends DateHelper
 

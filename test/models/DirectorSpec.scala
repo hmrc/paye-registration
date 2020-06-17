@@ -16,11 +16,11 @@
 
 package models
 
+import helpers.PAYERegSpec
 import models.validation.APIValidation
 import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class DirectorSpec extends UnitSpec with JsonFormatValidation {
+class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
   "Name" should {
     val tstJson = Json.parse(
       s"""{

@@ -20,7 +20,7 @@ import auth.CryptoSCRS
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
 import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, InvalidBearerToken}

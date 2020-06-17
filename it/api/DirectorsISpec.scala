@@ -28,6 +28,7 @@ import models.validation.APIValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.api.{Application, Configuration}
+import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
 

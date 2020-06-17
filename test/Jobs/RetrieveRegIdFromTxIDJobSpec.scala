@@ -20,14 +20,13 @@ import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import config.StartUpJobs
 import enums.{Employing, PAYEStatus}
-import helpers.PAYERegSpec
+import helpers.{LogCapturing, PAYERegSpec}
 import models._
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import play.api.{Configuration, Logger}
 import repositories.RegistrationMongo
-import uk.gov.hmrc.play.test.LogCapturing
 import utils.SystemDate
 
 import scala.concurrent.Future

@@ -17,11 +17,11 @@
 package audit
 
 import enums.IncorporationStatus
+import helpers.PAYERegSpec
 import models.submission.TopUpDESSubmission
 import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class DesTopUpAuditEventDetailSpec extends UnitSpec {
+class DesTopUpAuditEventDetailSpec extends PAYERegSpec {
   "DesTopUpAuditEventDetail" should {
     val regId = "123456789"
     val ackRef = "ackRef"

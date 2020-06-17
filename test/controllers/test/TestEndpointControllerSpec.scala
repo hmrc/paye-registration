@@ -28,7 +28,7 @@ import play.api.Configuration
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import play.api.test.Helpers.stubControllerComponents
+import play.api.test.Helpers._
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
@@ -55,7 +55,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.dropCollection(ArgumentMatchers.any()))
         .thenReturn(Future.successful(()))
 
-      val response = await(controller.registrationTeardown()(FakeRequest()))
+      val response = controller.registrationTeardown()(FakeRequest())
       status(response) shouldBe Status.OK
     }
 
@@ -63,7 +63,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.dropCollection(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
-      val response = await(controller.registrationTeardown()(FakeRequest()))
+      val response = controller.registrationTeardown()(FakeRequest())
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
   }
@@ -73,7 +73,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.deleteRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
 
-      val response = await(controller.deleteRegistration("AC123456")(FakeRequest()))
+      val response = controller.deleteRegistration("AC123456")(FakeRequest())
       status(response) shouldBe Status.OK
     }
 
@@ -81,7 +81,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.deleteRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
-      val response = await(controller.deleteRegistration("AC123456")(FakeRequest()))
+      val response = controller.deleteRegistration("AC123456")(FakeRequest())
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
   }
@@ -95,7 +95,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration))
 
-      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
       status(response) shouldBe Status.OK
     }
 
@@ -105,21 +105,21 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
-      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
       status(response) shouldBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a Bad Request response for incorrect Json" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
 
-      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"formCreationTimestamp":"testTimestamp","regID":"invalid"}"""))))
+      val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"formCreationTimestamp":"testTimestamp","regID":"invalid"}""")))
       status(response) shouldBe Status.BAD_REQUEST
     }
 
     "return a forbidden response for unauthorised" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
-      val response = await(controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration))))
+      val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
       status(response) shouldBe Status.FORBIDDEN
     }
   }
@@ -135,7 +135,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC654321"), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.failed(new RuntimeException("")))
 
-      def newstatus(s: String) = await(controller.newStatus("AC123456", s)(FakeRequest()))
+      def newstatus(s: String) = controller.newStatus("AC123456", s)(FakeRequest())
       status(newstatus("draft")) shouldBe Status.OK
       status(newstatus("held")) shouldBe Status.OK
       status(newstatus("submitted")) shouldBe Status.OK
@@ -143,7 +143,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       status(newstatus("invalid")) shouldBe Status.OK
       status(newstatus("cancelled")) shouldBe Status.OK
       status(newstatus("rejected")) shouldBe Status.OK
-      status(await(controller.newStatus("AC654321", "bananaFruitcake")(FakeRequest()))) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(controller.newStatus("AC654321", "bananaFruitcake")(FakeRequest())) shouldBe Status.INTERNAL_SERVER_ERROR
     }
   }
 
@@ -153,7 +153,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(PAYEStatus.draft))
 
-      status(await(controller.updateStatus("AC123456", "submitted")(FakeRequest()))) shouldBe Status.OK
+      status(controller.updateStatus("AC123456", "submitted")(FakeRequest())) shouldBe Status.OK
     }
   }
 

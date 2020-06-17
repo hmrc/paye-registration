@@ -18,11 +18,10 @@ package helpers
 
 import mocks.PAYEMocks
 import org.mockito.Mockito.reset
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.UnitSpec
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 
-trait PAYERegSpec extends UnitSpec with MockitoSugar with PAYEMocks with BeforeAndAfterEach with BeforeAndAfterAll {
+trait PAYERegSpec extends WordSpec with Matchers with MockitoSugar with PAYEMocks with BeforeAndAfterEach with BeforeAndAfterAll {
   override def beforeEach() = {
     reset(
       mockRegistrationRepository,

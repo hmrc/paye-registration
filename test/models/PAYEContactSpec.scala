@@ -16,11 +16,11 @@
 
 package models
 
+import helpers.PAYERegSpec
 import models.validation.APIValidation
 import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class PAYEContactSpec extends UnitSpec with JsonFormatValidation {
+class PAYEContactSpec extends PAYERegSpec with JsonFormatValidation {
 
   val payeContactDetailsFormatter = PAYEContactDetails.formatter(APIValidation)
 

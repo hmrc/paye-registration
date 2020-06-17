@@ -22,6 +22,7 @@ import helpers.PAYERegSpec
 import models.EmpRefNotification
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
+import play.api.test.Helpers._
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global

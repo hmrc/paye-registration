@@ -206,16 +206,15 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.upsertCompanyDetails(contains(regId), any[CompanyDetails]())(any()))
         .thenReturn(Future.failed(new RegistrationFormatException("tstMessage")))
 
-      val response = await(controller.upsertCompanyDetails(regId)(
+      val response = controller.upsertCompanyDetails(regId)(
         FakeRequest()
           .withBody(
             Json.toJson[CompanyDetails](validCompanyDetails)(CompanyDetails.format(APIValidation))
           )
       )
-      )
 
       status(response) shouldBe Status.BAD_REQUEST
-      bodyOf(response) shouldBe "tstMessage"
+      contentAsString(response) shouldBe "tstMessage"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -356,10 +355,10 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.upsertDirectors(contains(regId), any[Seq[Director]]())(any()))
         .thenReturn(Future.failed(new RegistrationFormatException("test message")))
 
-      val response = await(controller.upsertDirectors(regId)(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation)))))
+      val response = controller.upsertDirectors(regId)(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
       status(response) shouldBe Status.BAD_REQUEST
-      bodyOf(response) shouldBe "test message"
+      contentAsString(response) shouldBe "test message"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -467,10 +466,10 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.upsertPAYEContact(contains(regId), any[PAYEContact]())(any()))
         .thenReturn(Future.failed(new RegistrationFormatException("contact exception msg")))
 
-      val response = await(controller.upsertPAYEContact(regId)(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation)))))
+      val response = controller.upsertPAYEContact(regId)(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
       status(response) shouldBe Status.BAD_REQUEST
-      bodyOf(response) shouldBe "contact exception msg"
+      contentAsString(response) shouldBe "contact exception msg"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -527,10 +526,10 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.upsertCompletionCapacity(contains(regId), any())(any()))
         .thenReturn(Future.failed(new RegistrationFormatException("errMessage")))
 
-      val response = await(controller.upsertCompletionCapacity(regId)(FakeRequest().withBody(Json.toJson[String]("Director"))))
+      val response = controller.upsertCompletionCapacity(regId)(FakeRequest().withBody(Json.toJson[String]("Director")))
 
       status(response) shouldBe Status.BAD_REQUEST
-      bodyOf(response) shouldBe "errMessage"
+      contentAsString(response) shouldBe "errMessage"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -552,10 +551,10 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockSubmissionService.submitToDes(contains(regId))(any[HeaderCarrier](), any()))
         .thenReturn(Future.failed(new EmploymentDetailsNotDefinedException("tst message")))
 
-      val response = await(controller.submitPAYERegistration(regId)(FakeRequest()))
+      val response = controller.submitPAYERegistration(regId)(FakeRequest())
 
       status(response) shouldBe Status.BAD_REQUEST
-      bodyOf(response) shouldBe "Registration was submitted without full data: tst message"
+      contentAsString(response) shouldBe "Registration was submitted without full data: tst message"
     }
 
     "return an Ok response with acknowledgement reference for a valid submit" in new Setup {
@@ -567,7 +566,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       val response = controller.submitPAYERegistration(regId)(FakeRequest())
 
       status(response) shouldBe Status.OK
-      jsonBodyOf(await(response)) shouldBe Json.toJson("BRPY00000000001")
+      contentAsJson(response) shouldBe Json.toJson("BRPY00000000001")
     }
   }
 
