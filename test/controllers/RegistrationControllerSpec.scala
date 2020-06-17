@@ -29,7 +29,7 @@ import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
 import models._
 import models.validation.APIValidation
-import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqTo}
+import org.mockito.ArgumentMatchers.{any, anyString, contains}
 import org.mockito.Mockito._
 import play.api.Configuration
 import play.api.http.Status
@@ -71,8 +71,9 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   override def beforeEach() {
     reset(mockRegistrationRepository)
     reset(mockAuthConnector)
-    System.clearProperty("feature.system-date")
   }
+
+  val curentDate = LocalDate.now
 
   case class TestModel(str: String, int: Int)
 
@@ -98,16 +99,20 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       |}
     """.stripMargin
   )
-  val empInfo = EmploymentInfo(Employing.alreadyEmploying, LocalDate.of(2018, 4, 9), true, true, Some(true))
-  val jsonEmpInfo = Json.parse(
-    """|{
-       |   "employees": "alreadyEmploying",
-       |   "firstPaymentDate": "2018-04-09",
-       |   "construction": true,
-       |   "subcontractors": true,
-       |   "companyPension": true
-       | }
-    """.stripMargin).as[JsObject]
+  val empInfo = EmploymentInfo(
+    employees = Employing.alreadyEmploying,
+    firstPaymentDate = curentDate,
+    construction = true,
+    subcontractors = true,
+    companyPension = Some(true)
+  )
+  val jsonEmpInfo = Json.obj(
+    "employees" -> "alreadyEmploying",
+    "firstPaymentDate" -> curentDate,
+    "construction" -> true,
+    "subcontractors" -> true,
+    "companyPension" -> true
+  )
 
   val regId = "AC123456"
   val testInternalId = "testInternalID"
@@ -272,8 +277,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     }
   }
   "Calling upsertEmploymentInfo" should {
-    System.setProperty("feature.system-date", "2017-04-09T00:00:00Z")
-    val incorpDate = LocalDate.of(2017, 4, 9)
+    val incorpDate = curentDate
     val apiFormatForTest = EmploymentInfo.format(APIValidation, Some(incorpDate))
 
     "return 200 with the employmentInfo" in new Setup {
