@@ -24,7 +24,7 @@ import jobs.ScheduledJob
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{BAD_REQUEST, OK}
+import play.api.test.Helpers.{BAD_REQUEST, OK, stubControllerComponents}
 import utils.BooleanFeatureSwitch
 
 class FeatureSwitchControllerSpec extends PAYERegSpec {
@@ -41,7 +41,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
   }
 
   class Setup {
-    val controller = new FeatureSwitchCtrl {
+    val controller = new FeatureSwitchCtrl(stubControllerComponents()) {
       val removeStaleDocsJob = mockRemoveStaleDocsJob
       val graphiteMetrics = mockGraphiteMetrics
 

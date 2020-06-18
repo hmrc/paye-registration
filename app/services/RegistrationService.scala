@@ -17,10 +17,11 @@
 package services
 
 import java.time.LocalDate
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
+import config.AppConfig
 import connectors.{IncorporationInformationConnect, IncorporationInformationConnector}
 import enums.{Employing, PAYEStatus}
 import helpers.PAYEBaseValidator
@@ -29,19 +30,18 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.config.ServicesConfig
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo,
                                     injAuditService: AuditService,
                                     injIncorporationInformationConnector: IncorporationInformationConnector,
-                                    val servicesConfig: ServicesConfig) extends RegistrationSrv {
+                                    appConfig: AppConfig) extends RegistrationSrv {
   val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
-  lazy val payeRestartURL = servicesConfig.getString("api.payeRestartURL")
-  lazy val payeCancelURL = servicesConfig.getString("api.payeCancelURL")
+  lazy val payeRestartURL = appConfig.servicesConfig.getString("api.payeRestartURL")
+  lazy val payeCancelURL = appConfig.servicesConfig.getString("api.payeCancelURL")
   val auditService = injAuditService
   val incorporationInformationConnector = injIncorporationInformationConnector
 }

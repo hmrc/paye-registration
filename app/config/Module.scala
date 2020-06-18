@@ -22,7 +22,6 @@ import com.google.inject.name.Names
 import jobs._
 import repositories.{IICounterMongo, RegistrationMongo, SequenceMongo}
 import services.{MetricsService, MetricsSrv, RemoveStaleDocsService, RemoveStaleDocsServiceImpl}
-import uk.gov.hmrc.play.config.ServicesConfig
 
 
 
@@ -36,7 +35,6 @@ class Module extends AbstractModule {
 
     bind(classOf[LockRepositoryProvider]).to(classOf[LockRepositoryProviderImpl]).asEagerSingleton()
     bind(classOf[CryptoSCRS]).to(classOf[CryptoSCRSImpl]).asEagerSingleton()
-    bind(classOf[ServicesConfig]).to(classOf[BackendConfig]).asEagerSingleton()
     bind(classOf[StartUpJobs]).to(classOf[StartUpJobsImpl]).asEagerSingleton()
 
     //service

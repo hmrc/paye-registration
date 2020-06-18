@@ -14,22 +14,9 @@
  * limitations under the License.
  */
 
-package jobs
+package config
 
-import config.AppConfig
-import org.joda.time.{Duration => JodaDuration}
+import javax.inject.Inject
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import scala.concurrent.duration.{FiniteDuration, Duration => ScalaDuration}
-
-trait JobConfig {
-  val appConfig: AppConfig
-  val name: String
-
-  lazy val LOCK_TIMEOUT = s"$name.schedule.lockTimeout"
-
-  lazy val lockTimeout: JodaDuration = {
-    val dur = ScalaDuration.create(appConfig.servicesConfig.getConfString(LOCK_TIMEOUT,
-      throw new RuntimeException(s"Could not find config $LOCK_TIMEOUT")))
-    JodaDuration.standardSeconds(FiniteDuration(dur.length, dur.unit).toSeconds)
-  }
-}
+class AppConfig @Inject()(val servicesConfig: ServicesConfig)

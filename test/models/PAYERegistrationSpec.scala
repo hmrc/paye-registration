@@ -24,8 +24,7 @@ import enums.{Employing, PAYEStatus}
 import helpers.PAYERegSpec
 import models.validation.{APIValidation, MongoValidation}
 import play.api.Configuration
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsPath, JsSuccess, Json}
+import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
 import uk.gov.hmrc.play.test.UnitSpec
 import utils.SystemDate
 
@@ -571,7 +570,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation with PAYER
         """.stripMargin)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
-      shouldHaveErrors(result, JsPath() \ "registrationID", Seq(ValidationError("error.path.missing")))
+      shouldHaveErrors(result, JsPath() \ "registrationID", Seq(JsonValidationError("error.path.missing")))
     }
 
     "fail from json without transactionID" in {
@@ -622,7 +621,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation with PAYER
         """.stripMargin)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
-      shouldHaveErrors(result, JsPath() \ "transactionID", Seq(ValidationError("error.path.missing")))
+      shouldHaveErrors(result, JsPath() \ "transactionID", Seq(JsonValidationError("error.path.missing")))
     }
 
     "fail if the status isn't one of the pre defined PAYE statuses" in {
@@ -674,7 +673,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation with PAYER
         """.stripMargin)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
-      shouldHaveErrors(result, JsPath() \ "status", Seq(ValidationError("error.expected.validenumvalue")))
+      shouldHaveErrors(result, JsPath() \ "status", Seq(JsonValidationError("error.expected.validenumvalue")))
     }
 
     "fail from json without lastUpdate" in {
@@ -725,7 +724,7 @@ class PAYERegistrationSpec extends UnitSpec with JsonFormatValidation with PAYER
         """.stripMargin)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
-      shouldHaveErrors(result, JsPath() \ "lastUpdate", Seq(ValidationError("error.path.missing")))
+      shouldHaveErrors(result, JsPath() \ "lastUpdate", Seq(JsonValidationError("error.path.missing")))
     }
   }
 }

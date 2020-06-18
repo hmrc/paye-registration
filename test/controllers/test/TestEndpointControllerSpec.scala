@@ -28,6 +28,7 @@ import play.api.Configuration
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
+import play.api.test.Helpers.stubControllerComponents
 import repositories.RegistrationMongoRepository
 
 import scala.concurrent.Future
@@ -37,7 +38,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
   val mockRepo = mock[RegistrationMongoRepository]
 
   class Setup {
-    val controller = new TestEndpointCtrl {
+    val controller = new TestEndpointCtrl(stubControllerComponents()) {
       override val registrationRepository = mockRepo
       val authConnector = mockAuthConnector
       val cryptoSCRS = mockCrypto

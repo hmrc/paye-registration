@@ -16,9 +16,9 @@
 
 package connectors
 
-import javax.inject.{Inject, Singleton}
-
 import audit.FailedDesSubmissionEvent
+import config.AppConfig
+import javax.inject.{Inject, Singleton}
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logger
@@ -27,25 +27,25 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.ServicesConfig
-import scala.concurrent.ExecutionContext.Implicits.global
 import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector @Inject()(val http: HttpClient, val servicesConfig: ServicesConfig, val auditConnector: AuditConnector ) extends DESConnect {
+class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector ) extends DESConnect {
   val featureSwitch = PAYEFeatureSwitches
-  lazy val desUrl = servicesConfig.getConfString("des-service.url", "")
-  lazy val desURI = servicesConfig.getConfString("des-service.uri", "")
-  lazy val desTopUpURI = servicesConfig.getConfString("des-service.top-up-uri", "")
-  lazy val desStubUrl = servicesConfig.baseUrl("des-stub")
-  lazy val desStubURI = servicesConfig.getConfString("des-stub.uri", "")
-  lazy val desStubTopUpURI = servicesConfig.getConfString("des-stub.top-up-uri", "")
-  lazy val urlHeaderEnvironment: String = servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
-  lazy val urlHeaderAuthorization: String = s"Bearer ${servicesConfig.getConfString("des-service.authorization-token",
+  lazy val desUrl = appConfig.servicesConfig.getConfString("des-service.url", "")
+  lazy val desURI = appConfig.servicesConfig.getConfString("des-service.uri", "")
+  lazy val desTopUpURI = appConfig.servicesConfig.getConfString("des-service.top-up-uri", "")
+  lazy val desStubUrl = appConfig.servicesConfig.baseUrl("des-stub")
+  lazy val desStubURI = appConfig.servicesConfig.getConfString("des-stub.uri", "")
+  lazy val desStubTopUpURI = appConfig.servicesConfig.getConfString("des-stub.top-up-uri", "")
+  lazy val urlHeaderEnvironment: String = appConfig.servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
+  lazy val urlHeaderAuthorization: String = s"Bearer ${appConfig.servicesConfig.getConfString("des-service.authorization-token",
     throw new Exception("could not find config value for des-service.authorization-token"))}"
-  lazy val alertWorkingHours = servicesConfig.getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
+  lazy val alertWorkingHours = appConfig.servicesConfig.getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
+  // TODO move the above vals into appConfig
 
   override protected def currentDate = SystemDate.getSystemDate.toLocalDate
   override protected def currentTime = SystemDate.getSystemDate.toLocalTime

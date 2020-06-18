@@ -21,6 +21,7 @@ import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import auth.CryptoSCRS
 import com.google.inject.name.Names
 import com.kenshoo.play.metrics.Metrics
+import config.AppConfig
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
@@ -30,7 +31,6 @@ import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
-import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -42,10 +42,10 @@ class MetricsJobISpec extends IntegrationSpecBase {
 
   val additionalConfiguration = Map(
     "metrics.enabled" -> "true",
-    "auditing.consumer.baseUri.host" -> s"$mockHost",
-    "auditing.consumer.baseUri.port" -> s"$mockPort",
-    "Test.auditing.consumer.baseUri.host" -> s"$mockHost",
-    "Test.auditing.consumer.baseUri.port" -> s"$mockPort",
+    "auditing.consumer.baseUri.host" -> mockHost,
+    "auditing.consumer.baseUri.port" -> mockPort,
+    "Test.auditing.consumer.baseUri.host" -> mockHost,
+    "Test.auditing.consumer.baseUri.port" -> mockPort,
     "constants.maxStorageDays" -> 60
   )
 
@@ -61,7 +61,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
 
   lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
-  lazy val servConfig = app.injector.instanceOf[ServicesConfig]
+  lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
@@ -96,7 +96,9 @@ class MetricsJobISpec extends IntegrationSpecBase {
 
   class Setup(ts: ZonedDateTime) {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = new DateHelper{ override def getTimestamp: ZonedDateTime = ts }
+    lazy val mockDateHelper = new DateHelper {
+      override def getTimestamp: ZonedDateTime = ts
+    }
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
@@ -111,7 +113,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
       val res = await(job.schedule)
 
       res shouldBe false
-//      res shouldBe job.Result("Feature metrics-job is turned off")
+      //      res shouldBe job.Result("Feature metrics-job is turned off")
     }
 
     "return what documents are currently in PAYE" in new Setup(timestamp) {
@@ -125,7 +127,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
 
       val job = lookupJob("metrics-job")
       await(lockRepository.drop)
-      val  f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[Map[String, Int],LockResponse]])
+      val f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[Map[String, Int], LockResponse]])
       val res = await(f)
 
       val docMap = Left(Map("cancelled" -> 1, "draft" -> 2))

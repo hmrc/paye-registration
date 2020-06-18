@@ -17,17 +17,20 @@
 package config
 
 import java.util.Base64
+
 import javax.inject.Inject
 import play.api.{Configuration, Logger}
 import repositories._
 import uk.gov.hmrc.http.HeaderCarrier
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
-class StartUpJobsImpl @Inject()(val registrationRepo: RegistrationMongo,val  configuration: Configuration) extends StartUpJobs
+class StartUpJobsImpl @Inject()(val registrationRepo: RegistrationMongo, val configuration: Configuration) extends StartUpJobs
 
 trait StartUpJobs {
-  val  registrationRepo: RegistrationMongo
+
+  val registrationRepo: RegistrationMongo
   val configuration: Configuration
   lazy val txIds: List[String] = Some(new String(Base64.getDecoder
     .decode(configuration.getString("txIdListToRegIdForStartupJob").getOrElse("")), "UTF-8"))
@@ -35,7 +38,7 @@ trait StartUpJobs {
 
   def logRegInfoFromTxId(): Unit = {
     implicit val hc: HeaderCarrier = HeaderCarrier()
-    txIds.foreach ( txId =>
+    txIds.foreach(txId =>
       registrationRepo.store.retrieveRegistrationByTransactionID(txId) map { oDoc =>
         oDoc.fold(Logger.warn(s"[RetrieveRegInfoFromTxIdJob] txId: $txId has no registration document")) { doc =>
           val (regId, status, lastUpdated, lastAction) = (doc.registrationID, doc.status, doc.lastUpdate, doc.lastAction)
@@ -46,5 +49,6 @@ trait StartUpJobs {
       }
     )
   }
-  logRegInfoFromTxId
+
+  logRegInfoFromTxId()
 }

@@ -18,6 +18,7 @@ package audit
 
 import audit.RegistrationAuditEvent.JOURNEY_ID
 import enums.AddressTypes
+import helpers.JodaTimeJsonFormatHelper
 import models.submission.DESSubmission
 import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -83,7 +84,7 @@ object DesSubmissionAuditEventDetail {
 class DesSubmissionEvent(details: DesSubmissionAuditEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("payeRegistrationSubmission", None, Json.toJson(details).as[JsObject])(hc)
 
-object DesSubmissionEvent {
+object DesSubmissionEvent extends JodaTimeJsonFormatHelper {
   implicit val format = Json.format[ExtendedDataEvent]
 }
 
@@ -91,6 +92,6 @@ object DesSubmissionEvent {
 class FailedDesSubmissionEvent(regId: String, details: DESSubmission)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("payeRegistrationSubmissionFailure", None, Json.obj("submission" -> details, JOURNEY_ID -> regId))(hc)
 
-object FailedDesSubmissionEvent {
+object FailedDesSubmissionEvent extends JodaTimeJsonFormatHelper {
   implicit val format = Json.format[ExtendedDataEvent]
 }

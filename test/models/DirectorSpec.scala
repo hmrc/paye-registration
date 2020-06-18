@@ -17,8 +17,7 @@
 package models
 
 import models.validation.APIValidation
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsPath, JsSuccess, Json}
+import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class DirectorSpec extends UnitSpec with JsonFormatValidation {
@@ -88,19 +87,19 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
 
       "name is too long" in {
         val result = Json.fromJson[Name](testNameJson(name = List.fill(101)('a').mkString))(Name.format(APIValidation))
-        shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "forename", Seq(JsonValidationError("error.pattern")))
       }
       "name is invalid" in {
         val result = Json.fromJson[Name](testNameJson(name = "Name$$"))(Name.format(APIValidation))
-        shouldHaveErrors(result, JsPath() \ "forename", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "forename", Seq(JsonValidationError("error.pattern")))
       }
       "title is too long" in {
         val result = Json.fromJson[Name](testNameJson(title = List.fill(21)('a').mkString))(Name.format(APIValidation))
-        shouldHaveErrors(result, JsPath() \ "title", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "title", Seq(JsonValidationError("error.pattern")))
       }
       "title is invalid" in {
         val result = Json.fromJson[Name](testNameJson(title = "Title1"))(Name.format(APIValidation))
-        shouldHaveErrors(result, JsPath() \ "title", Seq(ValidationError("error.pattern")))
+        shouldHaveErrors(result, JsPath() \ "title", Seq(JsonValidationError("error.pattern")))
       }
     }
   }
@@ -162,17 +161,17 @@ class DirectorSpec extends UnitSpec with JsonFormatValidation {
 
       def result(nino: String) = Json.fromJson[Director](json(nino))(Director.format(APIValidation))
 
-      shouldHaveErrors(result("BG098765B"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+      shouldHaveErrors(result("BG098765B"), JsPath() \ "nino", Seq(JsonValidationError("error.pattern")))
 
-      shouldHaveErrors(result("AD098765D"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+      shouldHaveErrors(result("AD098765D"), JsPath() \ "nino", Seq(JsonValidationError("error.pattern")))
 
-      shouldHaveErrors(result("CV098765C"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+      shouldHaveErrors(result("CV098765C"), JsPath() \ "nino", Seq(JsonValidationError("error.pattern")))
 
-      shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+      shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(JsonValidationError("error.pattern")))
 
-      shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+      shouldHaveErrors(result("SR098765Z"), JsPath() \ "nino", Seq(JsonValidationError("error.pattern")))
 
-      shouldHaveErrors(result("SR 09 87 65 C"), JsPath() \ "nino", Seq(ValidationError("error.pattern")))
+      shouldHaveErrors(result("SR 09 87 65 C"), JsPath() \ "nino", Seq(JsonValidationError("error.pattern")))
     }
   }
 

@@ -17,22 +17,22 @@
 package services
 
 import java.time.ZonedDateTime
-import javax.inject.Inject
 
+import config.AppConfig
+import javax.inject.Inject
 import jobs._
 import org.joda.time.Duration
 import play.api.Logger
 import repositories.RegistrationMongo
 import uk.gov.hmrc.lock.LockKeeper
-import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class RemoveStaleDocsServiceImpl @Inject()(val mRepo: RegistrationMongo,
                                            val lockRepository: LockRepositoryProvider,
-                                           val servicesConfig: ServicesConfig) extends RemoveStaleDocsService{
+                                           appConfig: AppConfig) extends RemoveStaleDocsService{
 
-  lazy val lockoutTimeout = servicesConfig.getInt("schedules.remove-stale-documents-job.lockTimeout")
+  lazy val lockoutTimeout = appConfig.servicesConfig.getInt("schedules.remove-stale-documents-job.lockTimeout")
   lazy val lock: LockKeeper = new LockKeeper() {
     override val lockId = "remove-stale-documents-job"
     override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)

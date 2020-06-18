@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.test.FakeRequest
+import play.api.test.Helpers.stubControllerComponents
 import services.RegistrationService
 
 import scala.concurrent.Future
@@ -32,7 +33,7 @@ class RepositoryControllerSpec extends PAYERegSpec {
   val mockRegistrationService = mock[RegistrationService]
 
   class Setup {
-    val controller = new RepositoryCtrl {
+    val controller = new RepositoryCtrl(stubControllerComponents()) {
       override val registrationService: RegistrationService = mockRegistrationService
       override val resourceConn: AuthorisationResource = mockRegistrationRepository
       val authConnector = mockAuthConnector

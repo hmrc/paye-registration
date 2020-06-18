@@ -21,8 +21,7 @@ import java.time.LocalDate
 import enums.IncorporationStatus
 import models.JsonFormatValidation
 import models.validation.APIValidation
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsPath, JsSuccess, JsValue, Json}
+import play.api.libs.json.{JsPath, JsSuccess, JsValue, Json, JsonValidationError}
 import uk.gov.hmrc.play.test.UnitSpec
 
 class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
@@ -125,7 +124,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val result = statusUpdateFromJson(json)
-        shouldHaveErrors(result, JsPath() \\ "IncorpStatusEvent" \ "status", Seq(ValidationError("error.path.missing")))
+        shouldHaveErrors(result, JsPath() \\ "IncorpStatusEvent" \ "status", Seq(JsonValidationError("error.path.missing")))
       }
 
       "accepted status and no CRN" in {
@@ -151,7 +150,7 @@ class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
         """.stripMargin)
 
         val result = statusUpdateFromJson(json)
-        shouldHaveErrors(result, JsPath(), Seq(ValidationError("no CRN defined when expected")))
+        shouldHaveErrors(result, JsPath(), Seq(JsonValidationError("no CRN defined when expected")))
       }
     }
   }

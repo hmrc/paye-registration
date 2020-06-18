@@ -17,8 +17,9 @@
 package connectors
 
 import java.time.LocalDate
-import javax.inject.{Inject, Singleton}
 
+import config.AppConfig
+import javax.inject.{Inject, Singleton}
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
 import play.api.Logger
@@ -26,9 +27,8 @@ import play.api.http.Status.{ACCEPTED, NO_CONTENT, OK}
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.http.{CoreGet, CorePost, HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.ServicesConfig
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 
@@ -37,9 +37,9 @@ class IncorporationInformationResponseException(msg: String) extends NoStackTrac
 }
 
 @Singleton
-class IncorporationInformationConnector @Inject()(val http: HttpClient, val servicesConfig: ServicesConfig) extends IncorporationInformationConnect  {
-  lazy val incorporationInformationUri: String = servicesConfig.baseUrl("incorporation-information")
-  lazy val payeRegUri: String = servicesConfig.baseUrl("paye-registration")
+class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends IncorporationInformationConnect  {
+  lazy val incorporationInformationUri: String = appConfig.servicesConfig.baseUrl("incorporation-information")
+  lazy val payeRegUri: String = appConfig.servicesConfig.baseUrl("paye-registration")
 }
 
 trait IncorporationInformationConnect {

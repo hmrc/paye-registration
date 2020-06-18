@@ -57,7 +57,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
 
   class Setup {
-    val controller = new RegistrationCtrl {
+    val controller = new RegistrationCtrl(stubControllerComponents()) {
       override val resourceConn = mockRegistrationRepository
       override val registrationService = mockRegistrationService
       override val submissionService = mockSubmissionService

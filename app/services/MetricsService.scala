@@ -17,26 +17,25 @@
 package services
 
 import javax.inject.Inject
-
 import com.codahale.metrics.{Gauge, Timer}
 import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
+import config.AppConfig
 import jobs._
 import org.joda.time.Duration
 import play.api.Logger
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import uk.gov.hmrc.lock.LockKeeper
-import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MetricsService @Inject()(injRegRepo: RegistrationMongo,
                                val lockRepository: LockRepositoryProvider,
-                               val servicesConfig: ServicesConfig,
+                               val appConfig: AppConfig,
                                val metrics: Metrics) extends MetricsSrv {
 
   override lazy val regRepo = injRegRepo.store
   override val mongoResponseTimer = metrics.defaultRegistry.timer("mongo-call-timer")
-  lazy val lockoutTimeout = servicesConfig.getInt("schedules.metrics-job.lockTimeout")
+  lazy val lockoutTimeout = appConfig.servicesConfig.getInt("schedules.metrics-job.lockTimeout")
   lazy val lock: LockKeeper = new LockKeeper() {
     override val lockId = "remove-stale-documents-job"
     override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)

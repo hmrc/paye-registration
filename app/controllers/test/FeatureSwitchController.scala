@@ -17,20 +17,20 @@
 package controllers.test
 
 import javax.inject.{Inject, Named, Singleton}
-
 import jobs.ScheduledJob
-import play.api.mvc.Action
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import play.api.mvc.{Action, ControllerComponents}
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
 import utils._
 
 import scala.concurrent.Future
 
 @Singleton
 class FeatureSwitchController @Inject()(@Named("remove-stale-documents-job") val removeStaleDocsJob: ScheduledJob,
-                                        @Named("metrics-job") val graphiteMetrics: ScheduledJob) extends FeatureSwitchCtrl {
+                                        @Named("metrics-job") val graphiteMetrics: ScheduledJob,
+                                        controllerComponents: ControllerComponents) extends FeatureSwitchCtrl(controllerComponents) {
 
 }
-trait FeatureSwitchCtrl extends BaseController {
+abstract class FeatureSwitchCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) {
   val removeStaleDocsJob: ScheduledJob
   val graphiteMetrics: ScheduledJob
 

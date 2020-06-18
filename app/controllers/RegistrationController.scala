@@ -17,8 +17,8 @@
 package controllers
 
 import java.time.LocalDate
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import auth._
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
@@ -35,9 +35,9 @@ import repositories.RegistrationMongoRepository
 import services._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
@@ -46,7 +46,8 @@ class RegistrationController @Inject()(injRegistrationService: RegistrationServi
                                        injNotificationService: NotificationService,
                                        injIICounterService: IICounterService,
                                        val crypto: CryptoSCRS,
-                                       val authConnector: AuthConnector) extends RegistrationCtrl {
+                                       val authConnector: AuthConnector,
+                                       controllerComponents: ControllerComponents) extends RegistrationCtrl(controllerComponents) {
 
   val registrationService: RegistrationService = injRegistrationService
   val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
@@ -55,7 +56,7 @@ class RegistrationController @Inject()(injRegistrationService: RegistrationServi
   val counterService: IICounterService = injIICounterService
 }
 
-trait RegistrationCtrl extends BaseController with Authorisation {
+abstract class RegistrationCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation {
 
   val registrationService: RegistrationSrv
   val submissionService: SubmissionSrv

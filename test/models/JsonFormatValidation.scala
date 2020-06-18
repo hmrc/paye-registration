@@ -16,8 +16,7 @@
 
 package models
 
-import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsError, JsPath, JsResult, JsSuccess}
+import play.api.libs.json._
 import uk.gov.hmrc.play.test.UnitSpec
 
 trait JsonFormatValidation {
@@ -30,15 +29,15 @@ trait JsonFormatValidation {
     }
   }
 
-  def shouldHaveErrors[T](result: JsResult[T], errorPath: JsPath, expectedError: ValidationError): Unit = {
+  def shouldHaveErrors[T](result: JsResult[T], errorPath: JsPath, expectedError: JsonValidationError): Unit = {
     shouldHaveErrors[T](result, Map(errorPath -> Seq(expectedError)))
   }
 
-  def shouldHaveErrors[T](result: JsResult[T], errorPath: JsPath, expectedErrors: Seq[ValidationError]): Unit = {
+  def shouldHaveErrors[T](result: JsResult[T], errorPath: JsPath, expectedErrors: Seq[JsonValidationError]): Unit = {
     shouldHaveErrors[T](result, Map(errorPath -> expectedErrors))
   }
 
-  def shouldHaveErrors[T](result: JsResult[T], expectedErrors: Map[JsPath, Seq[ValidationError]]): Unit = {
+  def shouldHaveErrors[T](result: JsResult[T], expectedErrors: Map[JsPath, Seq[JsonValidationError]]): Unit = {
     result match {
       case JsSuccess(value, path) => fail(s"read should have failed and didn't - produced ${value}")
       case JsError(errors) => {
@@ -56,7 +55,7 @@ trait JsonFormatValidation {
     }
   }
 
-  def shouldHaveErrors2[T](result: JsResult[T], errorPath: JsPath, expectedError: ValidationError) = {
+  def shouldHaveErrors2[T](result: JsResult[T], errorPath: JsPath, expectedError: JsonValidationError) = {
     result match {
       case JsSuccess(value, path) => fail(s"read should have failed and didn't - produced ${value}")
       case JsError(errors) => {
