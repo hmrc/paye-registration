@@ -18,6 +18,7 @@ package connectors
 
 import java.time.LocalDate
 
+import config.AppConfig
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
@@ -26,13 +27,15 @@ import org.mockito.Mockito.{reset, when}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.http.ws.WSHttp
 
 import scala.concurrent.Future
 
 class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
-  val mockHttp = mock[WSHttp]
+  val mockHttp = mock[HttpClient]
 
   val testJson = Json.parse(
     s"""
@@ -59,11 +62,11 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
   implicit val hc = HeaderCarrier()
 
   class Setup {
-    val testConnector = new IncorporationInformationConnect {
-      override val incorporationInformationUri: String = "/test/uri"
-      override val payeRegUri: String = "/test-reg/"
-      override val http: WSHttp = mockHttp
+    object MockAppConfig extends AppConfig(mock[ServicesConfig]) {
+      override lazy val incorporationInformationUri: String = "/test/uri"
+      override lazy val payeRegUri: String = "/test-reg/"
     }
+    object Connector extends IncorporationInformationConnector(mockHttp, MockAppConfig)
   }
 
   override def beforeEach(): Unit = {
@@ -74,7 +77,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
   "constructIncorporationInfoUri" should {
     "construct the the II uri" when {
       "given a txId, regime and subscriber" in new Setup {
-        val result = testConnector.constructIncorporationInfoUri("testTxId", "paye", "SCRS")
+        val result = Connector.constructIncorporationInfoUri("testTxId", "paye", "SCRS")
         result shouldBe "/incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS"
       }
     }
@@ -91,7 +94,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
 
-        val result = await(testConnector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
+        val result = await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
         result shouldBe Some(Json.fromJson[IncorpStatusUpdate](testJson)(IncorpStatusUpdate.reads(APIValidation)).get)
       }
     }
@@ -105,7 +108,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
 
-        val result = await(testConnector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
+        val result = await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
         result shouldBe None
       }
     }
@@ -119,7 +122,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
 
-        val result = intercept[IncorporationInformationResponseException](await(testConnector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId")))
+        val result = intercept[IncorporationInformationResponseException](await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId")))
         result.getMessage shouldBe s"Calling II on /incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS returned a 500"
       }
     }
@@ -143,7 +146,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
 
-      val res = await(testConnector.getIncorporationDate("testTxId"))
+      val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe Some(LocalDate.of(2015,12,25))
     }
 
@@ -163,7 +166,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       }
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
-      val res = await(testConnector.getIncorporationDate("testTxId"))
+      val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe None
     }
     "return None when element does not exist" in new Setup {
@@ -180,7 +183,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       }
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
-      val res = await(testConnector.getIncorporationDate("testTxId"))
+      val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe None
     }
     "return None when response is 204" in new Setup {
@@ -189,7 +192,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       }
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
-      val res = await(testConnector.getIncorporationDate("testTxId"))
+      val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe None
     }
 
@@ -200,7 +203,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
 
-      an[IncorporationInformationResponseException] shouldBe thrownBy(await(testConnector.getIncorporationDate("testTxId")))
+      an[IncorporationInformationResponseException] shouldBe thrownBy(await(Connector.getIncorporationDate("testTxId")))
     }
   }
 }

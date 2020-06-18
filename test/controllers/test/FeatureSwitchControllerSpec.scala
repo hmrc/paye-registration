@@ -41,11 +41,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
   }
 
   class Setup {
-    val controller = new FeatureSwitchCtrl(stubControllerComponents()) {
-      val removeStaleDocsJob = mockRemoveStaleDocsJob
-      val graphiteMetrics = mockGraphiteMetrics
-
-    }
+    val controller = new FeatureSwitchController(mockRemoveStaleDocsJob,mockGraphiteMetrics, stubControllerComponents())
   }
 
   val testFeatureSwitch = BooleanFeatureSwitch(name = "desServiceFeature", enabled = true)

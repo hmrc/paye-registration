@@ -20,7 +20,8 @@ import java.time.LocalDate
 
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions._
-import connectors.IncorporationInformationConnect
+import config.AppConfig
+import connectors.IncorporationInformationConnector
 import enums.{Employing, PAYEStatus}
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
@@ -32,22 +33,22 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   val mockAuditService = mock[AuditService]
-  val mockIncorporationInformationConnector = mock[IncorporationInformationConnect]
+  val mockIncorporationInformationConnector = mock[IncorporationInformationConnector]
+
 
   class Setup {
-    val service = new RegistrationSrv {
-      override val registrationRepository = mockRegistrationRepository
-      override val payeRestartURL = "testRestartURL"
-      override val payeCancelURL = "testCancelURL"
-      override val auditService = mockAuditService
-      override val incorporationInformationConnector = mockIncorporationInformationConnector
+    object MockAppConfig extends AppConfig(mock[ServicesConfig]) {
+      override lazy val payeRestartURL = "testRestartURL"
+      override lazy val payeCancelURL = "testCancelURL"
     }
+    val service = new RegistrationService(mockRegistrationRepository, mockAuditService, mockIncorporationInformationConnector, MockAppConfig)
   }
 
   override def beforeEach() {

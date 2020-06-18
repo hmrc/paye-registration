@@ -18,8 +18,8 @@ package controllers.test
 
 import javax.inject.{Inject, Named, Singleton}
 import jobs.ScheduledJob
-import play.api.mvc.{Action, ControllerComponents}
-import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import utils._
 
 import scala.concurrent.Future
@@ -27,36 +27,32 @@ import scala.concurrent.Future
 @Singleton
 class FeatureSwitchController @Inject()(@Named("remove-stale-documents-job") val removeStaleDocsJob: ScheduledJob,
                                         @Named("metrics-job") val graphiteMetrics: ScheduledJob,
-                                        controllerComponents: ControllerComponents) extends FeatureSwitchCtrl(controllerComponents) {
+                                        controllerComponents: ControllerComponents) extends BackendController(controllerComponents) {
 
-}
-abstract class FeatureSwitchCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) {
-  val removeStaleDocsJob: ScheduledJob
-  val graphiteMetrics: ScheduledJob
+  val fs: FeatureSwitch.type = FeatureSwitch
 
-  val fs =  FeatureSwitch
-
-  def switch(featureName: String, featureState: String) = Action.async {
+  def switch(featureName: String, featureState: String): Action[AnyContent] = Action.async {
     implicit request =>
 
       def feature: FeatureSwitch = (featureName, featureState) match {
-        case ("removeStaleDocumentsFeature", "true")  =>
+        case ("removeStaleDocumentsFeature", "true") =>
           removeStaleDocsJob.scheduler.resumeJob("remove-stale-documents-job")
-          BooleanFeatureSwitch("removeStaleDocumentsFeature",true)
+          BooleanFeatureSwitch("removeStaleDocumentsFeature", enabled = true)
         case ("removeStaleDocumentsFeature", "false") =>
           removeStaleDocsJob.scheduler.suspendJob("remove-stale-documents-job")
-          BooleanFeatureSwitch("removeStaleDocumentsFeature",false)
-        case ("graphiteMetrics", "true")              =>
+          BooleanFeatureSwitch("removeStaleDocumentsFeature", enabled = false)
+        case ("graphiteMetrics", "true") =>
           graphiteMetrics.scheduler.resumeJob("metrics-job")
-          BooleanFeatureSwitch("graphiteMetrics",true)
-        case ("graphiteMetrics", "false")             =>
+          BooleanFeatureSwitch("graphiteMetrics", enabled = true)
+        case ("graphiteMetrics", "false") =>
           graphiteMetrics.scheduler.suspendJob("metrics-job")
-          BooleanFeatureSwitch("graphiteMetrics",false)
-        case (_, "true")                                          => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
-        case (_, x) if x.matches(FeatureSwitch.datePatternRegex)  => fs.setSystemDate(ValueSetFeatureSwitch(featureName, featureState))
-        case (_, x@"time-clear")  => fs.clearSystemDate(ValueSetFeatureSwitch(featureName, x))
-        case _                                                    => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
+          BooleanFeatureSwitch("graphiteMetrics", enabled = false)
+        case (_, "true") => fs.enable(BooleanFeatureSwitch(featureName, enabled = true))
+        case (_, x) if x.matches(FeatureSwitch.datePatternRegex) => fs.setSystemDate(ValueSetFeatureSwitch(featureName, featureState))
+        case (_, x@"time-clear") => fs.clearSystemDate(ValueSetFeatureSwitch(featureName, x))
+        case _ => fs.disable(BooleanFeatureSwitch(featureName, enabled = false))
       }
+
       PAYEFeatureSwitches(featureName) match {
         case Some(_) => Future.successful(Ok(feature.toString))
         case None => Future.successful(BadRequest)

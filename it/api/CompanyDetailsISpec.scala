@@ -28,10 +28,10 @@ import models._
 import models.validation.{APIValidation, MongoValidation}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsValue, Json}
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -63,9 +63,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS){
-      override val registrationFormat: Format[PAYERegistration] = PAYERegistration.format(MongoValidation, mockcryptoSCRS)    }
-    val repository: RegistrationMongoRepository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 

@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package connectors
+package Connectors
 
+import config.AppConfig
+import connectors.CompanyRegistrationConnector
 import helpers.PAYERegSpec
-import mocks.WSHTTPMock
+import mocks.HTTPMock
 import models.external.BusinessProfile
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpResponse, NotFoundException}
-import uk.gov.hmrc.play.http.ws.WSHttp
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.Future
 
-class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
+class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
 
   val testJson = Json.parse(
     """
@@ -41,10 +43,13 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
   implicit val hc = HeaderCarrier()
 
   class Setup {
-    val connector = new CompanyRegistrationConnect {
-      override val compRegUrl: String = "/testUrl"
-      override val http: WSHttp = mockWSHttp
+
+    object MockAppConfig extends AppConfig(mock[ServicesConfig]) {
+      override lazy val compRegUrl: String = "/testUrl"
     }
+
+    object Connector extends CompanyRegistrationConnector(mockHttp, MockAppConfig)
+
   }
 
   "fetchCompanyRegistrationDocument" should {
@@ -52,40 +57,41 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with WSHTTPMock {
       "given a valid regId" in new Setup {
         val okResponse = new HttpResponse {
           override def status: Int = OK
+
           override def json: JsValue = testJson
         }
 
         mockHttpGet[HttpResponse]("testUrl", okResponse)
 
-        val result = await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
+        val result = await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
         result shouldBe okResponse
       }
     }
 
     "throw a not found exception" when {
       "the reg document cant be found" in new Setup {
-        when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new NotFoundException("Bad request")))
 
-        intercept[NotFoundException](await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
+        intercept[NotFoundException](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
       }
     }
 
     "throw a forbidden exception" when {
       "the request is not authorised" in new Setup {
-        when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new ForbiddenException("Forbidden")))
 
-        intercept[ForbiddenException](await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
+        intercept[ForbiddenException](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
       }
     }
 
     "throw an unchecked exception" when {
       "an unexpected response code was returned" in new Setup {
-        when(mockWSHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new RuntimeException("Runtime Exception")))
 
-        intercept[Throwable](await(connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
+        intercept[Throwable](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
       }
     }
   }

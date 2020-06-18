@@ -17,7 +17,6 @@
 package repositories
 
 import itutil.MongoBaseSpec
-import models.IICounter
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,16 +25,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class IICounterRepositoryISpec extends MongoBaseSpec{
 
   private val newCompanyReg = "123-456-1123"
-  private val newCompanyForCounter = IICounter(newCompanyReg,0)
-  private val incrementedCompanyCounter = IICounter(newCompanyReg,1)
-  private val maxCompanyCounter = IICounter(newCompanyReg,2)
-  private val nonExistentReg = "ThisShouldntExist"
-
-  private val interrogateCompany = "ABC-123-WOW7"
 
   class Setup {
-    val mongo = new IICounterMongo(reactiveMongoComponent)
-    val repository = mongo.store
+    val repository = new IICounterMongoRepository(reactiveMongoComponent)
     await(repository.drop)
   }
 

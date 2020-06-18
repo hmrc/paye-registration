@@ -18,18 +18,23 @@ package mocks
 
 import com.codahale.metrics.{Counter, Timer}
 import com.kenshoo.play.metrics.Metrics
+import config.AppConfig
+import jobs.LockRepositoryProvider
 import org.scalatestplus.mockito.MockitoSugar
 import repositories.RegistrationMongoRepository
-import services.MetricsSrv
+import services.MetricsService
 import uk.gov.hmrc.lock.LockKeeper
 
-object MetricsMock extends MetricsSrv with MockitoSugar {
-  lazy val mockContext = mock[Timer.Context]
-  val mockTimer = new Timer()
-  val mockCounter = mock[Counter]
-  val metrics = mock[Metrics]
-  val regRepo = mock[RegistrationMongoRepository]
-  val lock = mock[LockKeeper]
 
-  override val mongoResponseTimer = mockTimer
+
+object MetricsMock extends MockitoSugar {
+  private val regRepo = mock[RegistrationMongoRepository]
+  private val lockRepository = mock[LockRepositoryProvider]
+  private val appConfig = mock[AppConfig]
+  private val metrics = mock[Metrics]
+
+  val mockMetricsService = new MetricsService(regRepo, lockRepository, appConfig, metrics) {
+    override lazy val lock = mock[LockKeeper]
+    override lazy val mongoResponseTimer = new Timer()
+  }
 }

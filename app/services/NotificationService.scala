@@ -16,25 +16,18 @@
 
 package services
 
-import javax.inject.{Inject, Singleton}
-
 import common.constants.ETMPStatusCodes
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.PAYEStatus
+import javax.inject.{Inject, Singleton}
 import models.EmpRefNotification
 import play.api.Logger
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationService @Inject()(injRegistrationMongoRepository: RegistrationMongo) extends NotificationSrv{
-  val registrationRepo: RegistrationMongoRepository = injRegistrationMongoRepository.store
-}
-
-trait NotificationSrv extends ETMPStatusCodes {
-
-  val registrationRepo: RegistrationMongoRepository
+class NotificationService @Inject()(registrationRepo: RegistrationMongoRepository) extends ETMPStatusCodes {
 
   private[services] def getNewApplicationStatus(status: String): PAYEStatus.Value = {
     status match {
@@ -66,7 +59,9 @@ trait NotificationSrv extends ETMPStatusCodes {
     for {
       empRefNotification <- registrationRepo.updateRegistrationEmpRef(ackRef, getNewApplicationStatus(notification.status), notification)
       oReg <- registrationRepo.retrieveRegistrationByAckRef(ackRef)
-      reg = oReg.getOrElse{throw new MissingRegDocument(s"No registration ID found for ack ref $ackRef when processing ETMP notification")}
+      reg = oReg.getOrElse {
+        throw new MissingRegDocument(s"No registration ID found for ack ref $ackRef when processing ETMP notification")
+      }
       _ <- registrationRepo.updateRegistrationStatus(reg.registrationID, getNewApplicationStatus(notification.status))
     } yield empRefNotification
   }

@@ -31,7 +31,7 @@ import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
 import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.RegistrationMongo
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -99,8 +99,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
       override def getTimestamp: ZonedDateTime = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z"))
     }
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    lazy val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    lazy val repository = mongo.store
+    lazy val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     lazy val lockRepository = app.injector.instanceOf[LockRepositoryProvider].repo
   }
 

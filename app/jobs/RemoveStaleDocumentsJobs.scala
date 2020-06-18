@@ -16,18 +16,17 @@
 
 package jobs
 
-import javax.inject.Inject
-
+import javax.inject.{Inject, Singleton}
 import akka.actor.ActorSystem
-import jobs.SchedulingActor.MetricsJob
+import jobs.SchedulingActor.RemoveStaleDocumentsJob
 import play.api.Configuration
-import services.MetricsService
+import services.RemoveStaleDocsService
 
-
-class MetricsJobs @Inject()(metricsService: MetricsService,
-                           val config: Configuration) extends ScheduledJob {
-  val jobName = "metrics-job"
+@Singleton
+class RemoveStaleDocumentsJobs @Inject()(removeStaleDocsService: RemoveStaleDocsService,
+                                        val config: Configuration) extends ScheduledJob {
+  val jobName = "remove-stale-documents-job"
   val actorSystem = ActorSystem(jobName)
-  val scheduledMessage = MetricsJob(metricsService)
+  val scheduledMessage = RemoveStaleDocumentsJob(removeStaleDocsService)
   schedule
 }

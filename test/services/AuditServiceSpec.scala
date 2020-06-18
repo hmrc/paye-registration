@@ -36,12 +36,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
   val mockAuditConnector = mock[AuditConnector]
 
   class Setup {
-    val service = new AuditSrv {
-      override lazy val authConnector = mockAuthConnector
-
-      override val registrationRepository = mockRegistrationRepository
-      override val auditConnector = mockAuditConnector
-    }
+    val service = new AuditService(mockRegistrationRepository, mockAuthConnector, mockAuditConnector)
   }
 
   val regId = "AB123456"

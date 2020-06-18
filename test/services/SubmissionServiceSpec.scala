@@ -54,17 +54,17 @@ class SubmissionServiceSpec extends PAYERegSpec {
   implicit val req = FakeRequest("GET", "/test-path")
 
   class Setup {
-    val service = new SubmissionSrv{
-      override val sequenceRepository = mockSequenceRepository
-      override val registrationRepository = mockRegistrationRepository
-      override val desConnector = mockDESConnector
-      override val incorporationInformationConnector = mockIIConnector
-      override val authConnector = mockAuthConnector
-      override val auditService = mockAuditService
-      override val businessRegistrationConnector = mockBusinessRegistrationConnector
-      override val companyRegistrationConnector = mockCompanyRegistrationConnector
-      override val registrationService = mockRegistrationService
-    }
+    val service = new SubmissionService(
+      mockSequenceRepository,
+      mockRegistrationRepository,
+      mockDESConnector,
+      mockIIConnector,
+      mockBusinessRegistrationConnector,
+      mockCompanyRegistrationConnector,
+      mockAuditService,
+      mockRegistrationService,
+      mockAuthConnector
+    )
   }
 
   override def beforeEach() {

@@ -16,40 +16,31 @@
 
 package services
 
-import javax.inject.Inject
 import com.codahale.metrics.{Gauge, Timer}
 import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
 import config.AppConfig
+import javax.inject.Inject
 import jobs._
 import org.joda.time.Duration
 import play.api.Logger
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
-import uk.gov.hmrc.lock.LockKeeper
+import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MetricsService @Inject()(injRegRepo: RegistrationMongo,
-                               val lockRepository: LockRepositoryProvider,
-                               val appConfig: AppConfig,
-                               val metrics: Metrics) extends MetricsSrv {
+class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
+                               lockRepository: LockRepositoryProvider,
+                               appConfig: AppConfig,
+                               val metrics: Metrics) extends ScheduledService[Either[Map[String, Int], LockResponse]] {
 
-  override lazy val regRepo = injRegRepo.store
-  override val mongoResponseTimer = metrics.defaultRegistry.timer("mongo-call-timer")
-  lazy val lockoutTimeout = appConfig.servicesConfig.getInt("schedules.metrics-job.lockTimeout")
+  lazy val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
   lazy val lock: LockKeeper = new LockKeeper() {
-    override val lockId = "remove-stale-documents-job"
-    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)
-    override lazy val repo = lockRepository.repo
+    override val lockId: String = "remove-stale-documents-job"
+    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(appConfig.metricsJobLockTimeout)
+    override lazy val repo: LockRepository = lockRepository.repo
   }
-}
 
-trait MetricsSrv extends ScheduledService[Either[Map[String, Int],LockResponse]]{
-  val mongoResponseTimer: Timer
-  val lock: LockKeeper
-  protected val metrics: Metrics
-  protected val regRepo: RegistrationMongoRepository
-
-  def invoke(implicit ec:ExecutionContext):Future[Either[Map[String, Int],LockResponse]] = {
+  def invoke(implicit ec: ExecutionContext): Future[Either[Map[String, Int], LockResponse]] = {
     lock.tryLock(updateDocumentMetrics).map {
       case Some(res) =>
         Logger.info("MetricsService acquired lock and returned results")
@@ -66,7 +57,7 @@ trait MetricsSrv extends ScheduledService[Either[Map[String, Int],LockResponse]]
   def updateDocumentMetrics()(implicit ec: ExecutionContext): Future[Map[String, Int]] = {
     regRepo.getRegistrationStats() map {
       stats => {
-        for( (status, count) <- stats ) {
+        for ((status, count) <- stats) {
           recordStatusCountStat(status, count)
         }
         stats
@@ -77,13 +68,13 @@ trait MetricsSrv extends ScheduledService[Either[Map[String, Int],LockResponse]]
   private def recordStatusCountStat(status: String, count: Int) = {
     val metricName = s"status-count-stat.$status"
     try {
-      val gauge = new Gauge[Int] {
+      val gauge: Gauge[Int] = new Gauge[Int] {
         val getValue: Int = count
       }
       metrics.defaultRegistry.remove(metricName)
       metrics.defaultRegistry.register(metricName, gauge)
     } catch {
-      case ex: MetricsDisabledException => {
+      case _: MetricsDisabledException => {
         Logger.warn(s"[MetricsService] [recordStatusCountStat] Metrics disabled - $metricName -> $count")
       }
     }

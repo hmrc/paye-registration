@@ -27,46 +27,17 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
+import utils.{FeatureSwitch, PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector ) extends DESConnect {
-  val featureSwitch = PAYEFeatureSwitches
-  lazy val desUrl = appConfig.servicesConfig.getConfString("des-service.url", "")
-  lazy val desURI = appConfig.servicesConfig.getConfString("des-service.uri", "")
-  lazy val desTopUpURI = appConfig.servicesConfig.getConfString("des-service.top-up-uri", "")
-  lazy val desStubUrl = appConfig.servicesConfig.baseUrl("des-stub")
-  lazy val desStubURI = appConfig.servicesConfig.getConfString("des-stub.uri", "")
-  lazy val desStubTopUpURI = appConfig.servicesConfig.getConfString("des-stub.top-up-uri", "")
-  lazy val urlHeaderEnvironment: String = appConfig.servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
-  lazy val urlHeaderAuthorization: String = s"Bearer ${appConfig.servicesConfig.getConfString("des-service.authorization-token",
-    throw new Exception("could not find config value for des-service.authorization-token"))}"
-  lazy val alertWorkingHours = appConfig.servicesConfig.getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
-  // TODO move the above vals into appConfig
+class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector ) extends HttpErrorFunctions with WorkingHoursGuard {
+  val alertWorkingHours: String = appConfig.alertWorkingHours
 
-  override protected def currentDate = SystemDate.getSystemDate.toLocalDate
-  override protected def currentTime = SystemDate.getSystemDate.toLocalTime
-}
-
-trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
-
-  val desUrl: String
-  val desURI: String
-  val desTopUpURI: String
-  val desStubUrl: String
-  val desStubURI: String
-  val desStubTopUpURI: String
-
-  def http: CorePost
-  val featureSwitch: PAYEFeatureSwitches
-
-  val urlHeaderEnvironment: String
-  val urlHeaderAuthorization: String
-
-  val auditConnector : AuditConnector
+  def currentDate = SystemDate.getSystemDate.toLocalDate
+  def currentTime = SystemDate.getSystemDate.toLocalTime
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse): HttpResponse = {
     response.status match {
@@ -97,9 +68,10 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
 
   def submitToDES(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
 
-    val url = useDESStubFeature match {
-      case true  => s"$desStubUrl/$desStubURI"
-      case false => s"$desUrl/$desURI"
+    val url = if (useDESStubFeature) {
+      s"${appConfig.desStubUrl}/${appConfig.desStubURI}"
+    } else {
+      s"${appConfig.desUrl}/${appConfig.desURI}"
     }
 
     Logger.info(s"[DESConnector] - [submitToDES]: Submission to DES for regId: $regId, ackRef ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
@@ -116,9 +88,10 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
   }
 
   def submitTopUpToDES(submission: TopUpDESSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val url = useDESStubFeature match {
-      case true  => s"$desStubUrl/$desStubTopUpURI"
-      case false => s"$desUrl/$desTopUpURI"
+    val url = if (useDESStubFeature) {
+      s"${appConfig.desStubUrl}/${appConfig.desStubTopUpURI}"
+    } else {
+      s"${appConfig.desUrl}/${appConfig.desTopUpURI}"
     }
 
     Logger.info(s"[DESConnector] - [submitTopUpToDES]: Top Up to DES for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
@@ -135,11 +108,11 @@ trait DESConnect extends HttpErrorFunctions with WorkingHoursGuard {
   private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext) =
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc), ec = ec)
 
-  private[connectors] def useDESStubFeature: Boolean = !featureSwitch.desService.enabled
+  private[connectors] def useDESStubFeature: Boolean = !PAYEFeatureSwitches.desService.enabled
 
   private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
     headerCarrier.
-      withExtraHeaders("Environment" -> urlHeaderEnvironment).
-      copy(authorization = Some(Authorization(urlHeaderAuthorization)))
+      withExtraHeaders("Environment" -> appConfig.desUrlHeaderEnvironment).
+      copy(authorization = Some(Authorization(appConfig.desUrlHeaderAuthorization)))
   }
 }

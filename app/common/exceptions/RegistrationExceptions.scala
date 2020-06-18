@@ -18,14 +18,12 @@ package common.exceptions
 
 import scala.util.control.NoStackTrace
 
-object RegistrationExceptions extends RegistrationExceptions
-
 sealed trait SubmissionMarshallingException extends NoStackTrace {
   val msg: String
   override def getMessage = msg
 }
 
-trait RegistrationExceptions {
+object RegistrationExceptions {
   class AcknowledgementReferenceExistsException(regId: String) extends NoStackTrace
   class AcknowledgementReferenceNotExistsException(regId: String) extends NoStackTrace
 

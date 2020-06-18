@@ -33,9 +33,8 @@ class IICounterServiceSpec extends PAYERegSpec {
 
 
   class Setup{
-    val service = new IICounterSrv {
-      override val counterRepository: IICounterMongoRepository = mockCounterRepository
-      override val maxIICounterCount: Int = 2
+    val service = new IICounterService(mockCounterRepository, mockConfig) {
+      override lazy val maxIICounterCount: Int = 2
     }
   }
 

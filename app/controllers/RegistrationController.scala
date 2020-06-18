@@ -18,13 +18,13 @@ package controllers
 
 import java.time.LocalDate
 
-import javax.inject.{Inject, Singleton}
 import auth._
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.SubmissionMarshallingException
 import enums.PAYEStatus
+import javax.inject.{Inject, Singleton}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
@@ -35,41 +35,28 @@ import repositories.RegistrationMongoRepository
 import services._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class RegistrationController @Inject()(injRegistrationService: RegistrationService,
-                                       injSubmissionService: SubmissionService,
-                                       injNotificationService: NotificationService,
-                                       injIICounterService: IICounterService,
+class RegistrationController @Inject()(registrationService: RegistrationService,
+                                       submissionService: SubmissionService,
+                                       notificationService: NotificationService,
+                                       counterService: IICounterService,
                                        val crypto: CryptoSCRS,
                                        val authConnector: AuthConnector,
-                                       controllerComponents: ControllerComponents) extends RegistrationCtrl(controllerComponents) {
+                                       controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation {
 
-  val registrationService: RegistrationService = injRegistrationService
-  val resourceConn: RegistrationMongoRepository = injRegistrationService.registrationRepository
-  val submissionService: SubmissionService = injSubmissionService
-  val notificationService: NotificationService = injNotificationService
-  val counterService: IICounterService = injIICounterService
-}
+  val resourceConn: RegistrationMongoRepository = registrationService.registrationRepository
 
-abstract class RegistrationCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation {
-
-  val registrationService: RegistrationSrv
-  val submissionService: SubmissionSrv
-  val notificationService: NotificationService
-  val counterService: IICounterSrv
-  val crypto: CryptoSCRS
-
-  def newPAYERegistration(regID: String) : Action[JsValue] = Action.async(parse.json) {
+  def newPAYERegistration(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthenticated { internalId =>
         withJsonBody[String] { transactionID =>
           registrationService.createNewPAYERegistration(regID, transactionID, internalId) map {
-            reg => Ok(Json.toJson(reg)(PAYERegistration.format(APIValidation,crypto)))
+            reg => Ok(Json.toJson(reg)(PAYERegistration.format(APIValidation, crypto)))
           }
         }
       } recoverWith {
@@ -77,12 +64,12 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def getPAYERegistration(regID: String) : Action[AnyContent] = Action.async {
+  def getPAYERegistration(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getPAYERegistration") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getPAYERegistration") {
           registrationService.fetchPAYERegistration(regID) map {
-            case Some(registration) => Ok(Json.toJson(registration)(PAYERegistration.format(APIValidation,crypto)))
+            case Some(registration) => Ok(Json.toJson(registration)(PAYERegistration.format(APIValidation, crypto)))
             case None => NotFound
           }
         }
@@ -105,10 +92,10 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
     }
   }
 
-  def getCompanyDetails(regID: String) : Action[AnyContent] = Action.async {
+  def getCompanyDetails(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getCompanyDetails") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getCompanyDetails") {
           registrationService.getCompanyDetails(regID) map {
             case Some(companyDetails) => Ok(Json.toJson(companyDetails))
             case None => NotFound
@@ -117,16 +104,16 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def upsertCompanyDetails(regID: String) : Action[JsValue] = Action.async(parse.json) {
+  def upsertCompanyDetails(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertCompanyDetails") {
+        authResult.ifAuthorised(regID, "RegistrationController", "upsertCompanyDetails") {
           withJsonBody[CompanyDetails] { companyDetails =>
             registrationService.upsertCompanyDetails(regID, companyDetails) map { companyDetailsResponse =>
               Ok(Json.toJson(companyDetailsResponse))
             } recover {
-              case missing   : MissingRegDocument          => NotFound
-              case noContact : RegistrationFormatException => BadRequest(noContact.getMessage)
+              case missing: MissingRegDocument => NotFound
+              case noContact: RegistrationFormatException => BadRequest(noContact.getMessage)
             }
           }
         }
@@ -136,7 +123,7 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
   def getEmploymentInfo(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getEmploymentInfo") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getEmploymentInfo") {
           registrationService.getEmploymentInfo(regID) map {
             case Some(employmentInfo) => Ok(Json.toJson(employmentInfo)(EmploymentInfo.apiFormat))
             case None => NoContent
@@ -150,7 +137,7 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
   def upsertEmploymentInfo(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertEmploymentInfo") {
+        authResult.ifAuthorised(regID, "RegistrationController", "upsertEmploymentInfo") {
           withIncorporationDate(regID) { incorpDate =>
             implicit val apiFormat: Format[EmploymentInfo] = EmploymentInfo.format(formatter = APIValidation, incorpDate = incorpDate)
             withJsonBody[EmploymentInfo] { employmentDetails =>
@@ -169,38 +156,38 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
     registrationService.getIncorporationDate(regID) flatMap (f(_))
   }
 
-  def getDirectors(regID: String) : Action[AnyContent] = Action.async {
+  def getDirectors(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getDirectors") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getDirectors") {
           registrationService.getDirectors(regID) map {
             case s: Seq[Director] if s.isEmpty => NotFound
-            case directors: Seq[Director]      => Ok(Json.toJson(directors)(Director.directorSequenceWriter(APIValidation)))
+            case directors: Seq[Director] => Ok(Json.toJson(directors)(Director.directorSequenceWriter(APIValidation)))
           }
         }
       }
   }
 
-  def upsertDirectors(regID: String) : Action[JsValue] = Action.async(parse.json) {
+  def upsertDirectors(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertDirectors") {
+        authResult.ifAuthorised(regID, "RegistrationController", "upsertDirectors") {
           withJsonBody[Seq[Director]] { directors =>
             registrationService.upsertDirectors(regID, directors) map { directorsResponse =>
               Ok(Json.toJson(directorsResponse)(Director.directorSequenceWriter(APIValidation)))
             } recover {
-              case missing : MissingRegDocument => NotFound
-              case noNinos : RegistrationFormatException => BadRequest(noNinos.getMessage)
+              case missing: MissingRegDocument => NotFound
+              case noNinos: RegistrationFormatException => BadRequest(noNinos.getMessage)
             }
           }
         }
       }
   }
 
-  def getSICCodes(regID: String) : Action[AnyContent] = Action.async {
+  def getSICCodes(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getSICCodes") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getSICCodes") {
           registrationService.getSICCodes(regID) map {
             case s: Seq[SICCode] if s.isEmpty => NotFound
             case sicCodes: Seq[SICCode] => Ok(Json.toJson(sicCodes))
@@ -209,25 +196,25 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def upsertSICCodes(regID: String) : Action[JsValue] = Action.async(parse.json) {
+  def upsertSICCodes(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertSICCodes") {
+        authResult.ifAuthorised(regID, "RegistrationController", "upsertSICCodes") {
           withJsonBody[Seq[SICCode]] { sicCodes =>
             registrationService.upsertSICCodes(regID, sicCodes) map { sicCodesResponse =>
               Ok(Json.toJson(sicCodesResponse))
             } recover {
-              case missing : MissingRegDocument => NotFound
+              case missing: MissingRegDocument => NotFound
             }
           }
         }
       }
   }
 
-  def getPAYEContact(regID: String) : Action[AnyContent] = Action.async {
+  def getPAYEContact(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getPAYEContact") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getPAYEContact") {
           registrationService.getPAYEContact(regID) map {
             case Some(payeContact) => Ok(Json.toJson(payeContact)(PAYEContact.format(APIValidation)))
             case None => NotFound
@@ -236,26 +223,26 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def upsertPAYEContact(regID: String) : Action[JsValue] = Action.async(parse.json) {
+  def upsertPAYEContact(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertPAYEContact") {
+        authResult.ifAuthorised(regID, "RegistrationController", "upsertPAYEContact") {
           withJsonBody[PAYEContact] { payeContact =>
             registrationService.upsertPAYEContact(regID, payeContact) map { payeContactResponse =>
               Ok(Json.toJson(payeContactResponse)(PAYEContact.format(APIValidation)))
             } recover {
-              case missing : MissingRegDocument => NotFound
-              case format  : RegistrationFormatException => BadRequest(format.getMessage)
+              case missing: MissingRegDocument => NotFound
+              case format: RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
         }
       }
   }
 
-  def getCompletionCapacity(regID: String) : Action[AnyContent] = Action.async {
+  def getCompletionCapacity(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getCompletionCapacity") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getCompletionCapacity") {
           registrationService.getCompletionCapacity(regID) map {
             case Some(capacity) => Ok(Json.toJson(capacity))
             case None => NotFound
@@ -264,17 +251,17 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def upsertCompletionCapacity(regID: String) : Action[JsValue] = Action.async(parse.json) {
+  def upsertCompletionCapacity(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "upsertCompletionCapacity") {
+        authResult.ifAuthorised(regID, "RegistrationController", "upsertCompletionCapacity") {
           implicit val stringReads: Reads[String] = APIValidation.completionCapacityReads
           withJsonBody[String] { capacity =>
             registrationService.upsertCompletionCapacity(regID, capacity) map { capacityResponse =>
               Ok(Json.toJson(capacityResponse))
             } recover {
-              case missing : MissingRegDocument => NotFound
-              case format  : RegistrationFormatException => BadRequest(format.getMessage)
+              case missing: MissingRegDocument => NotFound
+              case format: RegistrationFormatException => BadRequest(format.getMessage)
             }
           }
         }
@@ -284,7 +271,7 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
   def submitPAYERegistration(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "submitPAYERegistration") {
+        authResult.ifAuthorised(regID, "RegistrationController", "submitPAYERegistration") {
           submissionService.submitToDes(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
@@ -296,19 +283,19 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def getAcknowledgementReference(regID: String) : Action[AnyContent] = Action.async {
+  def getAcknowledgementReference(regID: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regID) { authResult =>
-        authResult.ifAuthorised(regID, "RegistrationCtrl", "getAcknowledgementReference") {
+        authResult.ifAuthorised(regID, "RegistrationController", "getAcknowledgementReference") {
           registrationService.getAcknowledgementReference(regID) map {
             case Some(ackRef) => Ok(Json.toJson(ackRef))
             case None => NotFound
           }
         }
       }
-    }
+  }
 
-  def processIncorporationData : Action[JsValue] = Action.async(parse.json) {
+  def processIncorporationData: Action[JsValue] = Action.async(parse.json) {
     implicit request =>
       withJsonBody[IncorpStatusUpdate] { statusUpdate =>
         val transactionId = statusUpdate.transactionId
@@ -318,29 +305,29 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
             throw new MissingRegDocument(transactionId)
           case Some(reg) =>
             submissionService.submitTopUpToDES(reg.registrationID, statusUpdate) map (_ => Ok(Json.toJson(statusUpdate.crn)))
-      } recoverWith {
-        case invalid: ErrorRegistrationException =>
-          Future.successful(Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}"))
-        case _: MissingRegDocument =>
-          Future.successful(Ok(s"No registration found for transaction id $transactionId"))
-        case error: RegistrationInvalidStatus => registrationInvalidStatusHandler(error, transactionId)
-        case mongo @ (_: UpdateFailed | _: RetrieveFailed) =>
-          Logger.error(s"[RegistrationController] - [processIncorporationData] - Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
-          Future.successful(InternalServerError)
-        case e =>
-          Logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
-          throw e
+        } recoverWith {
+          case invalid: ErrorRegistrationException =>
+            Future.successful(Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}"))
+          case _: MissingRegDocument =>
+            Future.successful(Ok(s"No registration found for transaction id $transactionId"))
+          case error: RegistrationInvalidStatus => registrationInvalidStatusHandler(error, transactionId)
+          case mongo@(_: UpdateFailed | _: RetrieveFailed) =>
+            Logger.error(s"[RegistrationController] - [processIncorporationData] - Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
+            Future.successful(InternalServerError)
+          case e =>
+            Logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
+            throw e
+        }
       }
-    }
   }
 
-  def registrationInvalidStatusHandler(regInvalidError: RegistrationInvalidStatus, transactionId: String)(implicit hc: HeaderCarrier):Future[Result] ={
+  def registrationInvalidStatusHandler(regInvalidError: RegistrationInvalidStatus, transactionId: String)(implicit hc: HeaderCarrier): Future[Result] = {
     counterService.updateIncorpCount(regInvalidError.regId) map {
-        case true => Logger.info(s"[RegistrationController] - [processIncorporationData] - II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
-          Ok(s" II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
-        case false => Logger.warn(s"[RegistrationController] - [processIncorporationData] - Warning cannot process Incorporation Update for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
-          InternalServerError
-      } recover {
+      case true => Logger.info(s"[RegistrationController] - [processIncorporationData] - II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
+        Ok(s" II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
+      case false => Logger.warn(s"[RegistrationController] - [processIncorporationData] - Warning cannot process Incorporation Update for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
+        InternalServerError
+    } recover {
       case error: UpdateFailed =>
         Logger.error(s"[RegistrationController] - [processIncorporation] returned a None when trying to upsert ${regInvalidError.regId} for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
         InternalServerError
@@ -349,7 +336,7 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
 
   def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      implicit val fmt = EmpRefNotification.format(APIValidation,crypto)
+      implicit val fmt = EmpRefNotification.format(APIValidation, crypto)
       withJsonBody[EmpRefNotification] { notification =>
         notificationService.processNotification(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))
@@ -362,7 +349,7 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
   def getDocumentStatus(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regId) { authResult =>
-        authResult.ifAuthorised(regId, "RegistrationCtrl", "getDocumentStatus") {
+        authResult.ifAuthorised(regId, "RegistrationController", "getDocumentStatus") {
           registrationService.getStatus(regId) map { status =>
             Ok(Json.toJson(status))
           } recover {
@@ -372,9 +359,9 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-  def deletePAYERegistrationIncorpRejected(regId: String) : Action[AnyContent] = Action.async {
+  def deletePAYERegistrationIncorpRejected(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
-      registrationService.deletePAYERegistration(regId,PAYEStatus.invalid, PAYEStatus.draft) map {
+      registrationService.deletePAYERegistration(regId, PAYEStatus.invalid, PAYEStatus.draft) map {
         if (_) {
           Logger.info(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Rejected Registration Document deleted for regId: $regId")
           Ok
@@ -384,16 +371,16 @@ abstract class RegistrationCtrl(controllerComponents: ControllerComponents) exte
         }
       } recover {
         case _: UnmatchedStatusException => PreconditionFailed
-        case _: MissingRegDocument       => NotFound
+        case _: MissingRegDocument => NotFound
       }
   }
 
   def deletePAYERegistration(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regId) { authResult =>
-        authResult.ifAuthorised(regId, "RegistrationCtrl", "deletePAYERegistration") {
+        authResult.ifAuthorised(regId, "RegistrationController", "deletePAYERegistration") {
           registrationService.deletePAYERegistration(regId, PAYEStatus.rejected) map { deleted =>
-            if(deleted) Ok else InternalServerError
+            if (deleted) Ok else InternalServerError
           } recover {
             case _: UnmatchedStatusException => PreconditionFailed
           }

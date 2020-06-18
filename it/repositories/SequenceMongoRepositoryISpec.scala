@@ -25,8 +25,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class SequenceMongoRepositoryISpec extends MongoBaseSpec with BeforeAndAfterAll {
 
   class Setup {
-    val mongo = new SequenceMongo(reactiveMongoComponent)
-    val repository = mongo.store
+    val repository = new SequenceMongoRepository(reactiveMongoComponent)
     await(repository.drop)
     await(repository.ensureIndexes)
   }

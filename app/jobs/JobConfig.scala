@@ -25,11 +25,8 @@ trait JobConfig {
   val appConfig: AppConfig
   val name: String
 
-  lazy val LOCK_TIMEOUT = s"$name.schedule.lockTimeout"
-
   lazy val lockTimeout: JodaDuration = {
-    val dur = ScalaDuration.create(appConfig.servicesConfig.getConfString(LOCK_TIMEOUT,
-      throw new RuntimeException(s"Could not find config $LOCK_TIMEOUT")))
+    val dur = ScalaDuration.create(appConfig.getLockTimeout(name))
     JodaDuration.standardSeconds(FiniteDuration(dur.length, dur.unit).toSeconds)
   }
 }

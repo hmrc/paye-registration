@@ -23,28 +23,20 @@ import javax.inject.Inject
 import jobs._
 import org.joda.time.Duration
 import play.api.Logger
-import repositories.RegistrationMongo
-import uk.gov.hmrc.lock.LockKeeper
+import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class RemoveStaleDocsServiceImpl @Inject()(val mRepo: RegistrationMongo,
-                                           val lockRepository: LockRepositoryProvider,
-                                           appConfig: AppConfig) extends RemoveStaleDocsService{
+class RemoveStaleDocsService @Inject()(registrationMongoRepository: RegistrationMongoRepository,
+                                       lockRepository: LockRepositoryProvider,
+                                       appConfig: AppConfig) extends ScheduledService[Either[(ZonedDateTime, Int), LockResponse]] {
 
-  lazy val lockoutTimeout = appConfig.servicesConfig.getInt("schedules.remove-stale-documents-job.lockTimeout")
   lazy val lock: LockKeeper = new LockKeeper() {
-    override val lockId = "remove-stale-documents-job"
-    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(lockoutTimeout)
-    override lazy val repo = lockRepository.repo
+    override val lockId: String = "remove-stale-documents-job"
+    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(appConfig.removeStaleDocumentsJobLockoutTimeout)
+    override lazy val repo: LockRepository = lockRepository.repo
   }
-
-}
-
-
-trait RemoveStaleDocsService extends ScheduledService[Either[(ZonedDateTime, Int), LockResponse]] {
-  val lock: LockKeeper
-  val mRepo: RegistrationMongo
 
   def invoke(implicit ec: ExecutionContext): Future[Either[(ZonedDateTime, Int), LockResponse]] = {
     lock.tryLock(removeStaleDocs).map {
@@ -68,7 +60,7 @@ trait RemoveStaleDocsService extends ScheduledService[Either[(ZonedDateTime, Int
 
 
   def removeStaleDocs(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)] = {
-    mRepo.store.removeStaleDocuments()
+    registrationMongoRepository.removeStaleDocuments()
 
   }
 }

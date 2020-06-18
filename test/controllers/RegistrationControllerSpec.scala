@@ -20,7 +20,7 @@ import java.time.LocalDate
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import auth.CryptoSCRSImpl
+import auth.CryptoSCRS
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
@@ -37,6 +37,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repositories.RegistrationMongoRepository
 import services._
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -57,14 +58,16 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
 
   class Setup {
-    val controller = new RegistrationCtrl(stubControllerComponents()) {
-      override val resourceConn = mockRegistrationRepository
-      override val registrationService = mockRegistrationService
-      override val submissionService = mockSubmissionService
-      override val notificationService = mockNotificationService
-      override val counterService = mockCounterService
-      override val authConnector = mockAuthConnector
-      override val crypto = mockCrypto
+    val controller = new RegistrationController(
+      mockRegistrationService,
+      mockSubmissionService,
+      mockNotificationService,
+      mockCounterService,
+      mockCrypto,
+      mockAuthConnector,
+      stubControllerComponents()
+    ) {
+      override val resourceConn: RegistrationMongoRepository = mockRegistrationRepository
     }
   }
 
@@ -597,7 +600,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   "updateRegistrationWithEmpRef" should {
     "return an OK" when {
       "the reg doc has been updated with the emp ref" in new Setup {
-        implicit val f = EmpRefNotification.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+        implicit val f = EmpRefNotification.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
         val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
         val request = FakeRequest().withBody(Json.toJson(testNotification))
 
