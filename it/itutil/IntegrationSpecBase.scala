@@ -19,24 +19,23 @@ package itutil
 import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
-import uk.gov.hmrc.play.test.UnitSpec
 import utils.{FeatureSwitch, PAYEFeatureSwitches}
 
-trait IntegrationSpecBase extends UnitSpec
+trait IntegrationSpecBase extends WordSpec
   with GuiceOneServerPerSuite with ScalaFutures with IntegrationPatience with Matchers
   with WiremockHelper with BeforeAndAfterEach with BeforeAndAfterAll {
 
-  def setupFeatures(
-                     desService: Boolean = false,
-                     removeStaleDocumentsJob: Boolean = false,
-                     metricsJob: Boolean = false
-                     ) = {
+  def setupFeatures(desService: Boolean = false,
+                    removeStaleDocumentsJob: Boolean = false,
+                    metricsJob: Boolean = false
+                   ) = {
     def enableFeature(fs: FeatureSwitch, enabled: Boolean) = {
       enabled match {
         case true => FeatureSwitch.enable(fs)
         case _ => FeatureSwitch.disable(fs)
       }
     }
+
     enableFeature(PAYEFeatureSwitches.desService, desService)
     enableFeature(PAYEFeatureSwitches.removeStaleDocuments, removeStaleDocumentsJob)
     enableFeature(PAYEFeatureSwitches.graphiteMetrics, metricsJob)

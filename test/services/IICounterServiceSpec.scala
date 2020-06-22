@@ -20,6 +20,7 @@ import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.Configuration
+import play.api.test.Helpers._
 import repositories.IICounterMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global

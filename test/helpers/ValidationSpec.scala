@@ -19,9 +19,8 @@ package helpers
 import models.validation.DesValidation
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.play.test.UnitSpec
 
-class ValidationSpec extends UnitSpec {
+class ValidationSpec extends PAYERegSpec {
 
   case class TestModel(cName: String, int: Int = 616)
   implicit val testModelWriter: Writes[TestModel] = (

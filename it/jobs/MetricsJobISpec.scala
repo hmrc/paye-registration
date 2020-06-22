@@ -29,6 +29,7 @@ import models.PAYERegistration
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
+import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongo
 
@@ -110,7 +111,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
       setupFeatures(metricsJob = false)
 
       val job = lookupJob("metrics-job")
-      val res = await(job.schedule)
+      val res = job.schedule
 
       res shouldBe false
       //      res shouldBe job.Result("Feature metrics-job is turned off")

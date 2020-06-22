@@ -16,10 +16,10 @@
 
 package audit
 
+import helpers.PAYERegSpec
 import play.api.libs.json.Json
-import uk.gov.hmrc.play.test.UnitSpec
 
-class IncorporationFailureEventSpec extends UnitSpec {
+class IncorporationFailureEventSpec extends PAYERegSpec {
   "IncorporationFailureAuditEventDetail" should {
     "construct a full set of Json" in {
       val testModel = IncorporationFailureAuditEventDetail("testRegId", "testAckRef")

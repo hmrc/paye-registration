@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.test.FakeRequest
-import play.api.test.Helpers.stubControllerComponents
+import play.api.test.Helpers._
 import services.RegistrationService
 
 import scala.concurrent.Future

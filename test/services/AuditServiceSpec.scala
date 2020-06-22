@@ -23,6 +23,7 @@ import helpers.PAYERegSpec
 import models.{Address, CompanyDetails, DigitalContactDetails}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
+import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
@@ -64,7 +65,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(new ~(Some("some-external-id"), cred)))
 
       when(mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(AuditResult.Success))
+        .thenReturn(Future.successful(AuditResult.Success))
 
       await(service.auditCompletionCapacity(regId, previousCC, newCC)) shouldBe AuditResult.Success
     }

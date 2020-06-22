@@ -24,6 +24,7 @@ import itutil.MongoBaseSpec
 import models.{EmpRefNotification, PAYERegistration}
 import play.api.Configuration
 import play.api.libs.json.JsObject
+import play.api.test.Helpers._
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.play.json.ImplicitBSONHandlers._
 
@@ -33,10 +34,10 @@ import scala.concurrent.Future
 class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
 
   class Setup {
-    lazy val mockMetrics = fakeApplication.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = fakeApplication.injector.instanceOf[DateHelper]
-    lazy val sConfig = fakeApplication.injector.instanceOf[Configuration]
-    lazy val mockcryptoSCRS = fakeApplication.injector.instanceOf[CryptoSCRS]
+    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
+    lazy val sConfig = app.injector.instanceOf[Configuration]
+    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
     val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     val repository = mongo.store
     await(repository.drop)

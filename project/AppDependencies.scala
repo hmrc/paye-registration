@@ -28,7 +28,6 @@ object MainDependencies {
 trait TestDependencies {
   val scalaTestVersion = "3.0.8"
   val scalaTestPlusVersion = "3.1.3"
-  val hmrcTestVersion = "3.9.0-play-26"
   val mockitoCoreVersion = "2.13.0"
   val wireMockVersion = "2.26.3"
   val reactiveTestVersion = "4.19.0-play-26"
@@ -37,7 +36,6 @@ trait TestDependencies {
   val test: Seq[ModuleID]
 
   lazy val commonTestDependencies = Seq(
-    "uk.gov.hmrc" %% "hmrctest" % hmrcTestVersion % scope,
     "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
     "uk.gov.hmrc" %% "reactivemongo-test" % reactiveTestVersion % scope
   )

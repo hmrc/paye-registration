@@ -27,6 +27,7 @@ import models.validation.MongoValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.{Application, Configuration}
+import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongo, RegistrationMongoRepository}
 import utils.SystemDate

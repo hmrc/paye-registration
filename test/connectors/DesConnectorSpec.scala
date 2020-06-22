@@ -26,6 +26,7 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
+import play.api.test.Helpers._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.ws.WSHttp

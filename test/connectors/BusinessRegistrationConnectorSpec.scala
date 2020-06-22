@@ -21,6 +21,7 @@ import mocks.WSHTTPMock
 import models.external.BusinessProfile
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import play.api.test.Helpers._
 import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, NotFoundException}
 
 import scala.concurrent.Future

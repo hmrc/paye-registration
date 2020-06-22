@@ -24,7 +24,7 @@ import jobs.ScheduledJob
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{BAD_REQUEST, OK, stubControllerComponents}
+import play.api.test.Helpers._
 import utils.BooleanFeatureSwitch
 
 class FeatureSwitchControllerSpec extends PAYERegSpec {
@@ -60,7 +60,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
       "desStubFeature and true are passed in the url" in new Setup {
         val result = controller.switch("desServiceFeature", "true")(FakeRequest())
         status(result) shouldBe OK
-        bodyOf(await(result)) shouldBe testFeatureSwitch.toString
+        contentAsString(result) shouldBe testFeatureSwitch.toString
       }
 
       "removeStaleDocumentsFeature and true is passed in the url" in new Setup {
@@ -70,7 +70,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
         val result = controller.switch("removeStaleDocumentsFeature", "true")(FakeRequest())
 
         status(result) shouldBe OK
-        bodyOf(await(result)) shouldBe testRemoveStaleDocFeatureSwitchTrue.toString
+        contentAsString(result) shouldBe testRemoveStaleDocFeatureSwitchTrue.toString
       }
 
       "removeStaleDocumentsFeature and false is passed in the url" in new Setup {
@@ -80,7 +80,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
         val result = controller.switch("removeStaleDocumentsFeature", "false")(FakeRequest())
 
         status(result) shouldBe OK
-        bodyOf(await(result)) shouldBe testRemoveStaleDocFeatureSwitchFalse.toString
+        contentAsString(result) shouldBe testRemoveStaleDocFeatureSwitchFalse.toString
       }
 
       "graphiteMetrics and true is passed in the url" in new Setup {
@@ -90,7 +90,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
         val result = controller.switch("graphiteMetrics", "true")(FakeRequest())
 
         status(result) shouldBe OK
-        bodyOf(await(result)) shouldBe testGraphiteMetricsFeatureSwitchTrue.toString
+        contentAsString(result) shouldBe testGraphiteMetricsFeatureSwitchTrue.toString
       }
 
       "graphiteMetrics and false is passed in the url" in new Setup {
@@ -100,15 +100,15 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
         val result = controller.switch("graphiteMetrics", "false")(FakeRequest())
 
         status(result) shouldBe OK
-        bodyOf(await(result)) shouldBe testGraphiteMetricsFeatureSwitchFalse.toString
+        contentAsString(result) shouldBe testGraphiteMetricsFeatureSwitchFalse.toString
       }
     }
 
     "disable the desServiceFeature and return an OK" when {
       "desStubFeature and some other featureState is passed into the URL" in new Setup {
-        val result = await(controller.switch("desServiceFeature", "someOtherState")(FakeRequest()))
+        val result = controller.switch("desServiceFeature", "someOtherState")(FakeRequest())
         status(result) shouldBe OK
-        bodyOf(await(result)) shouldBe testDisabledSwitch.toString
+        contentAsString(result) shouldBe testDisabledSwitch.toString
       }
     }
 

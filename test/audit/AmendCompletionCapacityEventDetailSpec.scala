@@ -16,11 +16,11 @@
 
 package audit
 
+import helpers.PAYERegSpec
 import models.submission.DESCompletionCapacity
 import play.api.libs.json.Json
-import uk.gov.hmrc.play.test.UnitSpec
 
-class AmendCompletionCapacityEventDetailSpec extends UnitSpec {
+class AmendCompletionCapacityEventDetailSpec extends PAYERegSpec {
   "AmendCompletionCapacityEventDetail" should {
     val regId = "testRegId"
     val externalUserId = "testExternalId"

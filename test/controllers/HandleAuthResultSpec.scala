@@ -17,48 +17,48 @@
 package controllers
 
 import auth.{AuthResourceNotFound, Authorised, NotAuthorised, NotLoggedInOrAuthorised}
+import helpers.PAYERegSpec
 import play.api.mvc.Results.Ok
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class HandleAuthResultSpec extends UnitSpec {
+class HandleAuthResultSpec extends PAYERegSpec {
   implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
 
   "logAndSendResult" should {
     "return a correct Result" when {
       "AuthorisationResult is Authorised" in {
-        val response = await(Authorised("testId").ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = Authorised("testId").ifAuthorised("regId", "TestController", "TestMethod") {
           Future.successful(Ok("All good"))
-        })
+        }
 
         status(response) shouldBe OK
         contentAsString(response) shouldBe "All good"
       }
 
       "AuthorisationResult is NotLoggedInOrAuthorised" in {
-        val response = await(NotLoggedInOrAuthorised.ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = NotLoggedInOrAuthorised.ifAuthorised("regId", "TestController", "TestMethod") {
           Future.successful(Ok("All good"))
-        })
+        }
 
         status(response) shouldBe FORBIDDEN
       }
 
       "AuthorisationResult is NotAuthorised" in {
-        val response = await(NotAuthorised("testId").ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = NotAuthorised("testId").ifAuthorised("regId", "TestController", "TestMethod") {
           Future.successful(Ok("All good"))
-        })
+        }
 
         status(response) shouldBe FORBIDDEN
       }
 
       "AuthorisationResult is AuthResourceNotFound" in {
-        val response = await(AuthResourceNotFound("testId").ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = AuthResourceNotFound("testId").ifAuthorised("regId", "TestController", "TestMethod") {
           Future.successful(Ok("All good"))
-        })
+        }
 
         status(response) shouldBe NOT_FOUND
       }

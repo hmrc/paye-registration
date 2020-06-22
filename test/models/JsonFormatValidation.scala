@@ -16,11 +16,11 @@
 
 package models
 
+import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json._
-import uk.gov.hmrc.play.test.UnitSpec
 
 trait JsonFormatValidation {
-  this: UnitSpec =>
+  this: WordSpec with Matchers =>
 
   def shouldBeSuccess[T](expected: T, result: JsResult[T]) = {
     result match {

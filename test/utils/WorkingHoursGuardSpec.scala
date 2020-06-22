@@ -18,9 +18,9 @@ package utils
 
 import java.time.{LocalDate, LocalTime}
 
-import uk.gov.hmrc.play.test.UnitSpec
+import helpers.PAYERegSpec
 
-class WorkingHoursGuardSpec extends UnitSpec {
+class WorkingHoursGuardSpec extends PAYERegSpec {
 
   trait Setup extends WorkingHoursGuard {
     override val alertWorkingHours: String = "08:00:00_18:00:00"

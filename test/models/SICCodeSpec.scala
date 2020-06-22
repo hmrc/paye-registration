@@ -16,11 +16,11 @@
 
 package models
 
+import helpers.PAYERegSpec
 import models.validation.APIValidation
 import play.api.libs.json.{JsSuccess, Json}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class SICCodeSpec extends UnitSpec with JsonFormatValidation {
+class SICCodeSpec extends PAYERegSpec with JsonFormatValidation {
   "SICCode" should {
     val tstJsonFull = Json.parse(
       s"""

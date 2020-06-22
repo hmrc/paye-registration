@@ -19,10 +19,10 @@ package utils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import helpers.PAYERegSpec
 import org.scalatest.BeforeAndAfterEach
-import uk.gov.hmrc.play.test.UnitSpec
 
-class FeatureSwitchSpec extends UnitSpec with BeforeAndAfterEach {
+class FeatureSwitchSpec extends PAYERegSpec with BeforeAndAfterEach {
 
   override def beforeEach() {
     System.clearProperty("feature.test")

@@ -19,17 +19,17 @@ package utils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import helpers.PAYERegSpec
 import org.scalatest.BeforeAndAfterEach
-import uk.gov.hmrc.play.test.UnitSpec
 
-class SystemDateSpec extends UnitSpec with BeforeAndAfterEach {
+class SystemDateSpec extends PAYERegSpec with BeforeAndAfterEach {
 
-  override protected def beforeEach(): Unit = {
+  override def beforeEach(): Unit = {
     System.clearProperty("feature.system-date")
     super.beforeEach()
   }
 
-  override protected def afterEach(): Unit = {
+  override  def afterEach(): Unit = {
     System.clearProperty("feature.system-date")
     super.afterEach()
   }

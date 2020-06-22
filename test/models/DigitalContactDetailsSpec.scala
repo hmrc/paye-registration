@@ -16,11 +16,11 @@
 
 package models
 
+import helpers.PAYERegSpec
 import models.validation.APIValidation
 import play.api.libs.json._
-import uk.gov.hmrc.play.test.UnitSpec
 
-class DigitalContactDetailsSpec extends UnitSpec with JsonFormatValidation {
+class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
 
   val dcdFormatter = DigitalContactDetails.reads(APIValidation)
 

@@ -19,12 +19,12 @@ package models.incorporation
 import java.time.LocalDate
 
 import enums.IncorporationStatus
+import helpers.PAYERegSpec
 import models.JsonFormatValidation
 import models.validation.APIValidation
-import play.api.libs.json.{JsPath, JsSuccess, JsValue, Json, JsonValidationError}
-import uk.gov.hmrc.play.test.UnitSpec
+import play.api.libs.json._
 
-class IncorpStatusUpdateSpec extends UnitSpec with JsonFormatValidation {
+class IncorpStatusUpdateSpec extends PAYERegSpec with JsonFormatValidation {
 
   private def statusUpdateFromJson(json: JsValue) = Json.fromJson[IncorpStatusUpdate](json)(IncorpStatusUpdate.reads(APIValidation))
 

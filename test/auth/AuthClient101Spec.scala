@@ -16,25 +16,22 @@
 
 package auth
 
+import helpers.PAYERegSpec
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.libs.json.Json
-import play.api.mvc.Action
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class AuthClient101Spec extends UnitSpec with MockitoSugar {
-  val mockAuthConnector = mock[AuthConnector]
+class AuthClient101Spec extends PAYERegSpec {
 
   object TestController extends BackendController(stubControllerComponents()) with AuthorisedFunctions {
     override val authConnector = mockAuthConnector

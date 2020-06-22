@@ -28,6 +28,7 @@ import models._
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, contains, eq => eqTo}
 import org.mockito.Mockito._
+import play.api.test.Helpers._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
