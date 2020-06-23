@@ -18,9 +18,7 @@ package common.exceptions
 
 import scala.util.control.NoStackTrace
 
-object SubmissionExceptions extends SubmissionExceptions
-
-trait SubmissionExceptions {
+object SubmissionExceptions {
   case class RegistrationInvalidStatus(regId: String, status: String) extends NoStackTrace {
     override def getMessage = s"Tried to submit registration with status $status for reg ID $regId"
   }

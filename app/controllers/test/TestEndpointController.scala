@@ -16,35 +16,27 @@
 
 package controllers.test
 
-import javax.inject.{Inject, Singleton}
 import auth.CryptoSCRS
 import enums.PAYEStatus
+import javax.inject.{Inject, Singleton}
 import models._
 import models.validation.APIValidation
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.auth.core.retrieve.Retrievals.internalId
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class TestEndpointController @Inject()(registrationMongo: RegistrationMongo,
+class TestEndpointController @Inject()(registrationRepository: RegistrationMongoRepository,
                                        val authConnector: AuthConnector,
                                        val cryptoSCRS: CryptoSCRS,
                                        controllerComponents: ControllerComponents
-                                      ) extends TestEndpointCtrl(controllerComponents) {
-
-  val registrationRepository: RegistrationMongoRepository = registrationMongo.store
-}
-
-abstract class TestEndpointCtrl(controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with AuthorisedFunctions {
-
-  val registrationRepository: RegistrationMongoRepository
-  val cryptoSCRS: CryptoSCRS
+                                      ) extends BackendController(controllerComponents) with AuthorisedFunctions {
 
   def registrationTeardown: Action[AnyContent] = Action.async {
     implicit request =>
@@ -73,7 +65,7 @@ abstract class TestEndpointCtrl(controllerComponents: ControllerComponents) exte
           val regWithStatus = regWithId ++ Json.obj("status" -> "draft")
           val regWithLastUpdate = regWithStatus ++ Json.obj("lastUpdate" -> (reg \ "formCreationTimestamp").as[String])
 
-          regWithLastUpdate.validate[PAYERegistration].fold (
+          regWithLastUpdate.validate[PAYERegistration].fold(
             errs => Future.successful(BadRequest(errs.toString())),
             registration => registrationRepository.updateRegistration(registration) map {
               _ => Ok(Json.toJson(reg).as[JsObject])
@@ -106,17 +98,16 @@ abstract class TestEndpointCtrl(controllerComponents: ControllerComponents) exte
       }
   }
 
-
-  private def createPAYEStatus(status: String):PAYEStatus.Value = {
+  private def createPAYEStatus(status: String): PAYEStatus.Value = {
     status.toLowerCase match {
-      case "draft"        => PAYEStatus.draft
-      case "held"         => PAYEStatus.held
-      case "submitted"    => PAYEStatus.submitted
+      case "draft" => PAYEStatus.draft
+      case "held" => PAYEStatus.held
+      case "submitted" => PAYEStatus.submitted
       case "acknowledged" => PAYEStatus.acknowledged
-      case "invalid"      => PAYEStatus.invalid
-      case "cancelled"    => PAYEStatus.cancelled
-      case "rejected"     => PAYEStatus.rejected
-      case _              => PAYEStatus.draft
+      case "invalid" => PAYEStatus.invalid
+      case "cancelled" => PAYEStatus.cancelled
+      case "rejected" => PAYEStatus.rejected
+      case _ => PAYEStatus.draft
     }
   }
 }

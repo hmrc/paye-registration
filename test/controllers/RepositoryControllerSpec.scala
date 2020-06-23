@@ -24,19 +24,19 @@ import org.mockito.Mockito._
 import play.api.http.Status
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repositories.RegistrationMongoRepository
 import services.RegistrationService
 
 import scala.concurrent.Future
 
 class RepositoryControllerSpec extends PAYERegSpec {
 
-  val mockRegistrationService = mock[RegistrationService]
+  val mockRegistrationService: RegistrationService = mock[RegistrationService]
 
   class Setup {
-    val controller = new RepositoryCtrl(stubControllerComponents()) {
-      override val registrationService: RegistrationService = mockRegistrationService
-      override val resourceConn: AuthorisationResource = mockRegistrationRepository
-      val authConnector = mockAuthConnector
+    val controller: RepositoryController = new RepositoryController(mockRegistrationService, mockAuthConnector, stubControllerComponents()) {
+      override val resourceConn: RegistrationMongoRepository = mockRegistrationRepository
+
     }
   }
 

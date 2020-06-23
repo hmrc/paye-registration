@@ -31,7 +31,7 @@ import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.{Application, Configuration}
 import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.RegistrationMongo
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -101,8 +101,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
       override def getTimestamp: ZonedDateTime = ts
     }
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val repository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     lazy val lockRepository = app.injector.instanceOf[LockRepositoryProvider].repo
   }
 

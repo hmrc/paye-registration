@@ -24,10 +24,10 @@ import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
+import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -67,10 +67,8 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
      val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
      }
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
-    val repository: RegistrationMongoRepository = mongo.store
-    val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val sequenceRepository = new SequenceMongoRepository(reactiveMongoComponent)
     await(repository.drop)
     await(repository.ensureIndexes)
     await(sequenceRepository.drop)

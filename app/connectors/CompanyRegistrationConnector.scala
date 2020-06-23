@@ -26,17 +26,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class CompanyRegistrationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends CompanyRegistrationConnect {
-  val compRegUrl = appConfig.servicesConfig.baseUrl("company-registration") //TODO move to appConfig and call directly
-
-}
-
-trait CompanyRegistrationConnect {
-  val compRegUrl: String
-  val http: CoreGet
+class CompanyRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig) {
 
   def fetchCompanyRegistrationDocument(regId: String, txId: Option[String])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.GET[HttpResponse](s"$compRegUrl/company-registration/corporation-tax-registration/$regId/corporation-tax-registration") recover {
+    http.GET[HttpResponse](s"${appConfig.compRegUrl}/company-registration/corporation-tax-registration/$regId/corporation-tax-registration") recover {
       case e: NotFoundException =>
         Logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a NotFound status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
         throw e

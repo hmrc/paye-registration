@@ -16,7 +16,7 @@
 
 package controllers.test
 
-import auth.CryptoSCRSImpl
+import auth.CryptoSCRS
 import enums.PAYEStatus
 import fixtures.RegistrationFixture
 import helpers.PAYERegSpec
@@ -38,11 +38,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
   val mockRepo = mock[RegistrationMongoRepository]
 
   class Setup {
-    val controller = new TestEndpointCtrl(stubControllerComponents()) {
-      override val registrationRepository = mockRepo
-      val authConnector = mockAuthConnector
-      val cryptoSCRS = mockCrypto
-    }
+    val controller = new TestEndpointController(mockRepo, mockAuthConnector, mockCrypto, stubControllerComponents())
   }
 
   override def beforeEach() {
@@ -91,7 +87,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a 200 response for success" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration))
 
@@ -101,7 +97,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a 500 response for failure" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
@@ -118,7 +114,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a forbidden response for unauthorised" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRSImpl(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
       status(response) shouldBe Status.FORBIDDEN
     }

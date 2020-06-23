@@ -27,18 +27,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class BusinessRegistrationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends BusinessRegistrationConnect {
-
-  val businessRegUrl = appConfig.servicesConfig.baseUrl("business-registration") //TODO move to appConfig and call directly
-}
-
-trait BusinessRegistrationConnect {
-
-  val businessRegUrl: String
-  val http: CoreGet
+class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig) {
 
   def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
-    http.GET[BusinessProfile](s"$businessRegUrl/business-registration/business-tax-registration") recover {
+    http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration") recover {
       case e: NotFoundException =>
         Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
         throw e

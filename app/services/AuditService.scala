@@ -16,33 +16,24 @@
 
 package services
 
-import javax.inject.{Inject, Singleton}
-
 import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.{AddressTypes, IncorporationStatus}
+import javax.inject.{Inject, Singleton}
 import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
 import play.api.libs.json.{JsObject, Json}
-import repositories.{RegistrationMongo, RegistrationRepository}
+import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.auth.core.retrieve.Retrievals.{credentials, externalId}
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AuditService @Inject()(injRegistrationMongoRepository: RegistrationMongo, val authConnector: AuthConnector, val auditConnector: AuditConnector) extends AuditSrv {
-
-  val registrationRepository = injRegistrationMongoRepository.store
-
-}
-
-trait AuditSrv extends AuthorisedFunctions {
-  val registrationRepository: RegistrationRepository
-  val auditConnector : AuditConnector
+class AuditService @Inject()(registrationRepository: RegistrationMongoRepository, val authConnector: AuthConnector, val auditConnector: AuditConnector) extends AuthorisedFunctions {
 
   def auditCompletionCapacity(regID: String, previousCC: String, newCC: String)(implicit hc: HeaderCarrier): Future[AuditResult] = {
     authorised().retrieve(externalId and credentials) {

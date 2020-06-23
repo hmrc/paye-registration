@@ -30,7 +30,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.{Application, Configuration}
 import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.RegistrationMongo
+import repositories.RegistrationMongoRepository
 import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -62,8 +62,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val repository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
 
     def insertToDb(paye: PAYERegistration) = {
       await(repository.insert(paye))

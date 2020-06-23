@@ -26,10 +26,10 @@ import models._
 import models.validation.MongoValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.{RegistrationMongo, RegistrationMongoRepository}
+import repositories.RegistrationMongoRepository
 import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,8 +63,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val repository: RegistrationMongoRepository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     await(repository.drop)
     await(repository.ensureIndexes)
   }

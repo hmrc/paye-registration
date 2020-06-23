@@ -31,9 +31,7 @@ import scala.concurrent.Future
 class NotificationServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   class Setup {
-    val testService = new NotificationSrv {
-      override val registrationRepo: RegistrationMongoRepository = mockRegistrationRepository
-    }
+    val testService = new NotificationService(mockRegistrationRepository)
   }
 
   "getNewApplicationStatus" should {

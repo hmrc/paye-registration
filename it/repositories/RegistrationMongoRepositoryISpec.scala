@@ -484,8 +484,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       override def getTimestamp: ZonedDateTime = timestampZDT
     }
     lazy val sConfig = app.injector.instanceOf[Configuration]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val repository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     await(repository.drop)
     await(repository.ensureIndexes)
   }

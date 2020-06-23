@@ -37,22 +37,14 @@ class IncorporationInformationResponseException(msg: String) extends NoStackTrac
 }
 
 @Singleton
-class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends IncorporationInformationConnect  {
-  lazy val incorporationInformationUri: String = appConfig.servicesConfig.baseUrl("incorporation-information")
-  lazy val payeRegUri: String = appConfig.servicesConfig.baseUrl("paye-registration")
-}
-
-trait IncorporationInformationConnect {
-  val http: CoreGet with CorePost
-  val incorporationInformationUri: String
-  val payeRegUri: String
+class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) {
 
   private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String = {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
   }
 
   def getIncorporationDate(transactionId: String)(implicit hc: HeaderCarrier): Future[Option[LocalDate]] = {
-    val url = s"$incorporationInformationUri/incorporation-information/$transactionId/incorporation-update"
+    val url = s"${appConfig.incorporationInformationUri}/incorporation-information/$transactionId/incorporation-update"
     http.GET[HttpResponse](url) map { res =>
       res.status match {
         case OK => (res.json \ "incorporationDate").asOpt[LocalDate]
@@ -69,8 +61,8 @@ trait IncorporationInformationConnect {
   }
 
   def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
-    val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> s"$payeRegUri/paye-registration/incorporation-data"))
-    http.POST[JsObject, HttpResponse](s"$incorporationInformationUri${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
+    val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> s"${appConfig.payeRegUri}/paye-registration/incorporation-data"))
+    http.POST[JsObject, HttpResponse](s"${appConfig.incorporationInformationUri}${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
       resp.status match {
         case OK => Some(resp.json.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation)))
         case ACCEPTED => None

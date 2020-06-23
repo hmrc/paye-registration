@@ -30,10 +30,10 @@ import models.external.BusinessProfile
 import models.validation.APIValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongo, SequenceMongoRepository}
+import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -85,10 +85,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     val timestamp = "2017-01-01T00:00:00"
     lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val sequenceMongo = new SequenceMongo(reactiveMongoComponent)
-    val repository: RegistrationMongoRepository = mongo.store
-    val sequenceRepository: SequenceMongoRepository = sequenceMongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val sequenceRepository = new SequenceMongoRepository(reactiveMongoComponent)
     await(repository.drop)
     await(repository.ensureIndexes)
     await(sequenceRepository.drop)

@@ -25,8 +25,7 @@ import models._
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
-import play.api.{Configuration, Logger}
-import repositories.RegistrationMongo
+import play.api.Logger
 import utils.SystemDate
 
 import scala.concurrent.Future
@@ -34,11 +33,7 @@ import scala.concurrent.Future
 class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Eventually {
 
   class Setup {
-    reset(mockRegistrationRepository)
-    val job = () => new StartUpJobs {
-      override lazy val registrationRepo: RegistrationMongo = mockRegistrationMongo
-      override lazy val configuration: Configuration = mockPlayConfiguraton
-    }
+    val job = () => new StartUpJobs(mockRegistrationMongo, mockPlayConfiguraton)
   }
 
   val timestamp = "2017-05-09T07:58:35.000Z"
@@ -115,11 +110,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
 
   "logRegIdFromTxId" should {
     "log a single txId with its regId when present" in new Setup {
-      when(mockRegistrationMongo.store).thenReturn(mockRegistrationRepository)
       when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
         .thenReturn(Some("dHhJZDE="))
 
-      when(mockRegistrationMongo.store.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
         .thenReturn(Future.successful(Some(tstPAYERegistration.copy(registrationID = "regIdX"))))
 
       withCaptureOfLoggingFrom(Logger) { logs =>
@@ -131,11 +125,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "log all txId with their regIds when present" in new Setup {
-      when(mockRegistrationMongo.store).thenReturn(mockRegistrationRepository)
       when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
         .thenReturn(Some("dHhJZDEsdHhJZDIsdHhJZDM="))
 
-      when(mockRegistrationMongo.store.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
         .thenReturn(
           Future.successful(Some(tstPAYERegistration.copy(registrationID = "regId1"))),
           Future.successful(Some(tstPAYERegistration.copy(registrationID = "regId2"))),
@@ -155,11 +148,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "not stop logging if one txId doesn't have a document" in new Setup {
-      when(mockRegistrationMongo.store).thenReturn(mockRegistrationRepository)
       when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
         .thenReturn(Some("dHhJZDEsdHhJZDIsdHhJZDM="))
 
-      when(mockRegistrationMongo.store.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
         .thenReturn(
           Future.successful(Some(tstPAYERegistration.copy(registrationID = "regId1"))),
           Future.successful(None),
@@ -178,11 +170,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "not stop logging if all txids throw an exception" in new Setup {
-      when(mockRegistrationMongo.store).thenReturn(mockRegistrationRepository)
       when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
         .thenReturn(Some("dHhJZDEsdHhJZDIsdHhJZDM="))
 
-      when(mockRegistrationMongo.store.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
         .thenReturn(Future.failed(new Exception("Something Went Wrong regId1")), Future.successful(None), Future.failed(new Exception("Something Went Wrong regId3")))
 
       withCaptureOfLoggingFrom(Logger) { logs =>
@@ -195,7 +186,6 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "not log anything if there is no txid list passed in" in new Setup {
-      when(mockRegistrationMongo.store).thenReturn(mockRegistrationRepository)
       when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
         .thenReturn(None)
 

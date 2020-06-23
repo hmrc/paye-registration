@@ -38,8 +38,7 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val sConfig = app.injector.instanceOf[Configuration]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val repository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
     await(repository.drop)
     await(repository.ensureIndexes)
   }

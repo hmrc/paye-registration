@@ -18,43 +18,29 @@ package services
 
 import java.time.LocalDate
 
-import javax.inject.{Inject, Singleton}
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import config.AppConfig
-import connectors.{IncorporationInformationConnect, IncorporationInformationConnector}
+import connectors.IncorporationInformationConnector
 import enums.{Employing, PAYEStatus}
 import helpers.PAYEBaseValidator
+import javax.inject.{Inject, Singleton}
 import models._
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
-import repositories.{RegistrationMongo, RegistrationMongoRepository, RegistrationRepository}
+import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RegistrationService @Inject()(injRegistrationMongoRepository: RegistrationMongo,
-                                    injAuditService: AuditService,
-                                    injIncorporationInformationConnector: IncorporationInformationConnector,
-                                    appConfig: AppConfig) extends RegistrationSrv {
-  val registrationRepository : RegistrationMongoRepository = injRegistrationMongoRepository.store
-  lazy val payeRestartURL = appConfig.servicesConfig.getString("api.payeRestartURL")
-  lazy val payeCancelURL = appConfig.servicesConfig.getString("api.payeCancelURL")
-  val auditService = injAuditService
-  val incorporationInformationConnector = injIncorporationInformationConnector
-}
+class RegistrationService @Inject()(val registrationRepository: RegistrationMongoRepository,
+                                    auditService: AuditService,
+                                    incorporationInformationConnector: IncorporationInformationConnector,
+                                    appConfig: AppConfig) extends PAYEBaseValidator {
 
-trait RegistrationSrv extends PAYEBaseValidator {
-
-  val registrationRepository : RegistrationRepository
-  val payeRestartURL : String
-  val payeCancelURL : String
-  val auditService: AuditSrv
-  val incorporationInformationConnector: IncorporationInformationConnect
-
-  def createNewPAYERegistration(regID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def createNewPAYERegistration(regID: String, transactionID: String, internalId: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case None => registrationRepository.createNewRegistration(regID, transactionID, internalId)
       case Some(registration) =>
@@ -80,7 +66,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
-    if(validDigitalContactDetails(companyDetails.businessContactDetails)) registrationRepository.upsertCompanyDetails(regID, companyDetails)
+    if (validDigitalContactDetails(companyDetails.businessContactDetails)) registrationRepository.upsertCompanyDetails(regID, companyDetails)
     else throw new RegistrationFormatException(s"No business contact method submitted for regID $regID")
   }
 
@@ -101,7 +87,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
 
   def getIncorporationDate(regId: String)(implicit hc: HeaderCarrier): Future[Option[LocalDate]] = {
     for {
-      txId       <- registrationRepository.retrieveTransactionId(regId)
+      txId <- registrationRepository.retrieveTransactionId(regId)
       incorpDate <- incorporationInformationConnector.getIncorporationDate(txId)
     } yield incorpDate
   }
@@ -111,7 +97,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertDirectors(regID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
-    if(directors.exists(_.nino.isDefined)) registrationRepository.upsertDirectors(regID, directors)
+    if (directors.exists(_.nino.isDefined)) registrationRepository.upsertDirectors(regID, directors)
     else throw new RegistrationFormatException(s"No director NINOs completed for reg ID $regID")
   }
 
@@ -128,7 +114,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   }
 
   def upsertPAYEContact(regID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
-    if(validPAYEContact(payeContact)) registrationRepository.upsertPAYEContact(regID, payeContact)
+    if (validPAYEContact(payeContact)) registrationRepository.upsertPAYEContact(regID, payeContact)
     else throw new RegistrationFormatException(s"No PAYE contact method submitted for regID $regID")
   }
 
@@ -139,7 +125,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
   def upsertCompletionCapacity(regID: String, capacity: String)(implicit hc: HeaderCarrier): Future[String] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case Some(reg) =>
-        if( reg.completionCapacity.nonEmpty && !reg.completionCapacity.get.equals(capacity) ) {
+        if (reg.completionCapacity.nonEmpty && !reg.completionCapacity.get.equals(capacity)) {
           auditService.auditCompletionCapacity(regID, reg.completionCapacity.get, capacity)
         }
         registrationRepository.upsertCompletionCapacity(regID, capacity)
@@ -149,7 +135,7 @@ trait RegistrationSrv extends PAYEBaseValidator {
     }
   }
 
-  def getAcknowledgementReference(regID: String)(implicit ec: ExecutionContext) : Future[Option[String]] = {
+  def getAcknowledgementReference(regID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     registrationRepository.retrieveAcknowledgementReference(regID)
   }
 
@@ -160,18 +146,18 @@ trait RegistrationSrv extends PAYEBaseValidator {
           case PAYEStatus.held => registration.partialSubmissionTimestamp
           case PAYEStatus.submitted => registration.fullSubmissionTimestamp
           case PAYEStatus.cancelled => Some(registration.lastUpdate)
-          case _ @ (PAYEStatus.acknowledged | PAYEStatus.rejected) => registration.acknowledgedTimestamp
+          case _@(PAYEStatus.acknowledged | PAYEStatus.rejected) => registration.acknowledgedTimestamp
           case _ => Some(registration.formCreationTimestamp)
         }
 
         val json = Json.obj("status" -> registration.status,
-                            "lastUpdate" -> lastUpdate.get)
+          "lastUpdate" -> lastUpdate.get)
         val ackRef = registration.acknowledgementReference.fold(Json.obj())(ackRef => Json.obj("ackRef" -> ackRef))
         val empRef = json ++ registration.registrationConfirmation.fold(Json.obj()) { empRefNotif =>
           empRefNotif.empRef.fold(Json.obj())(empRef => Json.obj("empref" -> empRef))
         }
-        val restartURL = if(registration.status.equals(PAYEStatus.rejected)) Json.obj("restartURL" -> payeRestartURL) else Json.obj()
-        val cancelURL = if(Seq(PAYEStatus.draft, PAYEStatus.invalid).contains(registration.status)) Json.obj("cancelURL" -> payeCancelURL.replace(":regID", regID)) else Json.obj()
+        val restartURL = if (registration.status.equals(PAYEStatus.rejected)) Json.obj("restartURL" -> appConfig.payeRestartURL) else Json.obj()
+        val cancelURL = if (Seq(PAYEStatus.draft, PAYEStatus.invalid).contains(registration.status)) Json.obj("cancelURL" -> appConfig.payeCancelURL.replace(":regID", regID)) else Json.obj()
 
         Future.successful(json ++ ackRef ++ empRef ++ restartURL ++ cancelURL)
       }

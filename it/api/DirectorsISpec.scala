@@ -30,7 +30,7 @@ import play.api.libs.json._
 import play.api.{Application, Configuration}
 import play.api.test.Helpers._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.RegistrationMongo
+import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -60,8 +60,7 @@ class DirectorsISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val mongo = new RegistrationMongo(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val repository = mongo.store
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 

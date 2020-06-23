@@ -16,14 +16,13 @@
 
 package services
 
-import javax.inject.{Inject, Singleton}
-
 import common.constants.ETMPStatusCodes
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
+import javax.inject.{Inject, Singleton}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -34,6 +33,7 @@ import repositories._
 import uk.gov.hmrc.auth.core.retrieve.Retrievals._
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
@@ -44,72 +44,51 @@ class RejectedIncorporationException(msg: String) extends NoStackTrace {
 }
 
 @Singleton
-class SubmissionService @Inject()(injSequenceMongoRepository: SequenceMongo,
-                                  injRegistrationMongoRepository: RegistrationMongo,
-                                  injDESConnector: DESConnector,
-                                  injIncorporationInformationConnector: IncorporationInformationConnector,
-                                  injBusinessRegistrationConnector: BusinessRegistrationConnector,
-                                  injCompanyRegistrationConnector: CompanyRegistrationConnector,
-                                  injAuditService: AuditService,
-                                  injRegistrationService: RegistrationService,
-                                  val authConnector: AuthConnector) extends SubmissionSrv {
-
-
-  val sequenceRepository = injSequenceMongoRepository.store
-  val registrationRepository = injRegistrationMongoRepository.store
-  val desConnector = injDESConnector
-  val incorporationInformationConnector = injIncorporationInformationConnector
-  val businessRegistrationConnector = injBusinessRegistrationConnector
-  val companyRegistrationConnector = injCompanyRegistrationConnector
-  val auditService = injAuditService
-  val registrationService = injRegistrationService
-}
-
-trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
-
-  val sequenceRepository: SequenceRepository
-  val registrationRepository: RegistrationRepository
-  val desConnector: DESConnect
-  val incorporationInformationConnector: IncorporationInformationConnect
-  val businessRegistrationConnector: BusinessRegistrationConnect
-  val companyRegistrationConnector: CompanyRegistrationConnect
-  val auditService: AuditSrv
-  val registrationService: RegistrationSrv
+class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoRepository,
+                                  registrationMongoRepository: RegistrationMongoRepository,
+                                  desConnector: DESConnector,
+                                  incorporationInformationConnector: IncorporationInformationConnector,
+                                  businessRegistrationConnector: BusinessRegistrationConnector,
+                                  companyRegistrationConnector: CompanyRegistrationConnector,
+                                  auditService: AuditService,
+                                  registrationService: RegistrationService,
+                                  val authConnector: AuthConnector) extends ETMPStatusCodes with AuthorisedFunctions {
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
 
   def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
-    val futureAckRefIncUpdate = { for {
-      ackRef        <- assertOrGenerateAcknowledgementReference(regId)
-      incUpdate     <- getIncorporationUpdate(regId)
+    val futureAckRefIncUpdate = {
+      for {
+        ackRef <- assertOrGenerateAcknowledgementReference(regId)
+        incUpdate <- getIncorporationUpdate(regId)
       } yield {
-      (ackRef, incUpdate)
-     }
+        (ackRef, incUpdate)
+      }
     }.recoverWith {
       case ex: RejectedIncorporationException =>
-      registrationService.deletePAYERegistration(regId, PAYEStatus.draft).map(_ => throw ex)
+        registrationService.deletePAYERegistration(regId, PAYEStatus.draft).map(_ => throw ex)
     }
 
-         futureAckRefIncUpdate.flatMap { ackRefAndIncUpdate =>
-           val (ackRef, incUpdate) = ackRefAndIncUpdate
-           for {
-             ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
-             submission <- buildADesSubmission(regId, incUpdate, ctutr)
-             _ <- desConnector.submitToDES(submission, regId, incUpdate)
-             _ <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
-             updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
-             _ <- updatePAYERegistrationDocument(regId, updatedStatus)
-           } yield ackRef
-         }
+    futureAckRefIncUpdate.flatMap { ackRefAndIncUpdate =>
+      val (ackRef, incUpdate) = ackRefAndIncUpdate
+      for {
+        ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
+        submission <- buildADesSubmission(regId, incUpdate, ctutr)
+        _ <- desConnector.submitToDES(submission, regId, incUpdate)
+        _ <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
+        updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
+        _ <- updatePAYERegistrationDocument(regId, updatedStatus)
+      } yield ackRef
+    }
   }
 
 
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
-      _             <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _             <- auditService.auditDESTopUp(regId, desSubmission)
+      _ <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
+      _ <- auditService.auditDESTopUp(regId, desSubmission)
     } yield {
       if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
         registrationService.deletePAYERegistration(regId, PAYEStatus.held)
@@ -123,34 +102,34 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
 
   def getIncorporationUpdate(regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
     for {
-      txId      <- registrationRepository.retrieveTransactionId(regId)
+      txId <- registrationMongoRepository.retrieveTransactionId(regId)
       incStatus <- incorporationInformationConnector.getIncorporationUpdate(txId, REGIME, SUBSCRIBER, regId)
     } yield {
       incStatus match {
-      case Some(update) if update.status == IncorporationStatus.rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
-      case response => response
+        case Some(update) if update.status == IncorporationStatus.rejected => throw new RejectedIncorporationException(s"incorporation for regId $regId has been rejected")
+        case response => response
       }
     }
   }
 
-  private[services] def assertOrGenerateAcknowledgementReference(regId: String)(implicit ec: ExecutionContext): Future[String]= {
-    registrationRepository.retrieveAcknowledgementReference(regId) flatMap {
+  private[services] def assertOrGenerateAcknowledgementReference(regId: String)(implicit ec: ExecutionContext): Future[String] = {
+    registrationMongoRepository.retrieveAcknowledgementReference(regId) flatMap {
       case Some(ackRef) => Future.successful(ackRef)
       case None => for {
         newAckref <- generateAcknowledgementReference
-        _ <- registrationRepository.saveAcknowledgementReference(regId, newAckref)
+        _ <- registrationMongoRepository.saveAcknowledgementReference(regId, newAckref)
       } yield newAckref
     }
   }
 
   private[services] def generateAcknowledgementReference(implicit ec: ExecutionContext): Future[String] = {
     val sequenceID = "AcknowledgementID"
-    sequenceRepository.getNext(sequenceID)
+    sequenceMongoRepository.getNext(sequenceID)
       .map(ref => f"BRPY$ref%011d")
   }
 
   private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
-    registrationRepository.retrieveRegistration(regId) flatMap {
+    registrationMongoRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
           Logger.info("[SubmissionService] - [buildPartialOrFullDesSubmission]: building a full DES submission")
@@ -169,7 +148,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   }
 
   private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit ec: ExecutionContext): Future[TopUpDESSubmission] = {
-    registrationRepository.retrieveRegistration(regId) map {
+    registrationMongoRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
         Logger.warn(s"[SubmissionService] - [buildTopUpDESSubmission]: paye status is currently ${payeReg.status} for registrationId $regId")
@@ -184,8 +163,11 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   }
 
   private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
-    registrationRepository.updateRegistrationStatus(regId, newStatus) map {
-      _ => if(!newStatus.equals(PAYEStatus.cancelled)) {registrationRepository.cleardownRegistration(regId)}
+    registrationMongoRepository.updateRegistrationStatus(regId, newStatus) map {
+      _ =>
+        if (!newStatus.equals(PAYEStatus.cancelled)) {
+          registrationMongoRepository.cleardownRegistration(regId)
+        }
         newStatus
     }
   }
@@ -204,7 +186,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
       throw new EmploymentDetailsNotDefinedException("Employment Info not defined")
     }
 
-    buildDESMetaData(payeReg.registrationID,payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
+    buildDESMetaData(payeReg.registrationID, payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
       desMetaData => {
         DESSubmission(
           acknowledgementReference = ackRef,
@@ -237,7 +219,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
     }
   }
 
-  private[services] def buildDESMetaData(regId: String, timestamp:String, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
+  private[services] def buildDESMetaData(regId: String, timestamp: String, completionCapacity: Option[String])(implicit hc: HeaderCarrier): Future[DESMetaData] = {
     for {
       language <- retrieveLanguage(regId)
       credId <- retrieveCredId
@@ -253,7 +235,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
                                                directors: Seq[Director],
                                                employment: EmploymentInfo,
                                                ctutr: Option[String]): DESLimitedCompany = {
-    if(directors.isEmpty) throw new DirectorsNotCompletedException("No director details provided") else {
+    if (directors.isEmpty) throw new DirectorsNotCompletedException("No director details provided") else {
       DESLimitedCompany(
         companyUTR = ctutr,
         companiesHouseCompanyName = companyDetails.companyName,
@@ -272,7 +254,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   private def buildDesEmploymentInfo(employmentDetails: EmploymentInfo, payeContactDetails: PAYEContact): DESEmployingPeople = {
     DESEmployingPeople(
       dateOfFirstEXBForEmployees = employmentDetails.firstPaymentDate,
-      numberOfEmployeesExpectedThisYear = if (employmentDetails.employees != Employing.notEmploying ) "1" else "0",
+      numberOfEmployeesExpectedThisYear = if (employmentDetails.employees != Employing.notEmploying) "1" else "0",
       engageSubcontractors = employmentDetails.subcontractors,
       correspondenceName = payeContactDetails.contactDetails.name,
       correspondenceContactDetails = payeContactDetails.contactDetails.digitalContactDetails,
@@ -286,6 +268,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   }
 
   private[services] class FailedToGetCredId extends NoStackTrace
+
   private[services] def retrieveCredId(implicit hc: HeaderCarrier): Future[String] = {
     authorised().retrieve(credentials) { cred =>
       Future.successful(cred.providerId)
@@ -295,6 +278,7 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   }
 
   private[services] class FailedToGetLanguage extends NoStackTrace
+
   private[services] def retrieveLanguage(regId: String)(implicit hc: HeaderCarrier): Future[String] = {
     businessRegistrationConnector.retrieveCurrentProfile(regId) flatMap {
       case businessProfile if businessProfile.registrationID == regId => Future.successful(businessProfile.language)
@@ -303,17 +287,18 @@ trait SubmissionSrv extends ETMPStatusCodes with AuthorisedFunctions {
   }
 
   private[services] class SessionIDNotExists extends NoStackTrace
+
   private[services] def retrieveSessionID(hc: HeaderCarrier): String = {
-    val s = hc.headers.collect{case ("X-Session-ID", x) => x}
-    if( s.nonEmpty ) s.head else throw new SessionIDNotExists
+    val s = hc.headers.collect { case ("X-Session-ID", x) => x }
+    if (s.nonEmpty) s.head else throw new SessionIDNotExists
   }
 
   private[services] def fetchCtUtr(regId: String, incorpUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val txId = incorpUpdate.map(_.transactionId)
     companyRegistrationConnector.fetchCompanyRegistrationDocument(regId, txId) map { response =>
-      Try((response.json \ "acknowledgementReferences" \  "ctUtr").as[String]) match {
+      Try((response.json \ "acknowledgementReferences" \ "ctUtr").as[String]) match {
         case Success(ctutr) => Some(ctutr)
-        case Failure(_)     => None
+        case Failure(_) => None
       }
     }
   }

@@ -32,7 +32,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
   val mockRegistry = mock[MetricRegistry]
 
   trait Setup {
-    val service = MetricsMock
+    val service = MetricsMock.mockMetricsService
   }
 
   "Metrics" should {

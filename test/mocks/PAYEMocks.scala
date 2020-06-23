@@ -22,7 +22,7 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
-import repositories.{RegistrationMongo, RegistrationMongoRepository, SequenceMongoRepository}
+import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 import uk.gov.hmrc.auth.core.{AuthConnector, InvalidBearerToken}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -33,7 +33,7 @@ trait PAYEMocks {
   this: MockitoSugar =>
 
   lazy val mockRegistrationRepository = mock[RegistrationMongoRepository]
-  lazy val mockRegistrationMongo      = mock[RegistrationMongo]
+  lazy val mockRegistrationMongo      = mock[RegistrationMongoRepository]
   lazy val mockSequenceRepository     = mock[SequenceMongoRepository]
   lazy val mockAuthConnector          = mock[AuthConnector]
   lazy val mockPlayConfiguraton       = mock[Configuration]

@@ -31,21 +31,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
-class IICounterMongo @Inject()(
-                                injReactiveMongoComponent: ReactiveMongoComponent) {
-  val store = new IICounterMongoRepository(injReactiveMongoComponent.mongoConnector.db)
-}
-
-trait IICounterRepository{
-  def getNext(regId: String)(implicit ec: ExecutionContext): Future[Int]
-}
-
-
- class IICounterMongoRepository(mongo: () => DB)
-  extends ReactiveRepository[IICounter, BSONObjectID](
+class IICounterMongoRepository @Inject()(reactiveMongoComponent: ReactiveMongoComponent) extends ReactiveRepository[IICounter, BSONObjectID](
     collectionName = "IICounterCollection",
     domainFormat = IICounter.format,
-    mongo = mongo) with IICounterRepository {
+    mongo = reactiveMongoComponent.mongoConnector.db) {
 
   def getNext(regId: String)(implicit ec: ExecutionContext): Future[Int] = {
     val selector = BSONDocument("_id" -> regId)

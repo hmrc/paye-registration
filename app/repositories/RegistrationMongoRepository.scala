@@ -17,7 +17,6 @@
 package repositories
 
 import java.time.ZonedDateTime
-import javax.inject.Inject
 
 import auth.{AuthorisationResource, CryptoSCRS}
 import com.codahale.metrics.Timer
@@ -26,14 +25,15 @@ import common.exceptions.DBExceptions._
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
+import javax.inject.{Inject, Singleton}
 import models._
 import models.validation.MongoValidation
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.Cursor
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.api.{Cursor, DB}
 import reactivemongo.bson.{BSONDocument, BSONObjectID, _}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.http.HeaderCarrier
@@ -44,56 +44,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-class RegistrationMongo @Inject()(val metrics: Metrics, injDateHelper: DateHelper, mongo: ReactiveMongoComponent, config: Configuration, cryptoSCRS: CryptoSCRS) extends ReactiveMongoFormats {
-  val registrationFormat: Format[PAYERegistration] = PAYERegistration.format(crypto = cryptoSCRS, formatter = MongoValidation)
-  lazy val maxStorageDays = config.getInt("constants.maxStorageDays").getOrElse(90)
-  val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
-  lazy val store = new RegistrationMongoRepository(mongo.mongoConnector.db, registrationFormat, injDateHelper, maxStorageDays, mongoResponseTimer, cryptoSCRS)
-
-}
-
-trait RegistrationRepository {
-
-  def createNewRegistration(registrationID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration]
-  //TODO: Rename to something more generic and remove the above two retrieve functions
-  def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
-  def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
-  def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]]
-  def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value]
-  def updateRegistrationStatus(registrationID: String, status: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value]
-  def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]]
-  def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String]
-  def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]]
-  def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails]
-  def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]]
-  def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo]
-  def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]]
-  def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]]
-  def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]]
-  def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]]
-  def retrievePAYEContact(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]]
-  def upsertPAYEContact(registrationID: String, contactDetails: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact]
-  def retrieveCompletionCapacity(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]]
-  def upsertCompletionCapacity(registrationID: String, capacity: String)(implicit ec: ExecutionContext): Future[String]
-  def retrieveTransactionId(registrationID: String)(implicit ec: ExecutionContext): Future[String]
-  def updateRegistrationEmpRef(ackRef: String, status: PAYEStatus.Value, empRefNotification: EmpRefNotification)(implicit ec: ExecutionContext): Future[EmpRefNotification]
-  def dropCollection(implicit ec: ExecutionContext): Future[Unit]
-  def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration]
-  def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean]
-  def upsertRegTestOnly(p:PAYERegistration,w:Format[PAYERegistration])(implicit ec: ExecutionContext):Future[WriteResult]
-  def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)]
-  def getRegistrationStats()(implicit ec: ExecutionContext): Future[Map[String, Int]]
-  def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String]
-}
-
-class RegistrationMongoRepository(mongo: () => DB,
-                                  format: Format[PAYERegistration],
-                                  dh: DateHelper,
-                                  maxStorageDays: Int, val mongoResponseTimer: Timer, cryptoSCRS: CryptoSCRS) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+@Singleton
+class RegistrationMongoRepository @Inject()(metrics: Metrics,
+                                            dateHelper: DateHelper,
+                                            mongo: ReactiveMongoComponent,
+                                            config: Configuration,
+                                            cryptoSCRS: CryptoSCRS
+                                           ) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
-  mongo = mongo,
-  domainFormat = format) with RegistrationRepository with AuthorisationResource {
-  val MAX_STORAGE_DAYS = maxStorageDays
+  mongo = mongo.mongoConnector.db,
+  domainFormat = PAYERegistration.format(crypto = cryptoSCRS, formatter = MongoValidation)
+) with AuthorisationResource with ReactiveMongoFormats {
+
+  val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
+
+  val MAX_STORAGE_DAYS: Int = config.getInt("constants.maxStorageDays").getOrElse(90)
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -121,13 +86,14 @@ class RegistrationMongoRepository(mongo: () => DB,
       sparse = false
     )
   )
-    private def startupJob = getRegistrationStats() map {
-          stats => Logger.info(s"[RegStats] ${stats}")
-        }
+
+  private def startupJob = getRegistrationStats() map {
+    stats => Logger.info(s"[RegStats] ${stats}")
+  }
 
 
   startupJob
-  implicit val mongoFormat: OFormat[PAYERegistration] = OFormat.apply[PAYERegistration](j => format.reads(j),(p:PAYERegistration) => format.writes(p).as[JsObject])
+  implicit val mongoFormat: OFormat[PAYERegistration] = OFormat.apply[PAYERegistration](j => domainFormatImplicit.reads(j), (p: PAYERegistration) => domainFormatImplicit.writes(p).as[JsObject])
 
 
   private[repositories] def registrationIDSelector(registrationID: String): BSONDocument = BSONDocument(
@@ -142,7 +108,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     "acknowledgementReference" -> BSONString(ackRef)
   )
 
-  override def createNewRegistration(registrationID: String, transactionID: String, internalId : String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def createNewRegistration(registrationID: String, transactionID: String, internalId: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     val newReg = newRegistrationObject(registrationID, transactionID, internalId)
     collection.insert[PAYERegistration](newReg) map {
@@ -156,6 +122,7 @@ class RegistrationMongoRepository(mongo: () => DB,
         throw new InsertFailed(registrationID, "PAYERegistration")
     }
   }
+
   private def toCamelCase(str: String): String = str.head.toLower + str.tail
 
   private def fetchBlock[T: TypeTag](registrationID: String, key: String = "")(implicit ec: ExecutionContext, rds: Reads[T]): Future[Option[T]] = {
@@ -169,7 +136,7 @@ class RegistrationMongoRepository(mongo: () => DB,
         (js \ selectorKey).validateOpt[T].get
       }
     } recover {
-      case e : Throwable =>
+      case e: Throwable =>
         mongoTimer.stop()
         Logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID - data block: $selectorKey, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(registrationID)
@@ -198,27 +165,28 @@ class RegistrationMongoRepository(mongo: () => DB,
         throw new UpdateFailed(registrationID, className)
     }
   }
-   private def unsetElement(registrationID: String, element: String)(implicit ex: ExecutionContext): Future[Boolean] = {
-     collection.findAndUpdate(registrationIDSelector(registrationID), BSONDocument("$unset" -> BSONDocument(element -> ""))) map {
-       _.value.fold {
-         logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
-         throw new UpdateFailed(registrationID, element)
-       }{ _ =>
-         Logger.info(s"[RegistrationMongoRepository] [unsetElement] element: $element was unset for regId: $registrationID successfully")
-         true
-       }
-     }
-   }
+
+  private def unsetElement(registrationID: String, element: String)(implicit ex: ExecutionContext): Future[Boolean] = {
+    collection.findAndUpdate(registrationIDSelector(registrationID), BSONDocument("$unset" -> BSONDocument(element -> ""))) map {
+      _.value.fold {
+        logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
+        throw new UpdateFailed(registrationID, element)
+      } { _ =>
+        Logger.info(s"[RegistrationMongoRepository] [unsetElement] element: $element was unset for regId: $registrationID successfully")
+        true
+      }
+    }
+  }
 
 
-  override def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.find(selector).one[JsObject] map { found =>
       mongoTimer.stop()
       found.map(_.as[PAYERegistration](PAYERegistration.format(crypto = cryptoSCRS, formatter = MongoValidation)))
     } recover {
-      case e : Throwable =>
+      case e: Throwable =>
         mongoTimer.stop()
         Logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(registrationID)
@@ -226,35 +194,35 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
 
-  override def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = transactionIDSelector(transactionID)
     collection.find(selector).one[PAYERegistration] map { found =>
       mongoTimer.stop()
       found
     } recover {
-      case e : Throwable =>
+      case e: Throwable =>
         mongoTimer.stop()
         Logger.error(s"Unable to retrieve PAYERegistration for transaction ID $transactionID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(transactionID)
     }
   }
 
-  override def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = ackRefSelector(ackRef)
     collection.find(selector).one[PAYERegistration] map { found =>
       mongoTimer.stop()
       found
     } recover {
-      case e : Throwable =>
+      case e: Throwable =>
         mongoTimer.stop()
         Logger.error(s"Unable to retrieve PAYERegistration for ack ref $ackRef, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(ackRef)
     }
   }
 
-  override def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
+  def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -267,15 +235,15 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
+  def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
     val mongoTimer = mongoResponseTimer.time()
-    val timestamp = dh.getTimestampString
+    val timestamp = dateHelper.getTimestampString
     retrieveRegistration(registrationID) flatMap {
       case Some(regDoc) =>
         val reg = payeStatus match {
           case PAYEStatus.held => regDoc.copy(status = payeStatus, partialSubmissionTimestamp = Some(timestamp))
           case PAYEStatus.submitted => regDoc.copy(status = payeStatus, fullSubmissionTimestamp = Some(timestamp))
-          case acknowledged @ (PAYEStatus.acknowledged | PAYEStatus.rejected) => regDoc.copy(status = acknowledged, acknowledgedTimestamp = Some(timestamp))
+          case acknowledged@(PAYEStatus.acknowledged | PAYEStatus.rejected) => regDoc.copy(status = acknowledged, acknowledgedTimestamp = Some(timestamp))
           case _ => regDoc.copy(status = payeStatus)
         }
         updateRegistrationObject[PAYEStatus.Value](registrationIDSelector(registrationID), reg) {
@@ -295,7 +263,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     retrieveRegistration(registrationID) map {
       case Some(registration) => registration.acknowledgementReference
       case None =>
@@ -304,8 +272,8 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String] = {
-    retrieveRegistration(registrationID) flatMap  {
+  def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String] = {
+    retrieveRegistration(registrationID) flatMap {
       case Some(registration) => registration.acknowledgementReference.isDefined match {
         case false =>
           updateRegistrationObject[String](registrationIDSelector(registrationID), registration.copy(acknowledgementReference = Some(ackRef))) {
@@ -325,7 +293,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
+  def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -338,7 +306,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
+  def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) =>
@@ -360,19 +328,19 @@ class RegistrationMongoRepository(mongo: () => DB,
   }
 
 
-  override def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
+  def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
     implicit val empInfoMongoFormat = EmploymentInfo.mongoFormat
     for {
       empInfo <- fetchBlock[EmploymentInfo](registrationID)
-      _       <- unsetElement(registrationID,"employment")
-    }yield empInfo
+      _ <- unsetElement(registrationID, "employment")
+    } yield empInfo
   }
 
-  override def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
-    updateBlock[EmploymentInfo](registrationID,empInfo)
+  def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
+    updateBlock[EmploymentInfo](registrationID, empInfo)
   }
 
-  override def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
+  def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -385,7 +353,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
+  def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -406,7 +374,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
+  def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -419,7 +387,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
+  def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -440,7 +408,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrievePAYEContact(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]] = {
+  def retrievePAYEContact(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -453,7 +421,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertPAYEContact(registrationID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
+  def upsertPAYEContact(registrationID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -474,7 +442,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveCompletionCapacity(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def retrieveCompletionCapacity(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -487,7 +455,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def upsertCompletionCapacity(registrationID: String, capacity: String)(implicit ec: ExecutionContext): Future[String] = {
+  def upsertCompletionCapacity(registrationID: String, capacity: String)(implicit ec: ExecutionContext): Future[String] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -508,16 +476,16 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
         val clearedDocument = reg.copy(completionCapacity = None,
-                                       companyDetails = None,
-                                       directors = Nil,
-                                       payeContact = None,
-                                       sicCodes = Nil,
-                                       employmentInfo = None)
+          companyDetails = None,
+          directors = Nil,
+          payeContact = None,
+          sicCodes = Nil,
+          employmentInfo = None)
         updateRegistrationObject[PAYERegistration](registrationIDSelector(registrationID), clearedDocument) {
           _ =>
             mongoTimer.stop()
@@ -535,7 +503,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification)(implicit ec: ExecutionContext): Future[EmpRefNotification] = {
+  def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification)(implicit ec: ExecutionContext): Future[EmpRefNotification] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistrationByAckRef(ackRef) flatMap {
       case Some(regDoc) =>
@@ -556,7 +524,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String] = {
+  def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String] = {
     val projection = BSONDocument("registrationID" -> 1, "_id" -> 0)
     collection.find(transactionIDSelector(txId), projection).one[JsValue] map {
       _.fold(throw new MissingRegDocument(txId))(_.\("registrationID").validate[String].fold(
@@ -566,7 +534,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def retrieveTransactionId(registrationID: String)(implicit ec: ExecutionContext): Future[String] = {
+  def retrieveTransactionId(registrationID: String)(implicit ec: ExecutionContext): Future[String] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(regDoc) =>
@@ -578,7 +546,7 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def getInternalId(id: String)(implicit hc : HeaderCarrier) : Future[Option[String]] = {
+  def getInternalId(id: String)(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(id) map {
       case Some(registration) =>
@@ -590,12 +558,14 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  override def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.delete().one(selector) map { writeResult =>
       mongoTimer.stop()
-      if(!writeResult.ok) {Logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${reactivemongo.api.commands.WriteResult.Message}")}
+      if (!writeResult.ok) {
+        Logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${reactivemongo.api.commands.WriteResult.Message}")
+      }
       writeResult.ok
     }
   }
@@ -603,7 +573,7 @@ class RegistrationMongoRepository(mongo: () => DB,
   // TODO - rename the test repo methods
   // Test endpoints
 
-  override def dropCollection(implicit ec: ExecutionContext): Future[Unit] = {
+  def dropCollection(implicit ec: ExecutionContext): Future[Unit] = {
     collection.drop()
   }
 
@@ -621,8 +591,8 @@ class RegistrationMongoRepository(mongo: () => DB,
     }
   }
 
-  private def newRegistrationObject(registrationID: String, transactionID: String, internalId : String): PAYERegistration = {
-    val timeStamp = dh.getTimestampString
+  private def newRegistrationObject(registrationID: String, transactionID: String, internalId: String): PAYERegistration = {
+    val timeStamp = dateHelper.getTimestampString
 
     PAYERegistration(
       registrationID = registrationID,
@@ -642,37 +612,37 @@ class RegistrationMongoRepository(mongo: () => DB,
       partialSubmissionTimestamp = None,
       fullSubmissionTimestamp = None,
       acknowledgedTimestamp = None,
-      lastAction = Some(dh.getTimestamp),
+      lastAction = Some(dateHelper.getTimestamp),
       employmentInfo = None
     )
   }
 
   private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T)(implicit ec: ExecutionContext): Future[T] = {
-    val timestamp = dh.getTimestamp
+    val timestamp = dateHelper.getTimestamp
 
-    collection.update(doc, reg.copy(lastUpdate = dh.formatTimestamp(timestamp), lastAction = Some(timestamp))).map(f)
+    collection.update(doc, reg.copy(lastUpdate = dateHelper.formatTimestamp(timestamp), lastAction = Some(timestamp))).map(f)
   }
 
   def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)] = {
 
-    val cuttOffDate = dh.getTimestamp.minusDays(MAX_STORAGE_DAYS)
+    val cuttOffDate = dateHelper.getTimestamp.minusDays(MAX_STORAGE_DAYS)
     collection.remove(staleDocumentSelector(cuttOffDate)).map {
       res => (cuttOffDate, res.n)
     }
   }
 
   private def staleDocumentSelector(cutOffDateTime: ZonedDateTime): BSONDocument = {
-    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dh.zonedDateTimeToMillis(cutOffDateTime)))
+    val timeSelector = BSONDocument("$lte" -> BSONDateTime(dateHelper.zonedDateTimeToMillis(cutOffDateTime)))
     val statusSelector = BSONDocument("$in" -> BSONArray(Seq(BSONString("draft"), BSONString("invalid"))))
     BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
   }
 
   private def updateLastAction(reg: PAYERegistration)(implicit ec: ExecutionContext): Future[UpdateWriteResult] = {
-    val res = dh.zonedDateTimeFromString(reg.lastUpdate)
-    collection.update(BSONDocument("registrationID" -> reg.registrationID),BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
+    val res = dateHelper.zonedDateTimeFromString(reg.lastUpdate)
+    collection.update(BSONDocument("registrationID" -> reg.registrationID), BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
   }
 
-  def upsertRegTestOnly(p:PAYERegistration, w: Format[PAYERegistration] = format)(implicit ec: ExecutionContext):Future[WriteResult] = {
+  def upsertRegTestOnly(p: PAYERegistration, w: Format[PAYERegistration] = domainFormatImplicit)(implicit ec: ExecutionContext): Future[WriteResult] = {
     collection.insert[JsObject](w.writes(p).as[JsObject])
   }
 
@@ -685,14 +655,15 @@ class RegistrationMongoRepository(mongo: () => DB,
     val group = collection.BatchCommands.AggregationFramework.Group(JsString("$status"))("count" -> collection.BatchCommands.AggregationFramework.SumValue(1))
 
     val query = collection.aggregateWith[JsObject]()(_ => (matchQuery, List(project, group)))
-    val fList =  query.collect(Int.MaxValue, Cursor.FailOnError[List[JsObject]]())
-    fList.map{ _.map {
-      documentWithStatusAndCount =>{
-        val status = (documentWithStatusAndCount \ "_id").as[String]
-        val count = (documentWithStatusAndCount \ "count").as[Int]
-        status -> count
-      }
-    }.toMap
+    val fList = query.collect(Int.MaxValue, Cursor.FailOnError[List[JsObject]]())
+    fList.map {
+      _.map {
+        documentWithStatusAndCount => {
+          val status = (documentWithStatusAndCount \ "_id").as[String]
+          val count = (documentWithStatusAndCount \ "count").as[Int]
+          status -> count
+        }
+      }.toMap
     }
   }
 }

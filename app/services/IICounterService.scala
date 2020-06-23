@@ -17,23 +17,15 @@
 package services
 
 import javax.inject.Inject
-
 import play.api.Configuration
-import repositories.{IICounterMongo, IICounterMongoRepository}
+import repositories.IICounterMongoRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class IICounterService @Inject()(injIICounterMongo: IICounterMongo,
-                                 config: Configuration) extends IICounterSrv{
+class IICounterService @Inject()(counterRepository: IICounterMongoRepository,
+                                 config: Configuration) {
 
   lazy val maxIICounterCount: Int = config.getInt("constants.maxIICounterCount").getOrElse(2)
-  val counterRepository = injIICounterMongo.store
-}
-
-
-trait IICounterSrv{
-  val counterRepository: IICounterMongoRepository
-  val maxIICounterCount: Int
 
   def updateIncorpCount(regID: String)(implicit ec: ExecutionContext): Future[Boolean] = counterRepository.getNext(regID) map {
     count => count > maxIICounterCount

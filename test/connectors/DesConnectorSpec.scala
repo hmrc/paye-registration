@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package connectors
+package Connectors
 
 import java.time.{LocalDate, LocalTime}
 
+import config.AppConfig
+import connectors.DESConnector
 import fixtures.SubmissionFixture
 import helpers.PAYERegSpec
 import models.submission.{DESSubmission, TopUpDESSubmission}
@@ -29,36 +31,37 @@ import play.api.libs.json.Writes
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.http.ws.WSHttp
-import utils.PAYEFeatureSwitches
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.Future
 
 class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFixture {
 
-  implicit val hc = HeaderCarrier()
-  val mockHttp = mock[WSHttp]
-  val mockFeatureSwitch = mock[PAYEFeatureSwitches]
-  val mockAuditConnector= mock[AuditConnector]
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  val mockHttp: HttpClient = mock[HttpClient]
+  val mockAuditConnector: AuditConnector = mock[AuditConnector]
 
   class SetupWithProxy(withProxy: Boolean) {
-    val connector = new DESConnect {
-      override val featureSwitch = mockFeatureSwitch
+
+    object MockAppConfig extends AppConfig(mock[ServicesConfig]) {
+      override lazy val desURI = "testURI"
+      override lazy val desTopUpURI = "desTopUpURI"
+      override lazy val desUrl = "desURL"
+      override lazy val desStubTopUpURI = "desTopUpURI"
+      override lazy val desStubURI = "testStubURI"
+      override lazy val desStubUrl = "desStubURL"
+      override lazy val desUrlHeaderEnvironment = "env"
+      override lazy val desUrlHeaderAuthorization = "auth"
+      override lazy val alertWorkingHours: String = "08:00:00_17:00:00"
+    }
+
+    object Connector extends DESConnector(mockHttp, MockAppConfig, mockAuditConnector) {
       override def useDESStubFeature = withProxy
-      override def http = mockHttp
-      override val desURI      = "testURI"
-      override val desTopUpURI = "desTopUpURI"
-      override val desUrl      = "desURL"
-      override val desStubTopUpURI = "desTopUpURI"
-      override val desStubURI      = "testStubURI"
-      override val desStubUrl      = "desStubURL"
-      override val urlHeaderEnvironment   = "env"
-      override val urlHeaderAuthorization = "auth"
-      override val auditConnector = mockAuditConnector
-      override val alertWorkingHours: String = "08:00:00_17:00:00"
       override val currentTime: LocalTime = LocalTime.now
       override val currentDate: LocalDate = LocalDate.now
     }
+
   }
 
   def mockHttpPOST[I, O](url: String, thenReturn: O): OngoingStubbing[Future[O]] = {
@@ -74,55 +77,55 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Partial DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}", HttpResponse(200))
-      await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
+      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", HttpResponse(200))
+      await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubURI}",  Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", Upstream4xxResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
+      intercept[Upstream4xxResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
 
   }
 
   "submitToDES with a Top Up DES Submission Model (submitTopUpToDES)" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", HttpResponse(200))
+      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubTopUpURI}", HttpResponse(200))
 
-      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
+      await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
     }
 
     "throw exception if a 400 is encountered with proxy" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${connector.desStubUrl}/${connector.desStubTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
+      intercept[Upstream4xxResponse](await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
 
   }
 
   "submitToDES with a Partial DES Submission Model - feature switch disabled (submitToDES)" should {
     "successfully POST" in new SetupWithProxy(false) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}", HttpResponse(200))
+      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", HttpResponse(200))
 
-      await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
+      await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status shouldBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desURI}",  Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", Upstream4xxResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
+      intercept[Upstream4xxResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
   }
 
   "submitToDES with a Top Up DES Submission Model - feature switch disabled" should {
     "successfully POST" in new SetupWithProxy(false) {
-      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desTopUpURI}", HttpResponse(200))
+      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desTopUpURI}", HttpResponse(200))
 
-      await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
+      await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status shouldBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${connector.desUrl}/${connector.desTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
+      intercept[Upstream4xxResponse](await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
   }
 }

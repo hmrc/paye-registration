@@ -18,20 +18,16 @@ package config
 
 import java.util.Base64
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.{Configuration, Logger}
 import repositories._
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
+@Singleton
+class StartUpJobs @Inject()(registrationRepo: RegistrationMongoRepository, configuration: Configuration) {
 
-class StartUpJobsImpl @Inject()(val registrationRepo: RegistrationMongo, val configuration: Configuration) extends StartUpJobs
-
-trait StartUpJobs {
-
-  val registrationRepo: RegistrationMongo
-  val configuration: Configuration
   lazy val txIds: List[String] = Some(new String(Base64.getDecoder
     .decode(configuration.getString("txIdListToRegIdForStartupJob").getOrElse("")), "UTF-8"))
     .fold(Array.empty[String])(_.split(",").filter(_.nonEmpty)).toList
@@ -39,7 +35,7 @@ trait StartUpJobs {
   def logRegInfoFromTxId(): Unit = {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     txIds.foreach(txId =>
-      registrationRepo.store.retrieveRegistrationByTransactionID(txId) map { oDoc =>
+      registrationRepo.retrieveRegistrationByTransactionID(txId) map { oDoc =>
         oDoc.fold(Logger.warn(s"[RetrieveRegInfoFromTxIdJob] txId: $txId has no registration document")) { doc =>
           val (regId, status, lastUpdated, lastAction) = (doc.registrationID, doc.status, doc.lastUpdate, doc.lastAction)
           Logger.info(s"[RetrieveRegInfoFromTxIdJob] txId: $txId returned a document with regId: $regId, status: $status, lastUpdated: $lastUpdated and lastAction: $lastAction")
