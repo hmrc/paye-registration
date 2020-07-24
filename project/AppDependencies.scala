@@ -8,9 +8,9 @@ private object AppDependencies {
 object MainDependencies {
   private val bootstrapVersion = "1.8.0"
   private val domainVersion = "5.6.0-play-26"
-  private val mongoLockVersion = "6.21.0-play-26"
+  private val mongoLockVersion = "6.23.0-play-26"
   private val playSchedulingVersion = "7.4.0-play-26"
-  private val simpleReactivemongoVersion = "7.27.0-play-26"
+  private val simpleReactivemongoVersion = "7.30.0-play-26"
   private val authClientVersion = "3.0.0-play-26"
 
   def apply() = Seq(
@@ -30,7 +30,7 @@ trait TestDependencies {
   val scalaTestPlusVersion = "3.1.3"
   val mockitoCoreVersion = "2.13.0"
   val wireMockVersion = "2.26.3"
-  val reactiveTestVersion = "4.19.0-play-26"
+  val reactiveTestVersion = "4.21.0-play-26"
 
   val scope: Configuration
   val test: Seq[ModuleID]
