@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package repositories
 
-import java.time.ZonedDateTime
-
 import auth.{AuthorisationResource, CryptoSCRS}
 import com.codahale.metrics.Timer
 import com.kenshoo.play.metrics.Metrics
@@ -25,11 +23,10 @@ import common.exceptions.DBExceptions._
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
-import javax.inject.{Inject, Singleton}
 import models._
 import models.validation.MongoValidation
-import play.api.libs.json._
 import play.api.{Configuration, Logger}
+import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
@@ -40,7 +37,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.time.ZonedDateTime
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
@@ -50,7 +48,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
                                             mongo: ReactiveMongoComponent,
                                             config: Configuration,
                                             cryptoSCRS: CryptoSCRS
-                                           ) extends ReactiveRepository[PAYERegistration, BSONObjectID](
+                                           )(implicit ec: ExecutionContext) extends ReactiveRepository[PAYERegistration, BSONObjectID](
   collectionName = "registration-information",
   mongo = mongo.mongoConnector.db,
   domainFormat = PAYERegistration.format(crypto = cryptoSCRS, formatter = MongoValidation)
@@ -58,7 +56,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
 
   val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
 
-  val MAX_STORAGE_DAYS: Int = config.getInt("constants.maxStorageDays").getOrElse(90)
+  val MAX_STORAGE_DAYS: Int = config.getOptional[Int]("constants.maxStorageDays").getOrElse(90)
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -108,10 +106,10 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     "acknowledgementReference" -> BSONString(ackRef)
   )
 
-  def createNewRegistration(registrationID: String, transactionID: String, internalId: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def createNewRegistration(registrationID: String, transactionID: String, internalId: String): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     val newReg = newRegistrationObject(registrationID, transactionID, internalId)
-    collection.insert[PAYERegistration](newReg) map {
+    collection.insert(true).one[PAYERegistration](newReg) map {
       _ =>
         mongoTimer.stop()
         newReg
@@ -125,7 +123,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
 
   private def toCamelCase(str: String): String = str.head.toLower + str.tail
 
-  private def fetchBlock[T: TypeTag](registrationID: String, key: String = "")(implicit ec: ExecutionContext, rds: Reads[T]): Future[Option[T]] = {
+  private def fetchBlock[T: TypeTag](registrationID: String, key: String = "")(implicit rds: Reads[T]): Future[Option[T]] = {
     val selectorKey = if (key.isEmpty) toCamelCase(typeOf[T].typeSymbol.name.toString) else key
 
     val projection = Json.obj(selectorKey -> 1)
@@ -143,13 +141,13 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  private[repositories] def updateBlock[T](registrationID: String, data: T, key: String = "")(implicit ec: ExecutionContext, writes: Writes[T]): Future[T] = {
+  private[repositories] def updateBlock[T](registrationID: String, data: T, key: String = "")(implicit writes: Writes[T]): Future[T] = {
     val mongoTimer = mongoResponseTimer.time()
     lazy val className = data.getClass.getSimpleName
     val selectorKey = if (key.isEmpty) toCamelCase(className) else key
 
     val setDoc = Json.obj("$set" -> Json.obj(selectorKey -> Json.toJson(data)))
-    collection.update(registrationIDSelector(registrationID), setDoc) map { updateResult =>
+    collection.update(true).one(registrationIDSelector(registrationID), setDoc) map { updateResult =>
       mongoTimer.stop()
       if (updateResult.n == 0) {
         Logger.error(s"[$className] updating for regId : $registrationID - No document found")
@@ -166,10 +164,10 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  private def unsetElement(registrationID: String, element: String)(implicit ex: ExecutionContext): Future[Boolean] = {
+  private def unsetElement(registrationID: String, element: String): Future[Boolean] = {
     collection.findAndUpdate(registrationIDSelector(registrationID), BSONDocument("$unset" -> BSONDocument(element -> ""))) map {
       _.value.fold {
-        logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
+        Logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
         throw new UpdateFailed(registrationID, element)
       } { _ =>
         Logger.info(s"[RegistrationMongoRepository] [unsetElement] element: $element was unset for regId: $registrationID successfully")
@@ -179,7 +177,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
   }
 
 
-  def retrieveRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.find(selector).one[JsObject] map { found =>
@@ -194,7 +192,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
   }
 
 
-  def retrieveRegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def retrieveRegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = transactionIDSelector(transactionID)
     collection.find(selector).one[PAYERegistration] map { found =>
@@ -208,7 +206,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveRegistrationByAckRef(ackRef: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def retrieveRegistrationByAckRef(ackRef: String): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = ackRefSelector(ackRef)
     collection.find(selector).one[PAYERegistration] map { found =>
@@ -222,7 +220,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveCompanyDetails(registrationID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
+  def retrieveCompanyDetails(registrationID: String): Future[Option[CompanyDetails]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -235,7 +233,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
+  def updateRegistrationStatus(registrationID: String, payeStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     val mongoTimer = mongoResponseTimer.time()
     val timestamp = dateHelper.getTimestampString
     retrieveRegistration(registrationID) flatMap {
@@ -263,7 +261,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveAcknowledgementReference(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def retrieveAcknowledgementReference(registrationID: String): Future[Option[String]] = {
     retrieveRegistration(registrationID) map {
       case Some(registration) => registration.acknowledgementReference
       case None =>
@@ -272,7 +270,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def saveAcknowledgementReference(registrationID: String, ackRef: String)(implicit ec: ExecutionContext): Future[String] = {
+  def saveAcknowledgementReference(registrationID: String, ackRef: String): Future[String] = {
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) => registration.acknowledgementReference.isDefined match {
         case false =>
@@ -293,7 +291,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveRegistrationStatus(registrationID: String)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
+  def retrieveRegistrationStatus(registrationID: String): Future[PAYEStatus.Value] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -306,7 +304,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def upsertCompanyDetails(registrationID: String, details: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
+  def upsertCompanyDetails(registrationID: String, details: CompanyDetails): Future[CompanyDetails] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(registration) =>
@@ -328,7 +326,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
   }
 
 
-  def retrieveEmploymentInfo(registrationID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
+  def retrieveEmploymentInfo(registrationID: String): Future[Option[EmploymentInfo]] = {
     implicit val empInfoMongoFormat = EmploymentInfo.mongoFormat
     for {
       empInfo <- fetchBlock[EmploymentInfo](registrationID)
@@ -336,11 +334,11 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     } yield empInfo
   }
 
-  def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
+  def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo): Future[EmploymentInfo] = {
     updateBlock[EmploymentInfo](registrationID, empInfo)
   }
 
-  def retrieveDirectors(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
+  def retrieveDirectors(registrationID: String): Future[Seq[Director]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -353,7 +351,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def upsertDirectors(registrationID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
+  def upsertDirectors(registrationID: String, directors: Seq[Director]): Future[Seq[Director]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -374,7 +372,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveSICCodes(registrationID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
+  def retrieveSICCodes(registrationID: String): Future[Seq[SICCode]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -387,7 +385,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
+  def upsertSICCodes(registrationID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -408,7 +406,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrievePAYEContact(registrationID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]] = {
+  def retrievePAYEContact(registrationID: String): Future[Option[PAYEContact]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -421,7 +419,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def upsertPAYEContact(registrationID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
+  def upsertPAYEContact(registrationID: String, payeContact: PAYEContact): Future[PAYEContact] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -442,7 +440,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveCompletionCapacity(registrationID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def retrieveCompletionCapacity(registrationID: String): Future[Option[String]] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(registration) =>
@@ -455,7 +453,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def upsertCompletionCapacity(registrationID: String, capacity: String)(implicit ec: ExecutionContext): Future[String] = {
+  def upsertCompletionCapacity(registrationID: String, capacity: String): Future[String] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -476,7 +474,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def cleardownRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def cleardownRegistration(registrationID: String): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) flatMap {
       case Some(reg) =>
@@ -503,7 +501,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification)(implicit ec: ExecutionContext): Future[EmpRefNotification] = {
+  def updateRegistrationEmpRef(ackRef: String, applicationStatus: PAYEStatus.Value, etmpRefNotification: EmpRefNotification): Future[EmpRefNotification] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistrationByAckRef(ackRef) flatMap {
       case Some(regDoc) =>
@@ -524,7 +522,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String] = {
+  def getRegistrationId(txId: String): Future[String] = {
     val projection = BSONDocument("registrationID" -> 1, "_id" -> 0)
     collection.find(transactionIDSelector(txId), projection).one[JsValue] map {
       _.fold(throw new MissingRegDocument(txId))(_.\("registrationID").validate[String].fold(
@@ -534,7 +532,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def retrieveTransactionId(registrationID: String)(implicit ec: ExecutionContext): Future[String] = {
+  def retrieveTransactionId(registrationID: String): Future[String] = {
     val mongoTimer = mongoResponseTimer.time()
     retrieveRegistration(registrationID) map {
       case Some(regDoc) =>
@@ -558,7 +556,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     }
   }
 
-  def deleteRegistration(registrationID: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def deleteRegistration(registrationID: String): Future[Boolean] = {
     val mongoTimer = mongoResponseTimer.time()
     val selector = registrationIDSelector(registrationID)
     collection.delete().one(selector) map { writeResult =>
@@ -577,7 +575,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     collection.drop()
   }
 
-  def updateRegistration(payeReg: PAYERegistration)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def updateRegistration(payeReg: PAYERegistration): Future[PAYERegistration] = {
     val mongoTimer = mongoResponseTimer.time()
     collection.findAndUpdate[BSONDocument, PAYERegistration](registrationIDSelector(payeReg.registrationID), payeReg, fetchNewObject = true, upsert = true) map {
       _ => {
@@ -617,13 +615,13 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     )
   }
 
-  private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T)(implicit ec: ExecutionContext): Future[T] = {
+  private def updateRegistrationObject[T](doc: BSONDocument, reg: PAYERegistration)(f: UpdateWriteResult => T): Future[T] = {
     val timestamp = dateHelper.getTimestamp
 
     collection.update(doc, reg.copy(lastUpdate = dateHelper.formatTimestamp(timestamp), lastAction = Some(timestamp))).map(f)
   }
 
-  def removeStaleDocuments()(implicit ec: ExecutionContext): Future[(ZonedDateTime, Int)] = {
+  def removeStaleDocuments(): Future[(ZonedDateTime, Int)] = {
 
     val cuttOffDate = dateHelper.getTimestamp.minusDays(MAX_STORAGE_DAYS)
     collection.remove(staleDocumentSelector(cuttOffDate)).map {
@@ -637,16 +635,16 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     BSONDocument("status" -> statusSelector, "lastAction" -> timeSelector)
   }
 
-  private def updateLastAction(reg: PAYERegistration)(implicit ec: ExecutionContext): Future[UpdateWriteResult] = {
+  private def updateLastAction(reg: PAYERegistration): Future[UpdateWriteResult] = {
     val res = dateHelper.zonedDateTimeFromString(reg.lastUpdate)
-    collection.update(BSONDocument("registrationID" -> reg.registrationID), BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
+    collection.update(ordered = false).one(BSONDocument("registrationID" -> reg.registrationID), BSONDocument("$set" -> BSONDocument("lastAction" -> Json.toJson(res)(MongoValidation.dateFormat))))
   }
 
-  def upsertRegTestOnly(p: PAYERegistration, w: Format[PAYERegistration] = domainFormatImplicit)(implicit ec: ExecutionContext): Future[WriteResult] = {
-    collection.insert[JsObject](w.writes(p).as[JsObject])
+  def upsertRegTestOnly(p: PAYERegistration, w: Format[PAYERegistration] = domainFormatImplicit): Future[WriteResult] = {
+    collection.insert(ordered =false).one[JsObject](w.writes(p).as[JsObject])
   }
 
-  def getRegistrationStats()(implicit ec: scala.concurrent.ExecutionContext): Future[Map[String, Int]] = {
+  def getRegistrationStats(): Future[Map[String, Int]] = {
 
     // needed to make it pick up the index
     val matchQuery: collection.PipelineOperator = collection.BatchCommands.AggregationFramework.Match(Json.obj("status" -> Json.obj("$ne" -> "")))

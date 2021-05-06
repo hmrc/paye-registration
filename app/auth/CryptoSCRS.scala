@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package auth
 
-import com.google.inject.Inject
-import javax.inject.Singleton
+import javax.inject.{Singleton, Inject}
 import play.api.Configuration
 import play.api.libs.json.{JsString, Reads, Writes}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, Crypted, PlainText}

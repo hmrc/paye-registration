@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,5 +24,5 @@ object Employing extends Enumeration {
   val willEmployThisYear = Value
   val willEmployNextYear = Value
 
-  implicit val format = Format(Reads.enumNameReads(Employing), Writes.enumNameWrites)
+  implicit val format = Format(Reads.enumNameReads(Employing), Writes.enumNameWrites[Employing.type])
 }

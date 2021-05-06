@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,12 @@
 
 package controllers
 
-import java.time.LocalDate
-
 import auth._
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{RegistrationFormatException, UnmatchedStatusException}
 import common.exceptions.SubmissionExceptions.{ErrorRegistrationException, RegistrationInvalidStatus}
 import common.exceptions.SubmissionMarshallingException
 import enums.PAYEStatus
-import javax.inject.{Inject, Singleton}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
@@ -37,6 +34,8 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
+import java.time.LocalDate
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ trait ScheduledJob {
 
   lazy val schedulingActorRef: ActorRef = actorSystem.actorOf(SchedulingActor.props)
 
-  lazy val enabled: Boolean = config.getBoolean(s"schedules.$jobName.enabled").getOrElse(false)
+  lazy val enabled: Boolean = config.getOptional[Boolean](s"schedules.$jobName.enabled").getOrElse(false)
 
-  lazy val description: Option[String] = config.getString(s"schedules.$jobName.description")
+  lazy val description: Option[String] = config.getOptional[String](s"schedules.$jobName.description")
 
-  lazy val expression: String = config.getString(s"schedules.$jobName.expression") map (_.replaceAll("_", " ")) getOrElse ""
+  lazy val expression: String = config.getOptional[String](s"schedules.$jobName.expression") map (_.replaceAll("_", " ")) getOrElse ""
 
   lazy val expressionValid = CronExpression.isValidExpression(expression)
 

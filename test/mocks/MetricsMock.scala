@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package mocks
 
-import com.codahale.metrics.{Counter, Timer}
+import com.codahale.metrics.Timer
 import com.kenshoo.play.metrics.Metrics
 import config.AppConfig
 import jobs.LockRepositoryProvider
@@ -24,7 +24,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import repositories.RegistrationMongoRepository
 import services.MetricsService
 import uk.gov.hmrc.lock.LockKeeper
-
 
 
 object MetricsMock extends MockitoSugar {

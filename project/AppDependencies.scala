@@ -6,12 +6,12 @@ private object AppDependencies {
 }
 
 object MainDependencies {
-  private val bootstrapVersion = "1.8.0"
+  private val bootstrapVersion = "4.0.0"
   private val domainVersion = "5.6.0-play-26"
-  private val mongoLockVersion = "6.23.0-play-26"
+  private val mongoLockVersion = "7.0.0-play-26"
   private val playSchedulingVersion = "7.4.0-play-26"
-  private val simpleReactivemongoVersion = "7.30.0-play-26"
-  private val authClientVersion = "3.0.0-play-26"
+  private val simpleReactivemongoVersion = "8.0.0-play-26"
+  private val authClientVersion = "5.2.0-play-26"
 
   def apply() = Seq(
     "com.typesafe.play" %% "play-json-joda" % "2.6.10",
@@ -30,14 +30,15 @@ trait TestDependencies {
   val scalaTestPlusVersion = "3.1.3"
   val mockitoCoreVersion = "2.13.0"
   val wireMockVersion = "2.26.3"
-  val reactiveTestVersion = "4.21.0-play-26"
+  val reactiveTestVersion = "5.0.0-play-26"
 
   val scope: Configuration
   val test: Seq[ModuleID]
 
   lazy val commonTestDependencies = Seq(
     "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
-    "uk.gov.hmrc" %% "reactivemongo-test" % reactiveTestVersion % scope
+    "uk.gov.hmrc" %% "reactivemongo-test" % reactiveTestVersion % scope,
+    "org.pegdown" % "pegdown" % "1.6.0" % scope
   )
 
   def apply() = test

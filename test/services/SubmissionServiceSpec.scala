@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.retrieve.Credentials
-import uk.gov.hmrc.http.logging.SessionId
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -76,7 +75,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   val lastUpdate = "2017-05-09T07:58:35Z"
-  val zDtNow = ZonedDateTime.of(LocalDateTime.of(1,1,1,1,1),ZoneOffset.UTC)
+  val zDtNow = ZonedDateTime.of(LocalDateTime.of(1, 1, 1, 1, 1), ZoneOffset.UTC)
 
   val validCompanyDetails = CompanyDetails(
     companyName = "Test Company Name",
@@ -260,11 +259,11 @@ class SubmissionServiceSpec extends PAYERegSpec {
   )
 
   val incorpStatusUpdate = IncorpStatusUpdate(transactionId = "NNASD9789F",
-                                              status = IncorporationStatus.accepted,
-                                              crn = Some("123456"),
-                                              incorporationDate = Some(LocalDate.of(2000, 12, 12)),
-                                              description = None,
-                                              timestamp = LocalDate.of(2017, 12, 21))
+    status = IncorporationStatus.accepted,
+    crn = Some("123456"),
+    incorporationDate = Some(LocalDate.of(2000, 12, 12)),
+    description = None,
+    timestamp = LocalDate.of(2017, 12, 21))
 
   val validTopUpDESSubmissionModel = TopUpDESSubmission(
     acknowledgementReference = "ackRef",
@@ -334,19 +333,19 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling assertOrGenerateAcknowledgementReference" should {
     "return an ack ref if there is one in the registration" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some("tstAckRef")))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "tstAckRef"
     }
 
     "generate an ack ref if there isn't one in the registration" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
       when(mockSequenceRepository.getNext(ArgumentMatchers.contains("AcknowledgementID"))(ArgumentMatchers.any()))
         .thenReturn(Future.successful(1234))
-      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.anyString(), ArgumentMatchers.contains("1234"))(ArgumentMatchers.any()))
-      .thenReturn(Future.successful("BRPY00000001234"))
+      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.anyString(), ArgumentMatchers.contains("1234")))
+        .thenReturn(Future.successful("BRPY00000001234"))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "BRPY00000001234"
     }
@@ -354,14 +353,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling buildADesSubmission" should {
     "throw the correct exception when there is no registration in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
     }
 
     "throw the correct exception when PAYE status is in an incorrect state" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
 
       intercept[RegistrationInvalidStatus](await(service.buildADesSubmission("regId", Some(incorpStatusUpdate), None)))
@@ -370,21 +369,21 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling buildTopUpDESSubmission" should {
     "throw the correct exception when there is no registration in mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is not yet submitted" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
       intercept[RegistrationInvalidStatus](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
       intercept[ErrorRegistrationException](await(service.buildTopUpDESSubmission("regId", incorpStatusUpdate)))
@@ -452,93 +451,90 @@ class SubmissionServiceSpec extends PAYERegSpec {
   }
 
   "payeReg2TopUpDESSubmission" should {
-    "throw the correct error when acknowledgement reference is not present" in new Setup{
+    "throw the correct error when acknowledgement reference is not present" in new Setup {
       intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
     }
-    "build a Top Up" in new Setup{
+    "build a Top Up" in new Setup {
       service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) shouldBe validTopUpDESSubmissionModel
     }
   }
 
   "Calling submitToDes" should {
     "throw an Exception when the incorporation is rejected" in new Setup {
-      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
       when(mockSequenceRepository.getNext(ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(1))
-      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful("foo"))
-      when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful("bar"))
-      when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Some(incorpStatusUpdate.copy(status = IncorporationStatus.rejected))))
+        .thenReturn(Future.successful(1))
+      when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful("foo"))
+      when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any()))
+        .thenReturn(Future.successful("bar"))
+      when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        .thenReturn(Future.successful(Some(incorpStatusUpdate.copy(status = IncorporationStatus.rejected))))
       when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
       intercept[RejectedIncorporationException](await(service.submitToDes("regID")))
-      verify(mockRegistrationService,times(1)).deletePAYERegistration(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any())
+      verify(mockRegistrationService, times(1)).deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
     "return an ackref" when {
       "there is no incorporation" in new Setup {
-        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(None))
         when(mockSequenceRepository.getNext(ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(1))
-        when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful("foo"))
-        when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any()))
           .thenReturn(Future.successful("bar"))
-        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
-        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Credentials("some-provider-id", "some-provider-type")))
         when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(200)))
+          .thenReturn(Future.successful(HttpResponse.apply(200, "")))
         when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
-        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.held))
 
         await(service.submitToDes("regID")) shouldBe "BRPY00000000001"
       }
 
       "the incorporation is accepted" in new Setup {
-        val okResponse = new HttpResponse {
-          override def status: Int = OK
+        def json: JsValue = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences" : {
+            |   "ctUtr" : "testCtUtr"
+            | }
+            |}
+            """.stripMargin)
 
-          override def json: JsValue = Json.parse(
-            """
-              |{
-              | "acknowledgementReferences" : {
-              |   "ctUtr" : "testCtUtr"
-              | }
-              |}
-            """.stripMargin
-          )
-        }
+        val okResponse: HttpResponse = HttpResponse.apply(OK, json.toString())
 
-        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(None))
         when(mockSequenceRepository.getNext(ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(1))
-        when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful("foo"))
-        when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any()))
           .thenReturn(Future.successful("bar"))
-        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(incorpStatusUpdate)))
-        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Credentials("some-provider-id", "some-provider-type")))
         when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
         when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(200)))
+          .thenReturn(Future.successful(HttpResponse.apply(200, "")))
         when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
-        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.submitted))
 
         await(service.submitToDes("regID")) shouldBe "BRPY00000000001"
@@ -549,68 +545,64 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "Calling submitTopUpToDES" should {
     "return the correct PAYE status" when {
       "incorporation is accepted" in new Setup {
-        val okResponse = new HttpResponse {
-          override def status: Int = OK
-
-          override def json: JsValue = Json.parse(
-            """
-              |{
-              | "acknowledgementReferences" : {
-              |   "ctUtr" : "testCtUtr"
-              | }
-              |}
+        def json: JsValue = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences" : {
+            |   "ctUtr" : "testCtUtr"
+            | }
+            |}
             """.stripMargin
-          )
-        }
+        )
+
+        val okResponse: HttpResponse = HttpResponse.apply(OK, json.toString())
 
         when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
 
-        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some("ackRef")))
 
-        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
         when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(200)))
+          .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
         when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
 
-        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.submitted))
 
-        when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
         await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
       }
 
       "incorporation is rejected" in new Setup {
-        val okResponse = new HttpResponse {
-          override def status: Int = OK
-
-          override def json: JsValue = Json.parse(
-            """
-              |{
-              | "acknowledgementReferences" : {}
-              |}
+        def json: JsValue = Json.parse(
+          """
+            |{
+            | "acknowledgementReferences" : {}
+            |}
             """.stripMargin
-          )
-        }
+        )
+
+        val okResponse: HttpResponse = HttpResponse.apply(OK, json.toString())
 
         when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
 
-        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some("ackRef")))
 
-        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+        when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
         when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(HttpResponse(200)))
+          .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
         when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
@@ -626,7 +618,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "Calling retrieveCredId" should {
     "return the correct exception when credential ID is missing" in new Setup {
       when(mockAuthConnector.authorise(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.failed(new Exception("Can't get providerId from credentials")))
+        .thenReturn(Future.failed(new Exception("Can't get providerId from credentials")))
 
       a[service.FailedToGetCredId] shouldBe thrownBy(await(service.retrieveCredId))
     }
@@ -660,10 +652,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
           """.stripMargin
         )
 
-        val okResponse = new HttpResponse {
-          override def status: Int = OK
-          override def json: JsValue = testJson
-        }
+        val okResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
 
         when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
@@ -685,10 +674,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
           """.stripMargin
         )
 
-        val okResponse = new HttpResponse {
-          override def status: Int = OK
-          override def json: JsValue = testJson
-        }
+        val okResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
 
         when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))

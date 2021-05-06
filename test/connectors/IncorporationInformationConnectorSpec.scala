@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package connectors
 
-import java.time.LocalDate
-
 import config.AppConfig
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
@@ -29,8 +27,8 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.http.ws.WSHttp
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class IncorporationInformationConnectorSpec extends PAYERegSpec {
@@ -86,10 +84,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
   "checkStatus" should {
     "return an IncorpStatusUpdate" when {
       "interest has been registered and there is already information about the given incorporation" in new Setup {
-        val testResponse = new HttpResponse {
-          override def status: Int = OK
-          override def json: JsValue = testJson
-        }
+        val testResponse = HttpResponse.apply(OK, testJson.toString())
 
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
@@ -101,9 +96,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
     "return None" when {
       "interested has been registered for a given incorporation" in new Setup {
-        val testResponse = new HttpResponse {
-          override def status: Int = ACCEPTED
-        }
+        val testResponse = HttpResponse.apply(ACCEPTED, "")
 
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
@@ -115,9 +108,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
     "throw an IncorporationInformationResponseException" when {
       "when there was a problem on II" in new Setup {
-        val testResponse = new HttpResponse {
-          override def status: Int = INTERNAL_SERVER_ERROR
-        }
+        val testResponse = HttpResponse.apply(INTERNAL_SERVER_ERROR, "")
 
         when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(testResponse))
@@ -142,8 +133,12 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       val testResponse = new HttpResponse {
         override def status: Int = OK
         override def json: JsValue = testJson
+
+        override def body: String = ""
+
+        override def allHeaders: Map[String, Seq[String]] = Map.empty
       }
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
 
       val res = await(Connector.getIncorporationDate("testTxId"))
@@ -160,11 +155,9 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
           |}
         """.stripMargin
       )
-      val testResponse = new HttpResponse {
-        override def status: Int = OK
-        override def json: JsValue = testJson
-      }
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
+      val testResponse = HttpResponse.apply(OK, testJson.toString())
+
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
       val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe None
@@ -177,30 +170,26 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
           |}
         """.stripMargin
       )
-      val testResponse = new HttpResponse {
-        override def status: Int = OK
-        override def json: JsValue = testJson
-      }
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
+      val testResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
+
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
       val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe None
     }
     "return None when response is 204" in new Setup {
-      val testResponse = new HttpResponse {
-        override def status: Int = NO_CONTENT
-      }
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
+      val testResponse: HttpResponse = HttpResponse.apply(NO_CONTENT, "")
+
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
       val res = await(Connector.getIncorporationDate("testTxId"))
       res shouldBe None
     }
 
     "return an exception if the response code from II is not expected" in new Setup {
-      val testResponse = new HttpResponse {
-        override def status: Int = ACCEPTED
-      }
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
+      val testResponse: HttpResponse = HttpResponse.apply(ACCEPTED, "")
+
+      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(),ArgumentMatchers.any(),ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
 
       an[IncorporationInformationResponseException] shouldBe thrownBy(await(Connector.getIncorporationDate("testTxId")))

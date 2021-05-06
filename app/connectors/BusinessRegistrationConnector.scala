@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@
 package connectors
 
 import config.AppConfig
-import javax.inject.{Inject, Singleton}
 import models.external.BusinessProfile
 import play.api.Logger
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpReads, NotFoundException}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig) {
+class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
     http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration") recover {

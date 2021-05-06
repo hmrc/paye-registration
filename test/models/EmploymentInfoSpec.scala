@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,7 +249,6 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
       }
 
       "company is incorporated less than 2 years ago, employees is alreadyEmploying and firstPaymentDate is before incorporation date" in {
-        val now: LocalDate = LocalDate.of(2018, 12, 25)
         val incorpDate: LocalDate = LocalDate.of(2016, 12, 26)
         val json = Json.parse(
           """|{

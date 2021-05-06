@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,23 @@
 
 package repositories
 
-import javax.inject.{Inject, Singleton}
-
 import common.exceptions.DBExceptions.UpdateFailed
 import models.IICounter
 import play.api.libs.json.JsValue
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.DB
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
 class IICounterMongoRepository @Inject()(reactiveMongoComponent: ReactiveMongoComponent) extends ReactiveRepository[IICounter, BSONObjectID](
-    collectionName = "IICounterCollection",
-    domainFormat = IICounter.format,
-    mongo = reactiveMongoComponent.mongoConnector.db) {
+  collectionName = "IICounterCollection",
+  domainFormat = IICounter.format,
+  mongo = reactiveMongoComponent.mongoConnector.db) {
 
   def getNext(regId: String)(implicit ec: ExecutionContext): Future[Int] = {
     val selector = BSONDocument("_id" -> regId)
@@ -43,7 +41,7 @@ class IICounterMongoRepository @Inject()(reactiveMongoComponent: ReactiveMongoCo
     collection.findAndUpdate(selector, modifier, fetchNewObject = true, upsert = true)
       .map {
         _.result[JsValue] match {
-          case None => throw new UpdateFailed(regId,"IICounter")
+          case None => throw new UpdateFailed(regId, "IICounter")
           case Some(x) => (x \ "count").as[Int]
         }
       }

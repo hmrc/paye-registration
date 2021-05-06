@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package audit
 
 import helpers.{JodaTimeJsonFormatHelper, PAYERegSpec}
 import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.{Authorization, ForwardedFor, RequestId, SessionId}
+import uk.gov.hmrc.http.{Authorization, ForwardedFor, HeaderCarrier, RequestId, SessionId}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelper {

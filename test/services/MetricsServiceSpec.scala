@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
   "Metrics" should {
     "update no metrics if no registration stats" in new Setup() {
-      when(service.regRepo.getRegistrationStats()(ArgumentMatchers.any()))
+      when(service.regRepo.getRegistrationStats())
         .thenReturn(Future.successful(Map[String, Int]()))
 
       val result: Map[String, Int] = await(service.updateDocumentMetrics())
@@ -49,7 +49,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
     "update a single metric when one is supplied" in new Setup() {
       when(service.metrics.defaultRegistry).thenReturn(mockRegistry)
-      when(service.regRepo.getRegistrationStats()(ArgumentMatchers.any()))
+      when(service.regRepo.getRegistrationStats())
         .thenReturn(Future.successful(Map[String, Int]("test" -> 1)))
 
       await(service.updateDocumentMetrics()) shouldBe Map("test" -> 1)
@@ -61,7 +61,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
     "update multiple metrics when required" in new Setup() {
       when(service.metrics.defaultRegistry).thenReturn(mockRegistry)
-      when(service.regRepo.getRegistrationStats()(ArgumentMatchers.any()))
+      when(service.regRepo.getRegistrationStats())
         .thenReturn(Future.successful(Map[String, Int]("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3)))
 
       val result = await(service.updateDocumentMetrics())

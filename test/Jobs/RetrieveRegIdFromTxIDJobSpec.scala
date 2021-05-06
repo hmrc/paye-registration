@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import play.api.Logger
 import utils.SystemDate
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Eventually {
 
@@ -110,10 +111,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
 
   "logRegIdFromTxId" should {
     "log a single txId with its regId when present" in new Setup {
-      when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
+      when(mockPlayConfiguraton.getOptional[String](eqTo("txIdListToRegIdForStartupJob"))(any()))
         .thenReturn(Some("dHhJZDE="))
 
-      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(tstPAYERegistration.copy(registrationID = "regIdX"))))
 
       withCaptureOfLoggingFrom(Logger) { logs =>
@@ -125,10 +126,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "log all txId with their regIds when present" in new Setup {
-      when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
+      when(mockPlayConfiguraton.getOptional[String](eqTo("txIdListToRegIdForStartupJob"))(any()))
         .thenReturn(Some("dHhJZDEsdHhJZDIsdHhJZDM="))
 
-      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any()))
         .thenReturn(
           Future.successful(Some(tstPAYERegistration.copy(registrationID = "regId1"))),
           Future.successful(Some(tstPAYERegistration.copy(registrationID = "regId2"))),
@@ -148,10 +149,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "not stop logging if one txId doesn't have a document" in new Setup {
-      when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
+      when(mockPlayConfiguraton.getOptional[String](eqTo("txIdListToRegIdForStartupJob"))(any()))
         .thenReturn(Some("dHhJZDEsdHhJZDIsdHhJZDM="))
 
-      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any()))
         .thenReturn(
           Future.successful(Some(tstPAYERegistration.copy(registrationID = "regId1"))),
           Future.successful(None),
@@ -170,10 +171,10 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "not stop logging if all txids throw an exception" in new Setup {
-      when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
+      when(mockPlayConfiguraton.getOptional[String](eqTo("txIdListToRegIdForStartupJob"))(any()))
         .thenReturn(Some("dHhJZDEsdHhJZDIsdHhJZDM="))
 
-      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any())(any()))
+      when(mockRegistrationMongo.retrieveRegistrationByTransactionID(any()))
         .thenReturn(Future.failed(new Exception("Something Went Wrong regId1")), Future.successful(None), Future.failed(new Exception("Something Went Wrong regId3")))
 
       withCaptureOfLoggingFrom(Logger) { logs =>
@@ -186,7 +187,7 @@ class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Ev
     }
 
     "not log anything if there is no txid list passed in" in new Setup {
-      when(mockPlayConfiguraton.getString(eqTo("txIdListToRegIdForStartupJob"), any()))
+      when(mockPlayConfiguraton.getOptional[String](eqTo("txIdListToRegIdForStartupJob"))(any()))
         .thenReturn(None)
 
       withCaptureOfLoggingFrom(Logger) { logs =>

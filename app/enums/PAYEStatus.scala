@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,5 +27,5 @@ object PAYEStatus extends Enumeration {
   val rejected = Value
   val cancelled = Value
 
-  implicit val format = Format(Reads.enumNameReads(PAYEStatus), Writes.enumNameWrites)
+  implicit val format = Format(Reads.enumNameReads(PAYEStatus), Writes.enumNameWrites[PAYEStatus.type])
 }

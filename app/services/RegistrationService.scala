@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,16 +31,15 @@ import play.api.libs.json.{JsObject, Json}
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RegistrationService @Inject()(val registrationRepository: RegistrationMongoRepository,
                                     auditService: AuditService,
                                     incorporationInformationConnector: IncorporationInformationConnector,
-                                    appConfig: AppConfig) extends PAYEBaseValidator {
+                                    appConfig: AppConfig)(implicit ec: ExecutionContext) extends PAYEBaseValidator {
 
-  def createNewPAYERegistration(regID: String, transactionID: String, internalId: String)(implicit ec: ExecutionContext): Future[PAYERegistration] = {
+  def createNewPAYERegistration(regID: String, transactionID: String, internalId: String): Future[PAYERegistration] = {
     registrationRepository.retrieveRegistration(regID) flatMap {
       case None => registrationRepository.createNewRegistration(regID, transactionID, internalId)
       case Some(registration) =>
@@ -49,32 +48,32 @@ class RegistrationService @Inject()(val registrationRepository: RegistrationMong
     }
   }
 
-  def fetchPAYERegistration(regID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def fetchPAYERegistration(regID: String): Future[Option[PAYERegistration]] = {
     registrationRepository.retrieveRegistration(regID)
   }
 
-  def fetchPAYERegistrationByTransactionID(transactionID: String)(implicit ec: ExecutionContext): Future[Option[PAYERegistration]] = {
+  def fetchPAYERegistrationByTransactionID(transactionID: String): Future[Option[PAYERegistration]] = {
     registrationRepository.retrieveRegistrationByTransactionID(transactionID)
   }
 
-  def getRegistrationId(txId: String)(implicit ec: ExecutionContext): Future[String] = {
+  def getRegistrationId(txId: String): Future[String] = {
     registrationRepository.getRegistrationId(txId)
   }
 
-  def getCompanyDetails(regID: String)(implicit ec: ExecutionContext): Future[Option[CompanyDetails]] = {
+  def getCompanyDetails(regID: String): Future[Option[CompanyDetails]] = {
     registrationRepository.retrieveCompanyDetails(regID)
   }
 
-  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails)(implicit ec: ExecutionContext): Future[CompanyDetails] = {
+  def upsertCompanyDetails(regID: String, companyDetails: CompanyDetails): Future[CompanyDetails] = {
     if (validDigitalContactDetails(companyDetails.businessContactDetails)) registrationRepository.upsertCompanyDetails(regID, companyDetails)
     else throw new RegistrationFormatException(s"No business contact method submitted for regID $regID")
   }
 
-  def getEmploymentInfo(regID: String)(implicit ec: ExecutionContext): Future[Option[EmploymentInfo]] = {
+  def getEmploymentInfo(regID: String): Future[Option[EmploymentInfo]] = {
     registrationRepository.retrieveEmploymentInfo(regID)
   }
 
-  def upsertEmploymentInfo(regID: String, employmentDetails: EmploymentInfo)(implicit ec: ExecutionContext): Future[EmploymentInfo] = {
+  def upsertEmploymentInfo(regID: String, employmentDetails: EmploymentInfo): Future[EmploymentInfo] = {
     registrationRepository.upsertEmploymentInfo(regID, employmentDetails) flatMap { res =>
       val status = (res.employees, res.construction) match {
         case (Employing.notEmploying, false) => PAYEStatus.invalid
@@ -92,33 +91,33 @@ class RegistrationService @Inject()(val registrationRepository: RegistrationMong
     } yield incorpDate
   }
 
-  def getDirectors(regID: String)(implicit ec: ExecutionContext): Future[Seq[Director]] = {
+  def getDirectors(regID: String): Future[Seq[Director]] = {
     registrationRepository.retrieveDirectors(regID)
   }
 
-  def upsertDirectors(regID: String, directors: Seq[Director])(implicit ec: ExecutionContext): Future[Seq[Director]] = {
+  def upsertDirectors(regID: String, directors: Seq[Director]): Future[Seq[Director]] = {
     if (directors.exists(_.nino.isDefined)) registrationRepository.upsertDirectors(regID, directors)
     else throw new RegistrationFormatException(s"No director NINOs completed for reg ID $regID")
   }
 
-  def getSICCodes(regID: String)(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
+  def getSICCodes(regID: String): Future[Seq[SICCode]] = {
     registrationRepository.retrieveSICCodes(regID)
   }
 
-  def upsertSICCodes(regID: String, sicCodes: Seq[SICCode])(implicit ec: ExecutionContext): Future[Seq[SICCode]] = {
+  def upsertSICCodes(regID: String, sicCodes: Seq[SICCode]): Future[Seq[SICCode]] = {
     registrationRepository.upsertSICCodes(regID, sicCodes)
   }
 
-  def getPAYEContact(regID: String)(implicit ec: ExecutionContext): Future[Option[PAYEContact]] = {
+  def getPAYEContact(regID: String): Future[Option[PAYEContact]] = {
     registrationRepository.retrievePAYEContact(regID)
   }
 
-  def upsertPAYEContact(regID: String, payeContact: PAYEContact)(implicit ec: ExecutionContext): Future[PAYEContact] = {
+  def upsertPAYEContact(regID: String, payeContact: PAYEContact): Future[PAYEContact] = {
     if (validPAYEContact(payeContact)) registrationRepository.upsertPAYEContact(regID, payeContact)
     else throw new RegistrationFormatException(s"No PAYE contact method submitted for regID $regID")
   }
 
-  def getCompletionCapacity(regID: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def getCompletionCapacity(regID: String): Future[Option[String]] = {
     registrationRepository.retrieveCompletionCapacity(regID)
   }
 
@@ -173,7 +172,6 @@ class RegistrationService @Inject()(val registrationRepository: RegistrationMong
       case Some(document) => document.status match {
         case documentStatus if validStatuses.contains(documentStatus) => registrationRepository.deleteRegistration(regID)
         case _ =>
-
           Logger.warn(s"[RegistrationService] - [deletePAYERegistration] PAYE Reg document for regId $regID was not deleted as the document status was ${document.status}, not ${validStatuses.toString}")
           throw new UnmatchedStatusException
       }
