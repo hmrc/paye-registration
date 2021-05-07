@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,21 @@ package connectors
 
 import audit.FailedDesSubmissionEvent
 import config.AppConfig
-import javax.inject.{Inject, Singleton}
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logger
 import play.api.libs.json.Writes
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import utils.{FeatureSwitch, PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
+import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector ) extends HttpErrorFunctions with WorkingHoursGuard {
+class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector) extends HttpErrorFunctions with WorkingHoursGuard {
   val alertWorkingHours: String = appConfig.alertWorkingHours
 
   def currentDate = SystemDate.getSystemDate.toLocalDate
@@ -45,7 +44,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
         Logger.warn("[DESConnect] - [customDESRead] Received 409 from DES - converting to 200")
         HttpResponse(200, Some(response.json), response.allHeaders, Option(response.body))
       case 429 =>
-        throw new Upstream5xxResponse(upstreamResponseMessage(http, url, response.status, response.body),429, reportAs = 503)
+        throw new Upstream5xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 429, reportAs = 503)
       case 499 =>
         throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
       case status if is4xx(status) =>
@@ -105,14 +104,13 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     }
   }
 
-  private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext) =
-    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc), ec = ec)
+  private def payePOST[I, O](url: String, body: I, headers: Seq[(String, String)] = createExtraHeaders)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier, ec: ExecutionContext) =
+    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = hc, ec = ec)
 
   private[connectors] def useDESStubFeature: Boolean = !PAYEFeatureSwitches.desService.enabled
 
-  private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
-    headerCarrier.
-      withExtraHeaders("Environment" -> appConfig.desUrlHeaderEnvironment).
-      copy(authorization = Some(Authorization(appConfig.desUrlHeaderAuthorization)))
-  }
+  private val createExtraHeaders = Seq(
+    "Authorization" -> appConfig.desUrlHeaderAuthorization,
+    "Environment" -> appConfig.desUrlHeaderEnvironment
+  )
 }

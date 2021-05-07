@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package Connectors
+package connectors
 
 import config.AppConfig
-import connectors.CompanyRegistrationConnector
 import helpers.PAYERegSpec
 import mocks.HTTPMock
 import models.external.BusinessProfile
@@ -32,7 +31,7 @@ import scala.concurrent.Future
 
 class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
 
-  val testJson = Json.parse(
+  val testJson: JsValue = Json.parse(
     """
       |{
       | "testKey" : "testValue"
@@ -40,7 +39,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
     """.stripMargin
   )
 
-  implicit val hc = HeaderCarrier()
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   class Setup {
 
@@ -55,22 +54,18 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
   "fetchCompanyRegistrationDocument" should {
     "return an OK with JSON body" when {
       "given a valid regId" in new Setup {
-        val okResponse = new HttpResponse {
-          override def status: Int = OK
-
-          override def json: JsValue = testJson
-        }
+        val okResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
 
         mockHttpGet[HttpResponse]("testUrl", okResponse)
 
-        val result = await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
+        val result: HttpResponse = await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
         result shouldBe okResponse
       }
     }
 
     "throw a not found exception" when {
       "the reg document cant be found" in new Setup {
-        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new NotFoundException("Bad request")))
 
         intercept[NotFoundException](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
@@ -79,7 +74,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
 
     "throw a forbidden exception" when {
       "the request is not authorised" in new Setup {
-        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new ForbiddenException("Forbidden")))
 
         intercept[ForbiddenException](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
@@ -88,7 +83,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
 
     "throw an unchecked exception" when {
       "an unexpected response code was returned" in new Setup {
-        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new RuntimeException("Runtime Exception")))
 
         intercept[Throwable](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))

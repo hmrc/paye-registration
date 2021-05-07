@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
-import javax.inject.{Inject, Singleton}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
@@ -30,11 +29,11 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
-import uk.gov.hmrc.auth.core.retrieve.Retrievals._
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.credentials
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
@@ -52,7 +51,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
                                   companyRegistrationConnector: CompanyRegistrationConnector,
                                   auditService: AuditService,
                                   registrationService: RegistrationService,
-                                  val authConnector: AuthConnector) extends ETMPStatusCodes with AuthorisedFunctions {
+                                  val authConnector: AuthConnector)(implicit ec: ExecutionContext) extends ETMPStatusCodes with AuthorisedFunctions {
 
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
@@ -112,7 +111,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def assertOrGenerateAcknowledgementReference(regId: String)(implicit ec: ExecutionContext): Future[String] = {
+  private[services] def assertOrGenerateAcknowledgementReference(regId: String): Future[String] = {
     registrationMongoRepository.retrieveAcknowledgementReference(regId) flatMap {
       case Some(ackRef) => Future.successful(ackRef)
       case None => for {
@@ -122,7 +121,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def generateAcknowledgementReference(implicit ec: ExecutionContext): Future[String] = {
+  private[services] def generateAcknowledgementReference: Future[String] = {
     val sequenceID = "AcknowledgementID"
     sequenceMongoRepository.getNext(sequenceID)
       .map(ref => f"BRPY$ref%011d")
@@ -147,7 +146,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit ec: ExecutionContext): Future[TopUpDESSubmission] = {
+  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
@@ -162,7 +161,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value)(implicit ec: ExecutionContext): Future[PAYEStatus.Value] = {
+  private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
     registrationMongoRepository.updateRegistrationStatus(regId, newStatus) map {
       _ =>
         if (!newStatus.equals(PAYEStatus.cancelled)) {
@@ -289,8 +288,10 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   private[services] class SessionIDNotExists extends NoStackTrace
 
   private[services] def retrieveSessionID(hc: HeaderCarrier): String = {
-    val s = hc.headers.collect { case ("X-Session-ID", x) => x }
-    if (s.nonEmpty) s.head else throw new SessionIDNotExists
+    hc.sessionId match {
+      case Some(sesId) => sesId.value
+      case _ => throw new SessionIDNotExists
+    }
   }
 
   private[services] def fetchCtUtr(regId: String, incorpUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[Option[String]] = {

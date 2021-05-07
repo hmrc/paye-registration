@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package models
 
 
-import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import enums.{Employing, PAYEStatus}
 import helpers.PAYERegSpec
@@ -27,6 +25,8 @@ import play.api.Configuration
 import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
 import utils.SystemDate
 
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
+
 class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
   val cryptoSCRS = mockCrypto
   val timestamp = "2017-05-09T07:58:35.000Z"
@@ -34,8 +34,6 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
   val zDtNow = ZonedDateTime.of(LocalDateTime.of(2000,1,20,16,0),ZoneOffset.UTC)
   "Creating a PAYERegistration model from Json" should {
     "complete successfully from full Json that has the old eligibility block in" in {
-
-      val date = LocalDate.of(2016, 12, 20)
 
       val json = Json.parse(
         s"""
@@ -210,8 +208,6 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
     }
 
     "complete successfully from full Json that doesn't include an eligibility block which is the as-is position" in {
-
-      val date = LocalDate.of(2016, 12, 20)
 
       val json = Json.parse(
         s"""

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ trait HTTPMock {
   lazy val mockHttp = mock[HttpClient]
 
   def mockHttpGet[T](url: String, thenReturn: T): OngoingStubbing[Future[T]] = {
-    when(mockHttp.GET[T](ArgumentMatchers.anyString())(ArgumentMatchers.any[HttpReads[T]](), ArgumentMatchers.any[HeaderCarrier](), ArgumentMatchers.any()))
+    when(mockHttp.GET[T](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any[HttpReads[T]](), ArgumentMatchers.any[HeaderCarrier](), ArgumentMatchers.any()))
       .thenReturn(Future.successful(thenReturn))
   }
 

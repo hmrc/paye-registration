@@ -24,17 +24,16 @@ lazy val microservice = Project(appName, file("."))
   .configs(IntegrationTest)
   .settings(majorVersion := 1)
   .settings(
-    scalaVersion := "2.11.11",
+    scalaVersion := "2.12.12",
     libraryDependencies ++= AppDependencies(),
-    dependencyOverrides ++= Set(
+    dependencyOverrides ++= Seq(
       "com.typesafe.akka" %% "akka-stream" % "2.5.23",
       "com.typesafe.akka" %% "akka-protobuf" % "2.5.23",
       "com.typesafe.akka" %% "akka-slf4j" % "2.5.23",
-      "com.typesafe.akka" %% "akka-actor" % "2.5.23"),
+      "com.typesafe.akka" %% "akka-actor" % "2.5.23"
+    ),
     retrieveManaged := true,
     parallelExecution in IntegrationTest := false,
-    resolvers += Resolver.bintrayRepo("hmrc", "releases"),
     resolvers += Resolver.jcenterRepo,
-    evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     routesGenerator := InjectedRoutesGenerator
   )

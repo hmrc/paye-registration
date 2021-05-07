@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
   "Delete Registration" should {
     "return a 200 response for success" in new Setup {
-      when(mockRepo.deleteRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.deleteRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
 
       val response = controller.deleteRegistration("AC123456")(FakeRequest())
@@ -74,7 +74,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
     }
 
     "return a 500 response for failure" in new Setup {
-      when(mockRepo.deleteRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.deleteRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = controller.deleteRegistration("AC123456")(FakeRequest())
@@ -88,7 +88,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
     "return a 200 response for success" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
-      when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.updateRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration))
 
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
@@ -98,7 +98,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
     "return a 500 response for failure" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
-      when(mockRepo.updateRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.updateRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
@@ -122,13 +122,13 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
   "newStatus" should {
     "return a 200 response for success" in new Setup {
-      when(mockRepo.createNewRegistration(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString())(ArgumentMatchers.any()))
+      when(mockRepo.createNewRegistration(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(validRegistration))
 
-      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.draft))
 
-      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC654321"), ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC654321"), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new RuntimeException("")))
 
       def newstatus(s: String) = controller.newStatus("AC123456", s)(FakeRequest())
@@ -146,7 +146,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
   "updateStatus" should {
     "return a 200 response for success" in new Setup {
 
-      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PAYEStatus.draft))
 
       status(controller.updateStatus("AC123456", "submitted")(FakeRequest())) shouldBe Status.OK

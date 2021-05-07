@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,19 @@ package services
 import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.{AddressTypes, IncorporationStatus}
-import javax.inject.{Inject, Singleton}
 import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
 import play.api.libs.json.{JsObject, Json}
 import repositories.RegistrationMongoRepository
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{credentials, externalId}
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.credentials
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.externalId
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 @Singleton
 class AuditService @Inject()(registrationRepository: RegistrationMongoRepository, val authConnector: AuthConnector, val auditConnector: AuditConnector) extends AuthorisedFunctions {
@@ -50,15 +51,17 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
     }
   }
 
-  private[services] def fetchAddressAuditRefs(regId: String)(implicit ec: ExecutionContext): Future[Map[AddressTypes.Value, String]] = {
+  private[services] def fetchAddressAuditRefs(regId: String): Future[Map[AddressTypes.Value, String]] = {
     registrationRepository.retrieveRegistration(regId) map { oReg =>
       oReg.map { reg =>
         List(
-          reg.companyDetails.flatMap(_.roAddress.auditRef).map( AddressTypes.roAdddress -> _ ),
-          reg.companyDetails.flatMap(_.ppobAddress.auditRef).map( AddressTypes.ppobAdddress -> _ ),
-          reg.payeContact.flatMap(_.correspondenceAddress.auditRef).map( AddressTypes.correspondenceAdddress -> _ )
+          reg.companyDetails.flatMap(_.roAddress.auditRef).map(AddressTypes.roAdddress -> _),
+          reg.companyDetails.flatMap(_.ppobAddress.auditRef).map(AddressTypes.ppobAdddress -> _),
+          reg.payeContact.flatMap(_.correspondenceAddress.auditRef).map(AddressTypes.correspondenceAdddress -> _)
         ).flatten.toMap
-      }.getOrElse{ throw new MissingRegDocument(s"No registration found when fetching address audit refs for regID $regId") }
+      }.getOrElse {
+        throw new MissingRegDocument(s"No registration found when fetching address audit refs for regID $regId")
+      }
     }
   }
 

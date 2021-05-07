@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,19 @@
 
 package config
 
-import java.util.Base64
-
-import javax.inject.{Inject, Singleton}
 import play.api.{Configuration, Logger}
 import repositories._
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.Base64
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.ExecutionContext
 
 @Singleton
-class StartUpJobs @Inject()(registrationRepo: RegistrationMongoRepository, configuration: Configuration) {
+class StartUpJobs @Inject()(registrationRepo: RegistrationMongoRepository, configuration: Configuration)(implicit ec: ExecutionContext) {
 
   lazy val txIds: List[String] = Some(new String(Base64.getDecoder
-    .decode(configuration.getString("txIdListToRegIdForStartupJob").getOrElse("")), "UTF-8"))
+    .decode(configuration.getOptional[String]("txIdListToRegIdForStartupJob").getOrElse("")), "UTF-8"))
     .fold(Array.empty[String])(_.split(",").filter(_.nonEmpty)).toList
 
   def logRegInfoFromTxId(): Unit = {

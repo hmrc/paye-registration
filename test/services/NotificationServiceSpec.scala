@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import models.EmpRefNotification
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.test.Helpers._
-import repositories.RegistrationMongoRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -80,11 +79,11 @@ class NotificationServiceSpec extends PAYERegSpec with RegistrationFixture {
       val testAckRef = "testAckRef"
       val testNotification = EmpRefNotification(Some("testEmpRef"), "testTimeStamp", "04")
 
-      when(mockRegistrationRepository.updateRegistrationEmpRef(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.updateRegistrationEmpRef(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(testNotification))
-      when(mockRegistrationRepository.retrieveRegistrationByAckRef(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistrationByAckRef(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration)))
-      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PAYEStatus.acknowledged))
 
       val result = await(testService.processNotification(testAckRef, testNotification))

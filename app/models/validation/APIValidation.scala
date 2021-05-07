@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package models.validation
 
-import java.time.LocalDate
-
 import enums.Employing
-import play.api.data.validation.ValidationError
 import play.api.libs.json._
 
+import java.time.LocalDate
 import scala.collection.Seq
 
 object APIValidation extends BaseJsonFormatting {

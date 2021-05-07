@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,9 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.SessionId
+import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
@@ -68,13 +66,13 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
 
   "Calling fetchAddressAuditRefs" should {
     "return a map of enums to refs" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(companyDetails = Some(validCompanyDetailsWithAuditRef)))))
 
       await(service.fetchAddressAuditRefs("regId")) shouldBe Map(AddressTypes.roAdddress -> "roAuditRef")
     }
     "throw a MissingRegDocument exception when there is no Registration object returned from mongo" in new Setup {
-      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.fetchAddressAuditRefs("regId")))
