@@ -16,8 +16,6 @@
 
 package controllers
 
-import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
@@ -35,6 +33,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 import utils.SystemDate
 
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
@@ -758,6 +757,8 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       reg.get.status shouldBe PAYEStatus.submitted
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate,fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction, status = PAYEStatus.submitted))
+
     }
 
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
@@ -781,11 +782,89 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubBusinessProfile()
 
-
       await(repository.upsertRegTestOnly(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = await(client(s"$regId/submit-registration").put(""))
+
+      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
+        .withRequestBody(equalToJson(Json.parse(
+          s"""
+             |{
+             | "acknowledgementReference": "testAckRef",
+             |    "metaData": {
+             |        "businessType": "Limited company",
+             |        "sessionID": "session-12345",
+             |        "credentialID": "xxx2",
+             |        "language": "en",
+             |        "formCreationTimestamp": "$timestamp",
+             |        "submissionFromAgent": false,
+             |        "completionCapacity": "Director",
+             |        "declareAccurateAndComplete": true
+             |    },
+             |    "payAsYouEarn": {
+             |        "limitedCompany": {
+             |            "companiesHouseCompanyName": "testCompanyName",
+             |            "nameOfBusiness": "test",
+             |            "registeredOfficeAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "postcode": "TE1 1ST"
+             |            },
+             |            "businessAddress": {
+             |                "addressLine1": "14 St Test Walk",
+             |                "addressLine2": "Testley",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            },
+             |            "businessContactDetails": {
+             |                "phoneNumber": "0123459999",
+             |                "mobileNumber": "5432109999",
+             |                "email": "test@email.com"
+             |            },
+             |            "natureOfBusiness": "consulting",
+             |            "directors": [
+             |                {
+             |                   "directorName": {
+             |                     "title": "Sir",
+             |              	      "firstName": "Thierry",
+             |              	      "lastName": "Henry",
+             |              	      "middleName": "Dominique"
+             |                   },
+             |                   "directorNINO": "SR123456C"
+             |                }
+             |            ],
+             |            "operatingOccPensionScheme": true
+             |        },
+             |        "employingPeople": {
+             |            "dateOfFirstEXBForEmployees": "${SystemDate.getSystemDate.toLocalDate}",
+             |            "numberOfEmployeesExpectedThisYear": "1",
+             |            "engageSubcontractors": true,
+             |            "correspondenceName": "Thierry Henry",
+             |            "correspondenceContactDetails": {
+             |                "phoneNumber": "1234999999",
+             |                "mobileNumber": "4358475999",
+             |                "email": "test@test.com"
+             |            },
+             |            "payeCorrespondenceAddress": {
+             |                "addressLine1": "19 St Walk",
+             |                "addressLine2": "Testley CA",
+             |                "addressLine3": "Testford",
+             |                "addressLine4": "Testshire",
+             |                "country": "UK"
+             |            }
+             |        }
+             |    }
+             |}
+          """.stripMargin).toString())
+        )
+      )
+
       response.status shouldBe 200
       response.json shouldBe Json.toJson("testAckRef")
 
