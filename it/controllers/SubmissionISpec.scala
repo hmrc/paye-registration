@@ -757,8 +757,6 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       reg.get.status shouldBe PAYEStatus.submitted
       reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate,fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction, status = PAYEStatus.submitted))
-
     }
 
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
