@@ -16,12 +16,12 @@
 
 package models.incorporation
 
-import java.time.LocalDate
-
 import enums.IncorporationStatus
 import models.validation.{APIValidation, BaseJsonFormatting}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Reads, __}
+
+import java.time.LocalDate
 
 case class IncorpStatusUpdate(transactionId: String,
                               status: IncorporationStatus.Value,

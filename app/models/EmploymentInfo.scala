@@ -16,11 +16,11 @@
 
 package models
 
-import java.time.LocalDate
-
 import enums.Employing
 import models.validation.{APIValidation, BaseJsonFormatting, MongoValidation}
 import play.api.libs.json._
+
+import java.time.LocalDate
 
 case class EmploymentInfo(employees: Employing.Value,
                           firstPaymentDate: LocalDate,

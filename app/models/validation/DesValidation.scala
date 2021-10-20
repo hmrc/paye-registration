@@ -16,11 +16,11 @@
 
 package models.validation
 
-import java.time.LocalDate
-
 import enums.Employing
 import play.api.Logger
 import play.api.libs.json.{Format, JsValue, Reads, Writes}
+
+import java.time.LocalDate
 
 object DesValidation extends BaseJsonFormatting {
 

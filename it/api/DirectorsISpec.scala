@@ -16,8 +16,6 @@
 
 package api
 
-import java.time.{ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
@@ -27,11 +25,12 @@ import models._
 import models.validation.APIValidation
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
 
+import java.time.{ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 

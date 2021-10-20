@@ -19,9 +19,9 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import jobs.SchedulingActor.ScheduledMessage
 import org.quartz.CronExpression
-import play.api.{Configuration, Logger}
+import play.api.{Configuration, Logging}
 
-trait ScheduledJob {
+trait ScheduledJob extends Logging {
   val scheduledMessage: ScheduledMessage[_]
   val config: Configuration
   val actorSystem: ActorSystem
@@ -44,13 +44,13 @@ trait ScheduledJob {
       case (true, true) =>
         scheduler.createSchedule(jobName, description, expression)
         scheduler.schedule(jobName, schedulingActorRef, scheduledMessage)
-        Logger.info(s"Scheduler for $jobName has been started")
+        logger.info(s"Scheduler for $jobName has been started")
         true
       case (true, false) =>
-        Logger.info(s"Scheduler for $jobName is disabled as there is no valid quartz expression: $expression")
+        logger.info(s"Scheduler for $jobName is disabled as there is no valid quartz expression: $expression")
         false
       case (false, _) =>
-        Logger.info(s"Scheduler for $jobName is disabled by configuration")
+        logger.info(s"Scheduler for $jobName is disabled by configuration")
         false
     }
   }

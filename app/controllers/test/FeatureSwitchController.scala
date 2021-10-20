@@ -16,12 +16,12 @@
 
 package controllers.test
 
-import javax.inject.{Inject, Named, Singleton}
 import jobs.ScheduledJob
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import utils._
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.Future
 
 @Singleton

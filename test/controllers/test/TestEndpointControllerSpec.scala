@@ -49,7 +49,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
   "Teardown registration collection" should {
     "return a 200 response for success" in new Setup {
       when(mockRepo.dropCollection(ArgumentMatchers.any()))
-        .thenReturn(Future.successful(()))
+        .thenReturn(Future.successful((true)))
 
       val response = controller.registrationTeardown()(FakeRequest())
       status(response) shouldBe Status.OK

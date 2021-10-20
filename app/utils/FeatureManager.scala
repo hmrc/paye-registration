@@ -16,10 +16,10 @@
 
 package utils
 
+import play.api.libs.json.{Json, OFormat}
+
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
-import play.api.libs.json.{Json, OFormat}
 
 sealed trait FeatureSwitch {
   def name: String

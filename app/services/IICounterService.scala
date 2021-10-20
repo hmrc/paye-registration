@@ -16,10 +16,10 @@
 
 package services
 
-import javax.inject.Inject
 import play.api.Configuration
 import repositories.IICounterMongoRepository
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class IICounterService @Inject()(counterRepository: IICounterMongoRepository,

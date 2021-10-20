@@ -16,11 +16,12 @@
 
 package jobs
 
-import javax.inject.{Inject, Singleton}
 import akka.actor.ActorSystem
 import jobs.SchedulingActor.RemoveStaleDocumentsJob
 import play.api.Configuration
 import services.RemoveStaleDocsService
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class RemoveStaleDocumentsJobs @Inject()(removeStaleDocsService: RemoveStaleDocsService,

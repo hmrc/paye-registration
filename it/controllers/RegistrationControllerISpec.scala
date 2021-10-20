@@ -16,8 +16,6 @@
 
 package controllers
 
-import java.time.LocalDate
-
 import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
@@ -35,6 +33,7 @@ import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 
+import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInfoFixture {

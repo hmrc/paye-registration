@@ -16,8 +16,6 @@
 
 package repositories
 
-import java.time._
-
 import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions.{InsertFailed, MissingRegDocument}
@@ -35,6 +33,7 @@ import reactivemongo.bson.BSONDocument
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import utils.SystemDate
 
+import java.time._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

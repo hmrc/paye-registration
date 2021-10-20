@@ -25,7 +25,7 @@ import enums.PAYEStatus
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json._
 import play.api.mvc._
 import repositories.RegistrationMongoRepository
@@ -46,7 +46,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
                                        counterService: IICounterService,
                                        val crypto: CryptoSCRS,
                                        val authConnector: AuthConnector,
-                                       controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation {
+                                       controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation with Logging {
 
   val resourceConn: RegistrationMongoRepository = registrationService.registrationRepository
 
@@ -80,13 +80,13 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
       Ok(regId)
     } recover {
       case _: MissingRegDocument =>
-        Logger.warn(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
+        logger.warn(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
         NotFound
       case _: IllegalStateException =>
-        Logger.error(s"[RegistrationController] - [getRegistrationId] - Registration found for txId $txId but no regId was found")
+        logger.warn(s"[RegistrationController] - [getRegistrationId] - Registration found for txId $txId but no regId was found")
         Conflict
       case _ =>
-        Logger.error(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
+        logger.warn(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
         InternalServerError
     }
   }
@@ -275,7 +275,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
             case e =>
-              Logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID", e)
+              logger.error(s"[RegistrationController] [submitPAYERegistration] Error while submitting to DES the registration with regId $regID", e)
               throw e
           }
         }
@@ -300,7 +300,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
         val transactionId = statusUpdate.transactionId
         registrationService.fetchPAYERegistrationByTransactionID(transactionId) flatMap {
           case None =>
-            Logger.error(s"[RegistrationController] [processIncorporationData] No registration found for transaction id $transactionId")
+            logger.error(s"[RegistrationController] [processIncorporationData] No registration found for transaction id $transactionId")
             throw new MissingRegDocument(transactionId)
           case Some(reg) =>
             submissionService.submitTopUpToDES(reg.registrationID, statusUpdate) map (_ => Ok(Json.toJson(statusUpdate.crn)))
@@ -311,10 +311,10 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
             Future.successful(Ok(s"No registration found for transaction id $transactionId"))
           case error: RegistrationInvalidStatus => registrationInvalidStatusHandler(error, transactionId)
           case mongo@(_: UpdateFailed | _: RetrieveFailed) =>
-            Logger.error(s"[RegistrationController] - [processIncorporationData] - Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
+            logger.error(s"[RegistrationController] - [processIncorporationData] - Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
             Future.successful(InternalServerError)
           case e =>
-            Logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
+            logger.error(s"[RegistrationController] [processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")
             throw e
         }
       }
@@ -322,13 +322,13 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
 
   def registrationInvalidStatusHandler(regInvalidError: RegistrationInvalidStatus, transactionId: String)(implicit hc: HeaderCarrier): Future[Result] = {
     counterService.updateIncorpCount(regInvalidError.regId) map {
-      case true => Logger.info(s"[RegistrationController] - [processIncorporationData] - II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
+      case true => logger.info(s"[RegistrationController] - [processIncorporationData] - II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
         Ok(s" II has called with regID: ${regInvalidError.regId} more than ${counterService.maxIICounterCount} times")
-      case false => Logger.warn(s"[RegistrationController] - [processIncorporationData] - Warning cannot process Incorporation Update for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
+      case false => logger.warn(s"[RegistrationController] - [processIncorporationData] - Warning cannot process Incorporation Update for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
         InternalServerError
     } recover {
       case error: UpdateFailed =>
-        Logger.error(s"[RegistrationController] - [processIncorporation] returned a None when trying to upsert ${regInvalidError.regId} for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
+        logger.error(s"[RegistrationController] - [processIncorporation] returned a None when trying to upsert ${regInvalidError.regId} for transaction ID '$transactionId' - ${regInvalidError.getMessage}")
         InternalServerError
     }
   }
@@ -362,10 +362,10 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
     implicit request =>
       registrationService.deletePAYERegistration(regId, PAYEStatus.invalid, PAYEStatus.draft) map {
         if (_) {
-          Logger.info(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Rejected Registration Document deleted for regId: $regId")
+          logger.info(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Rejected Registration Document deleted for regId: $regId")
           Ok
         } else {
-          Logger.warn(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Registration Document not deleted when expected for regId: $regId")
+          logger.warn(s"[RegistrationController] [deletePAYERegistrationIncorpRejected] - Registration Document not deleted when expected for regId: $regId")
           InternalServerError
         }
       } recover {

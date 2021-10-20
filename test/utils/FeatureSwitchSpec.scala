@@ -16,11 +16,11 @@
 
 package utils
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
 import helpers.PAYERegSpec
 import org.scalatest.BeforeAndAfterEach
+
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class FeatureSwitchSpec extends PAYERegSpec with BeforeAndAfterEach {
 

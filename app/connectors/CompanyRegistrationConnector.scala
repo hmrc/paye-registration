@@ -17,11 +17,11 @@
 package connectors
 
 import config.AppConfig
-import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

@@ -16,13 +16,13 @@
 
 package models
 
-import java.time.LocalDate
-
 import enums.Employing
 import helpers.PAYERegSpec
 import models.validation.{APIValidation, MongoValidation}
 import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.{JsObject, JsResultException, Json}
+
+import java.time.LocalDate
 
 class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
 

@@ -16,13 +16,13 @@
 
 package models.incorporation
 
-import java.time.LocalDate
-
 import enums.IncorporationStatus
 import helpers.PAYERegSpec
 import models.JsonFormatValidation
 import models.validation.APIValidation
 import play.api.libs.json._
+
+import java.time.LocalDate
 
 class IncorpStatusUpdateSpec extends PAYERegSpec with JsonFormatValidation {
 

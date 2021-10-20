@@ -16,8 +16,6 @@
 
 package api
 
-import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.{Employing, PAYEStatus}
@@ -27,12 +25,13 @@ import models.validation.APIValidation
 import models.{EmploymentInfo, PAYERegistration}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
 import utils.SystemDate
 
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class EmploymentInfoISpec extends IntegrationSpecBase {

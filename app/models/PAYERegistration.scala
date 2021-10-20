@@ -16,13 +16,13 @@
 
 package models
 
-import java.time.ZonedDateTime
-
 import auth.CryptoSCRS
 import enums.PAYEStatus
 import models.validation.BaseJsonFormatting
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
+import java.time.ZonedDateTime
 
 case class PAYERegistration(registrationID: String,
                             transactionID: String,
