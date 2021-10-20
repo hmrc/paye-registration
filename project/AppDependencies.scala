@@ -6,7 +6,7 @@ private object AppDependencies {
 }
 
 object MainDependencies {
-  private val bootstrapVersion = "4.0.0"
+  private val bootstrapVersion = "5.16.0"
   private val domainVersion = "5.10.0-play-27"
   private val mongoLockVersion = "6.24.0-play-27"
   private val simpleReactivemongoVersion = "7.31.0-play-27"
