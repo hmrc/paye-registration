@@ -19,19 +19,19 @@ package services
 import com.codahale.metrics.{Gauge, Timer}
 import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
 import config.AppConfig
-import javax.inject.Inject
 import jobs._
 import org.joda.time.Duration
-import play.api.Logger
+import play.api.Logging
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
                                lockRepository: LockRepositoryProvider,
                                appConfig: AppConfig,
-                               val metrics: Metrics) extends ScheduledService[Either[Map[String, Int], LockResponse]] {
+                               val metrics: Metrics) extends ScheduledService[Either[Map[String, Int], LockResponse]] with Logging {
 
   lazy val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
   lazy val lock: LockKeeper = new LockKeeper() {
@@ -43,13 +43,13 @@ class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
   def invoke(implicit ec: ExecutionContext): Future[Either[Map[String, Int], LockResponse]] = {
     lock.tryLock(updateDocumentMetrics).map {
       case Some(res) =>
-        Logger.info("MetricsService acquired lock and returned results")
+        logger.info("MetricsService acquired lock and returned results")
         Left(res)
       case None =>
-        Logger.info("MetricsService cant acquire lock")
+        logger.info("MetricsService cant acquire lock")
         Right(MongoLocked)
     }.recover {
-      case e => Logger.error(s"Error running updateSubscriptionMetrics with message: ${e.getMessage}")
+      case e => logger.error(s"Error running updateSubscriptionMetrics with message: ${e.getMessage}")
         Right(UnlockingFailed)
     }
   }
@@ -75,7 +75,7 @@ class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
       metrics.defaultRegistry.register(metricName, gauge)
     } catch {
       case _: MetricsDisabledException => {
-        Logger.warn(s"[MetricsService] [recordStatusCountStat] Metrics disabled - $metricName -> $count")
+        logger.warn(s"[MetricsService] [recordStatusCountStat] Metrics disabled - $metricName -> $count")
       }
     }
   }

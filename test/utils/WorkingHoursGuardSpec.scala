@@ -16,9 +16,9 @@
 
 package utils
 
-import java.time.{LocalDate, LocalTime}
-
 import helpers.PAYERegSpec
+
+import java.time.{LocalDate, LocalTime}
 
 class WorkingHoursGuardSpec extends PAYERegSpec {
 

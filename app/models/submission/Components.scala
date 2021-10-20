@@ -16,13 +16,13 @@
 
 package models.submission
 
-import java.time.LocalDate
-
 import common.exceptions.RegistrationExceptions.CompletionCapacityNotDefinedException
 import models.validation.DesValidation
 import models.{Address, DigitalContactDetails, Director}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Writes, _}
+
+import java.time.LocalDate
 
 object BusinessType {
   val LimitedCompany = "Limited company"

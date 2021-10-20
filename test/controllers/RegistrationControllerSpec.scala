@@ -16,8 +16,6 @@
 
 package controllers
 
-import java.time.LocalDate
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import auth.CryptoSCRS
@@ -41,6 +39,7 @@ import repositories.RegistrationMongoRepository
 import services._
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

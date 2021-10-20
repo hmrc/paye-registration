@@ -16,11 +16,11 @@
 
 package helpers
 
+import utils.SystemDate
+
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneId, ZoneOffset, ZonedDateTime}
 import javax.inject.Singleton
-
-import utils.SystemDate
 
 @Singleton
 class DateHelper {

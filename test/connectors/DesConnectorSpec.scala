@@ -16,8 +16,6 @@
 
 package Connectors
 
-import java.time.{LocalDate, LocalTime}
-
 import config.AppConfig
 import connectors.DESConnector
 import fixtures.SubmissionFixture
@@ -34,6 +32,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
+import java.time.{LocalDate, LocalTime}
 import scala.concurrent.Future
 
 class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFixture {

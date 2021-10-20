@@ -19,38 +19,38 @@ package services
 import common.constants.ETMPStatusCodes
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.PAYEStatus
-import javax.inject.{Inject, Singleton}
 import models.EmpRefNotification
-import play.api.Logger
+import play.api.Logging
 import repositories.RegistrationMongoRepository
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationService @Inject()(registrationRepo: RegistrationMongoRepository) extends ETMPStatusCodes {
+class NotificationService @Inject()(registrationRepo: RegistrationMongoRepository) extends ETMPStatusCodes with Logging {
 
   private[services] def getNewApplicationStatus(status: String): PAYEStatus.Value = {
     status match {
       case APPROVED =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $APPROVED - Application approved")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $APPROVED - Application approved")
         PAYEStatus.acknowledged
       case APPROVED_WITH_CONDITIONS =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $APPROVED_WITH_CONDITIONS - Application approved but with conditions")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $APPROVED_WITH_CONDITIONS - Application approved but with conditions")
         PAYEStatus.acknowledged
       case REJECTED =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED - Application has been rejected")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED - Application has been rejected")
         PAYEStatus.rejected
       case REJECTED_UNDER_REVIEW_APPEAL =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED_UNDER_REVIEW_APPEAL - Application has been rejected even after a review or appeal")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REJECTED_UNDER_REVIEW_APPEAL - Application has been rejected even after a review or appeal")
         PAYEStatus.rejected
       case REVOKED =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED - Application has been revoked")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED - Application has been revoked")
         PAYEStatus.rejected
       case REVOKED_UNDER_REVIEW_APPEAL =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED_UNDER_REVIEW_APPEAL - Application has been revoked even after a review or appeal")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $REVOKED_UNDER_REVIEW_APPEAL - Application has been revoked even after a review or appeal")
         PAYEStatus.rejected
       case DEREGISTERED =>
-        Logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $DEREGISTERED - Application has been de registered")
+        logger.info(s"[NotificationService] - [logNotificationStatus]: Notification has status $DEREGISTERED - Application has been de registered")
         PAYEStatus.rejected
     }
   }

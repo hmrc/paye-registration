@@ -16,9 +16,10 @@
 
 package jobs
 
-import javax.inject.{Inject, Singleton}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.lock.{LockMongoRepository, LockRepository}
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class LockRepositoryProvider @Inject()(reactiveMongoComponent: ReactiveMongoComponent) {

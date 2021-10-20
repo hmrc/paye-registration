@@ -16,12 +16,12 @@
 
 package fixtures
 
-import java.time.LocalDate
-
 import enums.{Employing, IncorporationStatus}
 import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission._
+
+import java.time.LocalDate
 
 trait SubmissionFixture {
   val validCompanyDetails = CompanyDetails(

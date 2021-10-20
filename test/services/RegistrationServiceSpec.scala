@@ -16,8 +16,6 @@
 
 package services
 
-import java.time.LocalDate
-
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions._
 import config.AppConfig
@@ -34,6 +32,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

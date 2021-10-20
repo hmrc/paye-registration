@@ -16,8 +16,6 @@
 
 package services
 
-import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
-
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
@@ -37,6 +35,7 @@ import uk.gov.hmrc.auth.core.retrieve.Credentials
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

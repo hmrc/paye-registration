@@ -16,13 +16,12 @@
 
 package jobs
 
-import java.time.ZonedDateTime
-
 import akka.actor.{Actor, ActorLogging, Props}
 import jobs.SchedulingActor.ScheduledMessage
 import play.api.Logger
 import services._
 
+import java.time.ZonedDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SchedulingActor extends Actor with ActorLogging {

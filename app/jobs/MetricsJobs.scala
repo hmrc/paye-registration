@@ -16,11 +16,12 @@
 
 package jobs
 
-import javax.inject.{Inject, Singleton}
 import akka.actor.ActorSystem
 import jobs.SchedulingActor.MetricsJob
 import play.api.Configuration
 import services.MetricsService
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class MetricsJobs @Inject()(metricsService: MetricsService,

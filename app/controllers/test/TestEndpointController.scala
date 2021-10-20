@@ -18,7 +18,6 @@ package controllers.test
 
 import auth.CryptoSCRS
 import enums.PAYEStatus
-import javax.inject.{Inject, Singleton}
 import models._
 import models.validation.APIValidation
 import play.api.libs.json._
@@ -26,8 +25,9 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.internalId
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

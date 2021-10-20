@@ -16,13 +16,13 @@
 
 package audit
 
-import java.time.LocalDate
-
 import enums.Employing
 import helpers.PAYERegSpec
 import models._
 import models.submission._
 import play.api.libs.json.{JsObject, Json}
+
+import java.time.LocalDate
 
 class DesSubmissionAuditEventDetailSpec extends PAYERegSpec {
 

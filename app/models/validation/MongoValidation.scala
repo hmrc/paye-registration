@@ -16,13 +16,13 @@
 
 package models.validation
 
-import java.time.{Instant, LocalDate, ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import enums.Employing
 import models.Address
 import models.incorporation.IncorpStatusUpdate
 import play.api.libs.json._
+
+import java.time.{Instant, LocalDate, ZoneOffset, ZonedDateTime}
 
 object MongoValidation extends BaseJsonFormatting {
   override val phoneNumberReads        = standardRead

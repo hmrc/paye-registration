@@ -19,13 +19,13 @@ package controllers
 import auth._
 import common.exceptions.RegistrationExceptions.UnmatchedStatusException
 import enums.PAYEStatus
-import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repositories.RegistrationMongoRepository
 import services.RegistrationService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton

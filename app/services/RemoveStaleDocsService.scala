@@ -16,21 +16,21 @@
 
 package services
 
-import java.time.ZonedDateTime
-
 import config.AppConfig
-import javax.inject.Inject
 import jobs._
 import org.joda.time.Duration
-import play.api.Logger
+import play.api.Logging
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 
+import java.time.ZonedDateTime
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
+@Singleton
 class RemoveStaleDocsService @Inject()(registrationMongoRepository: RegistrationMongoRepository,
                                        lockRepository: LockRepositoryProvider,
-                                       appConfig: AppConfig) extends ScheduledService[Either[(ZonedDateTime, Int), LockResponse]] {
+                                       appConfig: AppConfig) extends ScheduledService[Either[(ZonedDateTime, Int), LockResponse]] with Logging {
 
   lazy val lock: LockKeeper = new LockKeeper() {
     override val lockId: String = "remove-stale-documents-job"
@@ -46,14 +46,14 @@ class RemoveStaleDocsService @Inject()(registrationMongoRepository: Registration
           case 0 => s"No documents removed as there were no documents older than $dt in the database"
           case _ => s"Successfully removed $numberRemoved documents that were last updated before $dt"
         }
-        Logger.info(message)
-        Logger.info("RemoveStaleDocsService acquired lock and returned results")
+        logger.info(message)
+        logger.info("RemoveStaleDocsService acquired lock and returned results")
         Left(res)
       case None =>
-        Logger.info("RemoveStaleDocsService cant acquire lock")
+        logger.info("RemoveStaleDocsService cant acquire lock")
         Right(MongoLocked)
     }.recover {
-      case e => Logger.error(s"Error running RemoveStaleDocsService with message: ${e.getMessage}")
+      case e => logger.error(s"Error running RemoveStaleDocsService with message: ${e.getMessage}")
         Right(UnlockingFailed)
     }
   }

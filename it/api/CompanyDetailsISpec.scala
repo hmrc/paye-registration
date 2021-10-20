@@ -17,8 +17,6 @@
 package api
 
 
-import java.time.{ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import com.kenshoo.play.metrics.Metrics
 import enums.PAYEStatus
@@ -27,12 +25,13 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.validation.{APIValidation, MongoValidation}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{Format, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
 
+import java.time.{ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class CompanyDetailsISpec extends IntegrationSpecBase {
@@ -58,7 +57,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
 
-  class Setup  {
+  class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
@@ -74,7 +73,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
   "PAYE Registration API - Company Details" should {
     val lastUpdate = "2017-05-09T07:58:35Z"
-    val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
+    val dt = ZonedDateTime.of(2000, 1, 20, 16, 1, 0, 0, ZoneOffset.UTC)
 
     val validCompanyDetails = CompanyDetails(
       companyName = "Test Company Name",
@@ -249,8 +248,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
           acknowledgedTimestamp = None,
           lastAction = Some(dt),
           employmentInfo = None)
-        )
-
+      )
 
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue

@@ -16,10 +16,6 @@
 
 package models.validation
 
-import java.text.Normalizer
-import java.text.Normalizer.Form
-import java.time.{LocalDate, ZonedDateTime}
-
 import auth.CryptoSCRS
 import enums.{Employing, IncorporationStatus}
 import helpers.DateHelper
@@ -29,6 +25,9 @@ import play.api.libs.json.Reads._
 import play.api.libs.json._
 import utils.SystemDate
 
+import java.text.Normalizer
+import java.text.Normalizer.Form
+import java.time.{LocalDate, ZonedDateTime}
 import scala.collection.Seq
 
 trait BaseJsonFormatting extends DateHelper {

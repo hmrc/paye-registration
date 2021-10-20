@@ -16,10 +16,10 @@
 
 package fixtures
 
-import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
-
 import enums.PAYEStatus
 import models._
+
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 trait RegistrationFixture {
 

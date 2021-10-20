@@ -16,8 +16,6 @@
 
 package Jobs
 
-import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
-
 import config.StartUpJobs
 import enums.{Employing, PAYEStatus}
 import helpers.{LogCapturing, PAYERegSpec}
@@ -28,8 +26,9 @@ import org.scalatest.concurrent.Eventually
 import play.api.Logger
 import utils.SystemDate
 
-import scala.concurrent.Future
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class RetrieveRegIdFromTxIDJobSpec extends PAYERegSpec with LogCapturing with Eventually {
 

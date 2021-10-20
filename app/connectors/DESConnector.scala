@@ -20,7 +20,7 @@ import audit.FailedDesSubmissionEvent
 import config.AppConfig
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json.Writes
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -32,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector) extends HttpErrorFunctions with WorkingHoursGuard {
+class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector) extends HttpErrorFunctions with WorkingHoursGuard with Logging {
   val alertWorkingHours: String = appConfig.alertWorkingHours
 
   def currentDate = SystemDate.getSystemDate.toLocalDate
@@ -41,7 +41,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse): HttpResponse = {
     response.status match {
       case 409 =>
-        Logger.warn("[DESConnect] - [customDESRead] Received 409 from DES - converting to 200")
+        logger.warn("[DESConnect] - [customDESRead] Received 409 from DES - converting to 200")
         HttpResponse(200, Some(response.json), response.allHeaders, Option(response.body))
       case 429 =>
         throw new Upstream5xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 429, reportAs = 503)
@@ -55,9 +55,9 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
 
   private def logDes400PagerDuty(responce: Upstream4xxResponse, regId: String): Unit = if(responce.upstreamResponseCode == 400) {
     if(isInWorkingDaysAndHours) {
-      Logger.error(s"PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
+      logger.error(s"PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
     } else {
-      Logger.error(s"NON_PAGER_DUTY_LOG PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime")
+      logger.error(s"NON_PAGER_DUTY_LOG PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime")
     }
   }
 
@@ -73,9 +73,9 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
       s"${appConfig.desUrl}/${appConfig.desURI}"
     }
 
-    Logger.info(s"[DESConnector] - [submitToDES]: Submission to DES for regId: $regId, ackRef ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
+    logger.info(s"[DESConnector] - [submitToDES]: Submission to DES for regId: $regId, ackRef ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
     payePOST[DESSubmission, HttpResponse](url, submission) map { resp =>
-      Logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
+      logger.info(s"[DESConnector] - [submitToDES]: DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
     } recoverWith {
       case e: Upstream4xxResponse =>
@@ -93,9 +93,9 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
       s"${appConfig.desUrl}/${appConfig.desTopUpURI}"
     }
 
-    Logger.info(s"[DESConnector] - [submitTopUpToDES]: Top Up to DES for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
+    logger.info(s"[DESConnector] - [submitTopUpToDES]: Top Up to DES for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
     payePOST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
-      Logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status} for regId: $regId and txId: $txId")
+      logger.info(s"[DESConnector] - [submitTopUpToDES]: DES responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
     } recoverWith {
       case e: Upstream4xxResponse =>

@@ -16,8 +16,6 @@
 
 package jobs
 
-import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
-
 import auth.CryptoSCRS
 import com.google.inject.name.Names
 import com.kenshoo.play.metrics.Metrics
@@ -28,11 +26,12 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models.PAYERegistration
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{BindingKey, QualifierInstance}
-import play.api.{Application, Configuration}
 import play.api.test.Helpers._
+import play.api.{Application, Configuration}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
 
+import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class MetricsJobISpec extends IntegrationSpecBase {
