@@ -22,9 +22,8 @@ import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logging
 import play.api.libs.json.Writes
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
 import javax.inject.{Inject, Singleton}
@@ -36,6 +35,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
   val alertWorkingHours: String = appConfig.alertWorkingHours
 
   def currentDate = SystemDate.getSystemDate.toLocalDate
+
   def currentTime = SystemDate.getSystemDate.toLocalTime
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse): HttpResponse = {
@@ -53,8 +53,8 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     }
   }
 
-  private def logDes400PagerDuty(responce: Upstream4xxResponse, regId: String): Unit = if(responce.upstreamResponseCode == 400) {
-    if(isInWorkingDaysAndHours) {
+  private def logDes400PagerDuty(response: UpstreamErrorResponse, regId: String): Unit = if (response.statusCode == 400) {
+    if (isInWorkingDaysAndHours) {
       logger.error(s"PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
     } else {
       logger.error(s"NON_PAGER_DUTY_LOG PAYE_400_DES_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime")

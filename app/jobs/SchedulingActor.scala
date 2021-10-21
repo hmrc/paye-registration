@@ -16,29 +16,31 @@
 
 package jobs
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, Props}
 import jobs.SchedulingActor.ScheduledMessage
-import play.api.Logger
+import play.api.Logging
 import services._
 
 import java.time.ZonedDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SchedulingActor extends Actor with ActorLogging {
+class SchedulingActor extends Actor with Logging {
 
   override def receive: Receive = {
-    case message : ScheduledMessage[_] =>
-      Logger.info(s"Received ${message.getClass.getSimpleName}")
+    case message: ScheduledMessage[_] =>
+      logger.info(s"Received ${message.getClass.getSimpleName}")
       message.service.invoke
   }
 }
 
 object SchedulingActor {
+
   sealed trait ScheduledMessage[A] {
     val service: ScheduledService[A]
   }
 
   case class RemoveStaleDocumentsJob(service: RemoveStaleDocsService) extends ScheduledMessage[Either[(ZonedDateTime, Int), LockResponse]]
+
   case class MetricsJob(service: MetricsService) extends ScheduledMessage[Either[Map[String, Int], LockResponse]]
 
   def props: Props = Props[SchedulingActor]

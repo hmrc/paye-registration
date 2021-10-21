@@ -17,7 +17,6 @@
 package repositories
 
 import models.Sequence
-import play.api.Logger
 import play.api.libs.json.JsValue
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
@@ -45,7 +44,7 @@ class SequenceMongoRepository @Inject()(mongo: ReactiveMongoComponent) extends R
       _.result[JsValue] match {
         // $COVERAGE-OFF$
         case None => {
-          Logger.error("[SequenceRepository] - [getNext] returned a None when Upserting")
+          logger.error("[SequenceRepository] - [getNext] returned a None when Upserting")
           class InvalidSequence extends NoStackTrace
           throw new InvalidSequence
         }
