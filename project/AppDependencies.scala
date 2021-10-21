@@ -7,14 +7,14 @@ private object AppDependencies {
 
 object MainDependencies {
   private val bootstrapVersion = "5.16.0"
-  private val domainVersion = "5.10.0-play-27"
-  private val mongoLockVersion = "6.24.0-play-27"
-  private val simpleReactivemongoVersion = "7.31.0-play-27"
+  private val domainVersion = "6.2.0-play-28"
+  private val mongoLockVersion = "7.0.0-play-28"
+  private val simpleReactivemongoVersion = "8.0.0-play-28"
 
   def apply() = Seq(
     "com.typesafe.play" %% "play-json-joda" % "2.7.4",
     "com.enragedginger" %% "akka-quartz-scheduler" % "1.8.2-akka-2.6.x",
-    "uk.gov.hmrc" %% "bootstrap-backend-play-27" % bootstrapVersion,
+    "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrapVersion,
     "uk.gov.hmrc" %% "domain" % domainVersion,
     "uk.gov.hmrc" %% "mongo-lock" % mongoLockVersion,
     "uk.gov.hmrc" %% "simple-reactivemongo" % simpleReactivemongoVersion
@@ -23,10 +23,10 @@ object MainDependencies {
 
 trait TestDependencies {
   val scalaTestVersion = "3.0.8"
-  val scalaTestPlusVersion = "4.0.0"
+  val scalaTestPlusVersion = "5.0.0"
   val mockitoCoreVersion = "2.13.0"
   val wireMockVersion = "2.27.2"
-  val reactiveTestVersion = "5.0.0-play-27"
+  val reactiveTestVersion = "5.0.0-play-28"
 
   val scope: Configuration
   val test: Seq[ModuleID]

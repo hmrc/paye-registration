@@ -27,10 +27,9 @@ import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
 import play.api.test.Helpers._
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import java.time.{LocalDate, LocalTime}
 import scala.concurrent.Future
@@ -57,6 +56,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
     object Connector extends DESConnector(mockHttp, MockAppConfig, mockAuditConnector) {
       override def useDESStubFeature = withProxy
+
       override val currentTime: LocalTime = LocalTime.now
       override val currentDate: LocalDate = LocalDate.now
     }

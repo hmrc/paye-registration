@@ -18,26 +18,25 @@ package connectors
 
 import config.AppConfig
 import models.external.BusinessProfile
-import play.api.Logger
-import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpReads, NotFoundException}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import play.api.Logging
+import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpClient, HttpReads, NotFoundException}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends Logging {
 
   def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
     http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration") recover {
       case e: NotFoundException =>
-        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
+        logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
         throw e
       case e: ForbiddenException =>
-        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a Forbidden status code when expecting current profile from Business-Registration for regId: $regId")
+        logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a Forbidden status code when expecting current profile from Business-Registration for regId: $regId")
         throw e
       case e: Exception =>
-        Logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received error when expecting current profile from Business-Registration for regId: $regId - Error ${e.getMessage}")
+        logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received error when expecting current profile from Business-Registration for regId: $regId - Error ${e.getMessage}")
         throw e
     }
   }

@@ -8,7 +8,16 @@ Microservice supporting the paye registration aspects of the Streamlined Company
 
 In order to run the microservice, you must have SBT installed. You should then be able to start the application using: 
 
-```sbt "run {PORTNUM}"```
+```bash
+./run.sh
+```
+
+## Running locally
+Use service manager to run all services required by PAYE Registration:
+
+```bash
+sm --start PAYE_REG_ALL -f
+```
 
 To run the tests for the application, you can run: ```sbt test it:test``` 
 
@@ -53,7 +62,7 @@ A ```200``` success response:
 {
     "status": "submitted",
     "lastUpdate": "2017-05-09T07:58:35Z",
-    "ackRef": "AAAA-1234567890",
+    "ackRef": "AAAA-1234567890"
 }
 ```
 

@@ -19,11 +19,10 @@ package connectors
 import config.AppConfig
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status.{ACCEPTED, NO_CONTENT, OK}
 import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
@@ -36,7 +35,7 @@ class IncorporationInformationResponseException(msg: String) extends NoStackTrac
 }
 
 @Singleton
-class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) {
+class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends Logging {
 
   private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String = {
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
@@ -49,12 +48,12 @@ class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfi
         case OK => (res.json \ "incorporationDate").asOpt[LocalDate]
         case NO_CONTENT => None
         case _ =>
-          Logger.error(s"[IncorporationInformationConnect] - [getIncorporationDate] returned a ${res.status} response code for txId: $transactionId")
+          logger.error(s"[IncorporationInformationConnect] - [getIncorporationDate] returned a ${res.status} response code for txId: $transactionId")
           throw new IncorporationInformationResponseException(s"Calling II on $url returned a ${res.status}")
       }
     } recover {
       case e =>
-        Logger.error(s"[IncorporationInformationConnector] [getIncorporationDate] has encountered an error using transactionId: $transactionId with message: ${e.getMessage}")
+        logger.error(s"[IncorporationInformationConnector] [getIncorporationDate] has encountered an error using transactionId: $transactionId with message: ${e.getMessage}")
         throw e
     }
   }
@@ -66,7 +65,7 @@ class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfi
         case OK => Some(resp.json.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation)))
         case ACCEPTED => None
         case _ =>
-          Logger.error(s"[IncorporationInformationConnect] - [getIncorporationUpdate] returned a ${resp.status} response code for regId: $regId and txId: $transactionId")
+          logger.error(s"[IncorporationInformationConnect] - [getIncorporationUpdate] returned a ${resp.status} response code for regId: $regId and txId: $transactionId")
           throw new IncorporationInformationResponseException(s"Calling II on ${constructIncorporationInfoUri(transactionId, regime, subscriber)} returned a ${resp.status}")
       }
     }

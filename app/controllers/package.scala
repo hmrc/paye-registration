@@ -15,28 +15,29 @@
  */
 
 import auth._
-import play.api.Logger
+import play.api.Logging
 import play.api.mvc.Result
 import play.api.mvc.Results._
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-package object controllers {
+package object controllers extends Logging {
 
   implicit class HandleAuthResult(authResult: AuthorisationResult)(implicit hc: HeaderCarrier) {
     def ifAuthorised(regID: String, controller: String, method: String)(f: => Future[Result]): Future[Result] = authResult match {
       case Authorised(_) =>
         f
       case NotLoggedInOrAuthorised =>
-        Logger.info(s"[$controller] [$method] User not logged in")
+        logger.info(s"[$controller] [$method] User not logged in")
         Future.successful(Forbidden)
       case NotAuthorised(_) =>
-        Logger.info(s"[$controller] [$method] User logged in but not authorised for resource $regID")
+        logger.info(s"[$controller] [$method] User logged in but not authorised for resource $regID")
         Future.successful(Forbidden)
       case AuthResourceNotFound(_) =>
-        Logger.info(s"[$controller] [$method] User logged in but no resource found for regId $regID")
+        logger.info(s"[$controller] [$method] User logged in but no resource found for regId $regID")
         Future.successful(NotFound)
     }
   }
+
 }

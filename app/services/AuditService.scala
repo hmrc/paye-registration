@@ -48,6 +48,7 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
         )
         val event = new AmendCompletionCapacityEvent(regID, eventDetails)
         auditConnector.sendExtendedEvent(event)
+      case _ => throw new Exception("[Audit Completion Capacity] failed")
     }
   }
 
@@ -73,6 +74,7 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
           event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(id, cred.providerId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs))
           auditRes <- auditConnector.sendExtendedEvent(event)
         } yield auditRes
+      case _ => throw new Exception("[Audit DES Submission] failed")
     }
   }
 
