@@ -7,7 +7,7 @@ private object AppDependencies {
 
 object MainDependencies {
   private val bootstrapVersion = "5.16.0"
-  private val domainVersion = "6.2.0-play-28"
+  private val domainVersion = "8.1.0-play-28"
   private val mongoLockVersion = "7.0.0-play-28"
   private val simpleReactivemongoVersion = "8.0.0-play-28"
 
@@ -22,9 +22,9 @@ object MainDependencies {
 }
 
 trait TestDependencies {
-  val scalaTestVersion = "3.0.8"
+  val scalaTestVersion = "3.5.0"
   val scalaTestPlusVersion = "5.0.0"
-  val mockitoCoreVersion = "2.13.0"
+  val mockitoCoreVersion = "2.27.0"
   val wireMockVersion = "2.27.2"
   val reactiveTestVersion = "5.0.0-play-28"
 
