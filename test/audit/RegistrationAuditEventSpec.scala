@@ -58,7 +58,7 @@ class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelp
         "Authorization" -> bearer
       )
 
-      (result \ "tags").as[JsObject] shouldBe expectedTags
+      (result \ "tags").as[JsObject] mustBe expectedTags
     }
 
     "have the correct tags for an empty header carrier" in {
@@ -75,7 +75,7 @@ class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelp
         "Authorization" -> "-"
       )
 
-      (result \ "tags").as[JsObject] shouldBe expectedTags
+      (result \ "tags").as[JsObject] mustBe expectedTags
     }
 
     "Output with minimum tags" in {
@@ -87,7 +87,7 @@ class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelp
         "transactionName" -> auditType
       )
 
-      (result \ "tags").as[JsObject] shouldBe expectedTags
+      (result \ "tags").as[JsObject] mustBe expectedTags
     }
 
     "Output with name and clientIP/Port tags" in {
@@ -102,7 +102,7 @@ class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelp
         "clientPort" -> clientPort
       )
 
-      (result \ "tags").as[JsObject] shouldBe expectedTags
+      (result \ "tags").as[JsObject] mustBe expectedTags
     }
 
     "output with name, request, session & authz tags" in {
@@ -118,7 +118,7 @@ class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelp
         "Authorization" -> bearer
       )
 
-      (result \ "tags").as[JsObject] shouldBe expectedTags
+      (result \ "tags").as[JsObject] mustBe expectedTags
     }
 
 
@@ -127,10 +127,10 @@ class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelp
 
       val result = Json.toJson[ExtendedDataEvent](event)
 
-      (result \ "auditSource").as[String] shouldBe "paye-registration"
-      (result \ "auditType").as[String] shouldBe auditType
+      (result \ "auditSource").as[String] mustBe "paye-registration"
+      (result \ "auditType").as[String] mustBe auditType
 
-      (result \ "detail").as[JsObject] shouldBe Json.obj()
+      (result \ "detail").as[JsObject] mustBe Json.obj()
     }
   }
 }

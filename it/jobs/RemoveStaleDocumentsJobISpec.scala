@@ -28,8 +28,9 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.{BindingKey, QualifierInstance}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,15 +51,15 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
   override def beforeEach() = new Setup {
     resetWiremock()
-    await(repository.drop)
-    await(repository.ensureIndexes)
+
+    await(repository.dropCollection)
   }
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
     .build()
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val appConfig = app.injector.instanceOf[AppConfig]
 
@@ -98,8 +99,8 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
       override def getTimestamp: ZonedDateTime = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z"))
     }
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    lazy val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    lazy val lockRepository = app.injector.instanceOf[LockRepositoryProvider].repo
+    lazy val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    lazy val lockRepository = app.injector.instanceOf[MongoLockRepository]
   }
 
   "Remove Stale Documents Job" should {
@@ -108,7 +109,7 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
       val job = lookupJob("remove-stale-documents-job")
       val res = job.schedule
-      res shouldBe false
+      res mustBe false
     }
 
 
@@ -116,19 +117,22 @@ class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
       val deleteDT = ZonedDateTime.of(LocalDateTime.now.minusDays(61), ZoneId.of("Z"))
       val keepDT = ZonedDateTime.of(LocalDateTime.now.minusDays(59), ZoneId.of("Z"))
 
-      await(repository.upsertRegTestOnly(reg("123", Some(deleteDT))))
-      await(repository.upsertRegTestOnly(reg("223", Some(keepDT))))
+      await(repository.updateRegistration(reg("123", Some(deleteDT))))
+      await(repository.updateRegistration(reg("223", Some(keepDT))))
 
       setupFeatures(removeStaleDocumentsJob = true)
 
 
       val job = lookupJob("remove-stale-documents-job")
-      await(lockRepository.drop)
+
+      await(lockRepository.collection.drop().toFuture())
+      await(lockRepository.ensureIndexes)
+
       val f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[(ZonedDateTime, Int), LockResponse]])
       val res = await(f)
 
-      await(repository.retrieveRegistration("123")) shouldBe None
-      await(repository.retrieveRegistration("223")) shouldBe Some(reg("223", Some(keepDT)))
+      await(repository.retrieveRegistration("123")).isDefined mustBe false
+      await(repository.retrieveRegistration("223")).isDefined mustBe true
     }
   }
 

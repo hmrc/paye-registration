@@ -25,13 +25,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class SequenceMongoRepositoryISpec extends MongoBaseSpec with BeforeAndAfterAll {
 
   class Setup {
-    val repository = new SequenceMongoRepository(reactiveMongoComponent)
-    await(repository.drop)
-    await(repository.ensureIndexes)
-  }
+    val repository = new SequenceMongoRepository(mongoComponent)
 
-  override def afterAll() = new Setup {
-    await(repository.drop)
+    await(repository.collection.drop().toFuture())
+    await(repository.ensureIndexes)
   }
 
   val testSequence = "testSequence"
@@ -39,13 +36,13 @@ class SequenceMongoRepositoryISpec extends MongoBaseSpec with BeforeAndAfterAll 
   "Sequence repository" should {
     "should be able to get a sequence ID" in new Setup {
       val response = await(repository.getNext(testSequence))
-      response shouldBe 1
+      response mustBe 1
     }
 
     "get sequences, one after another from 1 to the end" in new Setup {
       val inputs = 1 to 25
       val outputs = inputs map { _ => await(repository.getNext(testSequence)) }
-      outputs shouldBe inputs
+      outputs mustBe inputs
     }
   }
 }

@@ -22,11 +22,10 @@ import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models.{EmpRefNotification, PAYERegistration}
+import org.mongodb.scala.model.Filters
 import play.api.Configuration
 import play.api.libs.json.JsObject
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.play.json.ImplicitBSONHandlers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -38,13 +37,12 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val sConfig = app.injector.instanceOf[Configuration]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    await(repository.drop)
-    await(repository.ensureIndexes)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    await(repository.dropCollection)
   }
 
-  def setupCollection(repo: RegistrationMongoRepository, registration: PAYERegistration): Future[WriteResult] = {
-    repo.insert(registration)
+  def setupCollection(repo: RegistrationMongoRepository, registration: PAYERegistration): Future[PAYERegistration] = {
+    repo.updateRegistration(registration)
   }
 
   "EMP Ref Encryption" should {
@@ -83,24 +81,22 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
     )
 
     "store the plain EMP Ref in encrypted form" in new Setup {
-      import reactivemongo.bson.{BSONDocument, BSONInteger, BSONString}
 
       await(setupCollection(repository, validAcknowledgedPAYERegistration))
 
       val result = await(repository.updateRegistrationEmpRef(ackRef, PAYEStatus.acknowledged, validEmpRefNotification))
-      result shouldBe validEmpRefNotification
+      result mustBe validEmpRefNotification
 
       // check the value isn't the EMP Ref when fetched direct from the DB
-      val query = BSONDocument("acknowledgementReference" -> BSONString(ackRef))
-      val project = BSONDocument("registrationConfirmation.empRef" -> BSONInteger(1), "_id" -> BSONInteger(0))
+      val query = Filters.equal("acknowledgementReference", ackRef)
 
-      val stored: Option[JsObject] = await(repository.collection.find(query, project).one[JsObject])
-      stored shouldBe defined
-      (stored.get \ "registrationConfirmation" \ "empRef").as[String] shouldNot be(empRef)
+      val stored: JsObject = await(repository.collection.find[JsObject](query).head())
+
+      (stored \ "registrationConfirmation" \ "empRef").as[String] mustNot be(empRef)
 
       // check that it is the EMP Ref when fetched properly
       val fetched: PAYERegistration = await(repository.retrieveRegistrationByAckRef(ackRef)).get
-      fetched.registrationConfirmation.flatMap(_.empRef) shouldBe Some(empRef)
+      fetched.registrationConfirmation.flatMap(_.empRef) mustBe Some(empRef)
     }
   }
 }

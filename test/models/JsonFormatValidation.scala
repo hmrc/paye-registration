@@ -16,15 +16,15 @@
 
 package models
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
 trait JsonFormatValidation {
-  this: WordSpec with Matchers =>
+  this: PlaySpec =>
 
   def shouldBeSuccess[T](expected: T, result: JsResult[T]) = {
     result match {
-      case JsSuccess(value, path) => value shouldBe expected
+      case JsSuccess(value, path) => value mustBe expected
       case JsError(errors) => fail(s"Test produced errors - ${errors}")
     }
   }
@@ -41,13 +41,13 @@ trait JsonFormatValidation {
     result match {
       case JsSuccess(value, path) => fail(s"read should have failed and didn't - produced ${value}")
       case JsError(errors) => {
-        errors.length shouldBe expectedErrors.keySet.toSeq.length
+        errors.length mustBe expectedErrors.keySet.toSeq.length
 
         for( error <- errors ) {
           error match {
             case (path, valErrs) => {
-              expectedErrors.keySet should contain(path)
-              expectedErrors(path) shouldBe valErrs
+              expectedErrors.keySet must contain(path)
+              expectedErrors(path) mustBe valErrs
             }
           }
         }
@@ -59,12 +59,12 @@ trait JsonFormatValidation {
     result match {
       case JsSuccess(value, path) => fail(s"read should have failed and didn't - produced ${value}")
       case JsError(errors) => {
-        errors.length shouldBe 1
+        errors.length mustBe 1
         errors(0) match {
           case (path, error) => {
-            path shouldBe errorPath
-            error.length shouldBe 1
-            error(0) shouldBe expectedError
+            path mustBe errorPath
+            error.length mustBe 1
+            error(0) mustBe expectedError
           }
         }
       }

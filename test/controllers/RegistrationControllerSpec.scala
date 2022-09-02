@@ -125,7 +125,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.newPAYERegistration(regId)(FakeRequest().withBody(Json.toJson[String]("NNASD9789F")))
 
-      status(response) shouldBe Status.FORBIDDEN
+      status(response) mustBe Status.FORBIDDEN
     }
 
     "return a Forbidden response if the user is logged in but no internalId" in new Setup {
@@ -133,7 +133,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.newPAYERegistration(regId)(FakeRequest().withBody(Json.toJson[String]("NNASD9789F")))
 
-      status(response) shouldBe Status.FORBIDDEN
+      status(response) mustBe Status.FORBIDDEN
     }
 
     "return a PAYERegistration for a successful creation" in new Setup {
@@ -144,7 +144,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.newPAYERegistration(regId)(FakeRequest().withBody(Json.toJson[String]("NNASD9789F")))
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -157,7 +157,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getPAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
@@ -168,7 +168,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getPAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -181,7 +181,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getCompanyDetails(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -199,7 +199,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
           )
       )
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a Bad Request response if the Company Details are badly formatted" in new Setup {
@@ -215,8 +215,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
           )
       )
 
-      status(response) shouldBe Status.BAD_REQUEST
-      contentAsString(response) shouldBe "tstMessage"
+      status(response) mustBe Status.BAD_REQUEST
+      contentAsString(response) mustBe "tstMessage"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -232,7 +232,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
           )
       )
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
   "Calling getEmploymentInfo" should {
@@ -252,8 +252,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(empInfo)))
 
       val res = controller.getEmploymentInfo(regId)(FakeRequest())
-      status(res) shouldBe 200
-      contentAsJson(res).as[JsObject] shouldBe jsonEmpInfo
+      status(res) mustBe 200
+      contentAsJson(res).as[JsObject] mustBe jsonEmpInfo
     }
     "return 404 if reg doc is missing" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
@@ -261,7 +261,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         thenReturn(Future.failed(new MissingRegDocument(regId)))
 
       val res = controller.getEmploymentInfo(regId)(FakeRequest())
-      status(res) shouldBe 404
+      status(res) mustBe 404
     }
     "return 204 if block does not exist but reg doc does exist" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
@@ -269,12 +269,12 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         thenReturn(Future.successful(None))
 
       val res = controller.getEmploymentInfo(regId)(FakeRequest())
-      status(res) shouldBe 204
+      status(res) mustBe 204
     }
     "return 403 if the user is not authorised" in new Setup {
       AuthorisationMocks.mockNotLoggedInOrAuthorised(regId)
       val res = controller.getEmploymentInfo(regId)(FakeRequest())
-      status(res) shouldBe 403
+      status(res) mustBe 403
     }
   }
   "Calling upsertEmploymentInfo" should {
@@ -291,7 +291,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(empInfo))
 
       val res = controller.upsertEmploymentInfo(regId)(FakeRequest().withBody(Json.toJson[EmploymentInfo](empInfo)(apiFormatForTest)))
-      contentAsJson(res).as[JsObject] shouldBe jsonEmpInfo
+      contentAsJson(res).as[JsObject] mustBe jsonEmpInfo
     }
     "return 404 if reg doc is missing" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
@@ -303,13 +303,13 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
       val res = controller.upsertEmploymentInfo(regId)(FakeRequest().withBody(Json.toJson[EmploymentInfo](empInfo)(apiFormatForTest)))
-      status(res) shouldBe 404
+      status(res) mustBe 404
     }
     "return 403 when the user is not authorised" in new Setup {
       AuthorisationMocks.mockNotLoggedInOrAuthorised(regId)
 
       val res = controller.upsertEmploymentInfo(regId)(FakeRequest().withBody(Json.toJson[EmploymentInfo](empInfo)(apiFormatForTest)))
-      status(res) shouldBe 403
+      status(res) mustBe 403
     }
   }
 
@@ -322,7 +322,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getDirectors(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
@@ -333,7 +333,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getDirectors(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -347,7 +347,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertDirectors(regId)(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a Bad Request response if there are no NINOs completed in the directors list" in new Setup {
@@ -359,8 +359,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertDirectors(regId)(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
-      status(response) shouldBe Status.BAD_REQUEST
-      contentAsString(response) shouldBe "test message"
+      status(response) mustBe Status.BAD_REQUEST
+      contentAsString(response) mustBe "test message"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -372,7 +372,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertDirectors(regId)(FakeRequest().withBody(Json.toJson[Seq[Director]](validDirectors)(Director.directorSequenceWriter(APIValidation))))
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -385,7 +385,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getSICCodes(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
@@ -396,7 +396,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getSICCodes(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -410,7 +410,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertSICCodes(regId)(FakeRequest().withBody(Json.toJson[Seq[SICCode]](validSICCodes)))
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -422,7 +422,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertSICCodes(regId)(FakeRequest().withBody(Json.toJson[Seq[SICCode]](validSICCodes)))
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -435,7 +435,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getPAYEContact(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
@@ -446,7 +446,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getPAYEContact(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -459,7 +459,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertPAYEContact(regId)(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a Bad Request response if there is no contact method provided in the request" in new Setup {
@@ -470,8 +470,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertPAYEContact(regId)(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
-      status(response) shouldBe Status.BAD_REQUEST
-      contentAsString(response) shouldBe "contact exception msg"
+      status(response) mustBe Status.BAD_REQUEST
+      contentAsString(response) mustBe "contact exception msg"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -482,7 +482,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertPAYEContact(regId)(FakeRequest().withBody(Json.toJson[PAYEContact](validPAYEContact)(PAYEContact.format(APIValidation))))
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -495,7 +495,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getCompletionCapacity(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
@@ -506,7 +506,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getCompletionCapacity(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -519,7 +519,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertCompletionCapacity(regId)(FakeRequest().withBody(Json.toJson[String]("Director")))
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a Bad Request response if completion capacity is incorrectly formatted" in new Setup {
@@ -530,8 +530,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertCompletionCapacity(regId)(FakeRequest().withBody(Json.toJson[String]("Director")))
 
-      status(response) shouldBe Status.BAD_REQUEST
-      contentAsString(response) shouldBe "errMessage"
+      status(response) mustBe Status.BAD_REQUEST
+      contentAsString(response) mustBe "errMessage"
     }
 
     "return an OK response for a valid upsert" in new Setup {
@@ -542,7 +542,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.upsertCompletionCapacity(regId)(FakeRequest().withBody(Json.toJson[String]("Director")))
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -555,8 +555,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.submitPAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.BAD_REQUEST
-      contentAsString(response) shouldBe "Registration was submitted without full data: tst message"
+      status(response) mustBe Status.BAD_REQUEST
+      contentAsString(response) mustBe "Registration was submitted without full data: tst message"
     }
 
     "return an Ok response with acknowledgement reference for a valid submit" in new Setup {
@@ -567,8 +567,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.submitPAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
-      contentAsJson(response) shouldBe Json.toJson("BRPY00000000001")
+      status(response) mustBe Status.OK
+      contentAsJson(response) mustBe Json.toJson("BRPY00000000001")
     }
   }
 
@@ -581,7 +581,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getAcknowledgementReference(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
 
     "return a PAYERegistration for a successful query" in new Setup {
@@ -592,7 +592,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getAcknowledgementReference(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -607,7 +607,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
           .thenReturn(Future.successful(testNotification))
 
         val result = controller.updateRegistrationWithEmpRef("testAckRef")(request)
-        status(result) shouldBe Status.OK
+        status(result) mustBe Status.OK
       }
     }
   }
@@ -621,7 +621,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.getDocumentStatus(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
   }
 
@@ -634,7 +634,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return an InternalServerError response if there was a mongo problem" in new Setup {
@@ -645,7 +645,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a Pre condition failed response if the document status is not rejected" in new Setup {
@@ -656,7 +656,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistration(regId)(FakeRequest())
 
-      status(response) shouldBe Status.PRECONDITION_FAILED
+      status(response) mustBe Status.PRECONDITION_FAILED
     }
   }
 
@@ -667,7 +667,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return an InternalServerError response if there was a mongo problem" in new Setup {
@@ -676,7 +676,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
 
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a Pre condition failed response if the document status is not draft, invalid or cancelled" in new Setup {
@@ -685,7 +685,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
 
-      status(response) shouldBe Status.PRECONDITION_FAILED
+      status(response) mustBe Status.PRECONDITION_FAILED
     }
 
     "return a Not found response if the document status is not rejected" in new Setup {
@@ -694,7 +694,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.deletePAYERegistrationIncorpRejected(regId)(FakeRequest())
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) mustBe Status.NOT_FOUND
     }
   }
 
@@ -737,7 +737,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(false))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a 200 response when the registration we try to incorporate is in invalid status and the II call count is > the config value" in new Setup {
@@ -753,7 +753,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(true))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 200 response when the registration we try to incorporate is in acknowledge status" in new Setup {
@@ -764,7 +764,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.acknowledged.toString)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 200 response when the registration we try to incorporate is in rejected status" in new Setup {
@@ -775,7 +775,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.rejected.toString)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 200 response when the registration we try to incorporate is in cancelled status" in new Setup {
@@ -786,7 +786,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.cancelled.toString)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 500 response when the mongo retrieve failed" in new Setup {
@@ -794,7 +794,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new RetrieveFailed(validRegistration.registrationID)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
 
     }
 
@@ -806,7 +806,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new UpdateFailed(validRegistration.registrationID, "Registration status")))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
   }
 
@@ -820,7 +820,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.registrationInvalidStatusHandler(errorStatus, "NN1234")
 
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a 500 response when error is an invalid status and an UpdateFailed Error is Encountered" in new Setup {
@@ -831,7 +831,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.registrationInvalidStatusHandler(errorStatus, "NN1234")
 
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a 200 response when the error is an invalid status and the II call count is > config value" in new Setup {
@@ -842,7 +842,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val response = controller.registrationInvalidStatusHandler(errorStatus, "NN1234")
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
   }
 
@@ -852,8 +852,8 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future("testRegId"))
 
       val result = controller.getRegistrationId("txId")(FakeRequest())
-      status(result) shouldBe OK
-      contentAsString(result) shouldBe "testRegId"
+      status(result) mustBe OK
+      contentAsString(result) mustBe "testRegId"
     }
 
     "return a NotFound" in new Setup {
@@ -861,7 +861,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new MissingRegDocument("")))
 
       val result = controller.getRegistrationId("txId")(FakeRequest())
-      status(result) shouldBe NOT_FOUND
+      status(result) mustBe NOT_FOUND
     }
 
     "return a Conflict" in new Setup {
@@ -869,7 +869,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new IllegalStateException))
 
       val result = controller.getRegistrationId("txId")(FakeRequest())
-      status(result) shouldBe CONFLICT
+      status(result) mustBe CONFLICT
     }
 
     "return an InternalServerError" in new Setup {
@@ -877,7 +877,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new Exception))
 
       val result = controller.getRegistrationId("txId")(FakeRequest())
-      status(result) shouldBe INTERNAL_SERVER_ERROR
+      status(result) mustBe INTERNAL_SERVER_ERROR
     }
   }
 }

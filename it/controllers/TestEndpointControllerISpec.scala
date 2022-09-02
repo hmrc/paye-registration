@@ -28,8 +28,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 import utils.SystemDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -52,7 +52,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
@@ -63,9 +63,11 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    await(repository.drop)
-    await(repository.ensureIndexes)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+
+    await(repository.dropCollection)
+
+    def count = await(repository.collection.countDocuments().toFuture())
   }
 
   "registration-teardown" should {
@@ -77,7 +79,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID1,
           transactionID1,
@@ -101,7 +103,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       ))
 
-      await(repository.insert(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID2,
           transactionID2,
@@ -125,12 +127,12 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       ))
 
-      await(repository.count) shouldBe 2
+      count mustBe 2
 
       val response = client(s"/registration-teardown").get.futureValue
-      response.status shouldBe 200
+      response.status mustBe 200
 
-      await(repository.count) shouldBe 0
+      count mustBe 0
     }
   }
 
@@ -143,7 +145,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID1,
           transactionID1,
@@ -167,7 +169,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       ))
 
-      await(repository.insert(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID2,
           transactionID2,
@@ -191,12 +193,12 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       ))
 
-      await(repository.count) shouldBe 2
+      count mustBe 2
 
       val response = client(s"/delete-registration/$regID1").get.futureValue
-      response.status shouldBe 200
+      response.status mustBe 200
 
-      await(repository.count) shouldBe 1
+      count mustBe 1
     }
   }
 
@@ -210,7 +212,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID1,
           transactionID,
@@ -233,7 +235,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
           employmentInfo = None
         )
       ))
-      await(repository.count) shouldBe 1
+      count mustBe 1
 
       val jsonBody = Json.toJson[PAYERegistration](
         PAYERegistration(
@@ -299,7 +301,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
       )(PAYERegistration.format(MongoValidation, mockcryptoSCRS))
 
       val response = client(s"/update-registration/$regID1").post[JsObject](jsonBody.as[JsObject]).futureValue
-      response.status shouldBe 200
+      response.status mustBe 200
     }
 
     "return a 400 when the json body cannot be validated" in new Setup {
@@ -309,7 +311,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
 
-      await(repository.insert(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID1,
           transactionID,
@@ -332,10 +334,10 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
           employmentInfo = None
         )
       ))
-      await(repository.count) shouldBe 1
+      count mustBe 1
 
       val response = client(s"/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue
-      response.status shouldBe 400
+      response.status mustBe 400
     }
   }
 }

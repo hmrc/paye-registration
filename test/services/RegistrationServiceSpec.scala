@@ -62,7 +62,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(validRegistration)))
 
       val actual = await(service.createNewPAYERegistration(validRegistration.registrationID, validRegistration.transactionID, validRegistration.internalID))
-      actual shouldBe validRegistration
+      actual mustBe validRegistration
     }
 
     "return a DBSuccess response when the Registration is correctly inserted into the database" in new Setup {
@@ -72,7 +72,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validRegistration))
 
       val actual = await(service.createNewPAYERegistration("AC123456", "NNASD9789F", "09876"))
-      actual shouldBe validRegistration
+      actual mustBe validRegistration
     }
   }
 
@@ -83,7 +83,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       val actual = await(service.fetchPAYERegistration(regId))
-      actual shouldBe None
+      actual mustBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -99,7 +99,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(validRegistration)))
 
       val actual = await(service.fetchPAYERegistration(regId))
-      actual shouldBe Some(validRegistration)
+      actual mustBe Some(validRegistration)
     }
   }
 
@@ -110,7 +110,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       val actual = await(service.getCompanyDetails(regId))
-      actual shouldBe None
+      actual mustBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -126,7 +126,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(validCompanyDetails)))
 
       val actual = await(service.getCompanyDetails(regId))
-      actual shouldBe validRegistration.companyDetails
+      actual mustBe validRegistration.companyDetails
     }
   }
 
@@ -149,7 +149,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validCompanyDetails))
 
       val actual = await(service.upsertCompanyDetails(regId, validCompanyDetails))
-      actual shouldBe validCompanyDetails
+      actual mustBe validCompanyDetails
     }
   }
   "Calling getEmploymentInfo" should {
@@ -159,31 +159,31 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationRepository.retrieveEmploymentInfo(eqTo(regId)))
         .thenReturn(Future.successful(Some(empInfo)))
 
-      await(service.getEmploymentInfo(regId)) shouldBe Some(empInfo)
+      await(service.getEmploymentInfo(regId)) mustBe Some(empInfo)
     }
     "return None" in new Setup {
       when(mockRegistrationRepository.retrieveEmploymentInfo(eqTo(regId)))
         .thenReturn(Future.successful(None))
 
-      await(service.getEmploymentInfo(regId)) shouldBe None
+      await(service.getEmploymentInfo(regId)) mustBe None
     }
     "return a MissingRegDocument if the document is missing in repository" in new Setup {
       when(mockRegistrationRepository.retrieveEmploymentInfo(eqTo(regId)))
         .thenReturn(Future.failed(new MissingRegDocument(regId)))
 
-      a[MissingRegDocument] shouldBe thrownBy(await(service.getEmploymentInfo(regId)))
+      a[MissingRegDocument] mustBe thrownBy(await(service.getEmploymentInfo(regId)))
     }
     "return a RetrieveFailed if the repository returns an error" in new Setup {
       when(mockRegistrationRepository.retrieveEmploymentInfo(eqTo(regId)))
         .thenReturn(Future.failed(new RetrieveFailed(regId)))
 
-      a[RetrieveFailed] shouldBe thrownBy(await(service.getEmploymentInfo(regId)))
+      a[RetrieveFailed] mustBe thrownBy(await(service.getEmploymentInfo(regId)))
     }
     "return an UpdateFailed if the repository returns an error to delete old model" in new Setup {
       when(mockRegistrationRepository.retrieveEmploymentInfo(eqTo(regId)))
         .thenReturn(Future.failed(new UpdateFailed(regId, "test")))
 
-      a[UpdateFailed] shouldBe thrownBy(await(service.getEmploymentInfo(regId)))
+      a[UpdateFailed] mustBe thrownBy(await(service.getEmploymentInfo(regId)))
     }
   }
 
@@ -196,11 +196,11 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(PAYEStatus.draft))
 
       val res = await(service.upsertEmploymentInfo(regId,empInfo))
-      res shouldBe empInfo
+      res mustBe empInfo
 
       val captor:ArgumentCaptor[PAYEStatus.Value] = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
       verify(mockRegistrationRepository, times(1)).updateRegistrationStatus(eqTo(regId), captor.capture())
-      captor.getValue shouldBe PAYEStatus.draft
+      captor.getValue mustBe PAYEStatus.draft
 
     }
     "upsert successfully and also set the paye status to invalid" in new Setup {
@@ -211,11 +211,11 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(PAYEStatus.invalid))
 
       val res = await(service.upsertEmploymentInfo(regId, empInfoForInvalid))
-      res shouldBe empInfoForInvalid
+      res mustBe empInfoForInvalid
 
       val captor: ArgumentCaptor[PAYEStatus.Value]  = ArgumentCaptor.forClass(classOf[PAYEStatus.Value])
       verify(mockRegistrationRepository, times(1)).updateRegistrationStatus(eqTo(regId), captor.capture())
-      captor.getValue shouldBe PAYEStatus.invalid
+      captor.getValue mustBe PAYEStatus.invalid
     }
     "throw a MissingRegDocument if the repository throws a MissingRegDocument Exception" in new Setup {
       when(mockRegistrationRepository.upsertEmploymentInfo(eqTo(regId),any()))
@@ -237,7 +237,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       val actual = await(service.getIncorporationDate(regId))
-      actual shouldBe None
+      actual mustBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -256,7 +256,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(LocalDate.of(2017, 6, 4))))
 
       val actual = await(service.getIncorporationDate(regId))
-      actual shouldBe Some(LocalDate.of(2017, 6, 4))
+      actual mustBe Some(LocalDate.of(2017, 6, 4))
     }
   }
 
@@ -267,7 +267,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Seq.empty))
 
       val actual = await(service.getDirectors(regId))
-      actual shouldBe Seq.empty
+      actual mustBe Seq.empty
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -283,7 +283,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validDirectors))
 
       val actual = await(service.getDirectors(regId))
-      actual shouldBe validRegistration.directors
+      actual mustBe validRegistration.directors
     }
   }
 
@@ -306,7 +306,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validDirectors))
 
       val actual = await(service.upsertDirectors(regId, validDirectors))
-      actual shouldBe validDirectors
+      actual mustBe validDirectors
     }
   }
 
@@ -317,7 +317,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Seq.empty))
 
       val actual = await(service.getSICCodes(regId))
-      actual shouldBe Seq.empty
+      actual mustBe Seq.empty
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -333,7 +333,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validSICCodes))
 
       val actual = await(service.getSICCodes(regId))
-      actual shouldBe validRegistration.sicCodes
+      actual mustBe validRegistration.sicCodes
     }
   }
 
@@ -351,7 +351,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validSICCodes))
 
       val actual = await(service.upsertSICCodes(regId, validSICCodes))
-      actual shouldBe validSICCodes
+      actual mustBe validSICCodes
     }
   }
 
@@ -362,7 +362,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       val actual = await(service.getPAYEContact(regId))
-      actual shouldBe None
+      actual mustBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -378,7 +378,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some(validPAYEContact)))
 
       val actual = await(service.getPAYEContact(regId))
-      actual shouldBe validRegistration.payeContact
+      actual mustBe validRegistration.payeContact
     }
   }
 
@@ -405,7 +405,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validPAYEContact))
 
       val actual = await(service.upsertPAYEContact(regId, validPAYEContact))
-      actual shouldBe validPAYEContact
+      actual mustBe validPAYEContact
     }
   }
 
@@ -416,7 +416,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       val actual = await(service.getCompletionCapacity(regId))
-      actual shouldBe None
+      actual mustBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -432,7 +432,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some("Director")))
 
       val actual = await(service.getCompletionCapacity(regId))
-      actual shouldBe validRegistration.completionCapacity
+      actual mustBe validRegistration.completionCapacity
     }
   }
 
@@ -465,7 +465,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful("Agent"))
 
       val actual = await(service.upsertCompletionCapacity(regId, List.fill(100)('a').mkString))
-      actual shouldBe "Agent"
+      actual mustBe "Agent"
     }
   }
 
@@ -476,7 +476,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       val actual = await(service.getAcknowledgementReference(regId))
-      actual shouldBe None
+      actual mustBe None
     }
 
     "return a failed future with exception when the database errors" in new Setup {
@@ -492,7 +492,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(Some("tstBRPY")))
 
       val actual = await(service.getAcknowledgementReference(regId))
-      actual shouldBe Some("tstBRPY")
+      actual mustBe Some("tstBRPY")
     }
   }
 
@@ -506,7 +506,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
           .thenReturn(Future.successful(true))
 
         val result = await(service.deletePAYERegistration(validRegistration.registrationID, PAYEStatus.rejected))
-        result shouldBe true
+        result mustBe true
       }
     }
 
@@ -534,7 +534,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(service.getRegistrationId(any()))
         .thenReturn(Future("testRegId"))
 
-      await(service.getRegistrationId("txId")) shouldBe "testRegId"
+      await(service.getRegistrationId("txId")) mustBe "testRegId"
     }
 
     "throw a MissingRegDocException" in new Setup {

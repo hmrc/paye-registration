@@ -16,20 +16,14 @@
 
 package itutil
 
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.inject.DefaultApplicationLifecycle
-import play.api.{Configuration, Environment}
-import play.modules.reactivemongo.ReactiveMongoComponentImpl
+import uk.gov.hmrc.mongo.MongoComponent
 
-trait MongoBaseSpec extends WordSpec with Matchers with BeforeAndAfterEach with ScalaFutures with Eventually with GuiceOneAppPerSuite {
+trait MongoBaseSpec extends PlaySpec with BeforeAndAfterEach with ScalaFutures with Eventually with GuiceOneAppPerSuite {
 
-
-  lazy val applicationLifeCycle = new DefaultApplicationLifecycle
-  val reactiveMongoComponent = new ReactiveMongoComponentImpl(
-    app.injector.instanceOf[Configuration],
-    app.injector.instanceOf[Environment],
-    applicationLifeCycle)
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
 
 }

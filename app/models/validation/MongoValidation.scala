@@ -21,8 +21,9 @@ import enums.Employing
 import models.Address
 import models.incorporation.IncorpStatusUpdate
 import play.api.libs.json._
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.{Instant, LocalDate, ZoneOffset, ZonedDateTime}
+import java.time.{Instant, LocalDate, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
 
 object MongoValidation extends BaseJsonFormatting {
   override val phoneNumberReads        = standardRead
@@ -51,13 +52,13 @@ object MongoValidation extends BaseJsonFormatting {
   override val directorTitleFormat  = readToFmt(standardRead)
   override val directorNinoFormat   = readToFmt(standardRead)
 
-  private val dateTimeReadMongo: Reads[ZonedDateTime]  = (__ \ "$date").read[Long] map { dateTime =>
-    ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateTime), ZoneOffset.UTC)
-  }
+  private val dateTimeReadMongo: Reads[ZonedDateTime] =
+    Reads.at[String](__ \ "$date" \ "$numberLong")
+      .map(dateTime => Instant.ofEpochMilli(dateTime.toLong).atZone(ZoneOffset.UTC))
 
-  private val dateTimeWriteMongo: Writes[ZonedDateTime] = new Writes[ZonedDateTime]{
-    def writes(z:ZonedDateTime) = Json.obj("$date" -> z.toInstant.toEpochMilli)
-  }
+  private val dateTimeWriteMongo: Writes[ZonedDateTime] =
+    Writes.at[String](__ \ "$date" \ "$numberLong")
+      .contramap(_.toInstant.toEpochMilli.toString)
 
   override val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadMongo, dateTimeWriteMongo)
 

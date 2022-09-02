@@ -38,21 +38,21 @@ class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
     )
 
     "read from json with full data" in {
-      Json.fromJson[Name](tstJson)(Name.format(APIValidation)) shouldBe JsSuccess(tstModel)
+      Json.fromJson[Name](tstJson)(Name.format(APIValidation)) mustBe JsSuccess(tstModel)
     }
 
     "write to json with full data" in {
-      Json.toJson[Name](tstModel)(Name.format(APIValidation)) shouldBe tstJson
+      Json.toJson[Name](tstModel)(Name.format(APIValidation)) mustBe tstJson
     }
 
     val tstEmptyJson = Json.parse(s"""{}""".stripMargin)
     val tstEmptyModel = Name(None, None, None, None)
     "read from json with empty data" in {
-      Json.fromJson[Name](tstEmptyJson)(Name.format(APIValidation)) shouldBe JsSuccess(tstEmptyModel)
+      Json.fromJson[Name](tstEmptyJson)(Name.format(APIValidation)) mustBe JsSuccess(tstEmptyModel)
     }
 
     "write to json with empty data" in {
-      Json.toJson[Name](tstEmptyModel)(Name.format(APIValidation)) shouldBe tstEmptyJson
+      Json.toJson[Name](tstEmptyModel)(Name.format(APIValidation)) mustBe tstEmptyJson
     }
 
     "read successfully" when {
@@ -72,7 +72,7 @@ class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
           surname = Some(maxName),
           title = Some(maxTitle)
         )
-        Json.fromJson[Name](nameJson)(Name.format(APIValidation)) shouldBe JsSuccess(fullNameModel)
+        Json.fromJson[Name](nameJson)(Name.format(APIValidation)) mustBe JsSuccess(fullNameModel)
       }
     }
 
@@ -128,21 +128,21 @@ class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
     val tstModel = Director(tstName, Some("SR098765C"))
 
     "read from json with full data" in {
-      Json.fromJson[Director](tstJson)(Director.format(APIValidation)) shouldBe JsSuccess(tstModel)
+      Json.fromJson[Director](tstJson)(Director.format(APIValidation)) mustBe JsSuccess(tstModel)
     }
 
     "write to json with full data" in {
-      Json.toJson[Director](tstModel)(Director.format(APIValidation)) shouldBe tstJson
+      Json.toJson[Director](tstModel)(Director.format(APIValidation)) mustBe tstJson
     }
 
     val tstEmptyJson = Json.parse(s"""{"director":{}}""".stripMargin)
     val tstEmptyModel = Director(Name(None, None, None, None), None)
     "read from json with empty data" in {
-      Json.fromJson[Director](tstEmptyJson)(Director.format(APIValidation)) shouldBe JsSuccess(tstEmptyModel)
+      Json.fromJson[Director](tstEmptyJson)(Director.format(APIValidation)) mustBe JsSuccess(tstEmptyModel)
     }
 
     "write to json with empty data" in {
-      Json.toJson[Director](tstEmptyModel)(Director.format(APIValidation)) shouldBe tstEmptyJson
+      Json.toJson[Director](tstEmptyModel)(Director.format(APIValidation)) mustBe tstEmptyJson
     }
 
     "fail from Json with invalid nino" in {
@@ -183,7 +183,7 @@ class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
            |}""".stripMargin)
 
       val tstModel = Name(None,None,None,Some("Sir "))
-      Json.fromJson[Name](tstJson)(Name.format(APIValidation)) shouldBe JsSuccess(tstModel)
+      Json.fromJson[Name](tstJson)(Name.format(APIValidation)) mustBe JsSuccess(tstModel)
     }
   }
 }

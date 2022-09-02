@@ -48,19 +48,19 @@ class SICCodeSpec extends PAYERegSpec with JsonFormatValidation {
     )
 
     "read from json with full data" in {
-      Json.fromJson[SICCode](tstJsonFull)(SICCode.reads(APIValidation)) shouldBe JsSuccess(tstSICCodeFull)
+      Json.fromJson[SICCode](tstJsonFull)(SICCode.reads(APIValidation)) mustBe JsSuccess(tstSICCodeFull)
     }
 
     "write to json with full data" in {
-      Json.toJson[SICCode](tstSICCodeFull) shouldBe tstJsonFull
+      Json.toJson[SICCode](tstSICCodeFull) mustBe tstJsonFull
     }
 
     "read from json with none full data" in {
-      Json.fromJson[SICCode](tstJson)(SICCode.reads(APIValidation)) shouldBe JsSuccess(tstSICCode)
+      Json.fromJson[SICCode](tstJson)(SICCode.reads(APIValidation)) mustBe JsSuccess(tstSICCode)
     }
 
     "write to json with none full data" in {
-      Json.toJson[SICCode](tstSICCode) shouldBe tstJson
+      Json.toJson[SICCode](tstSICCode) mustBe tstJson
     }
   }
 }

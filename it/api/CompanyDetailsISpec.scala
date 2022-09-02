@@ -28,8 +28,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +51,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
 
@@ -62,12 +62,11 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 
-    await(repository.drop)
-    await(repository.ensureIndexes)
+    await(repository.dropCollection)
   }
 
 
@@ -126,8 +125,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/company-details").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
     }
 
     "Return a 200 when the user gets company details with an old format" in new Setup {
@@ -162,8 +161,8 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/company-details").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(oldFormatCompanyDetails)(CompanyDetails.format(MongoValidation))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(oldFormatCompanyDetails)(CompanyDetails.format(MongoValidation))
     }
 
     "Return a 200 when the user upserts company details with a company name that contains none standard characters" in new Setup {
@@ -173,7 +172,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val txID = "NN1234"
       val intID = "Int-xxx"
       val timestamp = "2017-01-01T00:00:00"
-      repository.upsertRegTestOnly(
+      repository.updateRegistration(
         PAYERegistration(
           registrationID = regID,
           transactionID = txID,
@@ -206,18 +205,18 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       )
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue
-      getResponse1.status shouldBe 404
+      getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
         .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/company-details").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
 
-      await(repository.retrieveRegistration(regID)).get.companyDetails.get.companyName shouldBe "Téšt Çômpåñÿ Ñämę"
+      await(repository.retrieveRegistration(regID)).get.companyDetails.get.companyName mustBe "Téšt Çômpåñÿ Ñämę"
     }
 
     "Return a 200 when the user upserts company details" in new Setup {
@@ -252,16 +251,16 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
 
       val getResponse1 = client(s"/${regID}/company-details").get.futureValue
-      getResponse1.status shouldBe 404
+      getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
         .patch[JsValue](Json.toJson(validCompanyDetails)(CompanyDetails.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/company-details").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
     }
 
     "Return a 403 when the user is not authorised to get company details" in new Setup {
@@ -296,7 +295,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/company-details").get.futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 403 when the user is not authorised to upsert company details" in new Setup {
@@ -333,7 +332,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/company-details")
         .patch(Json.toJson(validCompanyDetails)(CompanyDetails.format(APIValidation)))
         .futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
   }
 }

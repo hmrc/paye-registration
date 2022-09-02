@@ -47,7 +47,7 @@ class PAYEContactSpec extends PAYERegSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter) shouldBe JsSuccess(tstPAYEContactDetails)
+      Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter) mustBe JsSuccess(tstPAYEContactDetails)
     }
 
     "complete successfully from Json with incomplete digital contact details" in {
@@ -71,7 +71,7 @@ class PAYEContactSpec extends PAYERegSpec with JsonFormatValidation {
         )
       )
 
-      Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter) shouldBe JsSuccess(tstPAYEContactDetails)
+      Json.fromJson[PAYEContactDetails](json)(payeContactDetailsFormatter) mustBe JsSuccess(tstPAYEContactDetails)
     }
 
     "fail" when {
@@ -141,7 +141,7 @@ class PAYEContactSpec extends PAYERegSpec with JsonFormatValidation {
         correspondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), None)
       )
 
-      Json.fromJson[PAYEContact](json)(PAYEContact.format(APIValidation)) shouldBe JsSuccess(tstPAYEContact)
+      Json.fromJson[PAYEContact](json)(PAYEContact.format(APIValidation)) mustBe JsSuccess(tstPAYEContact)
     }
 
     "complete successfully from incomplete Correspondence Address Json" in {
@@ -177,7 +177,7 @@ class PAYEContactSpec extends PAYERegSpec with JsonFormatValidation {
         correspondenceAddress = Address("19 St Walk", "Testley CA", None, Some("Testshire"), None, Some("UK"))
       )
 
-      Json.fromJson[PAYEContact](json)(PAYEContact.format(APIValidation)) shouldBe JsSuccess(tstPAYEContact)
+      Json.fromJson[PAYEContact](json)(PAYEContact.format(APIValidation)) mustBe JsSuccess(tstPAYEContact)
     }
   }
 }

@@ -30,8 +30,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
-import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
+import repositories.{IICounterMongoRepository, RegistrationMongoRepository, SequenceMongoRepository}
+import uk.gov.hmrc.mongo.MongoComponent
 
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -69,7 +69,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     .configure(additionalConfiguration)
     .build()
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
 
@@ -84,12 +84,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     val timestamp = "2017-01-01T00:00:00"
     lazy val mockDateHelper = new DateHelper {override def getTimestampString: String = timestamp}
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val sequenceRepository = new SequenceMongoRepository(reactiveMongoComponent)
-    await(repository.drop)
-    await(repository.ensureIndexes)
-    await(sequenceRepository.drop)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val sequenceRepository = new SequenceMongoRepository(mongoComponent)
+    val iiCounterRepository = app.injector.instanceOf[IICounterMongoRepository]
+
+    await(repository.dropCollection)
+    await(sequenceRepository.collection.drop().toFuture())
     await(sequenceRepository.ensureIndexes)
+    await(iiCounterRepository.collection.drop().toFuture())
+    await(iiCounterRepository.ensureIndexes)
   }
 
   val regId = "12345"
@@ -256,6 +259,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
 
   "incorporation-data" should {
+
     "return a 200 with a crn" in new Setup {
       setupSimpleAuthMocks()
 
@@ -267,11 +271,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
-      await(repository.insert(processedSubmission))
+      await(repository.collection.insertOne(processedSubmission).toFuture())
 
-      val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate).futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(crn)
+      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(crn)
 
       verify(postRequestedFor(urlEqualTo("/business-incorporation/pay-as-you-earn"))
         .withRequestBody(equalToJson(Json.parse(
@@ -315,13 +319,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp, lastAction = reg.get.lastAction))
+      reg mustBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp, lastAction = reg.get.lastAction))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
-      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+      regLastUpdate.isAfter(submissionLastUpdate) mustBe true
+      reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
     "return a 200 when Incorporation is rejected" in new Setup {
@@ -335,13 +339,12 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      await(repository.insert(processedSubmission))
+      await(repository.updateRegistration(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))).futureValue
-      response.status shouldBe 200
-      val none: Option[String] = None
-      response.json shouldBe Json.toJson(none)
+      val response = await(client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(None)
 
       verify(postRequestedFor(urlEqualTo("/business-incorporation/pay-as-you-earn"))
         .withRequestBody(equalToJson(Json.parse(
@@ -379,7 +382,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe None
+      reg mustBe None
     }
 
     "return a 200 status when registration is not found" in new Setup {
@@ -420,12 +423,12 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
            |}
         """.stripMargin)
 
-      await(repository.insert(processedSubmission))
+      await(repository.updateRegistration(processedSubmission))
 
-      val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate2).futureValue
-      response.status shouldBe 200
+      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate2))
+      response.status mustBe 200
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(processedSubmission)
     }
 
     "return a 200 status when registration is already submitted" in new Setup {
@@ -446,13 +449,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      await(repository.insert(processedTopUpSubmission))
+      await(repository.updateRegistration(processedTopUpSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate).futureValue
-      response.status shouldBe 200
+      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      response.status mustBe 200
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedTopUpSubmission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(processedTopUpSubmission)
     }
 
     "return a 500 status when registration is not yet submitted with partial" in new Setup {
@@ -474,13 +477,13 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      await(repository.insert(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate).futureValue
-      response.status shouldBe 500
+      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      response.status mustBe 500
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
   }
 
@@ -512,21 +515,25 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      await(repository.insert(processedSubmission))
+      await(repository.updateRegistration(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/false").get())
 
-      val response = client(s"incorporation-data").post(jsonIncorpStatusUpdate).futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(crn)
+      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(crn)
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedTopUpSubmission.copy(lastUpdate = reg.get.lastUpdate, fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp, lastAction = reg.get.lastAction))
+      reg mustBe Some(processedTopUpSubmission.copy(
+        lastUpdate = reg.get.lastUpdate,
+        fullSubmissionTimestamp = reg.get.fullSubmissionTimestamp,
+        lastAction = reg.get.lastAction
+      ))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(processedSubmission.lastUpdate)
 
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
-      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+      regLastUpdate.isAfter(submissionLastUpdate) mustBe true
+      reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
     "return a 200 when Incorporation is rejected" in new Setup {
@@ -555,16 +562,16 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      await(repository.insert(processedSubmission))
+      await(repository.updateRegistration(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/false").get())
 
-      val response = client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))).futureValue
-      response.status shouldBe 200
+      val response = await(client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))))
+      response.status mustBe 200
       val none: Option[String] = None
-      response.json shouldBe Json.toJson(none)
+      response.json mustBe Json.toJson(none)
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe None
+      reg mustBe None
     }
   }
 
@@ -573,163 +580,163 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       "the emp ref has been updated as APPROVED" in new Setup {
         setupSimpleAuthMocks()
 
-        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+        await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-        response.status shouldBe 200
-        response.json shouldBe testNotification
+        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        response.status mustBe 200
+        response.json mustBe testNotification
 
         val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-        reg.registrationConfirmation shouldBe Some(
+        reg.registrationConfirmation mustBe Some(
           EmpRefNotification(
             empRef = Some("testEmpRef"),
             timestamp = "2017-01-01T12:00:00Z",
             status = "04"
           )
         )
-        reg.status shouldBe PAYEStatus.acknowledged
-        reg.acknowledgedTimestamp.isDefined shouldBe true
+        reg.status mustBe PAYEStatus.acknowledged
+        reg.acknowledgedTimestamp.isDefined mustBe true
       }
 
       "the emp ref has been updated as APPROVED WITH CONDITIONS" in new Setup {
         setupSimpleAuthMocks()
 
-        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+        await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "05"))
 
-        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-        response.status shouldBe 200
-        response.json shouldBe testNotification
+        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        response.status mustBe 200
+        response.json mustBe testNotification
 
         val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-        reg.registrationConfirmation shouldBe Some(
+        reg.registrationConfirmation mustBe Some(
           EmpRefNotification(
             empRef = Some("testEmpRef"),
             timestamp = "2017-01-01T12:00:00Z",
             status = "05"
           )
         )
-        reg.status shouldBe PAYEStatus.acknowledged
-        reg.acknowledgedTimestamp.isDefined shouldBe true
+        reg.status mustBe PAYEStatus.acknowledged
+        reg.acknowledgedTimestamp.isDefined mustBe true
       }
 
       "the emp ref has been updated as REJECTED" in new Setup {
         setupSimpleAuthMocks()
 
-        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+        await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "06"))
 
-        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-        response.status shouldBe 200
-        response.json shouldBe testNotification
+        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        response.status mustBe 200
+        response.json mustBe testNotification
 
         val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-        reg.registrationConfirmation shouldBe Some(
+        reg.registrationConfirmation mustBe Some(
           EmpRefNotification(
             empRef = Some("testEmpRef"),
             timestamp = "2017-01-01T12:00:00Z",
             status = "06"
           )
         )
-        reg.status shouldBe PAYEStatus.rejected
-        reg.acknowledgedTimestamp.isDefined shouldBe true
+        reg.status mustBe PAYEStatus.rejected
+        reg.acknowledgedTimestamp.isDefined mustBe true
       }
 
       "the emp ref has been updated as REJECTED_UNDER_REVIEW_APPREAL" in new Setup {
         setupSimpleAuthMocks()
 
-        await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+        await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "07"))
 
-        val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-        response.status shouldBe 200
-        response.json shouldBe testNotification
+        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        response.status mustBe 200
+        response.json mustBe testNotification
 
         val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-        reg.registrationConfirmation shouldBe Some(
+        reg.registrationConfirmation mustBe Some(
           EmpRefNotification(
             empRef = Some("testEmpRef"),
             timestamp = "2017-01-01T12:00:00Z",
             status = "07"
           )
         )
-        reg.status shouldBe PAYEStatus.rejected
-        reg.acknowledgedTimestamp.isDefined shouldBe true
+        reg.status mustBe PAYEStatus.rejected
+        reg.acknowledgedTimestamp.isDefined mustBe true
       }
     }
 
     "the emp ref has been updated as REVOKED" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+      await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
       implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "08"))
 
-      val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-      response.status shouldBe 200
-      response.json shouldBe testNotification
+      val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+      response.status mustBe 200
+      response.json mustBe testNotification
 
       val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-      reg.registrationConfirmation shouldBe Some(
+      reg.registrationConfirmation mustBe Some(
         EmpRefNotification(
           empRef = Some("testEmpRef"),
           timestamp = "2017-01-01T12:00:00Z",
           status = "08"
         )
       )
-      reg.status shouldBe PAYEStatus.rejected
-      reg.acknowledgedTimestamp.isDefined shouldBe true
+      reg.status mustBe PAYEStatus.rejected
+      reg.acknowledgedTimestamp.isDefined mustBe true
     }
 
     "the emp ref has been updated as REVOKED_UNDER_REVIEW_APPREAL" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+      await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
       implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "09"))
 
-      val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-      response.status shouldBe 200
-      response.json shouldBe testNotification
+      val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+      response.status mustBe 200
+      response.json mustBe testNotification
 
       val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-      reg.registrationConfirmation shouldBe Some(
+      reg.registrationConfirmation mustBe Some(
         EmpRefNotification(
           empRef = Some("testEmpRef"),
           timestamp = "2017-01-01T12:00:00Z",
           status = "09"
         )
       )
-      reg.status shouldBe PAYEStatus.rejected
-      reg.acknowledgedTimestamp.isDefined shouldBe true
+      reg.status mustBe PAYEStatus.rejected
+      reg.acknowledgedTimestamp.isDefined mustBe true
     }
 
     "the emp ref has been updated as DEREGISTERED" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
+      await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
       implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "10"))
 
-      val response = client("registration-processed-confirmation?ackref=ackRef").post(testNotification).futureValue
-      response.status shouldBe 200
-      response.json shouldBe testNotification
+      val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+      response.status mustBe 200
+      response.json mustBe testNotification
 
       val reg = await(repository.retrieveRegistration(processedSubmission.registrationID)).get
-      reg.registrationConfirmation shouldBe Some(
+      reg.registrationConfirmation mustBe Some(
         EmpRefNotification(
           empRef = Some("testEmpRef"),
           timestamp = "2017-01-01T12:00:00Z",
           status = "10"
         )
       )
-      reg.status shouldBe PAYEStatus.rejected
-      reg.acknowledgedTimestamp.isDefined shouldBe true
+      reg.status mustBe PAYEStatus.rejected
+      reg.acknowledgedTimestamp.isDefined mustBe true
     }
 
     "return a not found" when {
@@ -738,10 +745,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = client("registration-processed-confirmation?ackref=invalidackref").post(testNotification).futureValue
-        response.status shouldBe 404
+        val response = await(client("registration-processed-confirmation?ackref=invalidackref").post(testNotification))
+        response.status mustBe 404
 
-        await(repository.retrieveRegistrationByAckRef("invalidackref")) shouldBe None
+        await(repository.retrieveRegistrationByAckRef("invalidackref")) mustBe None
       }
     }
   }
@@ -761,11 +768,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
      val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
      val doc = submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))
 
-      await(repository.insert(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return an OK with a partial document status with cancelURL when status is draft, lastUpdate returns formCreationTimestamp" in new Setup {
@@ -777,11 +784,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(acknowledgementReference = None)))
+      await(repository.updateRegistration(submission.copy(acknowledgementReference = None)))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return an OK with a partial document status with cancelURL when status is invalid, lastUpdate returns formCreationTimestamp" in new Setup {
@@ -793,11 +800,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(acknowledgementReference = None, status = PAYEStatus.invalid)))
+      await(repository.updateRegistration(submission.copy(acknowledgementReference = None, status = PAYEStatus.invalid)))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return an OK with a partial document status when status is cancelled, lastUpdate returns formCreationTimestamp" in new Setup {
@@ -808,11 +815,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(acknowledgementReference = None, status = PAYEStatus.cancelled)))
+      await(repository.updateRegistration(submission.copy(acknowledgementReference = None, status = PAYEStatus.cancelled)))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return an OK with a partial document status when status is held, lastUpdate returns partialSubmissionTimestamp" in new Setup {
@@ -824,11 +831,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      await(repository.insert(processedSubmission))
+      await(repository.updateRegistration(processedSubmission))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return an OK with a partial document status when status is submitted, lastUpdate returns fullSubmissionTimestamp" in new Setup {
@@ -840,11 +847,11 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      await(repository.insert(processedTopUpSubmission))
+      await(repository.updateRegistration(processedTopUpSubmission))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return an OK with a partial document status with restartURL when status is rejected, lastUpdate returns acknowledgedTimestamp" in new Setup {
@@ -857,18 +864,18 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"$regId/status").get().futureValue
-      response.status shouldBe 200
-      response.json shouldBe json
+      val response = await(client(s"$regId/status").get())
+      response.status mustBe 200
+      response.json mustBe json
     }
 
     "return a 404 error when the registration Id is invalid" in new Setup {
       setupSimpleAuthMocks()
 
-      val response = client(s"invalid234/status").get().futureValue
-      response.status shouldBe 404
+      val response = await(client(s"invalid234/status").get())
+      response.status mustBe 404
     }
   }
 
@@ -876,61 +883,61 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     "return an OK after deleting the document" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"$regId/delete").delete().futureValue
-      response.status shouldBe 200
+      val response = await(client(s"$regId/delete").delete())
+      response.status mustBe 200
 
-      await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
+      await(repository.retrieveRegistration(submission.registrationID)) mustBe None
     }
 
     "return a PreconditionFailed response if the document status is not 'rejected'" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission))
+      await(repository.updateRegistration(submission))
 
-      val response = client(s"$regId/delete").delete().futureValue
-      response.status shouldBe 412
+      val response = await(client(s"$regId/delete").delete())
+      response.status mustBe 412
 
-      await(repository.retrieveRegistration(submission.registrationID)) shouldBe Some(submission)
+      await(repository.retrieveRegistration(submission.registrationID)) mustBe Some(submission)
     }
 
     "return a NotFound trying deleting a non existing document" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"invalidRegId/delete").delete().futureValue
-      response.status shouldBe 404
+      val response = await(client(s"invalidRegId/delete").delete())
+      response.status mustBe 404
     }
   }
   "deletePAYERegistrationIncorpRejected" should {
     "return an OK after deleting the document" in new Setup {
 
-      await(repository.insert(submission.copy(status = PAYEStatus.draft, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.draft, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"$regId/delete-rejected-incorp").delete().futureValue
-      response.status shouldBe 200
+      val response = await(client(s"$regId/delete-rejected-incorp").delete())
+      response.status mustBe 200
 
-      await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
+      await(repository.retrieveRegistration(submission.registrationID)) mustBe None
     }
 
     "return a PreconditionFailed response if the document status is not draft or invalid'" in new Setup {
 
-      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"$regId/delete-rejected-incorp").delete().futureValue
-      response.status shouldBe 412
+      val response = await(client(s"$regId/delete-rejected-incorp").delete())
+      response.status mustBe 412
 
-      await(repository.retrieveRegistration(submission.registrationID)) shouldBe Some(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp)))
+      await(repository.retrieveRegistration(submission.registrationID)) mustBe Some(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp)))
     }
 
     "return a NotFound trying deleting a non existing document" in new Setup {
 
-      await(repository.insert(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = client(s"invalidRegId/delete-rejected-incorp").delete().futureValue
-      response.status shouldBe 404
+      val response = await(client(s"invalidRegId/delete-rejected-incorp").delete())
+      response.status mustBe 404
     }
   }
 }

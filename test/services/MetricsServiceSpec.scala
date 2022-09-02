@@ -42,7 +42,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
       val result: Map[String, Int] = await(service.updateDocumentMetrics())
 
-      result shouldBe Map()
+      result mustBe Map()
 
       verifyNoMoreInteractions(mockRegistry)
     }
@@ -52,7 +52,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
       when(service.regRepo.getRegistrationStats())
         .thenReturn(Future.successful(Map[String, Int]("test" -> 1)))
 
-      await(service.updateDocumentMetrics()) shouldBe Map("test" -> 1)
+      await(service.updateDocumentMetrics()) mustBe Map("test" -> 1)
 
       verify(mockRegistry).remove(ArgumentMatchers.any())
       verify(mockRegistry).register(ArgumentMatchers.contains("test"), ArgumentMatchers.any())
@@ -66,7 +66,7 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
       val result = await(service.updateDocumentMetrics())
 
-      result shouldBe Map("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3)
+      result mustBe Map("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3)
 
       verify(mockRegistry).remove(ArgumentMatchers.contains("testOne"))
       verify(mockRegistry).register(ArgumentMatchers.contains("testOne"), ArgumentMatchers.any())

@@ -22,7 +22,7 @@ import enums.{Employing, PAYEStatus}
 import helpers.PAYERegSpec
 import models.validation.{APIValidation, MongoValidation}
 import play.api.Configuration
-import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
+import play.api.libs.json.{JsError, JsPath, JsSuccess, Json, JsonValidationError}
 import utils.SystemDate
 
 import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
@@ -204,7 +204,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
         employmentInfo = Some(EmploymentInfo(Employing.notEmploying,SystemDate.getSystemDate.toLocalDate,true, true,None))
       )
 
-      Json.fromJson[PAYERegistration](json)(PAYERegistration.format(APIValidation, cryptoSCRS)) shouldBe JsSuccess(tstPAYERegistration)
+      Json.fromJson[PAYERegistration](json)(PAYERegistration.format(APIValidation, cryptoSCRS)) mustBe JsSuccess(tstPAYERegistration)
     }
 
     "complete successfully from full Json that doesn't include an eligibility block which is the as-is position" in {
@@ -374,7 +374,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
         employmentInfo = Some(EmploymentInfo(Employing.notEmploying,SystemDate.getSystemDate.toLocalDate,true, true,None))
       )
 
-      Json.fromJson[PAYERegistration](json)(PAYERegistration.format(APIValidation, cryptoSCRS)) shouldBe JsSuccess(tstPAYERegistration)
+      Json.fromJson[PAYERegistration](json)(PAYERegistration.format(APIValidation, cryptoSCRS)) mustBe JsSuccess(tstPAYERegistration)
     }
 
     "complete successfully from json when lastAction is in mongo Format (using mongo reads)" in {
@@ -470,11 +470,16 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
            |    }
            |  ],
            |  "lastUpdate": "2017-05-09T07:58:35.000Z",
-           |  "lastAction": {"$date": 1483232461000 }
+           |  "lastAction": {
+           |     "$date": {
+           |        "$numberLong": "1483232461000"
+           |     }
+           |  }
            |}
         """.stripMargin)
 
-      Json.fromJson[PAYERegistration](json1)(PAYERegistration.format(MongoValidation, cryptoSCRS)).map(s => s.lastAction).get shouldBe Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
+      Json.fromJson[PAYERegistration](json1)(PAYERegistration.format(MongoValidation, cryptoSCRS)).map(s => s.lastAction).get mustBe
+        Some(ZonedDateTime.of(LocalDateTime.of(2017,1,1,1,1,1),ZoneOffset.UTC))
     }
 
     "complete successfully from Json with no companyDetails" in {
@@ -514,7 +519,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
         employmentInfo = None
       )
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
-      Json.fromJson[PAYERegistration](json) shouldBe JsSuccess(tstPAYERegistration)
+      Json.fromJson[PAYERegistration](json) mustBe JsSuccess(tstPAYERegistration)
     }
 
     "fail from json without registrationID" in {

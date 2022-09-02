@@ -16,34 +16,36 @@
 
 package repositories
 
-import common.exceptions.DBExceptions.UpdateFailed
+import com.mongodb.client.model.ReturnDocument
 import models.IICounter
-import play.api.libs.json.JsValue
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.ReactiveRepository
+import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.model.FindOneAndUpdateOptions
+import org.mongodb.scala.model.Updates.inc
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
-class IICounterMongoRepository @Inject()(reactiveMongoComponent: ReactiveMongoComponent) extends ReactiveRepository[IICounter, BSONObjectID](
+class IICounterMongoRepository @Inject()(mongoComponent: MongoComponent)(implicit ec: ExecutionContext) extends PlayMongoRepository[IICounter](
+  mongoComponent = mongoComponent,
   collectionName = "IICounterCollection",
   domainFormat = IICounter.format,
-  mongo = reactiveMongoComponent.mongoConnector.db) {
+  indexes = Seq()
+) {
 
   def getNext(regId: String)(implicit ec: ExecutionContext): Future[Int] = {
-    val selector = BSONDocument("_id" -> regId)
-    val modifier = BSONDocument("$inc" -> BSONDocument("count" -> 1))
+    val selector = equal("_id", regId)
+    val modifier = inc("count", 1)
 
-    collection.findAndUpdate(selector, modifier, fetchNewObject = true, upsert = true)
-      .map {
-        _.result[JsValue] match {
-          case None => throw new UpdateFailed(regId, "IICounter")
-          case Some(x) => (x \ "count").as[Int]
-        }
-      }
+    collection.findOneAndUpdate(
+      selector,
+      modifier,
+      FindOneAndUpdateOptions()
+        .upsert(true)
+        .returnDocument(ReturnDocument.AFTER)
+    ).toFuture().map(_.counter)
   }
 }

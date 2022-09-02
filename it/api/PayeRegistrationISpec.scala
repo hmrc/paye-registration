@@ -26,8 +26,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,7 +49,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
@@ -58,9 +58,9 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    await(repository.drop)
-    await(repository.ensureIndexes)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+
+    await(repository.dropCollection)
   }
 
 
@@ -78,7 +78,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
       val dtTimestamp = "2000-01-20T16:01:00Z"
 
-      await(repository.upsertRegTestOnly(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID,
           transactionID,
@@ -104,8 +104,8 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
 
       val response = client(s"/${regID}").get.futureValue
 
-      response.status shouldBe 200
-      response.json shouldBe Json.obj(
+      response.status mustBe 200
+      response.json mustBe Json.obj(
         "registrationID" -> regID,
         "transactionID" -> transactionID,
         "internalID" -> intID,
@@ -127,7 +127,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       val intID = "Int-xxx-yyy-zzz"
       val timestamp = "2017-01-01T00:00:00"
       val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
-      await(repository.upsertRegTestOnly(
+      await(repository.updateRegistration(
         PAYERegistration(
           regID,
           transactionID,
@@ -152,7 +152,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
       ))
 
       val response = client(s"/${regID}").get.futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
   }
 }

@@ -215,7 +215,7 @@ class DesSubmissionAuditEventDetailSpec extends PAYERegSpec {
         Json.toJson[DESSubmission](validPartialDESSubmissionModel).as[JsObject],
         Map.empty
       )
-      Json.toJson(testModel)(DesSubmissionAuditEventDetail.writes) shouldBe expected
+      Json.toJson(testModel)(DesSubmissionAuditEventDetail.writes) mustBe expected
     }
   }
 }

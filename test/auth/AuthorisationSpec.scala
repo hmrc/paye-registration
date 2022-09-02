@@ -50,7 +50,7 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
         _ => Future.successful(Results.Ok)
       }
       val response = await(result)
-      response.header.status shouldBe OK
+      response.header.status mustBe OK
     }
 
     "indicate there's no logged in user where there isn't a valid bearer token" in {
@@ -60,7 +60,7 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
         _ => Future.successful(Results.Ok)
       }
 
-      an[Exception] shouldBe thrownBy(await(result))
+      an[Exception] mustBe thrownBy(await(result))
     }
   }
 
@@ -70,24 +70,24 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
       val result = authorisation.isAuthorised(regId) {
         authResult => {
-          authResult shouldBe Authorised(testInternalId)
+          authResult mustBe Authorised(testInternalId)
           Future.failed(new Exception("Something wrong"))
         }
       }
 
-      an[Exception] shouldBe thrownBy(await(result))
+      an[Exception] mustBe thrownBy(await(result))
     }
 
     "indicate there's no logged in user where there isn't a valid bearer token" in {
       AuthorisationMocks.mockNotAuthenticated()
 
       val result = authorisation.isAuthorised("xxx") { authResult => {
-        authResult shouldBe NotLoggedInOrAuthorised
+        authResult mustBe NotLoggedInOrAuthorised
         Future.successful(Results.Forbidden)
       }
       }
       val response = await(result)
-      response.header.status shouldBe FORBIDDEN
+      response.header.status mustBe FORBIDDEN
     }
 
     "provided an authorised result when logged in and a consistent resource" in {
@@ -95,12 +95,12 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
       val result = authorisation.isAuthorised(regId) {
         authResult => {
-          authResult shouldBe Authorised(testInternalId)
+          authResult mustBe Authorised(testInternalId)
           Future.successful(Results.Ok)
         }
       }
       val response = await(result)
-      response.header.status shouldBe OK
+      response.header.status mustBe OK
     }
 
     "provided a not-authorised result when logged in and an inconsistent resource" in {
@@ -111,12 +111,12 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
       val result = authorisation.isAuthorised(regId) {
         authResult => {
-          authResult shouldBe NotAuthorised(testInternalId)
+          authResult mustBe NotAuthorised(testInternalId)
           Future.successful(Results.Ok)
         }
       }
       val response = await(result)
-      response.header.status shouldBe OK
+      response.header.status mustBe OK
     }
 
     "provide a not-found result when logged in and no resource for the identifier" in {
@@ -126,12 +126,12 @@ class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
       AuthorisationMocks.mockAuthResourceNotFound(regId, testInternalId)
 
       val result = authorisation.isAuthorised("xxx"){ authResult => {
-        authResult shouldBe AuthResourceNotFound(testInternalId)
+        authResult mustBe AuthResourceNotFound(testInternalId)
         Future.successful(Results.Ok)
         }
       }
       val response = await(result)
-      response.header.status shouldBe OK
+      response.header.status mustBe OK
     }
   }
 }

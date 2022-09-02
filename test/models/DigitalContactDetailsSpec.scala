@@ -41,7 +41,7 @@ class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
         phoneNumber = Some("0123 456 789")
       )
 
-      Json.toJson(tstDigitalContactDetails)(DigitalContactDetails.writes) shouldBe json
+      Json.toJson(tstDigitalContactDetails)(DigitalContactDetails.writes) mustBe json
     }
   }
 
@@ -62,7 +62,7 @@ class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
         phoneNumber = Some("0123 456 789")
       )
 
-      Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
+      Json.fromJson[DigitalContactDetails](json)(dcdFormatter) mustBe JsSuccess(tstDigitalContactDetails)
     }
 
     "complete successfully from partial Json" when {
@@ -80,7 +80,7 @@ class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
           phoneNumber = None
         )
 
-        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
+        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) mustBe JsSuccess(tstDigitalContactDetails)
       }
 
       "only email is completed and it has a suffix of 11 characters" in {
@@ -97,7 +97,7 @@ class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
           phoneNumber = None
         )
 
-        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
+        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) mustBe JsSuccess(tstDigitalContactDetails)
       }
 
       "only mobile number is completed" in {
@@ -114,7 +114,7 @@ class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
           phoneNumber = None
         )
 
-        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
+        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) mustBe JsSuccess(tstDigitalContactDetails)
       }
       "only phone number is completed" in {
         val json = Json.parse(
@@ -130,7 +130,7 @@ class DigitalContactDetailsSpec extends PAYERegSpec with JsonFormatValidation {
           phoneNumber = Some("0123456789")
         )
 
-        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) shouldBe JsSuccess(tstDigitalContactDetails)
+        Json.fromJson[DigitalContactDetails](json)(dcdFormatter) mustBe JsSuccess(tstDigitalContactDetails)
       }
     }
 

@@ -18,28 +18,24 @@ package services
 
 import config.AppConfig
 import jobs._
-import org.joda.time.Duration
 import play.api.Logging
 import repositories.RegistrationMongoRepository
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 import java.time.ZonedDateTime
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RemoveStaleDocsService @Inject()(registrationMongoRepository: RegistrationMongoRepository,
-                                       lockRepository: LockRepositoryProvider,
+                                       lockRepository: MongoLockRepository,
                                        appConfig: AppConfig) extends ScheduledService[Either[(ZonedDateTime, Int), LockResponse]] with Logging {
 
-  lazy val lock: LockKeeper = new LockKeeper() {
-    override val lockId: String = "remove-stale-documents-job"
-    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(appConfig.removeStaleDocumentsJobLockoutTimeout)
-    override lazy val repo: LockRepository = lockRepository.repo
-  }
+  lazy val lock: LockService = LockService(lockRepository, "remove-stale-documents-job", appConfig.removeStaleDocumentsJobLockoutTimeout.seconds)
 
   def invoke(implicit ec: ExecutionContext): Future[Either[(ZonedDateTime, Int), LockResponse]] = {
-    lock.tryLock(removeStaleDocs).map {
+    lock.withLock(removeStaleDocs).map {
       case Some(res) =>
         val (dt, numberRemoved) = res
         val message = numberRemoved match {

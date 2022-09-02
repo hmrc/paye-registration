@@ -26,8 +26,8 @@ import models._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
+import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -48,7 +48,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
     .configure(additionalConfiguration)
     .build()
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
@@ -67,11 +67,11 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
      val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
      }
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val sequenceRepository = new SequenceMongoRepository(reactiveMongoComponent)
-    await(repository.drop)
-    await(repository.ensureIndexes)
-    await(sequenceRepository.drop)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val sequenceRepository = new SequenceMongoRepository(mongoComponent)
+
+    await(repository.dropCollection)
+    await(sequenceRepository.collection.drop().toFuture())
     await(sequenceRepository.ensureIndexes)
   }
 
@@ -135,7 +135,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
       setupSimpleAuthMocks()
 
       val response = client(s"invalidRegId/delete-in-progress").delete().futureValue
-      response.status shouldBe 404
+      response.status mustBe 404
     }
 
     "return a PreconditionFailed response if the document status is not 'rejected'" in new Setup {
@@ -143,34 +143,34 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
       val rejected = submission.copy(status = PAYEStatus.rejected)
 
-      await(repository.insert(rejected))
+      await(repository.updateRegistration(rejected))
 
       val response = client(s"$regId/delete-in-progress").delete().futureValue
-      response.status shouldBe 412
+      response.status mustBe 412
 
-      await(repository.retrieveRegistration(rejected.registrationID)) shouldBe Some(rejected)
+      await(repository.retrieveRegistration(rejected.registrationID)) mustBe Some(rejected)
     }
 
     "return an OK after deleting an invalid document" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(status = PAYEStatus.invalid)))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.invalid)))
 
       val response = await(client(s"$regId/delete-in-progress").delete())
-      response.status shouldBe 200
+      response.status mustBe 200
 
-      await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
+      await(repository.retrieveRegistration(submission.registrationID)) mustBe None
     }
 
     "return an OK after deleting a draft document" in new Setup {
       setupSimpleAuthMocks()
 
-      await(repository.insert(submission.copy(status = PAYEStatus.draft)))
+      await(repository.updateRegistration(submission.copy(status = PAYEStatus.draft)))
 
       val response = await(client(s"$regId/delete-in-progress").delete())
-      response.status shouldBe 200
+      response.status mustBe 200
 
-      await(repository.retrieveRegistration(submission.registrationID)) shouldBe None
+      await(repository.retrieveRegistration(submission.registrationID)) mustBe None
     }
 
   }

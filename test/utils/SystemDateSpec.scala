@@ -38,14 +38,14 @@ class SystemDateSpec extends PAYERegSpec with BeforeAndAfterEach {
     "return a DateTime of today" when {
       "the feature is null" in {
         val result = SystemDate.getSystemDate
-        result.toLocalDate shouldBe LocalDateTime.now.toLocalDate
+        result.toLocalDate mustBe LocalDateTime.now.toLocalDate
       }
 
       "the feature is ''" in {
         System.setProperty("feature.system-date", "")
 
         val result = SystemDate.getSystemDate
-        result.toLocalDate shouldBe LocalDateTime.now.toLocalDate
+        result.toLocalDate mustBe LocalDateTime.now.toLocalDate
       }
     }
 
@@ -53,7 +53,7 @@ class SystemDateSpec extends PAYERegSpec with BeforeAndAfterEach {
       System.setProperty("feature.system-date", "2018-01-01T12:00:00Z")
 
       val result = SystemDate.getSystemDate
-      result shouldBe LocalDateTime.parse("2018-01-01T12:00:00Z", DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+      result mustBe LocalDateTime.parse("2018-01-01T12:00:00Z", DateTimeFormatter.ISO_OFFSET_DATE_TIME)
     }
   }
 }

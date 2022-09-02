@@ -35,7 +35,7 @@ class IncorporationFailureEventSpec extends PAYERegSpec {
       )
 
       val result = Json.toJson[IncorporationFailureAuditEventDetail](testModel)(IncorporationFailureAuditEventDetail.incorpFailedEventWrites)
-      result shouldBe expectedJson
+      result mustBe expectedJson
     }
   }
 }

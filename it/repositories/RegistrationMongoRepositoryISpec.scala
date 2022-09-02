@@ -24,13 +24,9 @@ import enums.{Employing, PAYEStatus}
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models._
-import models.validation.MongoValidation
+import org.mongodb.scala.model.Filters
 import play.api.Configuration
-import play.api.libs.json.{JsObject, Json}
 import play.api.test.Helpers._
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.bson.BSONDocument
-import reactivemongo.play.json.ImplicitBSONHandlers._
 import utils.SystemDate
 
 import java.time._
@@ -483,13 +479,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       override def getTimestamp: ZonedDateTime = timestampZDT
     }
     lazy val sConfig = app.injector.instanceOf[Configuration]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    await(repository.drop)
-    await(repository.ensureIndexes)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+
+    await(repository.dropCollection)
   }
 
-  def setupCollection(repo: RegistrationMongoRepository, registration: PAYERegistration): Future[WriteResult] = {
-    repo.upsertRegTestOnly(registration)
+  def setupCollection(repo: RegistrationMongoRepository, registration: PAYERegistration): Future[PAYERegistration] = {
+    repo.updateRegistration(registration)
   }
 
   "Calling createNewRegistration" should {
@@ -497,15 +493,15 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     "create a new, blank PAYERegistration with the correct ID" in new Setup {
 
       val actual = await(repository.createNewRegistration("AC234321", "NN1234", "09876"))
-      actual.registrationID shouldBe "AC234321"
-      actual.transactionID shouldBe "NN1234"
-      actual.lastAction.isDefined shouldBe true
+      actual.registrationID mustBe "AC234321"
+      actual.transactionID mustBe "NN1234"
+      actual.lastAction.isDefined mustBe true
     }
 
     "throw an Insert Failed exception when creating a new PAYE reg when one already exists" in new Setup {
       await(setupCollection(repository, reg))
 
-      an[InsertFailed] shouldBe thrownBy(await(repository.createNewRegistration(reg.registrationID, reg.transactionID, reg.internalID)))
+      an[InsertFailed] mustBe thrownBy(await(repository.createNewRegistration(reg.registrationID, reg.transactionID, reg.internalID)))
 
     }
   }
@@ -517,13 +513,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrieveRegistration("AC123456"))
 
-      actual shouldBe Some(reg)
+      actual mustBe Some(reg)
     }
 
     "return a None when there is no corresponding registration object" in new Setup {
       await(setupCollection(repository, reg))
 
-      await(repository.retrieveRegistration("AC654321")) shouldBe None
+      await(repository.retrieveRegistration("AC654321")) mustBe None
     }
   }
 
@@ -534,13 +530,13 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrieveRegistrationByTransactionID("NN1234"))
 
-      actual shouldBe Some(reg)
+      actual mustBe Some(reg)
     }
 
     "return a None when there is no corresponding registration object" in new Setup {
       await(setupCollection(repository, reg))
 
-      await(repository.retrieveRegistrationByTransactionID("NN54456")) shouldBe None
+      await(repository.retrieveRegistrationByTransactionID("NN54456")) mustBe None
     }
   }
 
@@ -552,7 +548,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrieveCompanyDetails("AC123456"))
 
-      actual shouldBe Some(companyDetails)
+      actual mustBe Some(companyDetails)
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -567,10 +563,10 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, regNoCompanyDetails))
 
       val actual = await(repository.upsertCompanyDetails("AC123456", companyDetails2))
-      actual shouldBe companyDetails2
+      actual mustBe companyDetails2
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedCompanyDetails)
+      updated mustBe Some(regUpdatedCompanyDetails)
 
     }
 
@@ -579,61 +575,49 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg))
 
       val actual = await(repository.upsertCompanyDetails("AC123456", companyDetails2))
-      actual shouldBe companyDetails2
+      actual mustBe companyDetails2
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedCompanyDetails)
+      updated mustBe Some(regUpdatedCompanyDetails)
 
     }
 
     "throw a Missing Reg Document exception when updating company details for a nonexistent registration" in new Setup {
 
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertCompanyDetails("AC123456", companyDetails)))
+      a[MissingRegDocument] mustBe thrownBy(await(repository.upsertCompanyDetails("AC123456", companyDetails)))
 
     }
   }
 
   "calling retrieveEmploymentInfo" should {
+
     val payeReg: PAYERegistration = reg.copy(employmentInfo = Some(empInfo))
+
     "return EmploymentInfo and old employment model is deleted" in new Setup {
-      val json = Json.parse(
-        """
-          |{
-          |  "employment" : {
-          |    "foo" : "bar",
-          |    "wizz" : "buzz"
-          |  }
-          |}
-        """.stripMargin).as[JsObject]
 
-      val payeRegJson = Json.toJson(payeReg)(PAYERegistration.format(MongoValidation, mockcryptoSCRS)).as[JsObject] ++ json
+      await(repository.updateRegistration(payeReg))
 
-
-      await(repository.collection.insert[JsObject](payeRegJson))
-
-      val selector = BSONDocument("registrationID" -> payeReg.registrationID)
-      val projector = BSONDocument("_id" -> 0)
-      val oldModelCheck = await(repository.collection.find(selector, projector).one[JsObject])
-      oldModelCheck shouldBe Some(payeRegJson)
+      val oldModelCheck = await(repository.retrieveRegistration(payeReg.registrationID))
+      oldModelCheck mustBe Some(payeReg)
 
       val res = await(repository.retrieveEmploymentInfo(payeReg.registrationID))
-      res shouldBe Some(empInfo)
+      res mustBe Some(empInfo)
 
-      val oldModelCheckDoesNotExist = await(repository.collection.find(selector, projector).one[JsObject])
-      oldModelCheckDoesNotExist.get shouldBe payeRegJson - "employment"
+      val oldModelCheckDoesNotExist = await(repository.retrieveRegistration(payeReg.registrationID))
+      oldModelCheckDoesNotExist mustBe Some(payeReg.copy(employmentInfo = None))
     }
 
     "return EmploymentInfo" in new Setup {
       await(setupCollection(repository, payeReg))
 
       val res = await(repository.retrieveEmploymentInfo(payeReg.registrationID))
-      res shouldBe Some(empInfo)
+      res mustBe Some(empInfo)
     }
     "return None when there is no EmploymentInfo in mongo" in new Setup {
       await(setupCollection(repository, reg.copy(employmentInfo = None)))
 
       val res = await(repository.retrieveEmploymentInfo(reg.registrationID))
-      res shouldBe None
+      res mustBe None
     }
   }
 
@@ -642,10 +626,10 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg.copy(employmentInfo = None)))
 
       val res = await(repository.upsertEmploymentInfo(reg.registrationID, empInfo))
-      res shouldBe empInfo
+      res mustBe empInfo
 
       val updated = await(repository.retrieveEmploymentInfo(reg.registrationID))
-      updated shouldBe Some(empInfo)
+      updated mustBe Some(empInfo)
     }
 
     "modify an existing EmploymentInfo successfully and also read with invalid date according to APIValidation" in new Setup {
@@ -659,10 +643,10 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg.copy(employmentInfo = Some(empInfo))))
 
       val res = await(repository.upsertEmploymentInfo(reg.registrationID, empInfoModified))
-      res shouldBe empInfoModified
+      res mustBe empInfoModified
 
       val updated = await(repository.retrieveEmploymentInfo(reg.registrationID))
-      updated shouldBe Some(empInfoModified)
+      updated mustBe Some(empInfoModified)
     }
   }
 
@@ -674,7 +658,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrieveDirectors("AC123456"))
 
-      actual shouldBe directors
+      actual mustBe directors
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -690,16 +674,16 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, regNoDirectors))
 
       val actual = await(repository.upsertDirectors("AC123456", directors))
-      actual shouldBe directors
+      actual mustBe directors
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedDirectors)
+      updated mustBe Some(regUpdatedDirectors)
 
     }
 
     "throw a Missing Reg Document exception when updating employment for a nonexistent registration" in new Setup {
 
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertDirectors("AC123456", directors)))
+      a[MissingRegDocument] mustBe thrownBy(await(repository.upsertDirectors("AC123456", directors)))
 
     }
   }
@@ -712,7 +696,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrieveSICCodes("AC123456"))
 
-      actual shouldBe sicCodes
+      actual mustBe sicCodes
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -728,16 +712,16 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, regNoSICCodes))
 
       val actual = await(repository.upsertSICCodes("AC123456", sicCodes))
-      actual shouldBe sicCodes
+      actual mustBe sicCodes
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedSICCodes)
+      updated mustBe Some(regUpdatedSICCodes)
 
     }
 
     "throw a Missing Reg Document exception when updating employment for a nonexistent registration" in new Setup {
 
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertSICCodes("AC123456", sicCodes)))
+      a[MissingRegDocument] mustBe thrownBy(await(repository.upsertSICCodes("AC123456", sicCodes)))
 
     }
   }
@@ -757,25 +741,25 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg2))
 
       val actual = await(repository.deleteRegistration("AC123456"))
-      actual shouldBe true
+      actual mustBe true
 
       val deletedFind = await(repository.retrieveRegistration("AC123456"))
-      deletedFind shouldBe None
+      deletedFind mustBe None
 
       val remaining = await(repository.retrieveRegistration("AC234567"))
-      remaining shouldBe Some(reg2)
+      remaining mustBe Some(reg2)
     }
 
     "insert a Registration when none exists" in new Setup {
       val actual = await(repository.updateRegistration(reg))
-      actual shouldBe reg
+      actual mustBe reg
     }
 
     "correctly update a registration that already exists" in new Setup {
       await(setupCollection(repository, reg))
 
       val actual = await(repository.updateRegistration(reg))
-      actual shouldBe reg
+      actual mustBe reg
     }
   }
 
@@ -787,7 +771,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrievePAYEContact("AC123456"))
 
-      actual shouldBe Some(payeContact)
+      actual mustBe Some(payeContact)
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -802,16 +786,16 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, regNoPAYEContact))
 
       val actual = await(repository.upsertPAYEContact("AC123456", payeContact))
-      actual shouldBe payeContact
+      actual mustBe payeContact
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedPAYEContact)
+      updated mustBe Some(regUpdatedPAYEContact)
 
     }
 
     "throw a Missing Reg Document exception when updating company details for a nonexistent registration" in new Setup {
 
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertPAYEContact("AC123456", payeContact)))
+      a[MissingRegDocument] mustBe thrownBy(await(repository.upsertPAYEContact("AC123456", payeContact)))
 
     }
   }
@@ -824,7 +808,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
       val actual = await(repository.retrieveCompletionCapacity("AC123456"))
 
-      actual shouldBe Some(completionCapacity)
+      actual mustBe Some(completionCapacity)
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -839,16 +823,16 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, regNoCompletionCapacity))
 
       val actual = await(repository.upsertCompletionCapacity("AC123456", completionCapacity))
-      actual shouldBe completionCapacity
+      actual mustBe completionCapacity
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedCompletionCapacity)
+      updated mustBe Some(regUpdatedCompletionCapacity)
 
     }
 
     "throw a Missing Reg Document exception when updating company details for a nonexistent registration" in new Setup {
 
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.upsertCompletionCapacity("AC123456", completionCapacity)))
+      a[MissingRegDocument] mustBe thrownBy(await(repository.upsertCompletionCapacity("AC123456", completionCapacity)))
 
     }
   }
@@ -859,7 +843,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg))
 
       val actual = await(repository.retrieveRegistrationStatus("AC123456"))
-      actual shouldBe PAYEStatus.draft
+      actual mustBe PAYEStatus.draft
     }
 
     "return a MissingRegDocument when there is no corresponding PAYE Registration in the database" in new Setup {
@@ -872,14 +856,14 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg))
 
       val actual = await(repository.updateRegistrationStatus("AC123456", PAYEStatus.held))
-      actual shouldBe PAYEStatus.held
+      actual mustBe PAYEStatus.held
 
       val updated = await(repository.retrieveRegistration("AC123456"))
-      updated shouldBe Some(regUpdatedRegistrationStatus)
+      updated mustBe Some(regUpdatedRegistrationStatus)
     }
 
     "throw a Missing Reg Document exception when updating registration status for a nonexistent registration" in new Setup {
-      a[MissingRegDocument] shouldBe thrownBy(await(repository.updateRegistrationStatus("AC123456", PAYEStatus.held)))
+      a[MissingRegDocument] mustBe thrownBy(await(repository.updateRegistrationStatus("AC123456", PAYEStatus.held)))
 
     }
   }
@@ -889,7 +873,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg))
 
       val result = await(repository.retrieveAcknowledgementReference("AC123456"))
-      result shouldBe Some("testAckRef")
+      result mustBe Some("testAckRef")
     }
 
     "throw a missing document exception" in new Setup {
@@ -902,7 +886,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       await(setupCollection(repository, reg.copy(acknowledgementReference = None)))
 
       val result = await(repository.saveAcknowledgementReference(reg.registrationID, "testAckRef"))
-      result shouldBe "testAckRef"
+      result mustBe "testAckRef"
     }
 
     "throw a new AcknowledgementReferenceExistsException" in new Setup {
@@ -946,7 +930,7 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
       )
 
       val result = await(repository.cleardownRegistration(reg.registrationID))
-      result shouldBe clearedRegistration
+      result mustBe clearedRegistration
     }
   }
 
@@ -960,9 +944,9 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
         val alteredReg = reg.copy(registrationConfirmation = Some(testEmpRefNotif), status = PAYEStatus.submitted)
 
         val result = await(repository.updateRegistrationEmpRef("testAckRef", PAYEStatus.submitted, testEmpRefNotif))
-        result shouldBe testEmpRefNotif
+        result mustBe testEmpRefNotif
 
-        await(repository.retrieveRegistration(reg.registrationID)) shouldBe Some(alteredReg)
+        await(repository.retrieveRegistration(reg.registrationID)) mustBe Some(alteredReg)
       }
     }
 
@@ -978,8 +962,8 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     "returns true after deleting the registration from the collection" in new Setup {
       await(setupCollection(repository, reg.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some("2017-01-01T21:00:00Z"))))
 
-      await(repository.deleteRegistration(reg.registrationID)) shouldBe true
-      await(repository.retrieveRegistration(reg.registrationID)) shouldBe None
+      await(repository.deleteRegistration(reg.registrationID)) mustBe true
+      await(repository.retrieveRegistration(reg.registrationID)) mustBe None
     }
   }
 
@@ -1012,37 +996,37 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
     "clear any documents older than 90 days" in new Setup(timestampZDT = dt) {
       val deleteDT = ZonedDateTime.of(LocalDateTime.of(2017, 4, 1, 12, 0, 0), ZoneId.of("Z"))
       val keepDT = ZonedDateTime.of(LocalDateTime.of(2017, 4, 1, 12, 0, 1), ZoneId.of("Z"))
-      await(repository.upsertRegTestOnly(timedReg("123", Some(deleteDT))))
-      await(repository.upsertRegTestOnly(timedReg("223", Some(keepDT))))
+      await(repository.updateRegistration(timedReg("123", Some(deleteDT))))
+      await(repository.updateRegistration(timedReg("223", Some(keepDT))))
       await(repository.removeStaleDocuments())
 
-      await(repository.retrieveRegistration("123")) shouldBe None
-      await(repository.retrieveRegistration("223")) shouldBe Some(timedReg("223", Some(keepDT)))
+      await(repository.retrieveRegistration("123")) mustBe None
+      await(repository.retrieveRegistration("223")) mustBe Some(timedReg("223", Some(keepDT)))
     }
 
     "clear only documents that are draft or invalid" in new Setup(timestampZDT = dt) {
       val deleteDT = ZonedDateTime.of(LocalDateTime.of(2017, 4, 1, 12, 0, 0), ZoneId.of("Z"))
-      await(repository.upsertRegTestOnly(timedReg("123", Some(deleteDT), PAYEStatus.draft)))
-      await(repository.upsertRegTestOnly(timedReg("223", Some(deleteDT), PAYEStatus.invalid)))
-      await(repository.upsertRegTestOnly(timedReg("323", Some(deleteDT), PAYEStatus.held)))
+      await(repository.updateRegistration(timedReg("123", Some(deleteDT), PAYEStatus.draft)))
+      await(repository.updateRegistration(timedReg("223", Some(deleteDT), PAYEStatus.invalid)))
+      await(repository.updateRegistration(timedReg("323", Some(deleteDT), PAYEStatus.held)))
       await(repository.removeStaleDocuments())
 
-      await(repository.retrieveRegistration("123")) shouldBe None
-      await(repository.retrieveRegistration("223")) shouldBe None
-      await(repository.retrieveRegistration("323")) shouldBe Some(timedReg("323", Some(deleteDT), PAYEStatus.held))
+      await(repository.retrieveRegistration("123")) mustBe None
+      await(repository.retrieveRegistration("223")) mustBe None
+      await(repository.retrieveRegistration("323")) mustBe Some(timedReg("323", Some(deleteDT), PAYEStatus.held))
     }
 
     "not clear documents which don't have a lastAction field" in new Setup(timestampZDT = dt) {
-      await(repository.upsertRegTestOnly(timedReg("123", None, PAYEStatus.draft)))
+      await(repository.updateRegistration(timedReg("123", None, PAYEStatus.draft)))
       await(repository.removeStaleDocuments())
-      await(repository.retrieveRegistration("123")) shouldBe Some(timedReg("123", None, PAYEStatus.draft))
+      await(repository.retrieveRegistration("123")) mustBe Some(timedReg("123", None, PAYEStatus.draft))
     }
   }
 
   "getRegistrationId" should {
     "return the registrationId" in new Setup {
       await(setupCollection(repository, reg))
-      await(repository.getRegistrationId(reg.transactionID)) shouldBe reg.registrationID
+      await(repository.getRegistrationId(reg.transactionID)) mustBe reg.registrationID
     }
 
     "throw a MissingRegDoc exception" in new Setup {

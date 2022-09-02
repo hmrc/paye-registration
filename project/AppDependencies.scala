@@ -1,55 +1,35 @@
 
 import sbt._
 
-private object AppDependencies {
-  def apply() = MainDependencies() ++ UnitTestDependencies() ++ IntegrationTestDependencies()
-}
+object AppDependencies {
 
-object MainDependencies {
-  private val bootstrapVersion = "5.16.0"
-  private val domainVersion = "8.1.0-play-28"
-  private val mongoLockVersion = "7.0.0-play-28"
-  private val simpleReactivemongoVersion = "8.0.0-play-28"
+  private val playVersion                 =  "-play-28"
+  private val bootstrapVersion            =  "5.16.0"
+  private val domainVersion               = s"8.1.0$playVersion"
+  private val scalaTestVersion            =  "3.2.12"
+  private val scalaTestPlusPlayVersion    =  "5.1.0"
+  private val wireMockVersion             =  "2.27.2"
+  private val hmrcMongoVersion            =  "0.71.0"
+  private val quartzSchedulerVersion      =  "1.8.2-akka-2.6.x"
+  private val jsonJodaVersion             =  "2.7.4"
+  private val flexmarkAllVersion          =  "0.62.2"
 
-  def apply() = Seq(
-    "com.typesafe.play" %% "play-json-joda" % "2.7.4",
-    "com.enragedginger" %% "akka-quartz-scheduler" % "1.8.2-akka-2.6.x",
-    "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrapVersion,
-    "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "mongo-lock" % mongoLockVersion,
-    "uk.gov.hmrc" %% "simple-reactivemongo" % simpleReactivemongoVersion
-  )
-}
-
-trait TestDependencies {
-  val scalaTestVersion = "3.5.0"
-  val scalaTestPlusVersion = "5.0.0"
-  val mockitoCoreVersion = "2.27.0"
-  val wireMockVersion = "2.27.2"
-  val reactiveTestVersion = "5.0.0-play-28"
-
-  val scope: Configuration
-  val test: Seq[ModuleID]
-
-  lazy val commonTestDependencies = Seq(
-    "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
-    "uk.gov.hmrc" %% "reactivemongo-test" % reactiveTestVersion % scope,
-    "org.pegdown" % "pegdown" % "1.6.0" % scope
+  val compile = Seq(
+    "com.typesafe.play"         %%  "play-json-joda"                  % jsonJodaVersion,
+    "com.enragedginger"         %%  "akka-quartz-scheduler"           % quartzSchedulerVersion,
+    "uk.gov.hmrc"               %% s"bootstrap-backend$playVersion"   % bootstrapVersion,
+    "uk.gov.hmrc"               %%  "domain"                          % domainVersion,
+    "uk.gov.hmrc.mongo"         %% s"hmrc-mongo$playVersion"          % hmrcMongoVersion
   )
 
-  def apply() = test
-}
-
-object UnitTestDependencies extends TestDependencies {
-  val scope = Test
-  val test = commonTestDependencies ++ Seq(
-    "org.mockito" % "mockito-core" % mockitoCoreVersion
+  val test = Seq(
+    "org.scalatest"             %%  "scalatest"                       %  scalaTestVersion           % "test, it",
+    "org.scalatestplus.play"    %%  "scalatestplus-play"              %  scalaTestPlusPlayVersion   % "test, it",
+    "com.vladsch.flexmark"      %   "flexmark-all"                    %  flexmarkAllVersion         % "test, it",
+    "org.scalatestplus"         %%  "mockito-4-5"                     % s"$scalaTestVersion.0"      % "test",
+    "com.github.tomakehurst"    %   "wiremock-jre8"                   %  wireMockVersion            % "it",
+    "uk.gov.hmrc.mongo"         %% s"hmrc-mongo-test$playVersion"     %  hmrcMongoVersion           % "it"
   )
-}
 
-object IntegrationTestDependencies extends TestDependencies {
-  val scope = IntegrationTest
-  val test = commonTestDependencies ++ Seq(
-    "com.github.tomakehurst" % "wiremock-jre8" % wireMockVersion % scope
-  )
+  def apply() = compile ++ test
 }

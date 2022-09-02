@@ -62,7 +62,7 @@ class IncorpStatusUpdateSpec extends PAYERegSpec with JsonFormatValidation {
           timestamp = LocalDate.of(2017, 12, 21)
         )
 
-        statusUpdateFromJson(json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+        statusUpdateFromJson(json) mustBe JsSuccess(tstIncorpStatusUpdate)
       }
       "there is no CRN in an update with rejected status" in {
         val json = Json.parse(
@@ -95,7 +95,7 @@ class IncorpStatusUpdateSpec extends PAYERegSpec with JsonFormatValidation {
           timestamp = LocalDate.of(2017, 12, 21)
         )
 
-        statusUpdateFromJson(json) shouldBe JsSuccess(tstIncorpStatusUpdate)
+        statusUpdateFromJson(json) mustBe JsSuccess(tstIncorpStatusUpdate)
       }
     }
 

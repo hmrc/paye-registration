@@ -29,8 +29,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
+import uk.gov.hmrc.mongo.MongoComponent
 import utils.SystemDate
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
@@ -66,7 +66,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     .configure(additionalConfiguration)
     .build()
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
@@ -83,11 +83,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
-    val sequenceRepository = new SequenceMongoRepository(reactiveMongoComponent)
-    await(repository.removeAll())
-    await(repository.ensureIndexes)
-    await(sequenceRepository.removeAll())
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val sequenceRepository = new SequenceMongoRepository(mongoComponent)
+    await(repository.dropCollection)
+    await(sequenceRepository.collection.drop().toFuture())
     await(sequenceRepository.ensureIndexes)
   }
 
@@ -246,7 +245,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         name = Name(forename = Some("Malcolm"), surname = Some("Test"), otherForenames = Some("Testing"), title = Some("Mr")),
         nino = None
       )
-      await(repository.upsertRegTestOnly(submission.copy(directors = extraDirectorList)))
+      await(repository.updateRegistration(submission.copy(directors = extraDirectorList)))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -428,17 +427,17 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         ).toString(), false, true))
       )
 
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
+      response.status mustBe 200
+      response.json mustBe Json.toJson("testAckRef")
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction))
+      reg mustBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
 
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
-      reg.get.partialSubmissionTimestamp.nonEmpty shouldBe true
+      regLastUpdate.isAfter(submissionLastUpdate) mustBe true
+      reg.get.partialSubmissionTimestamp.nonEmpty mustBe true
     }
 
     "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
@@ -478,7 +477,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         )
       )
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = await(client(s"$regId/submit-registration").put(""))
@@ -563,14 +562,14 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         )
       )
 
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
+      response.status mustBe 200
+      response.json mustBe Json.toJson("testAckRef")
 
 
       val reg = await(repository.retrieveRegistration(regId))
 
-      reg.get.status shouldBe PAYEStatus.submitted
-      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+      reg.get.status mustBe PAYEStatus.submitted
+      reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
     "return a 200 with an ack ref when a full DES submission completes successfully with a company containing none standard characters" in new Setup {
@@ -664,7 +663,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         employmentInfo = Some(validEmployment)
       )
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = await(client(s"$regId/submit-registration").put(""))
@@ -749,14 +748,14 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         )
       )
 
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
+      response.status mustBe 200
+      response.json mustBe Json.toJson("testAckRef")
 
 
       val reg = await(repository.retrieveRegistration(regId))
 
-      reg.get.status shouldBe PAYEStatus.submitted
-      reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+      reg.get.status mustBe PAYEStatus.submitted
+      reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
     "return a 200 status with an ackRef when DES returns a 409" in new Setup {
@@ -780,7 +779,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubBusinessProfile()
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = await(client(s"$regId/submit-registration").put(""))
@@ -863,17 +862,17 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         )
       )
 
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson("testAckRef")
+      response.status mustBe 200
+      response.json mustBe Json.toJson("testAckRef")
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction))
+      reg mustBe Some(processedSubmission.copy(lastUpdate = reg.get.lastUpdate, partialSubmissionTimestamp = reg.get.partialSubmissionTimestamp, lastAction = reg.get.lastAction))
 
       val regLastUpdate = mockDateHelper.getDateFromTimestamp(reg.get.lastUpdate)
       val submissionLastUpdate = mockDateHelper.getDateFromTimestamp(submission.lastUpdate)
 
-      regLastUpdate.isAfter(submissionLastUpdate) shouldBe true
-      reg.get.partialSubmissionTimestamp.nonEmpty shouldBe true
+      regLastUpdate.isAfter(submissionLastUpdate) mustBe true
+      reg.get.partialSubmissionTimestamp.nonEmpty mustBe true
     }
 
     "return a 204 status when Incorporation was rejected at PAYE Submission" in new Setup {
@@ -881,14 +880,14 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 200, incorpUpdate(rejected))
 
-      await(repository.upsertRegTestOnly(submission))
-      await(repository.count).shouldBe(1)
+      await(repository.updateRegistration(submission))
+      await(repository.collection.countDocuments().toFuture()) mustBe 1
 
       val response = await(client(s"$regId/submit-registration").put(""))
-      response.status shouldBe 204
+      response.status mustBe 204
 
       val reg = await(repository.retrieveRegistration(regId))
-      reg shouldBe None
+      reg mustBe None
     }
 
     "return a 502 status when DES returns a 499" in new Setup {
@@ -905,13 +904,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 502
+      response.status mustBe 502
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
 
     "return a 502 status when DES returns a 5xx" in new Setup {
@@ -928,13 +927,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 502
+      response.status mustBe 502
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
     "return a 503 status when DES returns a 429" in new Setup {
       setupAuthMocksToReturn(authoriseData)
@@ -950,13 +949,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 503
+      response.status mustBe 503
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
     "return a 400 status when DES returns a 4xx (apart from 429)" in new Setup {
       setupAuthMocksToReturn(authoriseData)
@@ -972,13 +971,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.upsertRegTestOnly(submission))
+      await(repository.updateRegistration(submission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 400
+      response.status mustBe 400
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(submission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
 
     "return a 500 status when registration has already been cleared post-submission in mongo" in new Setup {
@@ -986,13 +985,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
-      await(repository.upsertRegTestOnly(processedSubmission))
+      await(repository.updateRegistration(processedSubmission))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
-      response.status shouldBe 500
+      response.status mustBe 500
 
-      await(repository.retrieveRegistration(regId)) shouldBe Some(processedSubmission)
+      await(repository.retrieveRegistration(regId)) mustBe Some(processedSubmission)
     }
 
     "return a 400 when in working hours" in new Setup {
@@ -1017,7 +1016,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         name = Name(forename = Some("Malcolm"), surname = Some("Test"), otherForenames = Some("Testing"), title = Some("Mr")),
         nino = None
       )
-      await(repository.upsertRegTestOnly(submission.copy(directors = extraDirectorList)))
+      await(repository.updateRegistration(submission.copy(directors = extraDirectorList)))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
       val response = client(s"$regId/submit-registration").put("").futureValue
@@ -1107,7 +1106,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
           """.stripMargin).toString())
         )
       )
-      response.status shouldBe 400
+      response.status mustBe 400
       await(client(s"test-only/feature-flag/system-date/time-clear").get())
 
     }
@@ -1134,7 +1133,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         name = Name(forename = Some("Malcolm"), surname = Some("Test"), otherForenames = Some("Testing"), title = Some("Mr")),
         nino = None
       )
-      await(repository.upsertRegTestOnly(submission.copy(directors = extraDirectorList)))
+      await(repository.updateRegistration(submission.copy(directors = extraDirectorList)))
       await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
 
@@ -1225,7 +1224,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
           """.stripMargin).toString())
         )
       )
-      response.status shouldBe 400
+      response.status mustBe 400
       await(client(s"test-only/feature-flag/system-date/time-clear").get())
     }
   }
@@ -1329,7 +1328,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       )
     )
 
-    await(repository.upsertRegTestOnly(submission))
+    await(repository.updateRegistration(submission))
     await(client(s"test-only/feature-flag/desServiceFeature/true").get())
 
     val response = await(client(s"$regId/submit-registration").put(""))
@@ -1414,13 +1413,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       )
     )
 
-    response.status shouldBe 200
-    response.json shouldBe Json.toJson("testAckRef")
+    response.status mustBe 200
+    response.json mustBe Json.toJson("testAckRef")
 
 
     val reg = await(repository.retrieveRegistration(regId))
 
-    reg.get.status shouldBe PAYEStatus.submitted
-    reg.get.fullSubmissionTimestamp.nonEmpty shouldBe true
+    reg.get.status mustBe PAYEStatus.submitted
+    reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
   }
 }

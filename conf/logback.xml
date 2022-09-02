@@ -44,19 +44,19 @@
         <appender-ref ref="STDOUT_IGNORE_NETTY" />
     </logger>
 
-    <logger name="com.google.inject" level="INFO"/>
-    <logger name="javax.management.mbeanserver" level="INFO"/>
-    <logger name="javax.management.misc" level="INFO"/>
-    <logger name="akka.event.EventStream" level="INFO"/>
-    <logger name="play.api.libs.concurrent.ActorSystemProvider" level="INFO"/>
-    <logger name="org.jboss.netty.channel.socket.nio.SelectorUtil" level="INFO"/>
-    <logger name="uk.gov" level="INFO"/>
-    <logger name="org.asynchttpclient.netty" level="INFO"/>
-    <logger name="org.eclipse.jetty" level="INFO"/>
-    <logger name="io.netty" level="INFO"/>
-    <logger name="org.apache.http" level="INFO"/>
-    <logger name="reactivemongo.core.actors.MongoDBSystem" level="INFO"/>
+    <logger name="com.google.inject" level="WARN"/>
+    <logger name="javax" level="WARN"/>
+    <logger name="akka" level="WARN"/>
+    <logger name="play" level="WARN"/>
+    <logger name="org.jboss" level="WARN"/>
+    <logger name="uk.gov" level="WARN"/>
+    <logger name="org.asynchttpclient.netty" level="WARN"/>
+    <logger name="org.eclipse.jetty" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="play.shaded.ahc" level="WARN"/>
+    <logger name="org.apache.http" level="WARN"/>
 
+    <logger name="org.mongodb" level="INFO"/>
 
     <logger name="application" level="INFO"/>
     <logger name="connector" level="INFO">

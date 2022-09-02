@@ -52,7 +52,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful((true)))
 
       val response = controller.registrationTeardown()(FakeRequest())
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 500 response for failure" in new Setup {
@@ -60,7 +60,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = controller.registrationTeardown()(FakeRequest())
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
   }
 
@@ -70,7 +70,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(true))
 
       val response = controller.deleteRegistration("AC123456")(FakeRequest())
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 500 response for failure" in new Setup {
@@ -78,7 +78,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = controller.deleteRegistration("AC123456")(FakeRequest())
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
   }
 
@@ -92,7 +92,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(validRegistration))
 
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
 
     "return a 500 response for failure" in new Setup {
@@ -102,21 +102,21 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
 
     "return a Bad Request response for incorrect Json" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
 
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.parse("""{"formCreationTimestamp":"testTimestamp","regID":"invalid"}""")))
-      status(response) shouldBe Status.BAD_REQUEST
+      status(response) mustBe Status.BAD_REQUEST
     }
 
     "return a forbidden response for unauthorised" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
       implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
-      status(response) shouldBe Status.FORBIDDEN
+      status(response) mustBe Status.FORBIDDEN
     }
   }
 
@@ -132,14 +132,14 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
           .thenReturn(Future.failed(new RuntimeException("")))
 
       def newstatus(s: String) = controller.newStatus("AC123456", s)(FakeRequest())
-      status(newstatus("draft")) shouldBe Status.OK
-      status(newstatus("held")) shouldBe Status.OK
-      status(newstatus("submitted")) shouldBe Status.OK
-      status(newstatus("acknowledged")) shouldBe Status.OK
-      status(newstatus("invalid")) shouldBe Status.OK
-      status(newstatus("cancelled")) shouldBe Status.OK
-      status(newstatus("rejected")) shouldBe Status.OK
-      status(controller.newStatus("AC654321", "bananaFruitcake")(FakeRequest())) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(newstatus("draft")) mustBe Status.OK
+      status(newstatus("held")) mustBe Status.OK
+      status(newstatus("submitted")) mustBe Status.OK
+      status(newstatus("acknowledged")) mustBe Status.OK
+      status(newstatus("invalid")) mustBe Status.OK
+      status(newstatus("cancelled")) mustBe Status.OK
+      status(newstatus("rejected")) mustBe Status.OK
+      status(controller.newStatus("AC654321", "bananaFruitcake")(FakeRequest())) mustBe Status.INTERNAL_SERVER_ERROR
     }
   }
 
@@ -149,7 +149,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRepo.updateRegistrationStatus(ArgumentMatchers.eq("AC123456"), ArgumentMatchers.any()))
         .thenReturn(Future.successful(PAYEStatus.draft))
 
-      status(controller.updateStatus("AC123456", "submitted")(FakeRequest())) shouldBe Status.OK
+      status(controller.updateStatus("AC123456", "submitted")(FakeRequest())) mustBe Status.OK
     }
   }
 

@@ -59,7 +59,7 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
         mockHttpGet[HttpResponse]("testUrl", okResponse)
 
         val result: HttpResponse = await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
-        result shouldBe okResponse
+        result mustBe okResponse
       }
     }
 

@@ -46,7 +46,7 @@ class DesTopUpAuditEventDetailSpec extends PAYERegSpec {
           regId,
           Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
-        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
+        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) mustBe expected
       }
 
       "incorporation is rejected" in {
@@ -65,7 +65,7 @@ class DesTopUpAuditEventDetailSpec extends PAYERegSpec {
           regId,
           Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
-        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) shouldBe expected
+        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) mustBe expected
       }
     }
   }

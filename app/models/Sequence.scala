@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json.Json
 
-case class Sequence(sequenceID: String, seq: Int)
+case class Sequence(_id: String, seq: Int)
 
 object Sequence {
   implicit val formats = Json.format[Sequence]

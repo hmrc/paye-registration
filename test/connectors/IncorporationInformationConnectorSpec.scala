@@ -78,7 +78,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
     "construct the the II uri" when {
       "given a txId, regime and subscriber" in new Setup {
         val result = Connector.constructIncorporationInfoUri("testTxId", "paye", "SCRS")
-        result shouldBe "/incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS"
+        result mustBe "/incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS"
       }
     }
   }
@@ -92,7 +92,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
           .thenReturn(Future.successful(testResponse))
 
         val result = await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
-        result shouldBe Some(Json.fromJson[IncorpStatusUpdate](testJson)(IncorpStatusUpdate.reads(APIValidation)).get)
+        result mustBe Some(Json.fromJson[IncorpStatusUpdate](testJson)(IncorpStatusUpdate.reads(APIValidation)).get)
       }
     }
 
@@ -104,7 +104,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
           .thenReturn(Future.successful(testResponse))
 
         val result = await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
-        result shouldBe None
+        result mustBe None
       }
     }
 
@@ -116,7 +116,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
           .thenReturn(Future.successful(testResponse))
 
         val result = intercept[IncorporationInformationResponseException](await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId")))
-        result.getMessage shouldBe s"Calling II on /incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS returned a 500"
+        result.getMessage mustBe s"Calling II on /incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS returned a 500"
       }
     }
   }
@@ -145,7 +145,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
         .thenReturn(Future.successful(testResponse))
 
       val res = await(Connector.getIncorporationDate("testTxId"))
-      res shouldBe Some(LocalDate.of(2015, 12, 25))
+      res mustBe Some(LocalDate.of(2015, 12, 25))
     }
 
 
@@ -163,7 +163,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
       val res = await(Connector.getIncorporationDate("testTxId"))
-      res shouldBe None
+      res mustBe None
     }
     "return None when element does not exist" in new Setup {
       val testJson = Json.parse(
@@ -178,7 +178,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
       val res = await(Connector.getIncorporationDate("testTxId"))
-      res shouldBe None
+      res mustBe None
     }
     "return None when response is 204" in new Setup {
       val testResponse: HttpResponse = HttpResponse.apply(NO_CONTENT, "")
@@ -186,7 +186,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
       val res = await(Connector.getIncorporationDate("testTxId"))
-      res shouldBe None
+      res mustBe None
     }
 
     "return an exception if the response code from II is not expected" in new Setup {
@@ -195,7 +195,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
       when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(testResponse))
 
-      an[IncorporationInformationResponseException] shouldBe thrownBy(await(Connector.getIncorporationDate("testTxId")))
+      an[IncorporationInformationResponseException] mustBe thrownBy(await(Connector.getIncorporationDate("testTxId")))
     }
   }
 }

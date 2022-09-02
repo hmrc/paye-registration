@@ -78,7 +78,7 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.failed(new Exception("error")))
 
       val response = TestController.isAuthorised(FakeRequest())
-      status(response) shouldBe Status.FORBIDDEN
+      status(response) mustBe Status.FORBIDDEN
     }
 
     "return 200 if the user is authorised" in {
@@ -86,7 +86,7 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.successful({}))
 
       val result = TestController.isAuthorised(FakeRequest())
-      status(result) shouldBe OK
+      status(result) mustBe OK
     }
   }
 
@@ -96,8 +96,8 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.successful(Some("test-internal-id")))
 
       val result = TestController.isAuthorisedWithData(FakeRequest())
-      status(result) shouldBe OK
-      contentAsString(result) shouldBe "test-internal-id"
+      status(result) mustBe OK
+      contentAsString(result) mustBe "test-internal-id"
     }
 
     "return 204 if there is no internalId and the user is authorised" in {
@@ -105,7 +105,7 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.successful(None))
 
       val result = TestController.isAuthorisedWithData(FakeRequest())
-      status(result) shouldBe NO_CONTENT
+      status(result) mustBe NO_CONTENT
     }
   }
 
@@ -115,8 +115,8 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.successful(Credentials("some-provider-id", "some-provider-type")))
 
       val result = TestController.isAuthorisedWithCredId(FakeRequest())
-      status(result) shouldBe OK
-      contentAsString(result) shouldBe "some-provider-id"
+      status(result) mustBe OK
+      contentAsString(result) mustBe "some-provider-id"
     }
   }
 
@@ -128,9 +128,9 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.successful(new ~(Some("some-external-id"), cred)))
 
       val result = TestController.isAuthorisedWithExternalIdAndCredId(FakeRequest())
-      status(result) shouldBe OK
+      status(result) mustBe OK
 
-      contentAsJson(result) shouldBe Json.obj("externalId" -> "some-external-id", "providerId" -> cred.providerId)
+      contentAsJson(result) mustBe Json.obj("externalId" -> "some-external-id", "providerId" -> cred.providerId)
     }
 
     "return 204 if there is no externalId" in {
@@ -140,7 +140,7 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.successful(new ~(None, cred)))
 
       val result = TestController.isAuthorisedWithExternalIdAndCredId(FakeRequest())
-      status(result) shouldBe NO_CONTENT
+      status(result) mustBe NO_CONTENT
     }
 
     "return 403 if something failed" in {
@@ -148,7 +148,7 @@ class AuthClient101Spec extends PAYERegSpec {
         .thenReturn(Future.failed(new Exception("something wrong")))
 
       val result = TestController.isAuthorisedWithExternalIdAndCredId(FakeRequest())
-      status(result) shouldBe FORBIDDEN
+      status(result) mustBe FORBIDDEN
     }
   }
 }

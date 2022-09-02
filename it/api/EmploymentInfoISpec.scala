@@ -27,8 +27,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 import utils.SystemDate
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
@@ -53,7 +53,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
@@ -61,17 +61,17 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def insertToDb(paye: PAYERegistration) = {
-      await(repository.insert(paye))
-      await(repository.count) shouldBe 1
+      await(repository.updateRegistration(paye))
+      await(repository.collection.countDocuments().toFuture()) mustBe 1
     }
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 
-    await(repository.drop)
-    await(repository.ensureIndexes)
+
+    await(repository.dropCollection)
   }
 
   "PAYE Registration API - EmploymentInfo" should {
@@ -119,8 +119,8 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/employment-info").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation))
     }
 
     "Return a 200 when the user upserts employment-info" in new Setup {
@@ -157,16 +157,16 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 204, "")
 
       val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse1.status shouldBe 204
+      getResponse1.status mustBe 204
 
       val patchResponse = client(s"/${regID}/employment-info")
         .patch[JsValue](Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation))
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation))
     }
 
     "Return a 403 when the user is not authorised to get employment-info" in new Setup {
@@ -201,7 +201,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/employment-info").get.futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 403 when the user is not authorised to upsert employment-info" in new Setup {
@@ -238,14 +238,14 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/employment-info")
         .patch(Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation)))
         .futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 404 if the registration is missing" in new Setup {
       setupSimpleAuthMocks()
 
       val response = client(s"/12345/employment-info").get.futureValue
-      response.status shouldBe 404
+      response.status mustBe 404
     }
 
     "Return a 400 when upsert employment-info with a wrong next tax year date" in new Setup {
@@ -282,7 +282,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 204, "")
 
       val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse1.status shouldBe 204
+      getResponse1.status mustBe 204
 
       val wrongEmploymentNextYearDate = EmploymentInfo(
         employees = Employing.willEmployNextYear,
@@ -295,10 +295,10 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       val patchResponse = client(s"/${regID}/employment-info")
         .patch[JsValue](Json.toJson(wrongEmploymentNextYearDate)(EmploymentInfo.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 400
+      patchResponse.status mustBe 400
 
       val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse2.status shouldBe 204
+      getResponse2.status mustBe 204
     }
 
     s"Return a 400 when upsert employment-info with a wrong payment date when employees is set to ${Employing.alreadyEmploying}" in new Setup {
@@ -338,7 +338,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 200, s"""{"incorporationDate": "$incorpDate"}""")
 
       val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse1.status shouldBe 204
+      getResponse1.status mustBe 204
 
       val wrongEmploymentPaymentDate = EmploymentInfo(
         employees = Employing.alreadyEmploying,
@@ -351,10 +351,10 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       val patchResponse = client(s"/${regID}/employment-info")
         .patch[JsValue](Json.toJson(wrongEmploymentPaymentDate)(EmploymentInfo.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 400
+      patchResponse.status mustBe 400
 
       val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse2.status shouldBe 204
+      getResponse2.status mustBe 204
     }
 
     s"Return a 400 when upsert employment-info with employees is set to ${Employing.alreadyEmploying} but missing corporation date" in new Setup {
@@ -393,7 +393,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 204, "")
 
       val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse1.status shouldBe 204
+      getResponse1.status mustBe 204
 
       val correctEmploymentPaymentDate = EmploymentInfo(
         employees = Employing.alreadyEmploying,
@@ -406,10 +406,10 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       val patchResponse = client(s"/${regID}/employment-info")
         .patch[JsValue](Json.toJson(correctEmploymentPaymentDate)(EmploymentInfo.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 400
+      patchResponse.status mustBe 400
 
       val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse2.status shouldBe 204
+      getResponse2.status mustBe 204
     }
 
     s"Return a 200 when upsert employment-info with a correct payment date when employees is set to ${Employing.alreadyEmploying}" in new Setup {
@@ -449,7 +449,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 200, s"""{"incorporationDate": "$incorpDate"}""")
 
       val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse1.status shouldBe 204
+      getResponse1.status mustBe 204
 
       val correctEmploymentPaymentDate = EmploymentInfo(
         employees = Employing.alreadyEmploying,
@@ -462,11 +462,11 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
       val patchResponse = client(s"/${regID}/employment-info")
         .patch[JsValue](Json.toJson(correctEmploymentPaymentDate)(EmploymentInfo.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(correctEmploymentPaymentDate)(EmploymentInfo.format(APIValidation))
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(correctEmploymentPaymentDate)(EmploymentInfo.format(APIValidation))
     }
   }
 }
