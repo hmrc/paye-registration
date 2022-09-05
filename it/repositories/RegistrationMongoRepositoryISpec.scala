@@ -593,20 +593,6 @@ class RegistrationMongoRepositoryISpec extends MongoBaseSpec {
 
     val payeReg: PAYERegistration = reg.copy(employmentInfo = Some(empInfo))
 
-    "return EmploymentInfo and old employment model is deleted" in new Setup {
-
-      await(repository.updateRegistration(payeReg))
-
-      val oldModelCheck = await(repository.retrieveRegistration(payeReg.registrationID))
-      oldModelCheck mustBe Some(payeReg)
-
-      val res = await(repository.retrieveEmploymentInfo(payeReg.registrationID))
-      res mustBe Some(empInfo)
-
-      val oldModelCheckDoesNotExist = await(repository.retrieveRegistration(payeReg.registrationID))
-      oldModelCheckDoesNotExist mustBe Some(payeReg.copy(employmentInfo = None))
-    }
-
     "return EmploymentInfo" in new Setup {
       await(setupCollection(repository, payeReg))
 
