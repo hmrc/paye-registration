@@ -162,12 +162,15 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   }
 
   private def updatePAYERegistrationDocument(regId: String, newStatus: PAYEStatus.Value): Future[PAYEStatus.Value] = {
-    registrationMongoRepository.updateRegistrationStatus(regId, newStatus) map {
+    registrationMongoRepository.updateRegistrationStatus(regId, newStatus) flatMap {
       _ =>
         if (!newStatus.equals(PAYEStatus.cancelled)) {
-          registrationMongoRepository.cleardownRegistration(regId)
+          registrationMongoRepository.cleardownRegistration(regId).map { _ =>
+            newStatus
+          }
+        } else {
+          Future.successful(newStatus)
         }
-        newStatus
     }
   }
 
