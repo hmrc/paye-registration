@@ -333,7 +333,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
   "Calling assertOrGenerateAcknowledgementReference" should {
     "return an ack ref if there is one in the registration" in new Setup {
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
-          .thenReturn(Future.successful(Some("tstAckRef")))
+        .thenReturn(Future.successful(Some("tstAckRef")))
 
       await(service.assertOrGenerateAcknowledgementReference("regID")) mustBe "tstAckRef"
     }
@@ -497,6 +497,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful(Success))
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.held))
+        when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.eq("regID"))).thenReturn(Future.successful(validRegistration.copy(
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Nil,
+          payeContact = None,
+          sicCodes = Nil,
+          employmentInfo = None
+        )))
 
         await(service.submitToDes("regID")) mustBe "BRPY00000000001"
       }
@@ -535,6 +543,14 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful(Success))
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.submitted))
+        when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.eq("regID"))).thenReturn(Future.successful(validRegistration.copy(
+          completionCapacity = None,
+          companyDetails = None,
+          directors = Nil,
+          payeContact = None,
+          sicCodes = Nil,
+          employmentInfo = None
+        )))
 
         await(service.submitToDes("regID")) mustBe "BRPY00000000001"
       }
