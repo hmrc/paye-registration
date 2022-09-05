@@ -281,7 +281,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
     "return the message" when {
       "the exception is thrown" in {
         val result = intercept[RejectedIncorporationException](throw new RejectedIncorporationException("testMsg"))
-        result.getMessage shouldBe "testMsg"
+        result.getMessage mustBe "testMsg"
       }
     }
   }
@@ -296,7 +296,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful(Credentials("cred-123", "someProviderType")))
 
         val result = await(service.payeReg2DESSubmission(validRegistration, None, None))
-        result shouldBe validPartialDESSubmissionModel
+        result mustBe validPartialDESSubmissionModel
       }
 
       "a valid paye reg doc with a crn is passed to it" in new Setup {
@@ -307,7 +307,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful(Credentials("cred-123", "someProviderType")))
 
         val result = await(service.payeReg2DESSubmission(validRegistration, Some("OC123456"), None))
-        result shouldBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
+        result mustBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
       }
     }
 
@@ -335,7 +335,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some("tstAckRef")))
 
-      await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "tstAckRef"
+      await(service.assertOrGenerateAcknowledgementReference("regID")) mustBe "tstAckRef"
     }
 
     "generate an ack ref if there isn't one in the registration" in new Setup {
@@ -346,7 +346,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockRegistrationRepository.saveAcknowledgementReference(ArgumentMatchers.anyString(), ArgumentMatchers.contains("1234")))
         .thenReturn(Future.successful("BRPY00000001234"))
 
-      await(service.assertOrGenerateAcknowledgementReference("regID")) shouldBe "BRPY00000001234"
+      await(service.assertOrGenerateAcknowledgementReference("regID")) mustBe "BRPY00000001234"
     }
   }
 
@@ -406,31 +406,31 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
     "return the correct DES Employing People model" when {
       "employees is willEmployThisYear" in new Setup {
-        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.willEmployThisYear), Some(validPAYEContact)) shouldBe validDESEmployingPeople
+        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.willEmployThisYear), Some(validPAYEContact)) mustBe validDESEmployingPeople
       }
 
       "employees is willEmployNextYear" in new Setup {
-        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.willEmployNextYear), Some(validPAYEContact)) shouldBe validDESEmployingPeople
+        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.willEmployNextYear), Some(validPAYEContact)) mustBe validDESEmployingPeople
       }
 
       "employees is notEmploying" in new Setup {
-        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.notEmploying), Some(validPAYEContact)) shouldBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
+        service.buildDESEmployingPeople("regId", validEmploymentInfo.copy(employees = Employing.notEmploying), Some(validPAYEContact)) mustBe validDESEmployingPeople.copy(numberOfEmployeesExpectedThisYear = "0")
       }
     }
   }
 
   "Building DES Completion Capacity" should {
     "succeed for agent" in new Setup {
-      DESCompletionCapacity.buildDESCompletionCapacity(Some("agent")) shouldBe DESCompletionCapacity("Agent", None)
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("agent")) mustBe DESCompletionCapacity("Agent", None)
     }
     "succeed for secretary" in new Setup {
-      DESCompletionCapacity.buildDESCompletionCapacity(Some("company secretary")) shouldBe DESCompletionCapacity("Company secretary", None)
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("company secretary")) mustBe DESCompletionCapacity("Company secretary", None)
     }
     "succeed for 'DiReCTOR  '" in new Setup {
-      DESCompletionCapacity.buildDESCompletionCapacity(Some("DiReCTOR  ")) shouldBe DESCompletionCapacity("Director", None)
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("DiReCTOR  ")) mustBe DESCompletionCapacity("Director", None)
     }
     "succeed for 'high priestess'" in new Setup {
-      DESCompletionCapacity.buildDESCompletionCapacity(Some("high priestess")) shouldBe DESCompletionCapacity("Other", Some("high priestess"))
+      DESCompletionCapacity.buildDESCompletionCapacity(Some("high priestess")) mustBe DESCompletionCapacity("Other", Some("high priestess"))
     }
     "throw the correct exception for Completion Capacity when missing" in new Setup {
       intercept[CompletionCapacityNotDefinedException](DESCompletionCapacity.buildDESCompletionCapacity(None))
@@ -439,7 +439,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Building DES Nature Of Business" should {
     "succeed for agent" in new Setup {
-      service.buildNatureOfBusiness(Seq(SICCode(None, Some("consulting")))) shouldBe "consulting"
+      service.buildNatureOfBusiness(Seq(SICCode(None, Some("consulting")))) mustBe "consulting"
     }
     "throw the correct exception for SIC Code when missing" in new Setup {
       intercept[SICCodeNotDefinedException](service.buildNatureOfBusiness(Seq.empty))
@@ -454,7 +454,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
     }
     "build a Top Up" in new Setup {
-      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) shouldBe validTopUpDESSubmissionModel
+      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) mustBe validTopUpDESSubmissionModel
     }
   }
 
@@ -498,7 +498,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.held))
 
-        await(service.submitToDes("regID")) shouldBe "BRPY00000000001"
+        await(service.submitToDes("regID")) mustBe "BRPY00000000001"
       }
 
       "the incorporation is accepted" in new Setup {
@@ -536,7 +536,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.submitted))
 
-        await(service.submitToDes("regID")) shouldBe "BRPY00000000001"
+        await(service.submitToDes("regID")) mustBe "BRPY00000000001"
       }
     }
   }
@@ -577,7 +577,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
-        await(service.submitTopUpToDES("regID", incorpStatusUpdate)) shouldBe PAYEStatus.submitted
+        await(service.submitTopUpToDES("regID", incorpStatusUpdate)) mustBe PAYEStatus.submitted
       }
 
       "incorporation is rejected" in new Setup {
@@ -609,7 +609,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
         when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(true))
 
-        await(service.submitTopUpToDES("regID", incorpStatusUpdate.copy(status = IncorporationStatus.rejected))) shouldBe PAYEStatus.cancelled
+        await(service.submitTopUpToDES("regID", incorpStatusUpdate.copy(status = IncorporationStatus.rejected))) mustBe PAYEStatus.cancelled
       }
     }
   }
@@ -619,7 +619,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockAuthConnector.authorise(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.failed(new Exception("Can't get providerId from credentials")))
 
-      a[service.FailedToGetCredId] shouldBe thrownBy(await(service.retrieveCredId))
+      a[service.FailedToGetCredId] mustBe thrownBy(await(service.retrieveCredId))
     }
   }
 
@@ -628,7 +628,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
       when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
-      a[service.FailedToGetLanguage] shouldBe thrownBy(await(service.retrieveLanguage("testRegId")))
+      a[service.FailedToGetLanguage] mustBe thrownBy(await(service.retrieveLanguage("testRegId")))
     }
   }
 
@@ -657,7 +657,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful(okResponse))
 
         val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
-        result shouldBe Some("testCtUtr")
+        result mustBe Some("testCtUtr")
       }
     }
 
@@ -679,7 +679,7 @@ class SubmissionServiceSpec extends PAYERegSpec {
           .thenReturn(Future.successful(okResponse))
 
         val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
-        result shouldBe None
+        result mustBe None
       }
     }
   }

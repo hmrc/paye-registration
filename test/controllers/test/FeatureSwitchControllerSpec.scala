@@ -55,8 +55,8 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
     "enable a ServiceFeature and return an OK" when {
       "desStubFeature and true are passed in the url" in new Setup {
         val result = controller.switch("desServiceFeature", "true")(FakeRequest())
-        status(result) shouldBe OK
-        contentAsString(result) shouldBe testFeatureSwitch.toString
+        status(result) mustBe OK
+        contentAsString(result) mustBe testFeatureSwitch.toString
       }
 
       "removeStaleDocumentsFeature and true is passed in the url" in new Setup {
@@ -65,8 +65,8 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
 
         val result = controller.switch("removeStaleDocumentsFeature", "true")(FakeRequest())
 
-        status(result) shouldBe OK
-        contentAsString(result) shouldBe testRemoveStaleDocFeatureSwitchTrue.toString
+        status(result) mustBe OK
+        contentAsString(result) mustBe testRemoveStaleDocFeatureSwitchTrue.toString
       }
 
       "removeStaleDocumentsFeature and false is passed in the url" in new Setup {
@@ -75,8 +75,8 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
 
         val result = controller.switch("removeStaleDocumentsFeature", "false")(FakeRequest())
 
-        status(result) shouldBe OK
-        contentAsString(result) shouldBe testRemoveStaleDocFeatureSwitchFalse.toString
+        status(result) mustBe OK
+        contentAsString(result) mustBe testRemoveStaleDocFeatureSwitchFalse.toString
       }
 
       "graphiteMetrics and true is passed in the url" in new Setup {
@@ -85,8 +85,8 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
 
         val result = controller.switch("graphiteMetrics", "true")(FakeRequest())
 
-        status(result) shouldBe OK
-        contentAsString(result) shouldBe testGraphiteMetricsFeatureSwitchTrue.toString
+        status(result) mustBe OK
+        contentAsString(result) mustBe testGraphiteMetricsFeatureSwitchTrue.toString
       }
 
       "graphiteMetrics and false is passed in the url" in new Setup {
@@ -95,16 +95,16 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
 
         val result = controller.switch("graphiteMetrics", "false")(FakeRequest())
 
-        status(result) shouldBe OK
-        contentAsString(result) shouldBe testGraphiteMetricsFeatureSwitchFalse.toString
+        status(result) mustBe OK
+        contentAsString(result) mustBe testGraphiteMetricsFeatureSwitchFalse.toString
       }
     }
 
     "disable the desServiceFeature and return an OK" when {
       "desStubFeature and some other featureState is passed into the URL" in new Setup {
         val result = controller.switch("desServiceFeature", "someOtherState")(FakeRequest())
-        status(result) shouldBe OK
-        contentAsString(result) shouldBe testDisabledSwitch.toString
+        status(result) mustBe OK
+        contentAsString(result) mustBe testDisabledSwitch.toString
       }
     }
 
@@ -112,7 +112,7 @@ class FeatureSwitchControllerSpec extends PAYERegSpec {
       "an unknown feature is trying to be enabled" in new Setup {
 
         val result = controller.switch("invalidName", "invalidState")(FakeRequest())
-        status(result) shouldBe BAD_REQUEST
+        status(result) mustBe BAD_REQUEST
       }
     }
   }

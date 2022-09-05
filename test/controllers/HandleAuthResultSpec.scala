@@ -34,8 +34,8 @@ class HandleAuthResultSpec extends PAYERegSpec {
           Future.successful(Ok("All good"))
         }
 
-        status(response) shouldBe OK
-        contentAsString(response) shouldBe "All good"
+        status(response) mustBe OK
+        contentAsString(response) mustBe "All good"
       }
 
       "AuthorisationResult is NotLoggedInOrAuthorised" in {
@@ -43,7 +43,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
           Future.successful(Ok("All good"))
         }
 
-        status(response) shouldBe FORBIDDEN
+        status(response) mustBe FORBIDDEN
       }
 
       "AuthorisationResult is NotAuthorised" in {
@@ -51,7 +51,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
           Future.successful(Ok("All good"))
         }
 
-        status(response) shouldBe FORBIDDEN
+        status(response) mustBe FORBIDDEN
       }
 
       "AuthorisationResult is AuthResourceNotFound" in {
@@ -59,7 +59,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
           Future.successful(Ok("All good"))
         }
 
-        status(response) shouldBe NOT_FOUND
+        status(response) mustBe NOT_FOUND
       }
     }
   }

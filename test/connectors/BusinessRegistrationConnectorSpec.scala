@@ -53,7 +53,7 @@ class BusinessRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
     "return a a CurrentProfile response if one is found in business registration micro-service" in new Setup {
       mockHttpGet[BusinessProfile]("testUrl", validBusinessRegistrationResponse)
 
-      await(Connector.retrieveCurrentProfile("12345")) shouldBe validBusinessRegistrationResponse
+      await(Connector.retrieveCurrentProfile("12345")) mustBe validBusinessRegistrationResponse
     }
 
     "return a Not Found response when a CurrentProfile record can not be found" in new Setup {

@@ -41,7 +41,7 @@ class WorkingHoursGuardSpec extends PAYERegSpec {
           override private[utils] val localDayNow = day
           override private[utils] val localTimeNow = LocalTime.of(hour, minute)
 
-          isInWorkingDaysAndHours shouldBe true
+          isInWorkingDaysAndHours mustBe true
         }
       }
     }
@@ -59,7 +59,7 @@ class WorkingHoursGuardSpec extends PAYERegSpec {
           override private[utils] val localDayNow = day
           override private[utils] val localTimeNow = LocalTime.of(hour, minute)
 
-          isInWorkingDaysAndHours shouldBe false
+          isInWorkingDaysAndHours mustBe false
         }
       }
     }

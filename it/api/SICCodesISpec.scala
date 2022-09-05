@@ -26,8 +26,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -47,7 +47,7 @@ class SICCodesISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration$path").withFollowRedirects(false)
@@ -56,12 +56,12 @@ class SICCodesISpec extends IntegrationSpecBase {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
-    def insertToDb(data: PAYERegistration) = await(repository.insert(data))
+    def insertToDb(data: PAYERegistration) = await(repository.updateRegistration(data))
 
-    await(repository.drop)
-    await(repository.ensureIndexes)
+
+    await(repository.dropCollection)
   }
 
   "PAYE Registration API - SIC Codes" should {
@@ -104,8 +104,8 @@ class SICCodesISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/sic-codes").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(validSICCodes)
+      response.status mustBe 200
+      response.json mustBe Json.toJson(validSICCodes)
     }
 
     "Return a 200 when the user upserts sic codes" in new Setup {
@@ -140,16 +140,16 @@ class SICCodesISpec extends IntegrationSpecBase {
       )
 
       val getResponse1 = client(s"/${regID}/sic-codes").get.futureValue
-      getResponse1.status shouldBe 404
+      getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/sic-codes")
         .patch[JsValue](Json.toJson(validSICCodes))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/sic-codes").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validSICCodes)
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(validSICCodes)
     }
 
     "Return a 403 when the user is not authorised to get sic codes" in new Setup {
@@ -184,7 +184,7 @@ class SICCodesISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/sic-codes").get.futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 403 when the user is not authorised to upsert sic codes" in new Setup {
@@ -221,14 +221,14 @@ class SICCodesISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/sic-codes")
         .patch(Json.toJson(validSICCodes))
         .futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 404 if the registration is missing" in new Setup {
       setupSimpleAuthMocks()
 
       val response = client(s"/12345").get.futureValue
-      response.status shouldBe 404
+      response.status mustBe 404
     }
   }
 }

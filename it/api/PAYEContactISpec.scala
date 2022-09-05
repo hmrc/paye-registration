@@ -27,8 +27,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -49,7 +49,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
@@ -58,15 +58,14 @@ class PAYEContactISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def insertToDb(paye: PAYERegistration) = {
-      await(repository.insert(paye))
-      await(repository.count) shouldBe 1
+      await(repository.updateRegistration(paye))
+      await(repository.collection.countDocuments().toFuture()) mustBe 1
     }
 
-    await(repository.drop)
-    await(repository.ensureIndexes)
+    await(repository.dropCollection)
   }
 
   "PAYE Registration API - PAYE Contact" should {
@@ -121,8 +120,8 @@ class PAYEContactISpec extends IntegrationSpecBase {
       ))
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
     }
 
     "Return a 200 when the user gets paye contact with old format" in new Setup {
@@ -157,8 +156,8 @@ class PAYEContactISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(oldFormatPAYEContact)(PAYEContact.format(APIValidation))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(oldFormatPAYEContact)(PAYEContact.format(APIValidation))
     }
 
     "Return a 200 when the user upserts paye contact" in new Setup {
@@ -193,16 +192,16 @@ class PAYEContactISpec extends IntegrationSpecBase {
       )
 
       val getResponse1 = client(s"/${regID}/contact-correspond-paye").get.futureValue
-      getResponse1.status shouldBe 404
+      getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/contact-correspond-paye")
         .patch[JsValue](Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/contact-correspond-paye").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
     }
 
     "Return a 403 when the user is not authorised to get paye contact" in new Setup {
@@ -237,7 +236,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       )
 
       val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 403 when the user is not authorised to upsert paye contact" in new Setup {
@@ -274,7 +273,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/contact-correspond-paye")
         .patch(Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation)))
         .futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
   }
 }

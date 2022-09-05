@@ -62,7 +62,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
         DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("5432109999"))
       )
 
-      Json.fromJson[CompanyDetails](json)(cdFormatter) shouldBe JsSuccess(tstCompanyDetails)
+      Json.fromJson[CompanyDetails](json)(cdFormatter) mustBe JsSuccess(tstCompanyDetails)
     }
 
     "complete successfully from Json with no CRN" in {
@@ -100,7 +100,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
         DigitalContactDetails(None, Some("0123459999"), None)
       )
 
-      Json.fromJson[CompanyDetails](json)(cdFormatter) shouldBe JsSuccess(tstCompanyDetails)
+      Json.fromJson[CompanyDetails](json)(cdFormatter) mustBe JsSuccess(tstCompanyDetails)
     }
 
     "fail on company name" when {
@@ -207,7 +207,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", Some("Testford & Testershire"), Some("Testshire"), None, Some("UK"))
 
-      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) mustBe JsSuccess(tstAddress)
     }
 
     "complete successfully from Json with no address line4" in {
@@ -223,7 +223,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St Test & Walk", "Testley\\Testerley", Some("Testford"), None, Some("TE1 1ST"), None)
 
-      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) mustBe JsSuccess(tstAddress)
     }
     "complete successfully from Json with no country" in {
       val json = Json.parse(
@@ -237,7 +237,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", None, None, Some("TE1 1ST"), None)
 
-      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) mustBe JsSuccess(tstAddress)
     }
     "complete successfully from Json with no postcode" in {
       val json = Json.parse(
@@ -251,7 +251,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
 
       val tstAddress = Address("14 St. Test-Walk", "Testley/Testerley", None, None, None, Some("UK"))
 
-      Json.fromJson[Address](json)(Address.reads(APIValidation)) shouldBe JsSuccess(tstAddress)
+      Json.fromJson[Address](json)(Address.reads(APIValidation)) mustBe JsSuccess(tstAddress)
     }
 
     "fail from Json with invalid address" in {
@@ -472,7 +472,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
       """.stripMargin
       )
 
-      Json.toJson[Address](addr)(Address.writes(DesValidation)) shouldBe json
+      Json.toJson[Address](addr)(Address.writes(DesValidation)) mustBe json
     }
 
     "include audit ref by default" in {
@@ -488,7 +488,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
         """.stripMargin
       )
 
-      Json.toJson[Address](addr) shouldBe json
+      Json.toJson[Address](addr) mustBe json
     }
   }
 

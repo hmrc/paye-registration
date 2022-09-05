@@ -17,40 +17,34 @@
 package repositories
 
 import models.Sequence
-import play.api.libs.json.JsValue
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.model.FindOneAndUpdateOptions
+import org.mongodb.scala.model.ReturnDocument.AFTER
+import org.mongodb.scala.model.Updates.inc
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NoStackTrace
 
 @Singleton
-class SequenceMongoRepository @Inject()(mongo: ReactiveMongoComponent) extends ReactiveRepository[Sequence, BSONObjectID](
-  "sequence",
-  mongo.mongoConnector.db,
-  Sequence.formats,
-  ReactiveMongoFormats.objectIdFormats
-) with ReactiveMongoFormats {
+class SequenceMongoRepository @Inject()(mongo: MongoComponent)(implicit ec: ExecutionContext) extends PlayMongoRepository[Sequence](
+  mongoComponent = mongo,
+  collectionName = "sequence",
+  domainFormat = Sequence.formats,
+  indexes = Seq()
+) {
 
   def getNext(sequenceID: String)(implicit ec: ExecutionContext): Future[Int] = {
-    val selector = BSONDocument("_id" -> sequenceID)
-    val modifier = BSONDocument("$inc" -> BSONDocument("seq" -> 1))
+    val selector = equal("_id", sequenceID)
+    val modifier = inc("seq", 1)
 
-    collection.findAndUpdate(selector, modifier, fetchNewObject = true, upsert = true) map {
-      _.result[JsValue] match {
-        // $COVERAGE-OFF$
-        case None => {
-          logger.error("[SequenceRepository] - [getNext] returned a None when Upserting")
-          class InvalidSequence extends NoStackTrace
-          throw new InvalidSequence
-        }
-        // $COVERAGE-ON$
-        case Some(res) => (res \ "seq").as[Int]
-      }
-    }
+    collection.findOneAndUpdate(
+      selector,
+      modifier,
+      FindOneAndUpdateOptions()
+        .upsert(true)
+        .returnDocument(AFTER)
+    ).toFuture().map(_.seq)
   }
 }

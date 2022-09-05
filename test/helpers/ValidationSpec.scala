@@ -41,7 +41,7 @@ class ValidationSpec extends PAYERegSpec {
         """.stripMargin
       )
 
-      Json.toJson(testModel)(testModelWriter) shouldBe testJson
+      Json.toJson(testModel)(testModelWriter) mustBe testJson
     }
 
     "normalise téśtÇõmpâñÿÑàmę in testCompanyName and remove forbidden punctuation" in {
@@ -56,7 +56,7 @@ class ValidationSpec extends PAYERegSpec {
         """.stripMargin
       )
 
-      Json.toJson(testModel)(testModelWriter) shouldBe testJson
+      Json.toJson(testModel)(testModelWriter) mustBe testJson
     }
   }
 }

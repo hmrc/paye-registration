@@ -88,14 +88,14 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
       _ <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
       _ <- auditService.auditDESTopUp(regId, desSubmission)
-    } yield {
-      if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
+      _ <- if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
         registrationService.deletePAYERegistration(regId, PAYEStatus.held)
-        PAYEStatus.cancelled
       } else {
         updatePAYERegistrationDocument(regId, PAYEStatus.submitted)
-        PAYEStatus.submitted
       }
+    } yield incorpStatusUpdate.status match {
+      case IncorporationStatus.rejected => PAYEStatus.cancelled
+      case _ => PAYEStatus.submitted
     }
   }
 

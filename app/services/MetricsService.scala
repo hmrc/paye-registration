@@ -20,28 +20,24 @@ import com.codahale.metrics.{Gauge, Timer}
 import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
 import config.AppConfig
 import jobs._
-import org.joda.time.Duration
 import play.api.Logging
 import repositories.RegistrationMongoRepository
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 import javax.inject.Inject
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
-                               lockRepository: LockRepositoryProvider,
+                               lockRepository: MongoLockRepository,
                                appConfig: AppConfig,
                                val metrics: Metrics) extends ScheduledService[Either[Map[String, Int], LockResponse]] with Logging {
 
   lazy val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
-  lazy val lock: LockKeeper = new LockKeeper() {
-    override val lockId: String = "remove-stale-documents-job"
-    override val forceLockReleaseAfter: Duration = Duration.standardSeconds(appConfig.metricsJobLockTimeout)
-    override lazy val repo: LockRepository = lockRepository.repo
-  }
+  lazy val lock: LockService = LockService(lockRepository, "remove-stale-documents-job", appConfig.metricsJobLockTimeout.seconds)
 
   def invoke(implicit ec: ExecutionContext): Future[Either[Map[String, Int], LockResponse]] = {
-    lock.tryLock(updateDocumentMetrics).map {
+    lock.withLock(updateDocumentMetrics).map {
       case Some(res) =>
         logger.info("MetricsService acquired lock and returned results")
         Left(res)

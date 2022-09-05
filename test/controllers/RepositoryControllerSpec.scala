@@ -57,7 +57,7 @@ class RepositoryControllerSpec extends PAYERegSpec {
 
       val response = controller.deleteRegistrationFromDashboard(regId)(FakeRequest())
 
-      status(response) shouldBe Status.INTERNAL_SERVER_ERROR
+      status(response) mustBe Status.INTERNAL_SERVER_ERROR
     }
     "return an Ok response if an invalid or draft document has been deleted" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
@@ -67,7 +67,7 @@ class RepositoryControllerSpec extends PAYERegSpec {
 
       val response = controller.deleteRegistrationFromDashboard(regId)(FakeRequest())
 
-      status(response) shouldBe Status.OK
+      status(response) mustBe Status.OK
     }
     "return a PreconditionFailed response of the document is not invalid or draft status" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
@@ -77,7 +77,7 @@ class RepositoryControllerSpec extends PAYERegSpec {
 
       val response = controller.deleteRegistrationFromDashboard(regId)(FakeRequest())
 
-      status(response) shouldBe Status.PRECONDITION_FAILED
+      status(response) mustBe Status.PRECONDITION_FAILED
     }
   }
 }

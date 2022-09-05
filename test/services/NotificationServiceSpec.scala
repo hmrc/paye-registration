@@ -37,39 +37,39 @@ class NotificationServiceSpec extends PAYERegSpec with RegistrationFixture {
     "return submitted" when {
       "the status is 04" in new Setup {
         val result = testService.getNewApplicationStatus("04")
-        result shouldBe PAYEStatus.acknowledged
+        result mustBe PAYEStatus.acknowledged
       }
 
       "the status is 05" in new Setup {
         val result = testService.getNewApplicationStatus("05")
-        result shouldBe PAYEStatus.acknowledged
+        result mustBe PAYEStatus.acknowledged
       }
     }
 
     "return rejected" when {
       "the status is 06" in new Setup {
         val result = testService.getNewApplicationStatus("06")
-        result shouldBe PAYEStatus.rejected
+        result mustBe PAYEStatus.rejected
       }
 
       "the status is 07" in new Setup {
         val result = testService.getNewApplicationStatus("07")
-        result shouldBe PAYEStatus.rejected
+        result mustBe PAYEStatus.rejected
       }
 
       "the status is 08" in new Setup {
         val result = testService.getNewApplicationStatus("08")
-        result shouldBe PAYEStatus.rejected
+        result mustBe PAYEStatus.rejected
       }
 
       "the status is 09" in new Setup {
         val result = testService.getNewApplicationStatus("09")
-        result shouldBe PAYEStatus.rejected
+        result mustBe PAYEStatus.rejected
       }
 
       "the status is 10" in new Setup {
         val result = testService.getNewApplicationStatus("10")
-        result shouldBe PAYEStatus.rejected
+        result mustBe PAYEStatus.rejected
       }
     }
   }
@@ -87,7 +87,7 @@ class NotificationServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(PAYEStatus.acknowledged))
 
       val result = await(testService.processNotification(testAckRef, testNotification))
-      result shouldBe testNotification
+      result mustBe testNotification
     }
   }
 }

@@ -54,7 +54,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
         companyPension = Some(true)
       )
 
-      json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) shouldBe expectedModel
+      json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) mustBe expectedModel
     }
 
     "be unsuccessful with a wrong enum value" in {
@@ -68,7 +68,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
            | }
         """.stripMargin).as[JsObject]
 
-      a[JsResultException] shouldBe thrownBy(json.as[EmploymentInfo])
+      a[JsResultException] mustBe thrownBy(json.as[EmploymentInfo])
     }
 
     s"be unsuccessful when employees is set to ${Employing.alreadyEmploying} and missing incorporation date" in {
@@ -82,7 +82,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
            | }
         """.stripMargin).as[JsObject]
 
-      a[JsResultException] shouldBe thrownBy(json.as[EmploymentInfo])
+      a[JsResultException] mustBe thrownBy(json.as[EmploymentInfo])
     }
   }
 
@@ -110,7 +110,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) shouldBe expectedModel
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) mustBe expectedModel
       }
 
       "company is incorporated less than 2 years ago, employees is alreadyEmploying and firstPaymentDate is exactly the incorporation date" in {
@@ -135,7 +135,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) shouldBe expectedModel
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) mustBe expectedModel
       }
 
       "employees is willEmployThisYear and firstPaymentDate is exactly today" in {
@@ -158,7 +158,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) shouldBe expectedModel
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) mustBe expectedModel
       }
 
       "employees is notEmploying and firstPaymentDate is exactly today" in {
@@ -181,7 +181,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) shouldBe expectedModel
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) mustBe expectedModel
       }
 
       "employees is willEmployNextYear and firstPaymentDate is exactly 06-04-currentYear" in {
@@ -204,7 +204,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) shouldBe expectedModel
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) mustBe expectedModel
       }
       "employees is not alreadyEmploying and companyPension is not defined" in {
         System.setProperty("feature.system-date", "2017-12-25T00:00:00Z")
@@ -226,7 +226,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) shouldBe expectedModel
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) mustBe expectedModel
       }
     }
 
@@ -245,7 +245,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))).isError mustBe true
       }
 
       "company is incorporated less than 2 years ago, employees is alreadyEmploying and firstPaymentDate is before incorporation date" in {
@@ -260,7 +260,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))).isError mustBe true
       }
 
       "employees is alreadyEmploying and firstPaymentDate is after today" in {
@@ -276,7 +276,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is willEmployThisYear and firstPaymentDate is before today" in {
@@ -292,7 +292,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is willEmployThisYear and firstPaymentDate is after today" in {
@@ -308,7 +308,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is notEmploying and firstPaymentDate is before today" in {
@@ -324,7 +324,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is notEmploying and firstPaymentDate is after today" in {
@@ -340,7 +340,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is willEmployNextYear and firstPaymentDate is not exactly 06-04-currentYear (before)" in {
@@ -356,7 +356,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is willEmployNextYear and firstPaymentDate is not exactly 06-04-currentYear (after)" in {
@@ -372,7 +372,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              | }
           """.stripMargin).as[JsObject]
 
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
       "construction is false and subcontractors is true" in {
         System.setProperty("feature.system-date", "2018-12-25T00:00:00Z")
@@ -386,7 +386,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              |   "companyPension": true
              | }
           """.stripMargin).as[JsObject]
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
       "employees is alreadyEmploying and companyPension is not defined" in {
         System.setProperty("feature.system-date", "2018-12-25T00:00:00Z")
@@ -399,7 +399,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              |   "subcontractors": true
              | }
           """.stripMargin).as[JsObject]
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
 
       "employees is not alreadyEmploying and companyPension is defined" in {
@@ -414,7 +414,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
              |   "companyPension": true
              | }
           """.stripMargin).as[JsObject]
-        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError shouldBe true
+        json.validate[EmploymentInfo](EmploymentInfo.format(APIValidation)).isError mustBe true
       }
     }
   }
@@ -436,7 +436,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
         companyPension = None
       )
 
-      Json.fromJson(json)(EmploymentInfo.mongoFormat).get shouldBe expectedModel
+      Json.fromJson(json)(EmploymentInfo.mongoFormat).get mustBe expectedModel
     }
   }
   "writing to json with mongovalidation" should {
@@ -458,7 +458,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
            | }
         """.stripMargin).as[JsObject]
 
-      Json.toJson[EmploymentInfo](model)(EmploymentInfo.format(MongoValidation)) shouldBe expectedJson
+      Json.toJson[EmploymentInfo](model)(EmploymentInfo.format(MongoValidation)) mustBe expectedJson
     }
     "be successful with invalid data and no companyPension" in {
       val model = EmploymentInfo(
@@ -476,7 +476,7 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
            |   "subcontractors": true
            | }
         """.stripMargin).as[JsObject]
-      Json.toJson[EmploymentInfo](model)(EmploymentInfo.format(MongoValidation)) shouldBe expectedJson
+      Json.toJson[EmploymentInfo](model)(EmploymentInfo.format(MongoValidation)) mustBe expectedJson
     }
   }
 }

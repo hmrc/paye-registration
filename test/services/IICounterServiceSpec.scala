@@ -47,7 +47,7 @@ class IICounterServiceSpec extends PAYERegSpec {
         .thenReturn(Future.successful(1))
 
         val result = await(service.updateIncorpCount(regId))
-        result shouldBe false
+        result mustBe false
     }
 
 
@@ -56,7 +56,7 @@ class IICounterServiceSpec extends PAYERegSpec {
         .thenReturn(Future.successful(4))
 
       val result = await(service.updateIncorpCount(regId))
-      result shouldBe true
+      result mustBe true
     }
   }
 

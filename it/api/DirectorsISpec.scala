@@ -27,8 +27,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import repositories.RegistrationMongoRepository
+import uk.gov.hmrc.mongo.MongoComponent
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,7 +50,7 @@ class DirectorsISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build
 
-  lazy val reactiveMongoComponent = app.injector.instanceOf[ReactiveMongoComponent]
+  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
@@ -59,12 +59,12 @@ class DirectorsISpec extends IntegrationSpecBase {
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, reactiveMongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 
-    await(repository.drop)
-    await(repository.ensureIndexes)
+
+    await(repository.dropCollection)
   }
 
 
@@ -126,8 +126,8 @@ class DirectorsISpec extends IntegrationSpecBase {
 
 
       val response = client(s"/${regID}/directors").get.futureValue
-      response.status shouldBe 200
-      response.json shouldBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
+      response.status mustBe 200
+      response.json mustBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
     }
 
     "Return a 200 when the user upserts directors" in new Setup {
@@ -162,16 +162,16 @@ class DirectorsISpec extends IntegrationSpecBase {
       )
 
       val getResponse1 = client(s"/${regID}/directors").get.futureValue
-      getResponse1.status shouldBe 404
+      getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/directors")
         .patch[JsValue](Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation)))
         .futureValue
-      patchResponse.status shouldBe 200
+      patchResponse.status mustBe 200
 
       val getResponse2 = client(s"/${regID}/directors").get.futureValue
-      getResponse2.status shouldBe 200
-      getResponse2.json shouldBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
+      getResponse2.status mustBe 200
+      getResponse2.json mustBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
     }
 
     "Return a 403 when the user is not authorised to get directors" in new Setup {
@@ -207,7 +207,7 @@ class DirectorsISpec extends IntegrationSpecBase {
 
 
       val response = client(s"/${regID}/directors").get.futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 403 when the user is not authorised to upsert directors" in new Setup {
@@ -244,14 +244,14 @@ class DirectorsISpec extends IntegrationSpecBase {
       val response = client(s"/${regID}/directors")
         .patch(Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation)))
         .futureValue
-      response.status shouldBe 403
+      response.status mustBe 403
     }
 
     "Return a 404 if the registration is missing" in new Setup {
       setupSimpleAuthMocks()
 
       val response = client(s"/12345").get.futureValue
-      response.status shouldBe 404
+      response.status mustBe 404
     }
   }
 }

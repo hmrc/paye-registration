@@ -60,7 +60,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(AuditResult.Success))
 
-      await(service.auditCompletionCapacity(regId, previousCC, newCC)) shouldBe AuditResult.Success
+      await(service.auditCompletionCapacity(regId, previousCC, newCC)) mustBe AuditResult.Success
     }
   }
 
@@ -69,7 +69,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(companyDetails = Some(validCompanyDetailsWithAuditRef)))))
 
-      await(service.fetchAddressAuditRefs("regId")) shouldBe Map(AddressTypes.roAdddress -> "roAuditRef")
+      await(service.fetchAddressAuditRefs("regId")) mustBe Map(AddressTypes.roAdddress -> "roAuditRef")
     }
     "throw a MissingRegDocument exception when there is no Registration object returned from mongo" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.any()))

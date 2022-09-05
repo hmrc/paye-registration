@@ -44,7 +44,7 @@ class AmendCompletionCapacityEventDetailSpec extends PAYERegSpec {
         regId,
         DESCompletionCapacity.buildDESCompletionCapacity(Some("oldCC")),
         DESCompletionCapacity.buildDESCompletionCapacity(Some("director")))
-      Json.toJson(testModel) shouldBe expectedDetail
+      Json.toJson(testModel) mustBe expectedDetail
     }
 
     "have the correct result when the new completion capacity is secretary" in {
@@ -64,7 +64,7 @@ class AmendCompletionCapacityEventDetailSpec extends PAYERegSpec {
         regId,
         DESCompletionCapacity.buildDESCompletionCapacity(Some("director")),
         DESCompletionCapacity.buildDESCompletionCapacity(Some("company secretary")))
-      Json.toJson(testModel) shouldBe expectedDetail
+      Json.toJson(testModel) mustBe expectedDetail
     }
 
     "have the correct result when the new completion capacity is agent" in {
@@ -84,7 +84,7 @@ class AmendCompletionCapacityEventDetailSpec extends PAYERegSpec {
         regId,
         DESCompletionCapacity.buildDESCompletionCapacity(Some("director")),
         DESCompletionCapacity.buildDESCompletionCapacity(Some("agent")))
-      Json.toJson(testModel) shouldBe expectedDetail
+      Json.toJson(testModel) mustBe expectedDetail
     }
 
     "have the correct result when the new completion capacity is other" in {
@@ -105,7 +105,7 @@ class AmendCompletionCapacityEventDetailSpec extends PAYERegSpec {
         regId,
         DESCompletionCapacity.buildDESCompletionCapacity(Some("director")),
         DESCompletionCapacity.buildDESCompletionCapacity(Some("newCC")))
-      Json.toJson(testModel) shouldBe expectedDetail
+      Json.toJson(testModel) mustBe expectedDetail
     }
 
     "have the correct result when the new completion capacity is other and previous value was other" in {
@@ -127,7 +127,7 @@ class AmendCompletionCapacityEventDetailSpec extends PAYERegSpec {
         regId,
         DESCompletionCapacity.buildDESCompletionCapacity(Some("oldCC")),
         DESCompletionCapacity.buildDESCompletionCapacity(Some("newCC")))
-      Json.toJson(testModel) shouldBe expectedDetail
+      Json.toJson(testModel) mustBe expectedDetail
     }
   }
 }

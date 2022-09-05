@@ -26,6 +26,6 @@ object IICounter{
 
   implicit val format: OFormat[IICounter] = (
     (__ \ "_id").format[String] and
-      (__ \ "counter").format[Int]
+      (__ \ "count").format[Int]
   )(IICounter.apply,unlift(IICounter.unapply))
 }

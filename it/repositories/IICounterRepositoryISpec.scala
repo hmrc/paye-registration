@@ -27,15 +27,15 @@ class IICounterRepositoryISpec extends MongoBaseSpec{
   private val newCompanyReg = "123-456-1123"
 
   class Setup {
-    val repository = new IICounterMongoRepository(reactiveMongoComponent)
-    await(repository.drop)
+    val repository = new IICounterMongoRepository(mongoComponent)
+
   }
 
   "calling getNext" should{
     "increment and return amount of times II called" in new Setup{
       for(i <- 1 to 3) {
         val result = await(repository.getNext(newCompanyReg))
-        result shouldBe i
+        result mustBe i
       }
     }
   }
