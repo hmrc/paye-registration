@@ -283,23 +283,8 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
   }
 
 
-  def retrieveEmploymentInfo(registrationID: String): Future[Option[EmploymentInfo]] = {
-
-    def fetchEmploymentInfo: Future[Option[EmploymentInfo]] = {
-      val mongoTimer = mongoResponseTimer.time()
-      collection.find(registrationIDSelector(registrationID)).headOption().map(_.flatMap(_.employmentInfo)) recover {
-        case e: Throwable =>
-          mongoTimer.stop()
-          logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID - data block: EmploymentInfo, Error: retrieveRegistration threw an exception: ${e.getMessage}")
-          throw new RetrieveFailed(registrationID)
-      }
-    }
-
-    for {
-      empInfo <- fetchEmploymentInfo
-      _ <- unsetElement(registrationID, "employmentInfo")
-    } yield empInfo
-  }
+  def retrieveEmploymentInfo(registrationID: String): Future[Option[EmploymentInfo]] =
+    retrieveRegistration(registrationID).map(_.flatMap(_.employmentInfo))
 
   def upsertEmploymentInfo(registrationID: String, empInfo: EmploymentInfo): Future[EmploymentInfo] = {
     val mongoTimer = mongoResponseTimer.time()
