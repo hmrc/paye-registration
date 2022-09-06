@@ -853,7 +853,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
       val result = controller.getRegistrationId("txId")(FakeRequest())
       status(result) mustBe OK
-      contentAsString(result) mustBe "testRegId"
+      contentAsJson(result) mustBe JsString("testRegId")
     }
 
     "return a NotFound" in new Setup {
