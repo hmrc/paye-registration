@@ -77,7 +77,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
 
   def getRegistrationId(txId: String): Action[AnyContent] = Action.async { implicit request =>
     registrationService.getRegistrationId(txId) map { regId =>
-      Ok(regId)
+      Ok(Json.toJson(regId))
     } recover {
       case _: MissingRegDocument =>
         logger.warn(s"[RegistrationController] - [getRegistrationId] - No registration found based on txId $txId")
