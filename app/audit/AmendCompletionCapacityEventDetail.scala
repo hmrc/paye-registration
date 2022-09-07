@@ -16,7 +16,6 @@
 
 package audit
 
-import helpers.JodaTimeJsonFormatHelper
 import models.submission.DESCompletionCapacity
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -71,6 +70,6 @@ object AmendCompletionCapacityEventDetail {
 class AmendCompletionCapacityEvent(regId: String, detail: AmendCompletionCapacityEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("completionCapacityAmendment", None, Json.toJson(detail).as[JsObject])(hc)
 
-object AmendCompletionCapacityEvent extends JodaTimeJsonFormatHelper {
+object AmendCompletionCapacityEvent {
   implicit val format = Json.format[ExtendedDataEvent]
 }

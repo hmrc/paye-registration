@@ -28,7 +28,8 @@ class IICounterRepositoryISpec extends MongoBaseSpec{
 
   class Setup {
     val repository = new IICounterMongoRepository(mongoComponent)
-
+    await(repository.collection.drop().toFuture())
+    await(repository.ensureIndexes)
   }
 
   "calling getNext" should{

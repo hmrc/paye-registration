@@ -11,11 +11,9 @@ object AppDependencies {
   private val wireMockVersion             =  "2.27.2"
   private val hmrcMongoVersion            =  "0.71.0"
   private val quartzSchedulerVersion      =  "1.8.2-akka-2.6.x"
-  private val jsonJodaVersion             =  "2.7.4"
   private val flexmarkAllVersion          =  "0.62.2"
 
   val compile = Seq(
-    "com.typesafe.play"         %%  "play-json-joda"                  % jsonJodaVersion,
     "com.enragedginger"         %%  "akka-quartz-scheduler"           % quartzSchedulerVersion,
     "uk.gov.hmrc"               %% s"bootstrap-backend$playVersion"   % bootstrapVersion,
     "uk.gov.hmrc"               %%  "domain"                          % domainVersion,
