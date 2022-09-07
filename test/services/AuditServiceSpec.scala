@@ -38,6 +38,9 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
   }
 
   val regId = "AB123456"
+  val credentials: Credentials = Credentials("cred-123", "testProviderType")
+  val providerId = "cred-123"
+
   val validCompanyDetailsWithAuditRef = CompanyDetails(
     companyName = "Test Company Name",
     tradingName = Some("Test Trading Name"),
@@ -52,10 +55,8 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
     "send audit with correct detail" in new Setup {
       val previousCC = "director"
       val newCC = "agent"
-      val cred = Credentials("cred-123", "some-provider-type")
 
-      when(mockAuthConnector.authorise[Option[String] ~ Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(new ~(Some("some-external-id"), cred)))
+      AuthorisationMocks.mockAuthoriseTest(Future.successful(new ~(Some("some-external-id"), Some(credentials))))
 
       when(mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(AuditResult.Success))

@@ -24,9 +24,9 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthorisedFunctions
-import uk.gov.hmrc.auth.core.retrieve.Retrievals._
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals._
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,6 +35,7 @@ class AuthClient101Spec extends PAYERegSpec {
 
   object TestController extends BackendController(stubControllerComponents()) with AuthorisedFunctions {
     override val authConnector = mockAuthConnector
+
 
     def isAuthorised = Action.async { implicit request =>
       authorised() {
@@ -54,7 +55,8 @@ class AuthClient101Spec extends PAYERegSpec {
 
     def isAuthorisedWithCredId = Action.async { implicit request =>
       authorised().retrieve(credentials) {
-        cred => Future.successful(Ok(cred.providerId))
+        case Some(cred) =>
+          Future.successful(Ok(cred.providerId))
       } recover {
         case _ => Forbidden
       }
@@ -62,7 +64,7 @@ class AuthClient101Spec extends PAYERegSpec {
 
     def isAuthorisedWithExternalIdAndCredId = Action.async { implicit request =>
       authorised().retrieve(externalId and credentials) {
-        case Some(id) ~ cred =>
+        case Some(id) ~ Some(cred) =>
           val json = Json.obj("externalId" -> id, "providerId" -> cred.providerId)
           Future.successful(Ok(Json.toJson(json)))
         case _ => Future.successful(NoContent)
@@ -111,8 +113,8 @@ class AuthClient101Spec extends PAYERegSpec {
 
   "Calling authorise().retrieve(credentials)" should {
     "return 200 with a valid providerId" in {
-      when(mockAuthConnector.authorise[Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(Credentials("some-provider-id", "some-provider-type")))
+      val credential = Credentials("some-provider-id", "testProviderType")
+      AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credential)))
 
       val result = TestController.isAuthorisedWithCredId(FakeRequest())
       status(result) mustBe OK
@@ -124,8 +126,7 @@ class AuthClient101Spec extends PAYERegSpec {
     "return 200 with a valid externalId and providerId" in {
       val cred = Credentials("some-provider-id", "some-provider-type")
 
-      when(mockAuthConnector.authorise[Option[String] ~ Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(new ~(Some("some-external-id"), cred)))
+      AuthorisationMocks.mockAuthoriseTest(Future.successful(new ~(Some("some-external-id"), Some(cred))))
 
       val result = TestController.isAuthorisedWithExternalIdAndCredId(FakeRequest())
       status(result) mustBe OK
@@ -136,8 +137,7 @@ class AuthClient101Spec extends PAYERegSpec {
     "return 204 if there is no externalId" in {
       val cred = Credentials("some-provider-id", "some-provider-type")
 
-      when(mockAuthConnector.authorise[Option[String] ~ Credentials](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(new ~(None, cred)))
+      AuthorisationMocks.mockAuthoriseTest(Future.successful(new ~(None, Some(cred))))
 
       val result = TestController.isAuthorisedWithExternalIdAndCredId(FakeRequest())
       status(result) mustBe NO_CONTENT

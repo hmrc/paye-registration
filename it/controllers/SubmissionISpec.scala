@@ -16,6 +16,8 @@
 
 package controllers
 
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
+
 import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.kenshoo.play.metrics.Metrics
@@ -33,7 +35,6 @@ import repositories.{RegistrationMongoRepository, SequenceMongoRepository}
 import uk.gov.hmrc.mongo.MongoComponent
 import utils.SystemDate
 
-import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
@@ -72,7 +73,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
     .withFollowRedirects(false)
-    .withHeaders(("X-Session-ID","session-12345"))
+    .withHttpHeaders(("X-Session-ID","session-12345"))
 
   private val regime = "paye"
   private val subscriber = "SCRS"
@@ -217,7 +218,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     s"""{
        | "internalId": "$intId",
        | "externalId": "$extId",
-       | "credentials": {
+       | "optionalCredentials": {
        |   "providerId": "$credId",
        |   "providerType": "some-provider-type"
        | }
