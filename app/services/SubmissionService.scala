@@ -22,18 +22,18 @@ import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
+import javax.inject.{Inject, Singleton}
 import models._
 import models.incorporation.IncorpStatusUpdate
-import models.submission._
+import models.submission.{DESMetaData, _}
 import play.api.Logging
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.credentials
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
@@ -271,9 +271,10 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
 
   private[services] class FailedToGetCredId extends NoStackTrace
 
-  private[services] def retrieveCredId(implicit hc: HeaderCarrier): Future[String] = {
-    authorised().retrieve(credentials) { cred =>
-      Future.successful(cred.providerId)
+  private[services] def retrieveCredId()(implicit hc: HeaderCarrier): Future[String] = {
+    authorised().retrieve(Retrievals.credentials) {
+      case Some(credentials) =>
+        Future.successful(credentials.providerId)
     } recoverWith {
       case _ => Future.failed(new FailedToGetCredId)
     }

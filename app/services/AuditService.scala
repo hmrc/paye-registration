@@ -19,17 +19,16 @@ package services
 import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.{AddressTypes, IncorporationStatus}
+import javax.inject.{Inject, Singleton}
 import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
 import play.api.libs.json.{JsObject, Json}
 import repositories.RegistrationMongoRepository
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.credentials
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.externalId
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -37,11 +36,11 @@ import scala.concurrent.Future
 class AuditService @Inject()(registrationRepository: RegistrationMongoRepository, val authConnector: AuthConnector, val auditConnector: AuditConnector) extends AuthorisedFunctions {
 
   def auditCompletionCapacity(regID: String, previousCC: String, newCC: String)(implicit hc: HeaderCarrier): Future[AuditResult] = {
-    authorised().retrieve(externalId and credentials) {
-      case Some(id) ~ cred =>
+    authorised().retrieve(Retrievals.externalId and Retrievals.credentials) {
+      case Some(id) ~ Some(credentials) =>
         val eventDetails = AmendCompletionCapacityEventDetail(
           id,
-          cred.providerId,
+          credentials.providerId,
           regID,
           DESCompletionCapacity.buildDESCompletionCapacity(Some(previousCC)),
           DESCompletionCapacity.buildDESCompletionCapacity(Some(newCC))
@@ -67,11 +66,11 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
   }
 
   def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
-    authorised().retrieve(externalId and credentials) {
-      case Some(id) ~ cred =>
+    authorised().retrieve(Retrievals.externalId and Retrievals.credentials) {
+      case Some(id) ~ Some(credentials) =>
         for {
           auditRefs <- fetchAddressAuditRefs(regId)
-          event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(id, cred.providerId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs))
+          event = new DesSubmissionEvent(DesSubmissionAuditEventDetail(id, credentials.providerId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs))
           auditRes <- auditConnector.sendExtendedEvent(event)
         } yield auditRes
       case _ => throw new Exception("[Audit DES Submission] failed")

@@ -18,6 +18,7 @@ package mocks
 
 import auth.CryptoSCRS
 import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
@@ -43,6 +44,11 @@ trait PAYEMocks {
     def mockAuthenticated(internalId: String): OngoingStubbing[Future[Option[String]]] = {
       when(mockAuthConnector.authorise[Option[String]](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(internalId)))
+    }
+
+    def mockAuthoriseTest[T](returns: Future[T]): OngoingStubbing[Future[T]] = {
+      when(mockAuthConnector.authorise[T](any(), any())(any(), any()))
+        .thenReturn(returns)
     }
 
     def mockNotAuthenticated(): OngoingStubbing[Future[Option[String]]] = {
