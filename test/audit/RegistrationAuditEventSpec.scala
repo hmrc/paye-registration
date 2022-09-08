@@ -16,12 +16,12 @@
 
 package audit
 
-import helpers.{JodaTimeJsonFormatHelper, PAYERegSpec}
+import helpers.PAYERegSpec
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.http.{Authorization, ForwardedFor, HeaderCarrier, RequestId, SessionId}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
-class RegistrationAuditEventSpec extends PAYERegSpec with JodaTimeJsonFormatHelper {
+class RegistrationAuditEventSpec extends PAYERegSpec {
 
   implicit val extendedEventFormats = Json.format[ExtendedDataEvent]
 

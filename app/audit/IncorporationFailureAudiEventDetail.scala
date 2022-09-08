@@ -17,7 +17,6 @@
 package audit
 
 import audit.RegistrationAuditEvent.JOURNEY_ID
-import helpers.JodaTimeJsonFormatHelper
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -42,6 +41,6 @@ object IncorporationFailureAuditEventDetail {
 class IncorporationFailureEvent(details: IncorporationFailureAuditEventDetail)(implicit hc: HeaderCarrier)
   extends RegistrationAuditEvent("incorporationFailure", None, Json.toJson(details).as[JsObject])(hc)
 
-object IncorporationFailureEvent extends JodaTimeJsonFormatHelper {
+object IncorporationFailureEvent {
   implicit val format = Json.format[ExtendedDataEvent]
 }
