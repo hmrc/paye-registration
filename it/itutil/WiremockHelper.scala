@@ -69,7 +69,7 @@ trait WiremockHelper {
 
   val userId = "/auth/oid/1234567890"
   def setupSimpleAuthMocks() = {
-    stubFor(post(urlMatching("/write/audit"))
+    stubFor(post(urlMatching("/write/audit/merged"))
       .willReturn(
         aResponse().
           withStatus(200).

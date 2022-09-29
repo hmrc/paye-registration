@@ -51,10 +51,6 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
   lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
-  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
-    .withFollowRedirects(false)
-    .withHeaders(("X-Session-ID","session-12345"))
-
   val regId = "12345"
   val transactionID = "NN1234"
   val intId = "Int-xxx"
@@ -134,7 +130,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
     "return a NotFound trying deleting a non existing document" in new Setup {
       setupSimpleAuthMocks()
 
-      val response = client(s"invalidRegId/delete-in-progress").delete().futureValue
+      val response = client(s"/invalidRegId/delete-in-progress").delete().futureValue
       response.status mustBe 404
     }
 
@@ -145,7 +141,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
       await(repository.updateRegistration(rejected))
 
-      val response = client(s"$regId/delete-in-progress").delete().futureValue
+      val response = client(s"/$regId/delete-in-progress").delete().futureValue
       response.status mustBe 412
 
       await(repository.retrieveRegistration(rejected.registrationID)) mustBe Some(rejected)
@@ -156,7 +152,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.invalid)))
 
-      val response = await(client(s"$regId/delete-in-progress").delete())
+      val response = await(client(s"/$regId/delete-in-progress").delete())
       response.status mustBe 200
 
       await(repository.retrieveRegistration(submission.registrationID)) mustBe None
@@ -167,7 +163,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.draft)))
 
-      val response = await(client(s"$regId/delete-in-progress").delete())
+      val response = await(client(s"/$regId/delete-in-progress").delete())
       response.status mustBe 200
 
       await(repository.retrieveRegistration(submission.registrationID)) mustBe None

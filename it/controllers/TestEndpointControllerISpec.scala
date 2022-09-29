@@ -56,8 +56,6 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
-  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/test-only$path").withFollowRedirects(false)
-
   val lastUpdate = "2017-05-09T07:58:35Z"
 
   class Setup {
@@ -129,7 +127,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       count mustBe 2
 
-      val response = client(s"/registration-teardown").get.futureValue
+      val response = client(s"/test-only/registration-teardown").get.futureValue
       response.status mustBe 200
 
       count mustBe 0
@@ -195,7 +193,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       count mustBe 2
 
-      val response = client(s"/delete-registration/$regID1").get.futureValue
+      val response = client(s"/test-only/delete-registration/$regID1").get.futureValue
       response.status mustBe 200
 
       count mustBe 1
@@ -300,7 +298,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )(PAYERegistration.format(MongoValidation, mockcryptoSCRS))
 
-      val response = client(s"/update-registration/$regID1").post[JsObject](jsonBody.as[JsObject]).futureValue
+      val response = client(s"/test-only/update-registration/$regID1").post[JsObject](jsonBody.as[JsObject]).futureValue
       response.status mustBe 200
     }
 
@@ -336,7 +334,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
       ))
       count mustBe 1
 
-      val response = client(s"/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue
+      val response = client(s"/test-only/update-registration/$regID1").post(Json.toJson("""{"invalid" : "data"}""")).futureValue
       response.status mustBe 400
     }
   }

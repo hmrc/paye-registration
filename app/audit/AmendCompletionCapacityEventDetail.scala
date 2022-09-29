@@ -19,8 +19,6 @@ package audit
 import models.submission.DESCompletionCapacity
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 case class AmendCompletionCapacityEventDetail(externalUserId: String,
                                               authProviderId: String,
@@ -30,7 +28,7 @@ case class AmendCompletionCapacityEventDetail(externalUserId: String,
                                              )
 
 object AmendCompletionCapacityEventDetail {
-  import RegistrationAuditEvent.{AUTH_PROVIDER_ID, EXTERNAL_USER_ID, JOURNEY_ID}
+  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, EXTERNAL_USER_ID, JOURNEY_ID}
 
   implicit val writes = new Writes[AmendCompletionCapacityEventDetail] {
     val writesPreviousCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {
@@ -65,11 +63,4 @@ object AmendCompletionCapacityEventDetail {
       .++(Json.toJson(o.newCC)(writesNewCC).as[JsObject])
     }
   }
-}
-
-class AmendCompletionCapacityEvent(regId: String, detail: AmendCompletionCapacityEventDetail)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("completionCapacityAmendment", None, Json.toJson(detail).as[JsObject])(hc)
-
-object AmendCompletionCapacityEvent {
-  implicit val format = Json.format[ExtendedDataEvent]
 }

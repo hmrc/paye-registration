@@ -4,12 +4,12 @@ import sbt._
 object AppDependencies {
 
   private val playVersion                 =  "-play-28"
-  private val bootstrapVersion            =  "5.16.0"
+  private val bootstrapVersion            =  "7.4.0"
   private val domainVersion               = s"8.1.0$playVersion"
   private val scalaTestVersion            =  "3.2.12"
   private val scalaTestPlusPlayVersion    =  "5.1.0"
-  private val wireMockVersion             =  "2.27.2"
-  private val hmrcMongoVersion            =  "0.71.0"
+  private val wireMockVersion             =  "2.33.2"
+  private val hmrcMongoVersion            =  "0.73.0"
   private val quartzSchedulerVersion      =  "1.8.2-akka-2.6.x"
   private val flexmarkAllVersion          =  "0.62.2"
 
@@ -25,7 +25,7 @@ object AppDependencies {
     "org.scalatestplus.play"    %%  "scalatestplus-play"              %  scalaTestPlusPlayVersion   % "test, it",
     "com.vladsch.flexmark"      %   "flexmark-all"                    %  flexmarkAllVersion         % "test, it",
     "org.scalatestplus"         %%  "mockito-4-5"                     % s"$scalaTestVersion.0"      % "test",
-    "com.github.tomakehurst"    %   "wiremock-jre8"                   %  wireMockVersion            % "it",
+    "com.github.tomakehurst"    %   "wiremock-jre8-standalone"        %  wireMockVersion            % "it",
     "uk.gov.hmrc.mongo"         %% s"hmrc-mongo-test$playVersion"     %  hmrcMongoVersion           % "it"
   )
 

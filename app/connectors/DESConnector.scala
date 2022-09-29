@@ -16,14 +16,14 @@
 
 package connectors
 
-import audit.FailedDesSubmissionEvent
+import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import config.AppConfig
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import play.api.Logging
-import play.api.libs.json.Writes
-import uk.gov.hmrc.http.{HttpClient, _}
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import play.api.libs.json.{Json, Writes}
+import services.AuditService
+import uk.gov.hmrc.http._
 import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
 import javax.inject.{Inject, Singleton}
@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditConnector: AuditConnector) extends HttpErrorFunctions with WorkingHoursGuard with Logging {
+class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditService: AuditService) extends HttpErrorFunctions with WorkingHoursGuard with Logging {
   val alertWorkingHours: String = appConfig.alertWorkingHours
 
   def currentDate = SystemDate.getSystemDate.toLocalDate
@@ -80,8 +80,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     } recoverWith {
       case e: Upstream4xxResponse =>
         logDes400PagerDuty(e, regId)
-        val event = new FailedDesSubmissionEvent(regId, submission)
-        auditConnector.sendExtendedEvent(event)
+        auditService.sendEvent("payeRegistrationSubmissionFailure", Json.obj("submission" -> submission, JOURNEY_ID -> regId))
         Future.failed(e)
     }
   }

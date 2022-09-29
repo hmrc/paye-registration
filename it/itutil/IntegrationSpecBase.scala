@@ -20,6 +20,7 @@ import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
+import play.api.http.HeaderNames
 import utils.{FeatureSwitch, PAYEFeatureSwitches}
 
 trait IntegrationSpecBase extends PlaySpec
@@ -41,6 +42,14 @@ trait IntegrationSpecBase extends PlaySpec
     enableFeature(PAYEFeatureSwitches.removeStaleDocuments, removeStaleDocumentsJob)
     enableFeature(PAYEFeatureSwitches.graphiteMetrics, metricsJob)
   }
+
+  def client(path: String) = ws
+    .url(s"http://localhost:$port/paye-registration$path")
+    .withHttpHeaders(
+      HeaderNames.AUTHORIZATION -> "AuthToken",
+      "X-Session-ID" -> "session-12345"
+    )
+    .withFollowRedirects(false)
 
   override def beforeEach() = {
     resetWiremock()
