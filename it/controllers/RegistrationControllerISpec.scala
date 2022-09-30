@@ -72,14 +72,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
   lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
-
-  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
-                                        .withFollowRedirects(false)
-                                        .withHeaders(("X-Session-ID","session-12345"))
-
-  private val regime = "paye"
-  private val subscriber = "SCRS"
-
   class Setup {
     lazy val mockMetrics = app.injector.instanceOf[Metrics]
     val timestamp = "2017-01-01T00:00:00"
@@ -270,10 +262,10 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
       await(repository.collection.insertOne(processedSubmission).toFuture())
 
-      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      val response = await(client(s"/incorporation-data").post(jsonIncorpStatusUpdate))
       response.status mustBe 200
       response.json mustBe Json.toJson(crn)
 
@@ -310,7 +302,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
              |     "X-Session-ID" : "session-12345",
              |     "X-Request-ID" : "-",
              |     "clientPort" : "-",
-             |     "Authorization" : "-",
              |     "transactionName" : "payeRegistrationAdditionalData"
              |  }
              |}
@@ -340,9 +331,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       await(repository.updateRegistration(processedSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = await(client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))))
+      val response = await(client(s"/incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))))
       response.status mustBe 200
       response.json mustBe Json.toJson(None)
 
@@ -373,7 +364,6 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
              |     "X-Session-ID" : "session-12345",
              |     "X-Request-ID" : "-",
              |     "clientPort" : "-",
-             |     "Authorization" : "-",
              |     "transactionName" : "incorporationFailure"
              |   }
              |}
@@ -425,7 +415,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(processedSubmission))
 
-      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate2))
+      val response = await(client(s"/incorporation-data").post(jsonIncorpStatusUpdate2))
       response.status mustBe 200
 
       await(repository.retrieveRegistration(regId)) mustBe Some(processedSubmission)
@@ -450,9 +440,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       await(repository.updateRegistration(processedTopUpSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      val response = await(client(s"/incorporation-data").post(jsonIncorpStatusUpdate))
       response.status mustBe 200
 
       await(repository.retrieveRegistration(regId)) mustBe Some(processedTopUpSubmission)
@@ -478,9 +468,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      val response = await(client(s"/incorporation-data").post(jsonIncorpStatusUpdate))
       response.status mustBe 500
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
@@ -516,9 +506,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       await(repository.updateRegistration(processedSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/false").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/false").get())
 
-      val response = await(client(s"incorporation-data").post(jsonIncorpStatusUpdate))
+      val response = await(client(s"/incorporation-data").post(jsonIncorpStatusUpdate))
       response.status mustBe 200
       response.json mustBe Json.toJson(crn)
 
@@ -563,9 +553,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       )
 
       await(repository.updateRegistration(processedSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/false").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/false").get())
 
-      val response = await(client(s"incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))))
+      val response = await(client(s"/incorporation-data").post(Json.parse(incorpUpdateNoCRN(rejected))))
       response.status mustBe 200
       val none: Option[String] = None
       response.json mustBe Json.toJson(none)
@@ -584,7 +574,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
         response.status mustBe 200
         response.json mustBe testNotification
 
@@ -607,7 +597,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "05"))
 
-        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
         response.status mustBe 200
         response.json mustBe testNotification
 
@@ -630,7 +620,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "06"))
 
-        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
         response.status mustBe 200
         response.json mustBe testNotification
 
@@ -653,7 +643,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "07"))
 
-        val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+        val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
         response.status mustBe 200
         response.json mustBe testNotification
 
@@ -677,7 +667,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "08"))
 
-      val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+      val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
       response.status mustBe 200
       response.json mustBe testNotification
 
@@ -700,7 +690,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "09"))
 
-      val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+      val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
       response.status mustBe 200
       response.json mustBe testNotification
 
@@ -723,7 +713,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "10"))
 
-      val response = await(client("registration-processed-confirmation?ackref=ackRef").post(testNotification))
+      val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
       response.status mustBe 200
       response.json mustBe testNotification
 
@@ -745,7 +735,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
-        val response = await(client("registration-processed-confirmation?ackref=invalidackref").post(testNotification))
+        val response = await(client("/registration-processed-confirmation?ackref=invalidackref").post(testNotification))
         response.status mustBe 404
 
         await(repository.retrieveRegistrationByAckRef("invalidackref")) mustBe None
@@ -770,7 +760,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.acknowledged, registrationConfirmation = Some(testNotification), acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -786,7 +776,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(acknowledgementReference = None)))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -802,7 +792,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(acknowledgementReference = None, status = PAYEStatus.invalid)))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -817,7 +807,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(acknowledgementReference = None, status = PAYEStatus.cancelled)))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -833,7 +823,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(processedSubmission))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -849,7 +839,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(processedTopUpSubmission))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -866,7 +856,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"$regId/status").get())
+      val response = await(client(s"/$regId/status").get())
       response.status mustBe 200
       response.json mustBe json
     }
@@ -874,7 +864,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     "return a 404 error when the registration Id is invalid" in new Setup {
       setupSimpleAuthMocks()
 
-      val response = await(client(s"invalid234/status").get())
+      val response = await(client(s"/invalid234/status").get())
       response.status mustBe 404
     }
   }
@@ -885,7 +875,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"$regId/delete").delete())
+      val response = await(client(s"/$regId/delete").delete())
       response.status mustBe 200
 
       await(repository.retrieveRegistration(submission.registrationID)) mustBe None
@@ -896,7 +886,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission))
 
-      val response = await(client(s"$regId/delete").delete())
+      val response = await(client(s"/$regId/delete").delete())
       response.status mustBe 412
 
       await(repository.retrieveRegistration(submission.registrationID)) mustBe Some(submission)
@@ -907,7 +897,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"invalidRegId/delete").delete())
+      val response = await(client(s"/invalidRegId/delete").delete())
       response.status mustBe 404
     }
   }
@@ -916,7 +906,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.draft, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"$regId/delete-rejected-incorp").delete())
+      val response = await(client(s"/$regId/delete-rejected-incorp").delete())
       response.status mustBe 200
 
       await(repository.retrieveRegistration(submission.registrationID)) mustBe None
@@ -926,7 +916,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"$regId/delete-rejected-incorp").delete())
+      val response = await(client(s"/$regId/delete-rejected-incorp").delete())
       response.status mustBe 412
 
       await(repository.retrieveRegistration(submission.registrationID)) mustBe Some(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp)))
@@ -936,7 +926,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       await(repository.updateRegistration(submission.copy(status = PAYEStatus.rejected, acknowledgedTimestamp = Some(acknowledgedTimestamp))))
 
-      val response = await(client(s"invalidRegId/delete-rejected-incorp").delete())
+      val response = await(client(s"/invalidRegId/delete-rejected-incorp").delete())
       response.status mustBe 404
     }
   }

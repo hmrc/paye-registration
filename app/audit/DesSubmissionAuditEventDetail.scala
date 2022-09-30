@@ -16,12 +16,9 @@
 
 package audit
 
-import audit.RegistrationAuditEvent.JOURNEY_ID
+import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import enums.AddressTypes
-import models.submission.DESSubmission
 import play.api.libs.json.{JsObject, Json, Writes}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 case class DesSubmissionAuditEventDetail(externalId: String,
                                          authProviderId: String,
@@ -33,7 +30,7 @@ case class DesSubmissionAuditEventDetail(externalId: String,
 
 object DesSubmissionAuditEventDetail {
 
-  import RegistrationAuditEvent.{AUTH_PROVIDER_ID, DES_SUBMISSION_STATE, EXTERNAL_ID}
+  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, DES_SUBMISSION_STATE, EXTERNAL_ID}
 
   implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
@@ -78,19 +75,4 @@ object DesSubmissionAuditEventDetail {
         )}.getOrElse(Json.obj()))
     }
   }
-}
-
-class DesSubmissionEvent(details: DesSubmissionAuditEventDetail)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("payeRegistrationSubmission", None, Json.toJson(details).as[JsObject])(hc)
-
-object DesSubmissionEvent {
-  implicit val format = Json.format[ExtendedDataEvent]
-}
-
-
-class FailedDesSubmissionEvent(regId: String, details: DESSubmission)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("payeRegistrationSubmissionFailure", None, Json.obj("submission" -> details, JOURNEY_ID -> regId))(hc)
-
-object FailedDesSubmissionEvent {
-  implicit val format = Json.format[ExtendedDataEvent]
 }

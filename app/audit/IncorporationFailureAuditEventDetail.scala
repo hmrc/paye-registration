@@ -16,10 +16,8 @@
 
 package audit
 
-import audit.RegistrationAuditEvent.JOURNEY_ID
-import play.api.libs.json.{JsObject, JsValue, Json, Writes}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
+import audit.RegistrationAuditEventConstants.JOURNEY_ID
+import play.api.libs.json.{JsValue, Json, Writes}
 
 case class IncorporationFailureAuditEventDetail(regId: String,
                                                acknowledgementReference: String)
@@ -36,11 +34,4 @@ object IncorporationFailureAuditEventDetail {
       INCORP_STATUS   -> REJECTED
     )
   }
-}
-
-class IncorporationFailureEvent(details: IncorporationFailureAuditEventDetail)(implicit hc: HeaderCarrier)
-  extends RegistrationAuditEvent("incorporationFailure", None, Json.toJson(details).as[JsObject])(hc)
-
-object IncorporationFailureEvent {
-  implicit val format = Json.format[ExtendedDataEvent]
 }

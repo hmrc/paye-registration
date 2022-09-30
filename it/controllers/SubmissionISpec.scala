@@ -71,10 +71,6 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
-  private def client(path: String) = ws.url(s"http://localhost:$port/paye-registration/$path")
-    .withFollowRedirects(false)
-    .withHttpHeaders(("X-Session-ID","session-12345"))
-
   private val regime = "paye"
   private val subscriber = "SCRS"
 
@@ -247,9 +243,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         nino = None
       )
       await(repository.updateRegistration(submission.copy(directors = extraDirectorList)))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
         .withHeader("Environment", matching("test-environment"))
@@ -479,9 +475,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       )
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = await(client(s"$regId/submit-registration").put(""))
+      val response = await(client(s"/$regId/submit-registration").put(""))
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
         .withHeader("Environment", matching("test-environment"))
@@ -665,9 +661,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       )
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = await(client(s"$regId/submit-registration").put(""))
+      val response = await(client(s"/$regId/submit-registration").put(""))
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
         .withHeader("Environment", matching("test-environment"))
@@ -781,9 +777,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubBusinessProfile()
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = await(client(s"$regId/submit-registration").put(""))
+      val response = await(client(s"/$regId/submit-registration").put(""))
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
         .withHeader("Environment", matching("test-environment"))
@@ -884,7 +880,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       await(repository.updateRegistration(submission))
       await(repository.collection.countDocuments().toFuture()) mustBe 1
 
-      val response = await(client(s"$regId/submit-registration").put(""))
+      val response = await(client(s"/$regId/submit-registration").put(""))
       response.status mustBe 204
 
       val reg = await(repository.retrieveRegistration(regId))
@@ -906,9 +902,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
       response.status mustBe 502
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
@@ -929,9 +925,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
       response.status mustBe 502
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
@@ -951,9 +947,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
       response.status mustBe 503
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
@@ -973,9 +969,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.updateRegistration(submission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
       response.status mustBe 400
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
@@ -987,9 +983,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       stubPost(s"/incorporation-information/subscribe/$transactionID/regime/$regime/subscriber/$subscriber", 202, "")
 
       await(repository.updateRegistration(processedSubmission))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
       response.status mustBe 500
 
       await(repository.retrieveRegistration(regId)) mustBe Some(processedSubmission)
@@ -997,7 +993,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
     "return a 400 when in working hours" in new Setup {
       setupAuthMocksToReturn(authoriseData)
-      await(client(s"test-only/feature-flag/system-date/2018-01-01T12:00:00Z").get())
+      await(client(s"/test-only/feature-flag/system-date/2018-01-01T12:00:00Z").get())
 
       val regime = "paye"
       val subscriber = "SCRS"
@@ -1018,9 +1014,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         nino = None
       )
       await(repository.updateRegistration(submission.copy(directors = extraDirectorList)))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
         .withHeader("Environment", matching("test-environment"))
@@ -1108,13 +1104,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         )
       )
       response.status mustBe 400
-      await(client(s"test-only/feature-flag/system-date/time-clear").get())
+      await(client(s"/test-only/feature-flag/system-date/time-clear").get())
 
     }
 
     "return a 400 when out of working hours" in new Setup {
       setupAuthMocksToReturn(authoriseData)
-      await(client(s"test-only/feature-flag/system-date/2018-01-01T20:00:00Z").get())
+      await(client(s"/test-only/feature-flag/system-date/2018-01-01T20:00:00Z").get())
 
       val regime = "paye"
       val subscriber = "SCRS"
@@ -1135,10 +1131,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         nino = None
       )
       await(repository.updateRegistration(submission.copy(directors = extraDirectorList)))
-      await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+      await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
 
-      val response = client(s"$regId/submit-registration").put("").futureValue
+      val response = client(s"/$regId/submit-registration").put("").futureValue
 
       verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
         .withHeader("Environment", matching("test-environment"))
@@ -1226,7 +1222,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
         )
       )
       response.status mustBe 400
-      await(client(s"test-only/feature-flag/system-date/time-clear").get())
+      await(client(s"/test-only/feature-flag/system-date/time-clear").get())
     }
   }
 
@@ -1330,9 +1326,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     )
 
     await(repository.updateRegistration(submission))
-    await(client(s"test-only/feature-flag/desServiceFeature/true").get())
+    await(client(s"/test-only/feature-flag/desServiceFeature/true").get())
 
-    val response = await(client(s"$regId/submit-registration").put(""))
+    val response = await(client(s"/$regId/submit-registration").put(""))
 
     verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
       .withHeader("Environment", matching("test-environment"))

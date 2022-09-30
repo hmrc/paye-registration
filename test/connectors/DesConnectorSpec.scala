@@ -27,6 +27,7 @@ import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
 import play.api.test.Helpers._
+import services.AuditService
 import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -38,7 +39,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
   val mockHttp: HttpClient = mock[HttpClient]
-  val mockAuditConnector: AuditConnector = mock[AuditConnector]
+  val mockAuditService: AuditService = mock[AuditService]
 
   class SetupWithProxy(withProxy: Boolean) {
 
@@ -54,7 +55,7 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override lazy val alertWorkingHours: String = "08:00:00_17:00:00"
     }
 
-    object Connector extends DESConnector(mockHttp, MockAppConfig, mockAuditConnector) {
+    object Connector extends DESConnector(mockHttp, MockAppConfig, mockAuditService) {
       override def useDESStubFeature = withProxy
 
       override val currentTime: LocalTime = LocalTime.now

@@ -18,14 +18,14 @@ package auth
 
 import play.api.Configuration
 import play.api.libs.json.{JsString, Reads, Writes}
-import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, Crypted, PlainText}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, CompositeSymmetricCrypto, Crypted, Decrypter, Encrypter, PlainText}
 
 import javax.inject.{Inject, Singleton}
 
 @Singleton
 class CryptoSCRS @Inject()(config: Configuration) {
 
-  val crypto: CompositeSymmetricCrypto = new ApplicationCrypto(config.underlying).JsonCrypto
+  val crypto: Encrypter with Decrypter = new ApplicationCrypto(config.underlying).JsonCrypto
 
   val rds: Reads[String] = Reads[String](js =>
     js.validate[String].map(encryptedUtr => {

@@ -16,6 +16,7 @@
 
 package services
 
+import audit.DesTopUpAuditEventDetail
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.AddressTypes
 import fixtures.RegistrationFixture
@@ -23,18 +24,45 @@ import helpers.PAYERegSpec
 import models.{Address, CompanyDetails, DigitalContactDetails}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
+import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
+import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
+import uk.gov.hmrc.play.audit.http.config.AuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
-import scala.concurrent.Future
+import java.time.Instant
+import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future}
 
 class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
   val mockAuditConnector = mock[AuditConnector]
 
-  class Setup {
-    val service = new AuditService(mockRegistrationRepository, mockAuthConnector, mockAuditConnector)
+  class Setup(otherHcHeaders: Seq[(String, String)] = Seq()) {
+
+    implicit val hc = HeaderCarrier(otherHeaders = otherHcHeaders)
+    implicit val ec = ExecutionContext.global
+
+    val mockAuditConnector = mock[AuditConnector]
+    val mockAuditingConfig = mock[AuditingConfig]
+
+    val instantNow = Instant.now()
+    val appName = "business-registration-notification"
+    val auditType = "testAudit"
+    val testEventId = UUID.randomUUID().toString
+    val txnName = "transactionName"
+
+    when(mockAuditConnector.auditingConfig) thenReturn mockAuditingConfig
+    when(mockAuditingConfig.auditSource) thenReturn appName
+
+    val event = DesTopUpAuditEventDetail(regId = "regId", jsSubmission = Json.obj("submissionId" -> "123456"))
+
+    val service = new AuditService(mockRegistrationRepository, mockAuthConnector, mockAuditConnector) {
+      override private[services] def now() = instantNow
+      override private[services] def eventId() = testEventId
+    }
   }
 
   val regId = "AB123456"
@@ -77,6 +105,96 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
         .thenReturn(Future.successful(None))
 
       intercept[MissingRegDocument](await(service.fetchAddressAuditRefs("regId")))
+    }
+  }
+
+  ".sendEvent" when {
+
+    "call to AuditConnector is successful" when {
+
+      "transactionName is provided and path does NOT exist" must {
+
+        "create and send an Explicit ExtendedAuditEvent including the transactionName with pathTag set to '-'" in new Setup {
+
+          when(
+            mockAuditConnector.sendExtendedEvent(
+              ArgumentMatchers.eq(ExtendedDataEvent(
+                auditSource = appName,
+                auditType = auditType,
+                eventId = testEventId,
+                tags = hc.toAuditTags(txnName, "-"),
+                detail = Json.toJson(event),
+                generatedAt = instantNow
+              ))
+            )(
+              ArgumentMatchers.eq(hc),
+              ArgumentMatchers.eq(ec)
+            )
+          ) thenReturn Future.successful(AuditResult.Success)
+
+          val actual = await(service.sendEvent(auditType, event, Some(txnName)))
+
+          actual mustBe AuditResult.Success
+        }
+      }
+
+      "transactionName is NOT provided and path exists" must {
+
+        "create and send an Explicit ExtendedAuditEvent with transactionName as auditType & pathTag extracted from the HC" in new Setup(
+          otherHcHeaders = Seq("path" -> "/wizz/foo/bar")
+        ) {
+
+          when(
+            mockAuditConnector.sendExtendedEvent(
+              ArgumentMatchers.eq(ExtendedDataEvent(
+                auditSource = appName,
+                auditType = auditType,
+                eventId = testEventId,
+                tags = hc.toAuditTags(auditType, "/wizz/foo/bar"),
+                detail = Json.toJson(event),
+                generatedAt = instantNow
+              ))
+            )
+            (
+              ArgumentMatchers.eq(hc),
+              ArgumentMatchers.eq(ec)
+            )
+          ) thenReturn Future.successful(AuditResult.Success)
+
+          val actual = await(service.sendEvent(auditType, event, None))
+
+          actual mustBe AuditResult.Success
+        }
+      }
+    }
+
+    "call to AuditConnector fails" must {
+
+      "throw the exception" in new Setup {
+
+        val exception = new Exception("Oh No")
+
+        when(
+          mockAuditConnector.sendExtendedEvent(
+            ArgumentMatchers.eq(ExtendedDataEvent(
+              auditSource = appName,
+              auditType = auditType,
+              eventId = testEventId,
+              tags = hc.toAuditTags(txnName, "-"),
+              detail = Json.toJson(event),
+              generatedAt = instantNow
+            ))
+          )
+          (
+            ArgumentMatchers.eq(hc),
+            ArgumentMatchers.eq(ec)
+          )
+        ) thenReturn Future.failed(exception)
+
+        val actual = intercept[Exception](await(service.sendEvent(auditType, event, Some(txnName))))
+
+        actual.getMessage mustBe exception.getMessage
+      }
     }
   }
 }
