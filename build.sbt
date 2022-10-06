@@ -26,10 +26,11 @@ lazy val microservice = Project(appName, file("."))
   .settings(majorVersion := 1)
   .settings(bobbyRulesURL := Some(new URL("https://webstore.tax.service.gov.uk/bobby-config/deprecated-dependencies.json")))
   .settings(
+    scalacOptions += "-Xlint:-unused",
     scalaVersion := "2.12.15",
     libraryDependencies ++= AppDependencies(),
     retrieveManaged := true,
-    parallelExecution in IntegrationTest := false,
+    IntegrationTest / parallelExecution := false,
     resolvers += Resolver.jcenterRepo,
     routesGenerator := InjectedRoutesGenerator
   )

@@ -17,7 +17,7 @@
 package models.validation
 
 import enums.Employing
-import play.api.Logging
+import utils.Logging
 import play.api.libs.json.{Format, JsValue, Reads, Writes}
 
 import java.time.LocalDate
@@ -29,7 +29,7 @@ object DesValidation extends BaseJsonFormatting with Logging {
 
     override def writes(companyName: String) = {
       val normalised = cleanseCompanyName(companyName)
-      logger.info(s"[CompanyDetailsValidator] - [companyNameForDES] - Company name before normalisation was $companyName and after; $normalised")
+      logger.info(s"[companyNameFormatter] Company name before normalisation was $companyName and after; $normalised")
       Writes.StringWrites.writes(normalised)
     }
   }

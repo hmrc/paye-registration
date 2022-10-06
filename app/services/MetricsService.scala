@@ -20,7 +20,7 @@ import com.codahale.metrics.{Gauge, Timer}
 import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
 import config.AppConfig
 import jobs._
-import play.api.Logging
+import utils.Logging
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
@@ -38,14 +38,13 @@ class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
 
   def invoke(implicit ec: ExecutionContext): Future[Either[Map[String, Int], LockResponse]] = {
     lock.withLock(updateDocumentMetrics).map {
+      case None => Right(MongoLocked)
       case Some(res) =>
-        logger.info("MetricsService acquired lock and returned results")
+        logger.info("[invoke] Acquired lock and returned results")
         Left(res)
-      case None =>
-        logger.info("MetricsService cant acquire lock")
-        Right(MongoLocked)
     }.recover {
-      case e => logger.error(s"Error running updateSubscriptionMetrics with message: ${e.getMessage}")
+      case e =>
+        logger.error(s"[invoke] Error running updateSubscriptionMetrics with message: ${e.getMessage}")
         Right(UnlockingFailed)
     }
   }
@@ -71,7 +70,7 @@ class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
       metrics.defaultRegistry.register(metricName, gauge)
     } catch {
       case _: MetricsDisabledException => {
-        logger.warn(s"[MetricsService] [recordStatusCountStat] Metrics disabled - $metricName -> $count")
+        logger.warn(s"[recordStatusCountStat] Metrics disabled - $metricName -> $count")
       }
     }
   }

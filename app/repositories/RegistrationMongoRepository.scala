@@ -33,7 +33,8 @@ import org.mongodb.scala.model.Updates.{set, unset}
 import org.mongodb.scala.model.{Accumulators, Aggregates, Filters, FindOneAndReplaceOptions, IndexModel, IndexOptions, Projections}
 import org.mongodb.scala.result.UpdateResult
 import play.api.libs.json._
-import play.api.{Configuration, Logging}
+import play.api.Configuration
+import utils.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -93,13 +94,10 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
   val MAX_STORAGE_DAYS: Int = config.getOptional[Int]("constants.maxStorageDays").getOrElse(90)
 
   private def startupJob = getRegistrationStats() map {
-    stats => logger.info(s"[RegStats] $stats")
+    stats => logger.info(s"[startupJob] $stats")
   }
 
-
   startupJob
-  //  implicit val mongoFormat: OFormat[PAYERegistration] = OFormat.apply[PAYERegistration](j => domainFormatImplicit.reads(j), (p: PAYERegistration) => domainFormatImplicit.writes(p).as[JsObject])
-
 
   private[repositories] def registrationIDSelector(registrationID: String): Bson = equal("registrationID", registrationID)
 
@@ -116,23 +114,11 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         newReg
     } recover {
       case e =>
-        logger.error(s"Unable to insert new PAYE Registration for reg ID $registrationID and txId $transactionID Error: ${e.getMessage}")
+        logger.error(s"[createNewRegistration] Unable to insert new PAYE Registration for reg ID $registrationID and txId $transactionID Error: ${e.getMessage}")
         mongoTimer.stop()
         throw new InsertFailed(registrationID, "PAYERegistration")
     }
   }
-
-  private def unsetElement(registrationID: String, element: String): Future[Boolean] = {
-    collection.updateOne(registrationIDSelector(registrationID), unset(element)).toFuture() map { _ =>
-      logger.info(s"[RegistrationMongoRepository] [unsetElement] element: $element was unset for regId: $registrationID successfully")
-      true
-    } recover {
-      case _ =>
-        logger.error(s"[unsetElement] - There was a problem unsetting element $element for regId $registrationID")
-        throw new UpdateFailed(registrationID, element)
-    }
-  }
-
 
   def retrieveRegistration(registrationID: String): Future[Option[PAYERegistration]] = {
     val mongoTimer = mongoResponseTimer.time()
@@ -143,7 +129,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     } recover {
       case e: Throwable =>
         mongoTimer.stop()
-        logger.error(s"Unable to retrieve PAYERegistration for reg ID $registrationID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+        logger.error(s"[retrieveRegistration] Unable to retrieve PAYERegistration for reg ID $registrationID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(registrationID)
     }
   }
@@ -158,7 +144,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     } recover {
       case e: Throwable =>
         mongoTimer.stop()
-        logger.error(s"Unable to retrieve PAYERegistration for transaction ID $transactionID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+        logger.error(s"[retrieveRegistrationByTransactionID] Unable to retrieve PAYERegistration for transaction ID $transactionID, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(transactionID)
     }
   }
@@ -172,7 +158,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     } recover {
       case e: Throwable =>
         mongoTimer.stop()
-        logger.error(s"Unable to retrieve PAYERegistration for ack ref $ackRef, Error: retrieveRegistration threw an exception: ${e.getMessage}")
+        logger.error(s"[retrieveRegistrationByAckRef] Unable to retrieve PAYERegistration for ack ref $ackRef, Error: retrieveRegistration threw an exception: ${e.getMessage}")
         throw new RetrieveFailed(ackRef)
     }
   }
@@ -184,7 +170,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         mongoTimer.stop()
         registration.companyDetails
       case None =>
-        logger.error(s"Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.error(s"[retrieveCompanyDetails] Unable to retrieve Company Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -207,12 +193,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             payeStatus
         } recover {
           case e =>
-            logger.error(s"Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.error(s"[updateRegistrationStatus] Unable to update registration status for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "Registration status")
         }
       case None =>
-        logger.error(s"Unable to update registration status for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.error(s"[updateRegistrationStatus] Unable to update registration status for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -222,7 +208,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     retrieveRegistration(registrationID) map {
       case Some(registration) => registration.acknowledgementReference
       case None =>
-        logger.error(s"[RegistrationMongoRepository] - [retrieveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.error(s"[retrieveAcknowledgementReference] Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
     }
   }
@@ -235,15 +221,15 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             _ => ackRef
           } recover {
             case e =>
-              logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to save acknowledgement reference for reg ID $registrationID, Error: ${e.getMessage}")
+              logger.error(s"[saveAcknowledgementReference] Unable to save acknowledgement reference for reg ID $registrationID, Error: ${e.getMessage}")
               throw new UpdateFailed(registrationID, "AcknowledgementReference")
           }
         case true =>
-          logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Acknowledgement reference for $registrationID already exists")
+          logger.error(s"[saveAcknowledgementReference] Acknowledgement reference for $registrationID already exists")
           throw new AcknowledgementReferenceExistsException(registrationID)
       }
       case None =>
-        logger.error(s"[RegistrationMongoRepository] - [saveAcknowledgementReference]: Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.error(s"[saveAcknowledgementReference] Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         throw new MissingRegDocument(registrationID)
     }
   }
@@ -255,7 +241,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         mongoTimer.stop()
         registration.status
       case None =>
-        logger.warn(s"Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.warn(s"[retrieveRegistrationStatus] Unable to retrieve paye registration for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -271,12 +257,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             details
         } recover {
           case e =>
-            logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.warn(s"[upsertCompanyDetails] Unable to update Company Details for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "CompanyDetails")
         }
       case None =>
-        logger.warn(s"Unable to update Company Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[upsertCompanyDetails] Unable to update Company Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -293,16 +279,16 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
     collection.updateOne(registrationIDSelector(registrationID), setDoc).toFuture() map { updateResult =>
       mongoTimer.stop()
       if (updateResult.getMatchedCount == 0) {
-        logger.error(s"[RegistrationMongoRepository][upsertEmploymentInfo] updating for regId : $registrationID - No document found")
+        logger.error(s"[upsertEmploymentInfo] updating for regId : $registrationID - No document found")
         throw new MissingRegDocument(registrationID)
       } else {
-        logger.info(s"[RegistrationMongoRepository][upsertEmploymentInfo] updating for regId : $registrationID - documents modified : ${updateResult.getModifiedCount}")
+        logger.info(s"[upsertEmploymentInfo] updating for regId : $registrationID - documents modified : ${updateResult.getModifiedCount}")
         empInfo
       }
     } recover {
       case e =>
         mongoTimer.stop()
-        logger.error(s"Unable to update employmentInfo for regId: $registrationID, Error: ${e.getMessage}")
+        logger.error(s"[upsertEmploymentInfo] Unable to update employmentInfo for regId: $registrationID, Error: ${e.getMessage}")
         throw new UpdateFailed(registrationID, "EmploymentInfo")
     }
   }
@@ -314,7 +300,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         mongoTimer.stop()
         registration.directors
       case None =>
-        logger.warn(s"Unable to retrieve Directors for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.warn(s"[retrieveDirectors] Unable to retrieve Directors for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -330,12 +316,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             directors
         } recover {
           case e =>
-            logger.warn(s"Unable to update Directors for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.warn(s"[upsertDirectors] Unable to update Directors for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "Directors")
         }
       case None =>
-        logger.warn(s"Unable to update Directors for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[upsertDirectors] Unable to update Directors for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -348,7 +334,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         mongoTimer.stop()
         registration.sicCodes
       case None =>
-        logger.warn(s"Unable to retrieve SIC Codes for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.warn(s"[retrieveSICCodes] Unable to retrieve SIC Codes for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -364,12 +350,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             sicCodes
         } recover {
           case e =>
-            logger.warn(s"Unable to update SIC Codes for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.warn(s"[upsertSICCodes] Unable to update SIC Codes for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "SIC Codes")
         }
       case None =>
-        logger.warn(s"Unable to update SIC Codes for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[upsertSICCodes] Unable to update SIC Codes for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -382,7 +368,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         mongoTimer.stop()
         registration.payeContact
       case None =>
-        logger.warn(s"Unable to retrieve Contact Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.warn(s"[retrievePAYEContact] Unable to retrieve Contact Details for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -398,12 +384,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             payeContact
         } recover {
           case e =>
-            logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.warn(s"[upsertPAYEContact] Unable to update Contact Details for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "PAYE Contact")
         }
       case None =>
-        logger.warn(s"Unable to update Contact Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[upsertPAYEContact] Unable to update Contact Details for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -416,7 +402,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
         mongoTimer.stop()
         registration.completionCapacity
       case None =>
-        logger.warn(s"Unable to retrieve Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
+        logger.warn(s"[retrieveCompletionCapacity] Unable to retrieve Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve PAYE Registration")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -432,12 +418,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             capacity
         } recover {
           case e =>
-            logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.warn(s"[upsertCompletionCapacity] Unable to update Completion Capacity for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "Completion Capacity")
         }
       case None =>
-        logger.warn(s"Unable to update Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[upsertCompletionCapacity] Unable to update Completion Capacity for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -459,12 +445,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             clearedDocument
         } recover {
           case e =>
-            logger.warn(s"Unable to cleardown personal data for reg ID $registrationID, Error: ${e.getMessage}")
+            logger.warn(s"[cleardownRegistration] Unable to cleardown personal data for reg ID $registrationID, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(registrationID, "Cleardown Registration")
         }
       case None =>
-        logger.warn(s"Unable to cleardown personal data for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[cleardownRegistration] Unable to cleardown personal data for reg ID $registrationID, Error: Couldn't retrieve an existing registration with that ID")
         mongoTimer.stop()
         throw new MissingRegDocument(registrationID)
     }
@@ -480,12 +466,12 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
             etmpRefNotification
         } recover {
           case e =>
-            logger.warn(s"Unable to update emp ref for ack ref $ackRef, Error: ${e.getMessage}")
+            logger.warn(s"[updateRegistrationEmpRef] Unable to update emp ref for ack ref $ackRef, Error: ${e.getMessage}")
             mongoTimer.stop()
             throw new UpdateFailed(ackRef, "Acknowledgement reference")
         }
       case None =>
-        logger.warn(s"Unable to update emp ref for ack ref $ackRef, Error: Couldn't retrieve an existing registration with that ack ref")
+        logger.warn(s"[updateRegistrationEmpRef] Unable to update emp ref for ack ref $ackRef, Error: Couldn't retrieve an existing registration with that ack ref")
         mongoTimer.stop()
         throw new MissingRegDocument(ackRef)
     }
@@ -528,7 +514,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
       mongoTimer.stop()
       true
     } recover {
-      case e: Exception => logger.error(s"Error when deleting registration for regId: $registrationID. Error: ${e.getMessage}")
+      case e: Exception => logger.error(s"[deleteRegistration] Error when deleting registration for regId: $registrationID. Error: ${e.getMessage}")
         false
     }
   }

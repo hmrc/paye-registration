@@ -17,7 +17,7 @@
 package connectors
 
 import config.AppConfig
-import play.api.Logging
+import utils.Logging
 import uk.gov.hmrc.http.{HttpClient, _}
 
 import javax.inject.{Inject, Singleton}
@@ -30,13 +30,13 @@ class CompanyRegistrationConnector @Inject()(http: HttpClient, appConfig: AppCon
   def fetchCompanyRegistrationDocument(regId: String, txId: Option[String])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     http.GET[HttpResponse](s"${appConfig.compRegUrl}/company-registration/corporation-tax-registration/$regId/corporation-tax-registration") recover {
       case e: NotFoundException =>
-        logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a NotFound status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
+        logger.error(s"[fetchCompanyRegistrationDocument] Received a NotFound status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
         throw e
       case e: ForbiddenException =>
-        logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received a Forbidden status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
+        logger.error(s"[fetchCompanyRegistrationDocument] Received a Forbidden status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
         throw e
       case e: Exception =>
-        logger.error(s"[CompanyRegistrationConnector] - [fetchCompanyRegistrationDocument] : Received error when expecting reg document from Company-Registration for regId: $regId and txId: $txId - Error ${e.getMessage}")
+        logger.error(s"[fetchCompanyRegistrationDocument] Received error when expecting reg document from Company-Registration for regId: $regId and txId: $txId - Error ${e.getMessage}")
         throw e
     }
   }

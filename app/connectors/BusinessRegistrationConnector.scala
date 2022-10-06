@@ -18,7 +18,7 @@ package connectors
 
 import config.AppConfig
 import models.external.BusinessProfile
-import play.api.Logging
+import utils.Logging
 import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpClient, HttpReads, NotFoundException}
 
 import javax.inject.{Inject, Singleton}
@@ -30,13 +30,13 @@ class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppCo
   def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
     http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration") recover {
       case e: NotFoundException =>
-        logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
+        logger.error(s"[retrieveCurrentProfile] Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
         throw e
       case e: ForbiddenException =>
-        logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received a Forbidden status code when expecting current profile from Business-Registration for regId: $regId")
+        logger.error(s"[retrieveCurrentProfile] Received a Forbidden status code when expecting current profile from Business-Registration for regId: $regId")
         throw e
       case e: Exception =>
-        logger.error(s"[BusinessRegistrationConnector] [retrieveCurrentProfile] - Received error when expecting current profile from Business-Registration for regId: $regId - Error ${e.getMessage}")
+        logger.error(s"[retrieveCurrentProfile] Received error when expecting current profile from Business-Registration for regId: $regId - Error ${e.getMessage}")
         throw e
     }
   }
