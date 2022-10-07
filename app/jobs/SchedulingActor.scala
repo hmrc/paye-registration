@@ -18,7 +18,7 @@ package jobs
 
 import akka.actor.{Actor, Props}
 import jobs.SchedulingActor.ScheduledMessage
-import play.api.Logging
+import utils.Logging
 import services._
 
 import java.time.ZonedDateTime

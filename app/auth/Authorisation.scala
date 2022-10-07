@@ -16,7 +16,7 @@
 
 package auth
 
-import play.api.Logging
+import utils.Logging
 import play.api.mvc.Result
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
@@ -41,7 +41,7 @@ trait Authorisation extends AuthorisedFunctions with Logging {
   def isAuthenticated(f: String => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
     authorised().retrieve(internalId) { id =>
       id.fold {
-        logger.warn("[Authorisation] - [isAuthenticated] : No internalId present; FORBIDDEN")
+        logger.warn("[isAuthenticated] No internalId present; FORBIDDEN")
         throw new Exception("Missing internalId for the logged in user")
       }(f)
     }
@@ -54,7 +54,7 @@ trait Authorisation extends AuthorisedFunctions with Logging {
       }
     } recoverWith {
       case ar: AuthorisationException =>
-        logger.warn(s"[Authorisation] - [isAuthorised]: An error occurred, err: ${ar.getMessage}")
+        logger.warn(s"[isAuthorised] An error occurred, err: ${ar.getMessage}")
         f(NotLoggedInOrAuthorised)
       case e =>
         throw e
@@ -64,17 +64,17 @@ trait Authorisation extends AuthorisedFunctions with Logging {
   private def mapToAuthResult(internalId: Option[String], resource: Option[String] ) : AuthorisationResult = {
     internalId match {
       case None =>
-        logger.warn("[Authorisation] - [mapToAuthResult]: No internalId was found")
+        logger.warn("[mapToAuthResult] No internalId was found")
         NotLoggedInOrAuthorised
       case Some(id) => {
         resource match {
           case None =>
-            logger.info("[Authorisation] - [mapToAuthResult]: No auth resource was found for the current user")
+            logger.warn("[mapToAuthResult] No auth resource was found for the current user")
             AuthResourceNotFound(id)
           case Some(resourceId) if resourceId == id =>
             Authorised(id)
           case _ =>
-            logger.warn("[Authorisation] - [mapToAuthResult]: The current user is not authorised to access this resource")
+            logger.warn("[mapToAuthResult] The current user is not authorised to access this resource")
             NotAuthorised(id)
         }
       }

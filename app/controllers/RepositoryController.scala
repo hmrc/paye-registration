@@ -39,7 +39,7 @@ class RepositoryController @Inject()(registrationService: RegistrationService,
   def deleteRegistrationFromDashboard(regId: String): Action[AnyContent] = Action.async {
     implicit request =>
       isAuthorised(regId) { authResult =>
-        authResult.ifAuthorised(regId, "RepositoryController", "deleteRegistrationFromDashboard") {
+        authResult.ifAuthorised(regId, "deleteRegistrationFromDashboard") {
           registrationService.deletePAYERegistration(regId, PAYEStatus.draft, PAYEStatus.invalid) map { deleted =>
             if (deleted) Ok else InternalServerError
           } recover {

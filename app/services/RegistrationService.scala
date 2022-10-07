@@ -23,7 +23,7 @@ import connectors.IncorporationInformationConnector
 import enums.{Employing, PAYEStatus}
 import helpers.PAYEBaseValidator
 import models._
-import play.api.Logging
+import utils.Logging
 import play.api.libs.json.{JsObject, Json}
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.http.HeaderCarrier
@@ -42,7 +42,7 @@ class RegistrationService @Inject()(val registrationRepository: RegistrationMong
     registrationRepository.retrieveRegistration(regID) flatMap {
       case None => registrationRepository.createNewRegistration(regID, transactionID, internalId)
       case Some(registration) =>
-        logger.info(s"Cannot create new registration for reg ID '$regID' as registration already exists")
+        logger.info(s"[createNewPAYERegistration] Cannot create new registration for reg ID '$regID' as registration already exists")
         Future.successful(registration)
     }
   }
@@ -128,7 +128,7 @@ class RegistrationService @Inject()(val registrationRepository: RegistrationMong
         }
         registrationRepository.upsertCompletionCapacity(regID, capacity)
       case None =>
-        logger.warn(s"Unable to update Completion Capacity for reg ID $regID, Error: Couldn't retrieve an existing registration with that ID")
+        logger.warn(s"[upsertCompletionCapacity] Unable to update Completion Capacity for reg ID $regID, Error: Couldn't retrieve an existing registration with that ID")
         throw new MissingRegDocument(regID)
     }
   }

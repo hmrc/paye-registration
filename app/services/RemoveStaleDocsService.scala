@@ -18,7 +18,7 @@ package services
 
 import config.AppConfig
 import jobs._
-import play.api.Logging
+import utils.Logging
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
@@ -36,20 +36,18 @@ class RemoveStaleDocsService @Inject()(registrationMongoRepository: Registration
 
   def invoke(implicit ec: ExecutionContext): Future[Either[(ZonedDateTime, Int), LockResponse]] = {
     lock.withLock(removeStaleDocs).map {
+      case None => Right(MongoLocked)
       case Some(res) =>
         val (dt, numberRemoved) = res
         val message = numberRemoved match {
-          case 0 => s"No documents removed as there were no documents older than $dt in the database"
-          case _ => s"Successfully removed $numberRemoved documents that were last updated before $dt"
+          case 0 => s"[invoke] No documents removed as there were no documents older than $dt in the database"
+          case _ => s"[invoke] Successfully removed $numberRemoved documents that were last updated before $dt"
         }
         logger.info(message)
-        logger.info("RemoveStaleDocsService acquired lock and returned results")
         Left(res)
-      case None =>
-        logger.info("RemoveStaleDocsService cant acquire lock")
-        Right(MongoLocked)
     }.recover {
-      case e => logger.error(s"Error running RemoveStaleDocsService with message: ${e.getMessage}")
+      case e =>
+        logger.error(s"[invoke] Error running RemoveStaleDocsService with message: ${e.getMessage}")
         Right(UnlockingFailed)
     }
   }

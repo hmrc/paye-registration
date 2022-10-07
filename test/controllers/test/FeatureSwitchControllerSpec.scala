@@ -17,7 +17,7 @@
 package controllers.test
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import helpers.PAYERegSpec
 import jobs.ScheduledJob
@@ -30,7 +30,7 @@ import utils.BooleanFeatureSwitch
 class FeatureSwitchControllerSpec extends PAYERegSpec {
 
   implicit val system = ActorSystem("PR")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = Materializer(system)
   val mockRemoveStaleDocsJob: ScheduledJob = mock[ScheduledJob]
   val mockGraphiteMetrics: ScheduledJob = mock[ScheduledJob]
   val mockQuartz = mock[QuartzSchedulerExtension]

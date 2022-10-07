@@ -4,13 +4,13 @@ import sbt._
 object AppDependencies {
 
   private val playVersion                 =  "-play-28"
-  private val bootstrapVersion            =  "7.4.0"
+  private val bootstrapVersion            =  "7.7.0"
   private val domainVersion               = s"8.1.0$playVersion"
   private val scalaTestVersion            =  "3.2.12"
   private val scalaTestPlusPlayVersion    =  "5.1.0"
   private val wireMockVersion             =  "2.33.2"
   private val hmrcMongoVersion            =  "0.73.0"
-  private val quartzSchedulerVersion      =  "1.8.2-akka-2.6.x"
+  private val quartzSchedulerVersion      =  "1.9.3-akka-2.6.x"
   private val flexmarkAllVersion          =  "0.62.2"
 
   val compile = Seq(
@@ -21,6 +21,7 @@ object AppDependencies {
   )
 
   val test = Seq(
+    "uk.gov.hmrc"               %% s"bootstrap-test$playVersion"      %  bootstrapVersion           % "test, it",
     "org.scalatest"             %%  "scalatest"                       %  scalaTestVersion           % "test, it",
     "org.scalatestplus.play"    %%  "scalatestplus-play"              %  scalaTestPlusPlayVersion   % "test, it",
     "com.vladsch.flexmark"      %   "flexmark-all"                    %  flexmarkAllVersion         % "test, it",

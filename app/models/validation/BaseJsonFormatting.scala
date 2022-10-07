@@ -86,9 +86,6 @@ trait BaseJsonFormatting extends DateHelper {
   val postcodeValidate: Reads[String]
   val countryValidate: Reads[String]
 
-  @deprecated("validation for old Employment model", "SCRS-11281")
-  val firstPaymentDateFormat: Format[LocalDate]
-
   def employmentPaymentDateFormat(incorpDate: Option[LocalDate], employees: Employing.Value): Format[LocalDate]
 
   def employmentSubcontractorsFormat(construction: Boolean): Format[Boolean]

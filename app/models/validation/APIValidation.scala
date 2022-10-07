@@ -50,10 +50,6 @@ object APIValidation extends BaseJsonFormatting {
     isValidNumberCount(phoneNumber) & phoneNumber.matches(phoneNumberRegex)
   }
 
-  private def beforeMinDate(date: LocalDate): Boolean = {
-    date.isBefore(minDate)
-  }
-
   private def paymentDateRangeValidation(lowerRange: LocalDate, upperRange: LocalDate, date: LocalDate): Boolean = {
     date.isAfter(lowerRange) && date.isBefore(upperRange)
   }
@@ -90,12 +86,6 @@ object APIValidation extends BaseJsonFormatting {
   override val addressLine4Validate = Reads.StringReads.filter(JsonValidationError("Invalid address line 4 pattern"))(_.matches(addressLine4Regex))
   override val postcodeValidate = Reads.StringReads.filter(JsonValidationError("Invalid postcode"))(_.matches(postcodeRegex))
   override val countryValidate = Reads.StringReads.filter(JsonValidationError("Invalid country"))(_.matches(countryRegex))
-
-  @deprecated("validation for old Employment model", "SCRS-11281")
-  override val firstPaymentDateFormat: Format[LocalDate] = {
-    val rds = Reads.DefaultLocalDateReads.filter(JsonValidationError("invalid date - too early"))(date => !beforeMinDate(date))
-    Format(rds, Writes.DefaultLocalDateWrites)
-  }
 
   override def employmentPaymentDateFormat(incorpDate: Option[LocalDate] = None, employees: Employing.Value): Format[LocalDate] = {
     lazy val conditionForAlreadyEmploying: LocalDate => Boolean = { paymentDate =>

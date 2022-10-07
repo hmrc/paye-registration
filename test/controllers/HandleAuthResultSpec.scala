@@ -30,7 +30,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
   "logAndSendResult" should {
     "return a correct Result" when {
       "AuthorisationResult is Authorised" in {
-        val response = Authorised("testId").ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = Authorised("testId").ifAuthorised("regId", "TestMethod") {
           Future.successful(Ok("All good"))
         }
 
@@ -39,7 +39,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
       }
 
       "AuthorisationResult is NotLoggedInOrAuthorised" in {
-        val response = NotLoggedInOrAuthorised.ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = NotLoggedInOrAuthorised.ifAuthorised("regId", "TestMethod") {
           Future.successful(Ok("All good"))
         }
 
@@ -47,7 +47,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
       }
 
       "AuthorisationResult is NotAuthorised" in {
-        val response = NotAuthorised("testId").ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = NotAuthorised("testId").ifAuthorised("regId", "TestMethod") {
           Future.successful(Ok("All good"))
         }
 
@@ -55,7 +55,7 @@ class HandleAuthResultSpec extends PAYERegSpec {
       }
 
       "AuthorisationResult is AuthResourceNotFound" in {
-        val response = AuthResourceNotFound("testId").ifAuthorised("regId", "TestController", "TestMethod") {
+        val response = AuthResourceNotFound("testId").ifAuthorised("regId", "TestMethod") {
           Future.successful(Ok("All good"))
         }
 
