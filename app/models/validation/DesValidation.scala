@@ -52,9 +52,6 @@ object DesValidation extends BaseJsonFormatting with Logging {
   override val postcodeValidate = standardRead
   override val countryValidate = standardRead
 
-  @deprecated("validation for old Employment model", "SCRS-11281")
-  override val firstPaymentDateFormat = Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
-
   override def employmentPaymentDateFormat(incorpDate: Option[LocalDate] = None, employees: Employing.Value) =
     Format(Reads.DefaultLocalDateReads, Writes.DefaultLocalDateWrites)
 

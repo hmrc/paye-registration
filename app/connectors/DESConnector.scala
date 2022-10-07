@@ -42,13 +42,13 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     response.status match {
       case 409 =>
         logger.warn("[customDESRead] Received 409 from DES - converting to 200")
-        HttpResponse(200, Some(response.json), response.allHeaders, Option(response.body))
+        HttpResponse(200, response.body, response.headers)
       case 429 =>
-        throw new Upstream5xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 429, reportAs = 503)
+        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 429, reportAs = 503, response.headers)
       case 499 =>
-        throw new Upstream4xxResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.allHeaders)
+        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.headers)
       case status if is4xx(status) =>
-        throw new Upstream4xxResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.allHeaders)
+        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.headers)
       case _ => handleResponse(http, url)(response)
     }
   }

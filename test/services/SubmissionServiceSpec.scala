@@ -16,14 +16,15 @@
 
 package services
 
-import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
+import ch.qos.logback.classic.Level
 
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 import common.exceptions.DBExceptions.MissingRegDocument
 import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
-import helpers.PAYERegSpec
+import helpers.{LogCapturing, PAYERegSpec}
 import models._
 import models.external.BusinessProfile
 import models.incorporation.IncorpStatusUpdate
@@ -33,14 +34,17 @@ import org.mockito.Mockito._
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.{AuthorisationException, BearerTokenExpired, InsufficientConfidenceLevel, NoActiveSession}
+import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.Credentials
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SubmissionServiceSpec extends PAYERegSpec {
+class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
 
   val mockDESConnector = mock[DESConnector]
   val mockIIConnector = mock[IncorporationInformationConnector]
@@ -635,10 +639,85 @@ class SubmissionServiceSpec extends PAYERegSpec {
 
   "Calling retrieveCredId" should {
     "return the correct exception when credential ID is missing" in new Setup {
-      when(mockAuthConnector.authorise(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.failed(new Exception("Can't get providerId from credentials")))
+      when(mockAuthConnector.authorise[Option[Credentials]](
+        ArgumentMatchers.eq(EmptyPredicate),
+        ArgumentMatchers.eq(Retrievals.credentials)
+      )(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.successful(None))
 
       a[service.FailedToGetCredId] mustBe thrownBy(await(service.retrieveCredId()))
+    }
+
+    "return the authorisation exception when NoActiveSession and log useful error" in new Setup {
+
+      val authEx = BearerTokenExpired()
+
+      when(mockAuthConnector.authorise[Option[Credentials]](
+        ArgumentMatchers.eq(EmptyPredicate),
+        ArgumentMatchers.eq(Retrievals.credentials)
+      )(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(authEx))
+
+      withCaptureOfLoggingFrom(service.logger) { logs =>
+        a[NoActiveSession] mustBe thrownBy(await(service.retrieveCredId()))
+
+        val expectedLogMessage = s"[SubmissionService][retrieveCredId] User was not logged in, No Active Session. Reason: '${authEx.reason}'"
+
+        logs.find(_.getMessage == expectedLogMessage) match {
+          case Some(value) =>
+            assert(value.getLevel == Level.WARN, s"Level of Log message was '${value.getLevel}' instead of the expected value '${Level.WARN}'")
+          case None =>
+            fail(s"Could not find log message with value: '$expectedLogMessage'. Actual log messages:\n\n${logs.mkString("\n")}")
+        }
+      }
+    }
+
+    "return the authorisation exception when AuthorisationException and log useful error" in new Setup {
+
+      val authEx = InsufficientConfidenceLevel()
+
+      when(mockAuthConnector.authorise[Option[Credentials]](
+        ArgumentMatchers.eq(EmptyPredicate),
+        ArgumentMatchers.eq(Retrievals.credentials)
+      )(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(authEx))
+
+      withCaptureOfLoggingFrom(service.logger) { logs =>
+        a[AuthorisationException] mustBe thrownBy(await(service.retrieveCredId()))
+
+        val expectedLogMessage = s"[SubmissionService][retrieveCredId] User has an Active Session but is not authorised. Reason: '${authEx.reason}'"
+
+        logs.find(_.getMessage == expectedLogMessage) match {
+          case Some(value) =>
+            assert(value.getLevel == Level.WARN, s"Level of Log message was '${value.getLevel}' instead of the expected value '${Level.WARN}'")
+          case None =>
+            fail(s"Could not find log message with value: '$expectedLogMessage'. Actual log messages:\n\n${logs.mkString("\n")}")
+        }
+      }
+    }
+
+    "return the thrown exception when any other type of unexpected exception is returned from Auth with log message" in new Setup {
+
+      val otherEx = new Exception("oh no")
+
+      when(mockAuthConnector.authorise[Option[Credentials]](
+        ArgumentMatchers.eq(EmptyPredicate),
+        ArgumentMatchers.eq(Retrievals.credentials)
+      )(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(Future.failed(otherEx))
+
+      withCaptureOfLoggingFrom(service.logger) { logs =>
+        a[Exception] mustBe thrownBy(await(service.retrieveCredId()))
+
+        val expectedLogMessage = s"[SubmissionService][retrieveCredId] Unexpected Exception thrown when calling Auth. Exception: '$otherEx'"
+
+        logs.find(_.getMessage == expectedLogMessage) match {
+          case Some(value) =>
+            assert(value.getLevel == Level.ERROR, s"Level of Log message was '${value.getLevel}' instead of the expected value '${Level.ERROR}'")
+          case None =>
+            fail(s"Could not find log message with value: '$expectedLogMessage'. Actual log messages:\n\n${logs.map(_.getMessage).mkString("\n")}")
+        }
+      }
     }
   }
 

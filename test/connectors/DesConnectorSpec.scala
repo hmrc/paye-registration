@@ -77,55 +77,55 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Partial DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", HttpResponse(200))
+      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", HttpResponse(200, ""))
       await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", UpstreamErrorResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
+      intercept[UpstreamErrorResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
 
   }
 
   "submitToDES with a Top Up DES Submission Model (submitTopUpToDES)" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubTopUpURI}", HttpResponse(200))
+      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubTopUpURI}", HttpResponse(200, ""))
 
       await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status mustBe 200
     }
 
     "throw exception if a 400 is encountered with proxy" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubTopUpURI}", UpstreamErrorResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
+      intercept[UpstreamErrorResponse](await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
 
   }
 
   "submitToDES with a Partial DES Submission Model - feature switch disabled (submitToDES)" should {
     "successfully POST" in new SetupWithProxy(false) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", HttpResponse(200))
+      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", HttpResponse(200, ""))
 
       await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", UpstreamErrorResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
+      intercept[UpstreamErrorResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
   }
 
   "submitToDES with a Top Up DES Submission Model - feature switch disabled" should {
     "successfully POST" in new SetupWithProxy(false) {
-      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desTopUpURI}", HttpResponse(200))
+      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desTopUpURI}", HttpResponse(200, ""))
 
       await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status mustBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desTopUpURI}", Upstream4xxResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desTopUpURI}", UpstreamErrorResponse("OOPS", 400, 400))
 
-      intercept[Upstream4xxResponse](await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
+      intercept[UpstreamErrorResponse](await(Connector.submitTopUpToDES(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
   }
 }

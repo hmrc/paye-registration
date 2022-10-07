@@ -17,7 +17,7 @@
 package controllers
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import auth.CryptoSCRS
 import common.exceptions.DBExceptions.{MissingRegDocument, RetrieveFailed, UpdateFailed}
 import common.exceptions.RegistrationExceptions.{EmploymentDetailsNotDefinedException, RegistrationFormatException, UnmatchedStatusException}
@@ -52,7 +52,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
 
 
   implicit val system = ActorSystem("PR")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = Materializer(system)
   implicit val hc = HeaderCarrier()
 
 

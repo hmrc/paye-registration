@@ -22,6 +22,7 @@ import common.exceptions.RegistrationExceptions._
 import common.exceptions.SubmissionExceptions._
 import connectors._
 import enums.{Employing, IncorporationStatus, PAYEStatus}
+
 import javax.inject.{Inject, Singleton}
 import models._
 import models.incorporation.IncorpStatusUpdate
@@ -31,7 +32,7 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, NoActiveSession, UnsupportedAuthProvider}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -275,8 +276,18 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     authorised().retrieve(Retrievals.credentials) {
       case Some(credentials) =>
         Future.successful(credentials.providerId)
+      case None =>
+        throw new FailedToGetCredId
     } recoverWith {
-      case _ => Future.failed(new FailedToGetCredId)
+      case ex: NoActiveSession =>
+        logger.warn(s"[retrieveCredId] User was not logged in, No Active Session. Reason: '${ex.reason}'")
+        throw ex
+      case ex: AuthorisationException =>
+        logger.warn(s"[retrieveCredId] User has an Active Session but is not authorised. Reason: '${ex.reason}'")
+        throw ex
+      case ex =>
+        logger.error(s"[retrieveCredId] Unexpected Exception thrown when calling Auth. Exception: '$ex'")
+        throw ex
     }
   }
 
