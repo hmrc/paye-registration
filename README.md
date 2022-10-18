@@ -1,7 +1,5 @@
 # paye-registration
 
-[ ![Download](https://api.bintray.com/packages/hmrc/releases/paye-registration/images/download.svg) ](https://bintray.com/hmrc/releases/paye-registration/_latestVersion)
-
 Microservice supporting the paye registration aspects of the Streamlined Company Registration Legislation.
 
 ## Running the Application
