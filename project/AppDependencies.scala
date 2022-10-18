@@ -12,8 +12,10 @@ object AppDependencies {
   private val hmrcMongoVersion            =  "0.73.0"
   private val quartzSchedulerVersion      =  "1.9.3-akka-2.6.x"
   private val flexmarkAllVersion          =  "0.62.2"
+  private val taxYearVersion              =  "3.0.0"
 
   val compile = Seq(
+    "uk.gov.hmrc"               %%  "tax-year"                        % taxYearVersion,
     "com.enragedginger"         %%  "akka-quartz-scheduler"           % quartzSchedulerVersion,
     "uk.gov.hmrc"               %% s"bootstrap-backend$playVersion"   % bootstrapVersion,
     "uk.gov.hmrc"               %%  "domain"                          % domainVersion,
