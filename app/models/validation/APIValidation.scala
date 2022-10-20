@@ -18,11 +18,14 @@ package models.validation
 
 import enums.Employing
 import play.api.libs.json._
+import uk.gov.hmrc.time.CurrentTaxYear
 
 import java.time.LocalDate
-import scala.collection.Seq
 
-object APIValidation extends BaseJsonFormatting {
+object APIValidation extends BaseJsonFormatting with CurrentTaxYear {
+
+  override def now: () => LocalDate = () => currentDate
+
   private val emailRegex = """^(?!.{71,})([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{1,11})$"""
   private val phoneNumberRegex = """^[0-9 ]{1,20}$"""
   private val nameRegex = """^[A-Za-z 0-9\-']{1,100}$"""
@@ -90,7 +93,10 @@ object APIValidation extends BaseJsonFormatting {
   override def employmentPaymentDateFormat(incorpDate: Option[LocalDate] = None, employees: Employing.Value): Format[LocalDate] = {
     lazy val conditionForAlreadyEmploying: LocalDate => Boolean = { paymentDate =>
       incorpDate.fold(false) { incorp =>
-        val lowerRangeDate = if (incorp.isBefore(currentDate.minusYears(2))) currentDate.minusYears(2) else incorp
+
+        val earliestTaxYearStartDate = LocalDate.of(current.currentYear - 2, 4, 6)
+
+        val lowerRangeDate = if (incorp.isBefore(earliestTaxYearStartDate)) earliestTaxYearStartDate else incorp
 
         paymentDateRangeValidation(lowerRangeDate.minusDays(1), currentDate.plusDays(1), paymentDate)
       }

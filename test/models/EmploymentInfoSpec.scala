@@ -228,17 +228,42 @@ class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
 
         json.as[EmploymentInfo](EmploymentInfo.format(APIValidation)) mustBe expectedModel
       }
-    }
 
-    "be unsuccessful" when {
-      "company is incorporated more than 2 years ago, employees is alreadyEmploying and firstPaymentDate is before today - 2 years" in {
+      "company is incorporated more than 2 years ago, employees is alreadyEmploying and firstPaymentDate is equal to today minus 2 years at start of Tax Year" in {
         System.setProperty("feature.system-date", "2018-12-25T00:00:00Z")
 
-        val incorpDate: LocalDate = LocalDate.of(2016, 12, 24)
+        val expectedModel = EmploymentInfo(
+          employees = Employing.alreadyEmploying,
+          firstPaymentDate = LocalDate.of(2016, 4, 6),
+          construction = true,
+          subcontractors = true,
+          companyPension = Some(true)
+        )
+
+        val incorpDate: LocalDate = LocalDate.of(2015, 12, 24)
         val json = Json.parse(
           """|{
              |   "employees": "alreadyEmploying",
-             |   "firstPaymentDate": "2016-12-24",
+             |   "firstPaymentDate": "2016-04-06",
+             |   "construction": true,
+             |   "subcontractors": true,
+             |   "companyPension": true
+             | }
+          """.stripMargin).as[JsObject]
+
+        json.as[EmploymentInfo](EmploymentInfo.format(APIValidation, Some(incorpDate))) mustBe expectedModel
+      }
+    }
+
+    "be unsuccessful" when {
+      "company is incorporated more than 2 years ago, employees is alreadyEmploying and firstPaymentDate is before today minus 2 years at start of Tax Year" in {
+        System.setProperty("feature.system-date", "2018-12-25T00:00:00Z")
+
+        val incorpDate: LocalDate = LocalDate.of(2015, 12, 24)
+        val json = Json.parse(
+          """|{
+             |   "employees": "alreadyEmploying",
+             |   "firstPaymentDate": "2016-04-05",
              |   "construction": true,
              |   "subcontractors": true,
              |   "companyPension": true
