@@ -17,27 +17,19 @@
 package connectors
 
 import config.AppConfig
-import utils.Logging
+import connectors.httpParsers.CompanyRegistrationHttpParsers
 import uk.gov.hmrc.http.{HttpClient, _}
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class CompanyRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig) extends Logging {
+class CompanyRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig) extends BaseConnector with CompanyRegistrationHttpParsers {
 
-  def fetchCompanyRegistrationDocument(regId: String, txId: Option[String])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.GET[HttpResponse](s"${appConfig.compRegUrl}/company-registration/corporation-tax-registration/$regId/corporation-tax-registration") recover {
-      case e: NotFoundException =>
-        logger.error(s"[fetchCompanyRegistrationDocument] Received a NotFound status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
-        throw e
-      case e: ForbiddenException =>
-        logger.error(s"[fetchCompanyRegistrationDocument] Received a Forbidden status code when expecting reg document from Company-Registration for regId: $regId and txId: $txId")
-        throw e
-      case e: Exception =>
-        logger.error(s"[fetchCompanyRegistrationDocument] Received error when expecting reg document from Company-Registration for regId: $regId and txId: $txId - Error ${e.getMessage}")
-        throw e
+  def fetchCtUtr(regId: String, txId: Option[String])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] =
+    withRecovery()("fetchCtUtr", Some(regId), txId) {
+      http.GET[Option[String]](s"${appConfig.compRegUrl}/company-registration/corporation-tax-registration/$regId/corporation-tax-registration")(
+        ctUtrHttpReads(regId, txId), hc, ec
+      )
     }
-  }
 }

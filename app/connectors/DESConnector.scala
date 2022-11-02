@@ -49,7 +49,8 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
         throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.headers)
       case status if is4xx(status) =>
         throw UpstreamErrorResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.headers)
-      case _ => handleResponse(http, url)(response)
+      case _ =>
+        handleResponseEither(http, url)(response).fold(e => throw e, identity)
     }
   }
 

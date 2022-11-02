@@ -27,19 +27,14 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpResponse, NotFoundException}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
 
-  val testJson: JsValue = Json.parse(
-    """
-      |{
-      | "testKey" : "testValue"
-      |}
-    """.stripMargin
-  )
+  val ctUtr = "1234567890"
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   class Setup {
 
@@ -54,39 +49,38 @@ class CompanyRegistrationConnectorSpec extends PAYERegSpec with HTTPMock {
   "fetchCompanyRegistrationDocument" should {
     "return an OK with JSON body" when {
       "given a valid regId" in new Setup {
-        val okResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
 
-        mockHttpGet[HttpResponse]("testUrl", okResponse)
+        mockHttpGet[Option[String]]("testUrl", Some(ctUtr))
 
-        val result: HttpResponse = await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId")))
-        result mustBe okResponse
+        val result: Option[String] = await(Connector.fetchCtUtr("testRegId", Some("testTxId")))
+        result mustBe Some(ctUtr)
       }
     }
 
     "throw a not found exception" when {
       "the reg document cant be found" in new Setup {
-        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[Option[String]](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new NotFoundException("Bad request")))
 
-        intercept[NotFoundException](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
+        intercept[NotFoundException](await(Connector.fetchCtUtr("testRegId", Some("testTxId"))))
       }
     }
 
     "throw a forbidden exception" when {
       "the request is not authorised" in new Setup {
-        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[Option[String]](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new ForbiddenException("Forbidden")))
 
-        intercept[ForbiddenException](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
+        intercept[ForbiddenException](await(Connector.fetchCtUtr("testRegId", Some("testTxId"))))
       }
     }
 
     "throw an unchecked exception" when {
       "an unexpected response code was returned" in new Setup {
-        when(mockHttp.GET[BusinessProfile](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockHttp.GET[Option[String]](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.failed(new RuntimeException("Runtime Exception")))
 
-        intercept[Throwable](await(Connector.fetchCompanyRegistrationDocument("testRegId", Some("testTxId"))))
+        intercept[Throwable](await(Connector.fetchCtUtr("testRegId", Some("testTxId"))))
       }
     }
   }

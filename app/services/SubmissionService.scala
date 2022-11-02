@@ -311,11 +311,6 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
 
   private[services] def fetchCtUtr(regId: String, incorpUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val txId = incorpUpdate.map(_.transactionId)
-    companyRegistrationConnector.fetchCompanyRegistrationDocument(regId, txId) map { response =>
-      Try((response.json \ "acknowledgementReferences" \ "ctUtr").as[String]) match {
-        case Success(ctutr) => Some(ctutr)
-        case Failure(_) => None
-      }
-    }
+    companyRegistrationConnector.fetchCtUtr(regId, txId)
   }
 }

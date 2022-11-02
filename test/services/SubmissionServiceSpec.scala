@@ -518,16 +518,8 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
       }
 
       "the incorporation is accepted" in new Setup {
-        def json: JsValue = Json.parse(
-          """
-            |{
-            | "acknowledgementReferences" : {
-            |   "ctUtr" : "testCtUtr"
-            | }
-            |}
-            """.stripMargin)
 
-        val okResponse: HttpResponse = HttpResponse.apply(OK, json.toString())
+        val okResponse: Option[String] = Some("testCtUtr")
 
         when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(None))
@@ -542,7 +534,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
         when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
@@ -567,19 +559,10 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
   "Calling submitTopUpToDES" should {
     "return the correct PAYE status" when {
       "incorporation is accepted" in new Setup {
-        def json: JsValue = Json.parse(
-          """
-            |{
-            | "acknowledgementReferences" : {
-            |   "ctUtr" : "testCtUtr"
-            | }
-            |}
-            """.stripMargin
-        )
 
-        val okResponse: HttpResponse = HttpResponse.apply(OK, json.toString())
+        val okResponse: Option[String] = Some("testCtUtr")
 
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
 
         when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
@@ -604,17 +587,10 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
       }
 
       "incorporation is rejected" in new Setup {
-        def json: JsValue = Json.parse(
-          """
-            |{
-            | "acknowledgementReferences" : {}
-            |}
-            """.stripMargin
-        )
 
-        val okResponse: HttpResponse = HttpResponse.apply(OK, json.toString())
+        val okResponse: Option[String] = None
 
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
 
         when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
@@ -739,20 +715,9 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
   "fetchCtUtr" should {
     "return some ctutr" when {
       "the ctutr is part of the CR doc" in new Setup {
-        val testJson = Json.parse(
-          """
-            |{
-            | "acknowledgementReferences": {
-            |   "ctUtr" : "testCtUtr"
-            | }
-            |}
-          """.stripMargin
-        )
 
-        val okResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
-
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(okResponse))
+        when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(Some("testCtUtr")))
 
         val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
         result mustBe Some("testCtUtr")
@@ -761,20 +726,9 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
 
     "return none" when {
       "the ctutr isn't part of the CR doc" in new Setup {
-        val testJson = Json.parse(
-          """
-            |{
-            | "acknowledgementReferences": {
-            |   "invalidKey" : "testCtUtr"
-            | }
-            |}
-          """.stripMargin
-        )
 
-        val okResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
-
-        when(mockCompanyRegistrationConnector.fetchCompanyRegistrationDocument(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(okResponse))
+        when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(None))
 
         val result = await(service.fetchCtUtr("testRegId", Some(incorpStatusUpdate)))
         result mustBe None
