@@ -18,6 +18,7 @@ package connectors
 
 import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import config.AppConfig
+import connectors.httpParsers.BaseHttpReads
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
 import utils.Logging
@@ -27,11 +28,12 @@ import uk.gov.hmrc.http._
 import utils.{PAYEFeatureSwitches, SystemDate, WorkingHoursGuard}
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditService: AuditService) extends HttpErrorFunctions with WorkingHoursGuard with Logging {
+class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val auditService: AuditService)
+  extends BaseConnector with BaseHttpReads with HttpErrorFunctions with WorkingHoursGuard with Logging {
+
   val alertWorkingHours: String = appConfig.alertWorkingHours
 
   def currentDate = SystemDate.getSystemDate.toLocalDate
@@ -66,7 +68,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
   }
 
-  def submitToDES(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitToDES(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = if (useDESStubFeature) {
       s"${appConfig.desStubUrl}/${appConfig.desStubURI}"
@@ -79,14 +81,14 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
       logger.info(s"[submitToDES] DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
     } recoverWith {
-      case e: Upstream4xxResponse =>
+      case e: UpstreamErrorResponse if UpstreamErrorResponse.Upstream4xxResponse.unapply(e).isDefined =>
         logDes400PagerDuty(e, regId)
         auditService.sendEvent("payeRegistrationSubmissionFailure", Json.obj("submission" -> submission, JOURNEY_ID -> regId))
         Future.failed(e)
     }
   }
 
-  def submitTopUpToDES(submission: TopUpDESSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitTopUpToDES(submission: TopUpDESSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     val url = if (useDESStubFeature) {
       s"${appConfig.desStubUrl}/${appConfig.desStubTopUpURI}"
     } else {
@@ -98,7 +100,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
       logger.info(s"[submitTopUpToDES] DES responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
     } recoverWith {
-      case e: Upstream4xxResponse =>
+      case e: UpstreamErrorResponse if UpstreamErrorResponse.Upstream4xxResponse.unapply(e).isDefined =>
         logDes400PagerDuty(e, regId)
         Future.failed(e)
     }

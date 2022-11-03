@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig)
                                              (implicit ec: ExecutionContext) extends BaseConnector with BusinessRegistrationHttpParsers {
 
-  def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] =
+  def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier): Future[BusinessProfile] =
 
   withRecovery()("retrieveCurrentProfile", Some(regId)) {
     http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration")(

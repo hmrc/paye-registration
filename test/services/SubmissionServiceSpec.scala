@@ -298,7 +298,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
       "a valid PAYE reg doc is passed to it" in new Setup {
         val credentials = Credentials("cred-123", "testProviderType")
 
-        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
@@ -310,7 +310,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
       "a valid paye reg doc with a crn is passed to it" in new Setup {
         val credentials = Credentials("cred-123", "testProviderType")
 
-        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
@@ -477,7 +477,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         .thenReturn(Future.successful("foo"))
       when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any()))
         .thenReturn(Future.successful("bar"))
-      when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+      when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(Some(incorpStatusUpdate.copy(status = IncorporationStatus.rejected))))
       when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
@@ -494,12 +494,12 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
           .thenReturn(Future.successful("foo"))
         when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any()))
           .thenReturn(Future.successful("bar"))
-        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(None))
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
-        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
         when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
@@ -529,14 +529,14 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
           .thenReturn(Future.successful("foo"))
         when(mockRegistrationRepository.retrieveTransactionId(ArgumentMatchers.any()))
           .thenReturn(Future.successful("bar"))
-        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockIIConnector.getIncorporationUpdate(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(Some(incorpStatusUpdate)))
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
         when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
-        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
         when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
@@ -571,7 +571,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
         when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
@@ -599,7 +599,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
         when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
@@ -699,7 +699,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
 
   "Calling retrieveLanguage" should {
     "return the correct exception for language" in new Setup {
-      when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(mockBusinessRegistrationConnector.retrieveCurrentProfile(ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(BusinessProfile(validRegistration.registrationID, None, "en")))
 
       a[service.FailedToGetLanguage] mustBe thrownBy(await(service.retrieveLanguage("testRegId")))

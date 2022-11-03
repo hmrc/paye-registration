@@ -33,11 +33,13 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.{LocalDate, LocalTime}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFixture {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   val mockHttp: HttpClient = mock[HttpClient]
   val mockAuditService: AuditService = mock[AuditService]
 

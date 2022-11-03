@@ -57,6 +57,8 @@ class AuthClient101Spec extends PAYERegSpec {
       authorised().retrieve(credentials) {
         case Some(cred) =>
           Future.successful(Ok(cred.providerId))
+        case _ =>
+          Future.failed(new Exception("missing cred ID"))
       } recover {
         case _ => Forbidden
       }
