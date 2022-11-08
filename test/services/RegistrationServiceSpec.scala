@@ -233,7 +233,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationRepository.retrieveTransactionId(eqTo(regId)))
         .thenReturn(Future.successful("test-txId"))
 
-      when(mockIncorporationInformationConnector.getIncorporationDate(eqTo("test-txId"))(any()))
+      when(mockIncorporationInformationConnector.getIncorporationDate(eqTo("test-txId"))(any(), any()))
         .thenReturn(Future.successful(None))
 
       val actual = await(service.getIncorporationDate(regId))
@@ -252,7 +252,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationRepository.retrieveTransactionId(eqTo(regId)))
         .thenReturn(Future.successful("test-txId"))
 
-      when(mockIncorporationInformationConnector.getIncorporationDate(eqTo("test-txId"))(any()))
+      when(mockIncorporationInformationConnector.getIncorporationDate(eqTo("test-txId"))(any(), any()))
         .thenReturn(Future.successful(Some(LocalDate.of(2017, 6, 4))))
 
       val actual = await(service.getIncorporationDate(regId))

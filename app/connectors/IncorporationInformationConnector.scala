@@ -17,57 +17,39 @@
 package connectors
 
 import config.AppConfig
+import connectors.httpParsers.IncorporationInformationHttpParsers
 import models.incorporation.IncorpStatusUpdate
-import models.validation.APIValidation
-import utils.Logging
-import play.api.http.Status.{ACCEPTED, NO_CONTENT, OK}
 import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 
-class IncorporationInformationResponseException(msg: String) extends NoStackTrace {
+class IncorporationInformationResponseException(msg: String) extends Exception with NoStackTrace {
   override def getMessage: String = msg
 }
 
 @Singleton
-class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends Logging {
+class IncorporationInformationConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends BaseConnector with IncorporationInformationHttpParsers {
 
-  private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String = {
+  private[connectors] def constructIncorporationInfoUri(transactionId: String, regime: String, subscriber: String): String =
     s"/incorporation-information/subscribe/$transactionId/regime/$regime/subscriber/$subscriber"
-  }
 
-  def getIncorporationDate(transactionId: String)(implicit hc: HeaderCarrier): Future[Option[LocalDate]] = {
-    val url = s"${appConfig.incorporationInformationUri}/incorporation-information/$transactionId/incorporation-update"
-    http.GET[HttpResponse](url) map { res =>
-      res.status match {
-        case OK => (res.json \ "incorporationDate").asOpt[LocalDate]
-        case NO_CONTENT => None
-        case _ =>
-          logger.error(s"[getIncorporationDate] returned a ${res.status} response code for txId: $transactionId")
-          throw new IncorporationInformationResponseException(s"Calling II on $url returned a ${res.status}")
-      }
-    } recover {
-      case e =>
-        logger.error(s"[getIncorporationDate] has encountered an error using transactionId: $transactionId with message: ${e.getMessage}")
-        throw e
+  def getIncorporationDate(transactionId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[LocalDate]] =
+    withRecovery()("getIncorporationDate", txId = Some(transactionId)) {
+      http.GET[Option[LocalDate]](s"${appConfig.incorporationInformationUri}/incorporation-information/$transactionId/incorporation-update")(
+        incorporationDateHttpReads(transactionId), hc, ec
+      )
     }
-  }
 
-  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, regId: String)(implicit hc: HeaderCarrier): Future[Option[IncorpStatusUpdate]] = {
+  def getIncorporationUpdate(transactionId: String, regime: String, subscriber: String, regId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[IncorpStatusUpdate]] = {
     val postJson = Json.obj("SCRSIncorpSubscription" -> Json.obj("callbackUrl" -> s"${appConfig.payeRegUri}/paye-registration/incorporation-data"))
-    http.POST[JsObject, HttpResponse](s"${appConfig.incorporationInformationUri}${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson) map { resp =>
-      resp.status match {
-        case OK => Some(resp.json.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation)))
-        case ACCEPTED => None
-        case _ =>
-          logger.error(s"[getIncorporationUpdate] returned a ${resp.status} response code for regId: $regId and txId: $transactionId")
-          throw new IncorporationInformationResponseException(s"Calling II on ${constructIncorporationInfoUri(transactionId, regime, subscriber)} returned a ${resp.status}")
-      }
+    withRecovery()("getIncorporationUpdate", Some(regId), Some(transactionId)) {
+      http.POST[JsObject, Option[IncorpStatusUpdate]](s"${appConfig.incorporationInformationUri}${constructIncorporationInfoUri(transactionId, regime, subscriber)}", postJson)(
+        implicitly, incorpStatusUpdateHttpReads(regId, transactionId), hc, ec
+      )
     }
   }
 }

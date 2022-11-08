@@ -20,7 +20,7 @@ import config.AppConfig
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
 import models.validation.APIValidation
-import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, when}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.Helpers._
@@ -34,7 +34,7 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
   val mockHttp = mock[HttpClient]
 
-  val testJson = Json.parse(
+  val testIncorpStatusJson = Json.parse(
     s"""
        |{
        |   "SCRSIncorpStatus" : {
@@ -56,7 +56,10 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
     """.stripMargin
   )
 
+  val testIncorpStatus = testIncorpStatusJson.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation))
+
   implicit val hc = HeaderCarrier()
+  implicit val ec = scala.concurrent.ExecutionContext.Implicits.global
 
   class Setup {
 
@@ -86,22 +89,20 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
   "checkStatus" should {
     "return an IncorpStatusUpdate" when {
       "interest has been registered and there is already information about the given incorporation" in new Setup {
-        val testResponse = HttpResponse.apply(OK, testJson.toString())
 
-        when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(testResponse))
+        when(mockHttp.POST[JsObject, Option[IncorpStatusUpdate]](any(), any(), any())(any(), any(), any(), any()))
+          .thenReturn(Future.successful(Some(testIncorpStatus)))
 
         val result = await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
-        result mustBe Some(Json.fromJson[IncorpStatusUpdate](testJson)(IncorpStatusUpdate.reads(APIValidation)).get)
+        result mustBe Some(testIncorpStatus)
       }
     }
 
     "return None" when {
       "interested has been registered for a given incorporation" in new Setup {
-        val testResponse = HttpResponse.apply(ACCEPTED, "")
 
-        when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(testResponse))
+        when(mockHttp.POST[JsObject, Option[IncorpStatusUpdate]](any(), any(), any())(any(), any(), any(), any()))
+          .thenReturn(Future.successful(None))
 
         val result = await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId"))
         result mustBe None
@@ -110,92 +111,33 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
     "throw an IncorporationInformationResponseException" when {
       "when there was a problem on II" in new Setup {
-        val testResponse = HttpResponse.apply(INTERNAL_SERVER_ERROR, "")
 
-        when(mockHttp.POST[JsObject, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-          .thenReturn(Future.successful(testResponse))
+        when(mockHttp.POST[JsObject, Option[IncorpStatusUpdate]](any(), any(), any())(any(), any(), any(), any()))
+          .thenReturn(Future.failed(new IncorporationInformationResponseException("bang")))
 
-        val result = intercept[IncorporationInformationResponseException](await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId")))
-        result.getMessage mustBe s"Calling II on /incorporation-information/subscribe/testTxId/regime/paye/subscriber/SCRS returned a 500"
+        intercept[IncorporationInformationResponseException](await(Connector.getIncorporationUpdate("testTxId", "paye", "SCRS", "testRegId")))
       }
     }
   }
 
   "getIncorporationDate" should {
     "return Some(LocalDate)" in new Setup {
-      val testJson = Json.parse(
-        """
-          |{
-          |   "crn": "fooBarWizz",
-          |   "incorporationDate": "2015-12-25"
-          |}
-        """.stripMargin
-      )
 
-      val testResponse = new HttpResponse {
-        override def status: Int = OK
+      val date = LocalDate.of(2015, 12, 25)
 
-        override def json: JsValue = testJson
-
-        override def body: String = ""
-
-        override def allHeaders: Map[String, Seq[String]] = Map.empty
-      }
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(testResponse))
+      when(mockHttp.GET[Option[LocalDate]](any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(Some(date)))
 
       val res = await(Connector.getIncorporationDate("testTxId"))
-      res mustBe Some(LocalDate.of(2015, 12, 25))
+      res mustBe Some(date)
     }
 
+    "return an exception if the future fails" in new Setup {
 
-    "return None when local date cannot be parsed" in new Setup {
-      val testJson = Json.parse(
-        """
-          |{
-          |   "crn": "fooBarWizz",
-          |   "incorporationDate": "2015-12-"
-          |}
-        """.stripMargin
-      )
-      val testResponse = HttpResponse.apply(OK, testJson.toString())
+      when(mockHttp.GET[Option[LocalDate]](any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.failed(new IncorporationInformationResponseException("bang")))
 
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(testResponse))
-      val res = await(Connector.getIncorporationDate("testTxId"))
-      res mustBe None
-    }
-    "return None when element does not exist" in new Setup {
-      val testJson = Json.parse(
-        """
-          |{
-          |   "crn": "fooBarWizz"
-          |}
-        """.stripMargin
-      )
-      val testResponse: HttpResponse = HttpResponse.apply(OK, testJson.toString())
-
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(testResponse))
-      val res = await(Connector.getIncorporationDate("testTxId"))
-      res mustBe None
-    }
-    "return None when response is 204" in new Setup {
-      val testResponse: HttpResponse = HttpResponse.apply(NO_CONTENT, "")
-
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(testResponse))
-      val res = await(Connector.getIncorporationDate("testTxId"))
-      res mustBe None
-    }
-
-    "return an exception if the response code from II is not expected" in new Setup {
-      val testResponse: HttpResponse = HttpResponse.apply(ACCEPTED, "")
-
-      when(mockHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(testResponse))
-
-      an[IncorporationInformationResponseException] mustBe thrownBy(await(Connector.getIncorporationDate("testTxId")))
+      intercept[IncorporationInformationResponseException](await(Connector.getIncorporationDate("testTxId")))
     }
   }
 }

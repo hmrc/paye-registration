@@ -17,6 +17,7 @@
 package connectors
 
 import config.AppConfig
+import connectors.httpParsers.BusinessRegistrationHttpParsers
 import models.external.BusinessProfile
 import utils.Logging
 import uk.gov.hmrc.http.{ForbiddenException, HeaderCarrier, HttpClient, HttpReads, NotFoundException}
@@ -25,19 +26,14 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends Logging {
+class BusinessRegistrationConnector @Inject()(http: HttpClient, appConfig: AppConfig)
+                                             (implicit ec: ExecutionContext) extends BaseConnector with BusinessRegistrationHttpParsers {
 
-  def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier, rds: HttpReads[BusinessProfile]): Future[BusinessProfile] = {
-    http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration") recover {
-      case e: NotFoundException =>
-        logger.error(s"[retrieveCurrentProfile] Received a NotFound status code when expecting current profile from Business-Registration for regId: $regId")
-        throw e
-      case e: ForbiddenException =>
-        logger.error(s"[retrieveCurrentProfile] Received a Forbidden status code when expecting current profile from Business-Registration for regId: $regId")
-        throw e
-      case e: Exception =>
-        logger.error(s"[retrieveCurrentProfile] Received error when expecting current profile from Business-Registration for regId: $regId - Error ${e.getMessage}")
-        throw e
-    }
+  def retrieveCurrentProfile(regId: String)(implicit hc: HeaderCarrier): Future[BusinessProfile] =
+
+  withRecovery()("retrieveCurrentProfile", Some(regId)) {
+    http.GET[BusinessProfile](s"${appConfig.businessRegUrl}/business-registration/business-tax-registration")(
+      businessProfileHttpReads(regId), hc, ec
+    )
   }
 }
