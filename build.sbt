@@ -1,7 +1,7 @@
 
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings.{defaultSettings, integrationTestSettings, scalaSettings}
-import uk.gov.hmrc.SbtBobbyPlugin.BobbyKeys.bobbyRulesURL
+import SbtBobbyPlugin.BobbyKeys.bobbyRulesURL
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 
@@ -27,7 +27,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(bobbyRulesURL := Some(new URL("https://webstore.tax.service.gov.uk/bobby-config/deprecated-dependencies.json")))
   .settings(
     scalacOptions += "-Xlint:-unused",
-    scalaVersion := "2.12.15",
+    scalaVersion := "2.13.8",
     libraryDependencies ++= AppDependencies(),
     retrieveManaged := true,
     IntegrationTest / parallelExecution := false,
