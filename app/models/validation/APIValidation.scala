@@ -40,7 +40,7 @@ object APIValidation extends BaseJsonFormatting with CurrentTaxYear {
 
   private val validNinoFormat = "[[A-Z]&&[^DFIQUV]][[A-Z]&&[^DFIQUVO]]\\d{2}\\d{2}\\d{2}[A-D]{1}"
   private val directorNameRegex = """^[A-Za-z 0-9\-';]{1,100}$"""
-  private val directorTitleRegex = """^[A-Za-z ]{1,20}$"""
+  private val directorTitleRegex = """^[A-Za-z \-']{1,20}$"""
 
   private val invalidPrefixes = List("BG", "GB", "NK", "KN", "TN", "NT", "ZZ")
 

@@ -27,14 +27,14 @@ class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
          |  "forename":"Thierry'",
          |  "other_forenames":"Dominique;",
          |  "surname":"Henr-01y",
-         |  "title":"Sir"
+         |  "title":"Dr-Sir"
          |}""".stripMargin)
 
     val tstModel = Name(
       forename = Some("Thierry'"),
       otherForenames = Some("Dominique;"),
       surname = Some("Henr-01y"),
-      title = Some("Sir")
+      title = Some("Dr-Sir")
     )
 
     "read from json with full data" in {
@@ -98,7 +98,7 @@ class DirectorSpec extends PAYERegSpec with JsonFormatValidation {
         shouldHaveErrors(result, JsPath() \ "title", Seq(JsonValidationError("error.pattern")))
       }
       "title is invalid" in {
-        val result = Json.fromJson[Name](testNameJson(title = "Title1"))(Name.format(APIValidation))
+        val result = Json.fromJson[Name](testNameJson(title = "Dr.Title1"))(Name.format(APIValidation))
         shouldHaveErrors(result, JsPath() \ "title", Seq(JsonValidationError("error.pattern")))
       }
     }
