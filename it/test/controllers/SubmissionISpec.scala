@@ -17,10 +17,10 @@
 package controllers
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
-
 import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import enums.{Employing, PAYEStatus}
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
@@ -39,11 +39,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
-  val mockHost = WiremockHelper.wiremockHost
-  val mockPort = WiremockHelper.wiremockPort
+  val mockHost: String = WiremockHelper.wiremockHost
+  val mockPort: Int = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
 
-  val additionalConfiguration = Map(
+  val additionalConfiguration: Map[String, String] = Map(
     "auditing.consumer.baseUri.host" -> s"$mockHost",
     "auditing.consumer.baseUri.port" -> s"$mockPort",
     "microservice.services.auth.host" -> s"$mockHost",
@@ -67,9 +67,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     .configure(additionalConfiguration)
     .build()
 
-  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
-  lazy val sConfig = app.injector.instanceOf[Configuration]
-  lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+  lazy val mongoComponent: MongoComponent = app.injector.instanceOf[MongoComponent]
+  lazy val sConfig: Configuration = app.injector.instanceOf[Configuration]
+  lazy val mockcryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   private val regime = "paye"
   private val subscriber = "SCRS"
@@ -78,13 +78,13 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   val dt = ZonedDateTime.of(2000,1,20,16,1,0,0,ZoneOffset.UTC)
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    lazy val mockMetricRegistry: MetricRegistry = app.injector.instanceOf[MetricRegistry]
+    lazy val mockDateHelper: DateHelper = app.injector.instanceOf[DateHelper]
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
     val sequenceRepository = new SequenceMongoRepository(mongoComponent)
     await(repository.dropCollection)
     await(sequenceRepository.collection.drop().toFuture())
-    await(sequenceRepository.ensureIndexes)
+    await(sequenceRepository.ensureIndexes())
   }
 
   val regId = "12345"
@@ -93,8 +93,8 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   val intId = "Int-xxx"
   val timestamp = "2017-01-01T00:00:00"
 
-  val businessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
-  def stubBusinessProfile() = stubFor(
+  val businessProfile: BusinessProfile = BusinessProfile(regId, completionCapacity = None, language = "en")
+  def stubBusinessProfile(): StubMapping = stubFor(
     get(urlMatching("/business-registration/business-tax-registration"))
       .willReturn(
         aResponse()
@@ -104,7 +104,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       )
     )
 
-  def submission = PAYERegistration(
+  def submission: PAYERegistration = PAYERegistration(
     regId,
     transactionID,
     intId,

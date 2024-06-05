@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package mocks
 
 import com.codahale.metrics.Timer
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import config.AppConfig
 import org.scalatestplus.mockito.MockitoSugar
 import repositories.RegistrationMongoRepository
@@ -29,9 +29,9 @@ object MetricsMock extends MockitoSugar {
   private val regRepo = mock[RegistrationMongoRepository]
   private val lockRepository = mock[MongoLockRepository]
   private val appConfig = mock[AppConfig]
-  private val metrics = mock[Metrics]
+  private val metricRegistry = mock[MetricRegistry]
 
-  val mockMetricsService = new MetricsService(regRepo, lockRepository, appConfig, metrics) {
+  val mockMetricsService = new MetricsService(regRepo, lockRepository, appConfig, metricRegistry) {
     override lazy val lock = mock[LockService]
     override lazy val mongoResponseTimer = new Timer()
   }

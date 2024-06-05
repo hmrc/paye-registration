@@ -18,7 +18,7 @@ package jobs
 
 import auth.CryptoSCRS
 import com.google.inject.name.Names
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import config.AppConfig
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -34,15 +34,15 @@ import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class MetricsJobISpec extends IntegrationSpecBase {
+class RemoveStaleDocumentsJobISpec extends IntegrationSpecBase {
 
-  val mockHost = WiremockHelper.wiremockHost
-  val mockPort = WiremockHelper.wiremockPort
+  val mockHost: String = WiremockHelper.wiremockHost
+  val mockPort: Int = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
 
   val additionalConfiguration: Map[String, Any] = Map(
-    "metrics.enabled" -> "true",
     "auditing.consumer.baseUri.host" -> mockHost,
     "auditing.consumer.baseUri.port" -> mockPort,
     "Test.auditing.consumer.baseUri.host" -> mockHost,
@@ -50,7 +50,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
     "constants.maxStorageDays" -> 60
   )
 
-  override def beforeEach() = new Setup(timestamp) {
+  override def beforeEach() = new Setup {
     resetWiremock()
 
     await(repository.dropCollection)
@@ -60,9 +60,9 @@ class MetricsJobISpec extends IntegrationSpecBase {
     .configure(additionalConfiguration)
     .build()
 
-  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
-  lazy val sConfig = app.injector.instanceOf[Configuration]
-  lazy val appConfig = app.injector.instanceOf[AppConfig]
+  lazy val mongoComponent: MongoComponent = app.injector.instanceOf[MongoComponent]
+  lazy val sConfig: Configuration = app.injector.instanceOf[Configuration]
+  lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   def lookupJob(name: String): ScheduledJob = {
     val qualifier = Some(QualifierInstance(Names.named(name)))
@@ -70,7 +70,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
     app.injector.instanceOf[ScheduledJob](key)
   }
 
-  def reg(regId: String, lastAction: Option[ZonedDateTime], status: PAYEStatus.Value) = PAYERegistration(
+  def reg(regId: String, lastAction: Option[ZonedDateTime]) = PAYERegistration(
     registrationID = regId,
     transactionID = s"trans$regId",
     internalID = s"Int-xxx",
@@ -78,7 +78,7 @@ class MetricsJobISpec extends IntegrationSpecBase {
     crn = None,
     registrationConfirmation = None,
     formCreationTimestamp = timestampString,
-    status = status,
+    status = PAYEStatus.draft,
     completionCapacity = Some("Director"),
     companyDetails = None,
     directors = Seq.empty,
@@ -92,51 +92,46 @@ class MetricsJobISpec extends IntegrationSpecBase {
     employmentInfo = None
   )
 
-  val timestamp = ZonedDateTime.of(LocalDateTime.of(2017, 3, 3, 12, 30, 0, 0), ZoneId.of("Z"))
-  val timestampString = "2017-03-03T12:30:00Z"
+  val timestampString: String = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z")).toString
 
-  class Setup(ts: ZonedDateTime) {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = new DateHelper {
-      override def getTimestamp: ZonedDateTime = ts
+  class Setup {
+    lazy val mockMetricRegistry: MetricRegistry = app.injector.instanceOf[MetricRegistry]
+    lazy val mockDateHelper: DateHelper = new DateHelper {
+      override def getTimestamp: ZonedDateTime = ZonedDateTime.of(LocalDateTime.now, ZoneId.of("Z"))
     }
-    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
-    lazy val lockRepository = app.injector.instanceOf[MongoLockRepository]
+    lazy val mockcryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+    lazy val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    lazy val lockRepository: MongoLockRepository = app.injector.instanceOf[MongoLockRepository]
   }
 
-  "Metrics Job" should {
-    "take no action when the job is disabled" in new Setup(timestamp) {
-      setupFeatures(metricsJob = false)
+  "Remove Stale Documents Job" should {
+    "take no action when job is disabled" in new Setup {
+      setupFeatures(removeStaleDocumentsJob = false)
 
-      val job = lookupJob("metrics-job")
+      val job = lookupJob("remove-stale-documents-job")
       val res = job.schedule
-
       res mustBe false
-      //      res mustBe job.Result("Feature metrics-job is turned off")
     }
 
-    "return what documents are currently in PAYE" in new Setup(timestamp) {
-      setupFeatures(metricsJob = true)
 
-      val dateTime = ZonedDateTime.of(LocalDateTime.of(2017, 3, 1, 12, 0), ZoneId.of("Z"))
+    "remove documents older than a config specified length of time" in new Setup {
+      val deleteDT = ZonedDateTime.of(LocalDateTime.now.minusDays(61), ZoneId.of("Z"))
+      val keepDT = ZonedDateTime.of(LocalDateTime.now.minusDays(59), ZoneId.of("Z"))
 
-      await(repository.updateRegistration(reg("223", Some(dateTime), PAYEStatus.draft)))
-      await(repository.updateRegistration(reg("224", Some(dateTime), PAYEStatus.draft)))
-      await(repository.updateRegistration(reg("225", Some(dateTime), PAYEStatus.cancelled)))
+      await(repository.updateRegistration(reg("123", Some(deleteDT))))
+      await(repository.updateRegistration(reg("223", Some(keepDT))))
 
-      val job = lookupJob("metrics-job")
+      setupFeatures(removeStaleDocumentsJob = true)
+
+      val job: ScheduledJob = lookupJob("remove-stale-documents-job")
 
       await(lockRepository.collection.drop().toFuture())
-      await(lockRepository.ensureIndexes)
+      await(lockRepository.ensureIndexes())
 
-      val f = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[Map[String, Int], LockResponse]])
+      val f: Future[Either[(ZonedDateTime, Int), LockResponse]] = job.scheduledMessage.service.invoke.map(_.asInstanceOf[Either[(ZonedDateTime, Int), LockResponse]])
       val res = await(f)
-
-      val docMap = Left(Map("cancelled" -> 1, "draft" -> 2))
-
-      res mustBe docMap
-
+      await(repository.retrieveRegistration("123")) mustBe empty
+      await(repository.retrieveRegistration("223")) must not be empty
     }
   }
 

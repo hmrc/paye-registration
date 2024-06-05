@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 package jobs
-import akka.actor.{ActorRef, ActorSystem}
-import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.extension.quartz.QuartzSchedulerExtension
 import jobs.SchedulingActor.ScheduledMessage
 import org.quartz.CronExpression
 import play.api.Configuration
@@ -28,7 +28,7 @@ trait ScheduledJob extends Logging {
   val actorSystem: ActorSystem
   val jobName: String
 
-  lazy val scheduler: QuartzSchedulerExtension = QuartzSchedulerExtension(actorSystem)
+  lazy val scheduler: QuartzSchedulerExtension = QuartzSchedulerExtension.get(actorSystem)
 
   lazy val schedulingActorRef: ActorRef = actorSystem.actorOf(SchedulingActor.props)
 

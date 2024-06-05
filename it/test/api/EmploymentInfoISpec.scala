@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package api
+package test.api
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.{Employing, PAYEStatus}
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
@@ -58,7 +58,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockMetrics = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
@@ -117,7 +117,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/employment-info").get.futureValue
+      val response = client(s"/${regID}/employment-info").get().futureValue
       response.status mustBe 200
       response.json mustBe Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation))
     }
@@ -155,7 +155,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
 
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 204, "")
 
-      val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse1 = client(s"/${regID}/employment-info").get().futureValue
       getResponse1.status mustBe 204
 
       val patchResponse = client(s"/${regID}/employment-info")
@@ -163,7 +163,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 200
 
-      val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse2 = client(s"/${regID}/employment-info").get().futureValue
       getResponse2.status mustBe 200
       getResponse2.json mustBe Json.toJson(validEmploymentInfo)(EmploymentInfo.format(APIValidation))
     }
@@ -199,7 +199,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/employment-info").get.futureValue
+      val response = client(s"/${regID}/employment-info").get().futureValue
       response.status mustBe 403
     }
 
@@ -280,7 +280,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
 
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 204, "")
 
-      val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse1 = client(s"/${regID}/employment-info").get().futureValue
       getResponse1.status mustBe 204
 
       val wrongEmploymentNextYearDate = EmploymentInfo(
@@ -296,7 +296,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 400
 
-      val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse2 = client(s"/${regID}/employment-info").get().futureValue
       getResponse2.status mustBe 204
     }
 
@@ -336,7 +336,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
 
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 200, s"""{"incorporationDate": "$incorpDate"}""")
 
-      val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse1 = client(s"/${regID}/employment-info").get().futureValue
       getResponse1.status mustBe 204
 
       val wrongEmploymentPaymentDate = EmploymentInfo(
@@ -352,7 +352,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 400
 
-      val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse2 = client(s"/${regID}/employment-info").get().futureValue
       getResponse2.status mustBe 204
     }
 
@@ -391,7 +391,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
 
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 204, "")
 
-      val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse1 = client(s"/${regID}/employment-info").get().futureValue
       getResponse1.status mustBe 204
 
       val correctEmploymentPaymentDate = EmploymentInfo(
@@ -407,7 +407,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 400
 
-      val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse2 = client(s"/${regID}/employment-info").get().futureValue
       getResponse2.status mustBe 204
     }
 
@@ -447,7 +447,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
 
       stubGet(s"/incorporation-information/$transactionID/incorporation-update", 200, s"""{"incorporationDate": "$incorpDate"}""")
 
-      val getResponse1 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse1 = client(s"/${regID}/employment-info").get().futureValue
       getResponse1.status mustBe 204
 
       val correctEmploymentPaymentDate = EmploymentInfo(
@@ -463,7 +463,7 @@ class EmploymentInfoISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 200
 
-      val getResponse2 = client(s"/${regID}/employment-info").get.futureValue
+      val getResponse2 = client(s"/${regID}/employment-info").get().futureValue
       getResponse2.status mustBe 200
       getResponse2.json mustBe Json.toJson(correctEmploymentPaymentDate)(EmploymentInfo.format(APIValidation))
     }

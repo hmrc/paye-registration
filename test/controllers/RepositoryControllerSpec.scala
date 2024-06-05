@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import play.api.test.Helpers._
 import repositories.RegistrationMongoRepository
 import services.RegistrationService
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class RepositoryControllerSpec extends PAYERegSpec {
+class RepositoryControllerSpec (implicit ec: ExecutionContext) extends PAYERegSpec {
 
   val mockRegistrationService: RegistrationService = mock[RegistrationService]
 

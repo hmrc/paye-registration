@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package api
+package test.api
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
@@ -48,16 +48,16 @@ class DirectorsISpec extends IntegrationSpecBase {
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .build
+    .build()
 
   lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockMetricRegistry = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 
@@ -123,7 +123,7 @@ class DirectorsISpec extends IntegrationSpecBase {
       upsertToDb(mongoFormattedRegDoc)
 
 
-      val response = client(s"/${regID}/directors").get.futureValue
+      val response = client(s"/${regID}/directors").get().futureValue
       response.status mustBe 200
       response.json mustBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
     }
@@ -159,7 +159,7 @@ class DirectorsISpec extends IntegrationSpecBase {
         )
       )
 
-      val getResponse1 = client(s"/${regID}/directors").get.futureValue
+      val getResponse1 = client(s"/${regID}/directors").get().futureValue
       getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/directors")
@@ -167,7 +167,7 @@ class DirectorsISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 200
 
-      val getResponse2 = client(s"/${regID}/directors").get.futureValue
+      val getResponse2 = client(s"/${regID}/directors").get().futureValue
       getResponse2.status mustBe 200
       getResponse2.json mustBe Json.toJson(validDirectors)(Director.directorSequenceWriter(APIValidation))
     }
@@ -204,7 +204,7 @@ class DirectorsISpec extends IntegrationSpecBase {
       )
 
 
-      val response = client(s"/${regID}/directors").get.futureValue
+      val response = client(s"/${regID}/directors").get().futureValue
       response.status mustBe 403
     }
 
@@ -248,7 +248,7 @@ class DirectorsISpec extends IntegrationSpecBase {
     "Return a 404 if the registration is missing" in new Setup {
       setupSimpleAuthMocks()
 
-      val response = client(s"/12345").get.futureValue
+      val response = client(s"/12345").get().futureValue
       response.status mustBe 404
     }
   }
