@@ -24,5 +24,5 @@ object Employing extends Enumeration {
   val willEmployThisYear = Value
   val willEmployNextYear = Value
 
-  implicit val format = Format(Reads.enumNameReads(Employing), Writes.enumNameWrites[Employing.type])
+  implicit val format: Format[Employing.Value] = Format(Reads.enumNameReads(Employing), Writes.enumNameWrites[Employing.type])
 }

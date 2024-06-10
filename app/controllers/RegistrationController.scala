@@ -335,7 +335,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
 
   def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      implicit val fmt = EmpRefNotification.format(APIValidation, crypto)
+      implicit val fmt: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, crypto)
       withJsonBody[EmpRefNotification] { notification =>
         notificationService.processNotification(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))

@@ -64,7 +64,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     }
   }
 
-  implicit val httpRds = new HttpReads[HttpResponse] {
+  implicit val httpRds: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
   }
 

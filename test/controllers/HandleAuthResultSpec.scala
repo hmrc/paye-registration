@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import scala.concurrent.Future
 
 class HandleAuthResultSpec extends PAYERegSpec {
-  implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
+  implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session-123")))
 
   "logAndSendResult" should {
     "return a correct Result" when {

@@ -27,7 +27,7 @@ import models._
 import models.external.BusinessProfile
 import models.validation.APIValidation
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
 import repositories.{IICounterMongoRepository, RegistrationMongoRepository, SequenceMongoRepository}
@@ -571,7 +571,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         setupSimpleAuthMocks()
 
         await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+        implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
         val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -594,7 +594,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         setupSimpleAuthMocks()
 
         await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+        implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "05"))
 
         val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -617,7 +617,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         setupSimpleAuthMocks()
 
         await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+        implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "06"))
 
         val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -640,7 +640,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         setupSimpleAuthMocks()
 
         await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+        implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "07"))
 
         val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -664,7 +664,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       setupSimpleAuthMocks()
 
       await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-      implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+      implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "08"))
 
       val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -687,7 +687,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       setupSimpleAuthMocks()
 
       await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-      implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+      implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "09"))
 
       val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -710,7 +710,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       setupSimpleAuthMocks()
 
       await(repository.updateRegistration(processedSubmission.copy(registrationConfirmation = None, acknowledgementReference = Some("ackRef"))))
-      implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+      implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
       val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "10"))
 
       val response = await(client("/registration-processed-confirmation?ackref=ackRef").post(testNotification))
@@ -732,7 +732,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     "return a not found" when {
       "a matching reg doc cannot be found" in new Setup {
         setupSimpleAuthMocks()
-        implicit val f = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
+        implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, mockcryptoSCRS)
         val testNotification = Json.toJson(EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04"))
 
         val response = await(client("/registration-processed-confirmation?ackref=invalidackref").post(testNotification))

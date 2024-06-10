@@ -25,7 +25,7 @@ import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.validation.{APIValidation, MongoValidation}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
 import repositories.RegistrationMongoRepository
@@ -80,7 +80,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     )
 
     val oldFormatCompanyDetails = {
-      implicit val format = CompanyDetails.format(MongoValidation)
+      implicit val format: Format[CompanyDetails] = CompanyDetails.format(MongoValidation)
       CompanyDetails(
         companyName = "Test Company Name",
         tradingName = Some("Test Trading Name"),

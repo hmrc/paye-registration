@@ -16,10 +16,10 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class Sequence(_id: String, seq: Int)
 
 object Sequence {
-  implicit val formats = Json.format[Sequence]
+  implicit val formats: OFormat[Sequence] = Json.format[Sequence]
 }

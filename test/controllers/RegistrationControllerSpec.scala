@@ -51,9 +51,9 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   val mockCounterService = mock[IICounterService]
 
 
-  implicit val system = ActorSystem("PR")
-  implicit val materializer = Materializer(system)
-  implicit val hc = HeaderCarrier()
+  implicit val system: ActorSystem = ActorSystem("PR")
+  implicit val materializer: Materializer = Materializer(system)
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
 
   class Setup {
@@ -599,7 +599,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   "updateRegistrationWithEmpRef" should {
     "return an OK" when {
       "the reg doc has been updated with the emp ref" in new Setup {
-        implicit val f = EmpRefNotification.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+        implicit val f: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
         val testNotification = EmpRefNotification(Some("testEmpRef"), "2017-01-01T12:00:00Z", "04")
         val request = FakeRequest().withBody(Json.toJson(testNotification))
 

@@ -27,7 +27,7 @@ object IncorporationFailureAuditEventDetail {
   private val INCORP_STATUS = "incorporationStatus"
   private val REJECTED      = "rejected"
 
-  implicit val incorpFailedEventWrites = new Writes[IncorporationFailureAuditEventDetail] {
+  implicit val incorpFailedEventWrites: Writes[IncorporationFailureAuditEventDetail] = new Writes[IncorporationFailureAuditEventDetail] {
     override def writes(detail: IncorporationFailureAuditEventDetail): JsValue = Json.obj(
       JOURNEY_ID      -> detail.regId,
       ACK_REF         -> detail.acknowledgementReference,

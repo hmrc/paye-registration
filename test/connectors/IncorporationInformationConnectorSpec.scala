@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
@@ -58,8 +58,8 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
   val testIncorpStatus = testIncorpStatusJson.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation))
 
-  implicit val hc = HeaderCarrier()
-  implicit val ec = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   class Setup {
 

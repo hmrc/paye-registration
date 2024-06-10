@@ -16,12 +16,12 @@
 
 package models.external
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class BusinessProfile(registrationID: String,
                            completionCapacity : Option[String],
                            language: String)
 
 object BusinessProfile {
-  implicit val formats = Json.format[BusinessProfile]
+  implicit val formats: OFormat[BusinessProfile] = Json.format[BusinessProfile]
 }

@@ -26,7 +26,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import play.api.Configuration
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repositories.RegistrationMongoRepository
@@ -87,7 +87,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a 200 response for success" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       when(mockRepo.updateRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.successful(validRegistration))
 
@@ -97,7 +97,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a 500 response for failure" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       when(mockRepo.updateRegistration(ArgumentMatchers.any()))
         .thenReturn(Future.failed(new RuntimeException("test failure message")))
 
@@ -114,7 +114,7 @@ class TestEndpointControllerSpec extends PAYERegSpec with RegistrationFixture {
 
     "return a forbidden response for unauthorised" in new Setup {
       AuthorisationMocks.mockAuthenticated(testInternalId)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val response = controller.updateRegistration("AC123456")(FakeRequest().withBody(Json.toJson[PAYERegistration](validRegistration)))
       status(response) mustBe Status.FORBIDDEN
     }

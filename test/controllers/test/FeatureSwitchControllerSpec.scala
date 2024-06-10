@@ -29,8 +29,8 @@ import utils.BooleanFeatureSwitch
 
 class FeatureSwitchControllerSpec extends PAYERegSpec {
 
-  implicit val system = ActorSystem("PR")
-  implicit val materializer = Materializer(system)
+  implicit val system: ActorSystem = ActorSystem("PR")
+  implicit val materializer: Materializer = Materializer(system)
   val mockRemoveStaleDocsJob: ScheduledJob = mock[ScheduledJob]
   val mockGraphiteMetrics: ScheduledJob = mock[ScheduledJob]
   val mockQuartz = mock[QuartzSchedulerExtension]

@@ -23,7 +23,7 @@ object IncorporationStatus extends Enumeration {
   val accepted = Value
   val rejected = Value
 
-  implicit val format = Format(Reads.enumNameReads(IncorporationStatus), writes(APIValidation))
+  implicit val format: Format[IncorporationStatus.Value] = Format(Reads.enumNameReads(IncorporationStatus), writes(APIValidation))
 
   def writes(formatter: BaseJsonFormatting): Writes[IncorporationStatus.Value] = {
     formatter match {

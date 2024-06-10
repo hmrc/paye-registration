@@ -30,7 +30,7 @@ case class AmendCompletionCapacityEventDetail(externalUserId: String,
 object AmendCompletionCapacityEventDetail {
   import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, EXTERNAL_USER_ID, JOURNEY_ID}
 
-  implicit val writes = new Writes[AmendCompletionCapacityEventDetail] {
+  implicit val writes: Writes[AmendCompletionCapacityEventDetail] = new Writes[AmendCompletionCapacityEventDetail] {
     val writesPreviousCC: Writes[DESCompletionCapacity] = new Writes[DESCompletionCapacity] {
       override def writes(cc: DESCompletionCapacity): JsValue = {
         val successWrites = (

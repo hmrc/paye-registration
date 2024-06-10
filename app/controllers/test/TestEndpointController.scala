@@ -58,7 +58,7 @@ class TestEndpointController @Inject()(registrationRepository: RegistrationMongo
 
   def updateRegistration(regID: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      implicit val fmt = PAYERegistration.format(APIValidation, cryptoSCRS)
+      implicit val fmt: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, cryptoSCRS)
       authorised().retrieve(internalId) { id =>
         withJsonBody[JsObject] { reg =>
           val regWithId = reg ++ Json.obj("internalID" -> id.getOrElse(throw new Exception("Missing internalId")))

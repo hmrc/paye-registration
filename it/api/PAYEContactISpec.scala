@@ -25,7 +25,7 @@ import models._
 import models.validation.{APIValidation, MongoValidation}
 import play.api.http.HeaderNames
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
 import repositories.RegistrationMongoRepository
@@ -80,7 +80,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
     )
 
     val oldFormatPAYEContact = {
-      implicit val format = PAYEContact.format(MongoValidation)
+      implicit val format: Format[PAYEContact] = PAYEContact.format(MongoValidation)
       PAYEContact(
         contactDetails = PAYEContactDetails(
           name = "Thierry Henry",

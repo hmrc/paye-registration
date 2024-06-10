@@ -36,7 +36,7 @@ case class DESMetaData(sessionId: String,
 
 object DESMetaData {
 
-  implicit val writes = new Writes[DESMetaData] {
+  implicit val writes: Writes[DESMetaData] = new Writes[DESMetaData] {
     def writes(m: DESMetaData) = {
       Json.obj(
         "businessType" -> BusinessType.LimitedCompany,

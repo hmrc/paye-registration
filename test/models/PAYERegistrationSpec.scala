@@ -22,7 +22,7 @@ import enums.{Employing, PAYEStatus}
 import helpers.PAYERegSpec
 import models.validation.{APIValidation, MongoValidation}
 import play.api.Configuration
-import play.api.libs.json.{JsError, JsPath, JsSuccess, Json, JsonValidationError}
+import play.api.libs.json.{JsError, JsPath, JsSuccess, Json, JsonValidationError, OFormat}
 import utils.SystemDate
 
 import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
@@ -518,7 +518,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
         lastAction = None,
         employmentInfo = None
       )
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       Json.fromJson[PAYERegistration](json) mustBe JsSuccess(tstPAYERegistration)
     }
 
@@ -568,7 +568,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
            |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "registrationID", Seq(JsonValidationError("error.path.missing")))
     }
@@ -619,7 +619,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
            |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "transactionID", Seq(JsonValidationError("error.path.missing")))
     }
@@ -671,7 +671,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
            |  "lastUpdate": "$timestamp"
            |}
         """.stripMargin)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "status", Seq(JsonValidationError("error.expected.validenumvalue")))
     }
@@ -722,7 +722,7 @@ class PAYERegistrationSpec extends PAYERegSpec with JsonFormatValidation {
            |  "sicCodes": []
            |}
         """.stripMargin)
-      implicit val f = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
+      implicit val f: OFormat[PAYERegistration] = PAYERegistration.format(APIValidation, new CryptoSCRS(Configuration("json.encryption.key" -> "MTIzNDU2Nzg5MDEyMzQ1Ng==")))
       val result = Json.fromJson[PAYERegistration](json)
       shouldHaveErrors(result, JsPath() \ "lastUpdate", Seq(JsonValidationError("error.path.missing")))
     }

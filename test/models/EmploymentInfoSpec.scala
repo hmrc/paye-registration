@@ -26,7 +26,7 @@ import java.time.LocalDate
 
 class EmploymentInfoSpec extends PAYERegSpec with BeforeAndAfterEach {
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     System.clearProperty("feature.system-date")
   }
 

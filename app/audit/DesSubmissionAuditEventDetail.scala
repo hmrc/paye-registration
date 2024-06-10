@@ -32,7 +32,7 @@ object DesSubmissionAuditEventDetail {
 
   import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, DES_SUBMISSION_STATE, EXTERNAL_ID}
 
-  implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
+  implicit val writes: Writes[DesSubmissionAuditEventDetail] = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
       val ctutrTuple = detail.ctutr map( utr =>
         Json.obj("ctutr" -> utr)

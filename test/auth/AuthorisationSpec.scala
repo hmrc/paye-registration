@@ -27,7 +27,7 @@ import scala.concurrent.Future
 
 class AuthorisationSpec extends PAYERegSpec with BeforeAndAfter {
 
-  implicit val hc = HeaderCarrier()
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val authorisation = new Authorisation {
     val resourceConn = mockRegistrationRepository

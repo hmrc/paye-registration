@@ -24,7 +24,7 @@ case class DesTopUpAuditEventDetail(regId: String,
 object DesTopUpAuditEventDetail {
   import RegistrationAuditEventConstants.JOURNEY_ID
 
-  implicit val writes = new Writes[DesTopUpAuditEventDetail] {
+  implicit val writes: Writes[DesTopUpAuditEventDetail] = new Writes[DesTopUpAuditEventDetail] {
     def writes(detail: DesTopUpAuditEventDetail) = {
       Json.obj(
         JOURNEY_ID -> detail.regId
