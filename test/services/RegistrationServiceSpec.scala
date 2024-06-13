@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
     val service = new RegistrationService(mockRegistrationRepository, mockAuditService, mockIncorporationInformationConnector, MockAppConfig)
   }
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     reset(mockRegistrationRepository)
   }
 
@@ -227,7 +227,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   }
 
   "Calling getIncorporationDate" should {
-    implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
+    implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session-123")))
 
     "return a None response when there is no incorporation date" in new Setup {
       when(mockRegistrationRepository.retrieveTransactionId(eqTo(regId)))
@@ -437,7 +437,7 @@ class RegistrationServiceSpec extends PAYERegSpec with RegistrationFixture {
   }
 
   "Calling upsertCompletionCapacity" should {
-    implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
+    implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session-123")))
 
     "throw a MissingRegDocument when there is no registration in mongo with the user's ID" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(eqTo(regId)))

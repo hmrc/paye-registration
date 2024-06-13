@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,15 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
   val mockAuditConnector = mock[AuditConnector]
 
   class Setup(otherHcHeaders: Seq[(String, String)] = Seq()) {
 
-    implicit val hc = HeaderCarrier(otherHeaders = otherHcHeaders)
-    implicit val ec = ExecutionContext.global
+    implicit val hc: HeaderCarrier = HeaderCarrier(otherHeaders = otherHcHeaders)
+    implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
     val mockAuditConnector = mock[AuditConnector]
     val mockAuditingConfig = mock[AuditingConfig]
@@ -78,7 +78,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
   )
 
   "auditCompletionCapacity" should {
-    implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
+    implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session-123")))
 
     "send audit with correct detail" in new Setup {
       val previousCC = "director"
@@ -86,7 +86,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
 
       AuthorisationMocks.mockAuthoriseTest(Future.successful(new ~(Some("some-external-id"), Some(credentials))))
 
-      when(mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      when(this.mockAuditConnector.sendExtendedEvent(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(AuditResult.Success))
 
       await(service.auditCompletionCapacity(regId, previousCC, newCC)) mustBe AuditResult.Success
@@ -117,7 +117,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
         "create and send an Explicit ExtendedAuditEvent including the transactionName with pathTag set to '-'" in new Setup {
 
           when(
-            mockAuditConnector.sendExtendedEvent(
+            this.mockAuditConnector.sendExtendedEvent(
               ArgumentMatchers.eq(ExtendedDataEvent(
                 auditSource = appName,
                 auditType = auditType,
@@ -145,7 +145,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
         ) {
 
           when(
-            mockAuditConnector.sendExtendedEvent(
+            this.mockAuditConnector.sendExtendedEvent(
               ArgumentMatchers.eq(ExtendedDataEvent(
                 auditSource = appName,
                 auditType = auditType,
@@ -175,7 +175,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
         val exception = new Exception("Oh No")
 
         when(
-          mockAuditConnector.sendExtendedEvent(
+          this.mockAuditConnector.sendExtendedEvent(
             ArgumentMatchers.eq(ExtendedDataEvent(
               auditSource = appName,
               auditType = auditType,

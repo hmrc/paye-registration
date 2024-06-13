@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 
 package jobs
 
-import akka.actor.{Actor, Props}
+import org.apache.pekko.actor.{Actor, Props}
 import jobs.SchedulingActor.ScheduledMessage
 import utils.Logging
 import services._
 
 import java.time.ZonedDateTime
-import scala.concurrent.ExecutionContext.Implicits.global
+import javax.inject.Inject
+import scala.concurrent.ExecutionContext
 
-class SchedulingActor extends Actor with Logging {
+class SchedulingActor (implicit ec: ExecutionContext) extends Actor with Logging {
 
   override def receive: Receive = {
     case message: ScheduledMessage[_] =>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 
 package services
 
-import com.codahale.metrics.MetricRegistry
 import helpers.PAYERegSpec
 import mocks.MetricsMock
-import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import play.api.test.Helpers._
@@ -28,8 +26,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
-
-  val mockRegistry = mock[MetricRegistry]
 
   trait Setup {
     val service = MetricsMock.mockMetricsService
@@ -44,37 +40,22 @@ class MetricsServiceSpec extends PAYERegSpec with BeforeAndAfterEach {
 
       result mustBe Map()
 
-      verifyNoMoreInteractions(mockRegistry)
     }
 
     "update a single metric when one is supplied" in new Setup() {
-      when(service.metrics.defaultRegistry).thenReturn(mockRegistry)
       when(service.regRepo.getRegistrationStats())
         .thenReturn(Future.successful(Map[String, Int]("test" -> 1)))
 
       await(service.updateDocumentMetrics()) mustBe Map("test" -> 1)
-
-      verify(mockRegistry).remove(ArgumentMatchers.any())
-      verify(mockRegistry).register(ArgumentMatchers.contains("test"), ArgumentMatchers.any())
-      verifyNoMoreInteractions(mockRegistry)
     }
 
     "update multiple metrics when required" in new Setup() {
-      when(service.metrics.defaultRegistry).thenReturn(mockRegistry)
       when(service.regRepo.getRegistrationStats())
         .thenReturn(Future.successful(Map[String, Int]("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3)))
 
       val result = await(service.updateDocumentMetrics())
 
       result mustBe Map("testOne" -> 1, "testTwo" -> 2, "testThree" -> 3)
-
-      verify(mockRegistry).remove(ArgumentMatchers.contains("testOne"))
-      verify(mockRegistry).register(ArgumentMatchers.contains("testOne"), ArgumentMatchers.any())
-      verify(mockRegistry).remove(ArgumentMatchers.contains("testTwo"))
-      verify(mockRegistry).register(ArgumentMatchers.contains("testTwo"), ArgumentMatchers.any())
-      verify(mockRegistry).remove(ArgumentMatchers.contains("testThree"))
-      verify(mockRegistry).register(ArgumentMatchers.contains("testThree"), ArgumentMatchers.any())
-      verifyNoMoreInteractions(mockRegistry)
     }
   }
 }

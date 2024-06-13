@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ object DesSubmissionAuditEventDetail {
 
   import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, DES_SUBMISSION_STATE, EXTERNAL_ID}
 
-  implicit val writes = new Writes[DesSubmissionAuditEventDetail] {
+  implicit val writes: Writes[DesSubmissionAuditEventDetail] = new Writes[DesSubmissionAuditEventDetail] {
     def writes(detail: DesSubmissionAuditEventDetail) = {
       val ctutrTuple = detail.ctutr map( utr =>
         Json.obj("ctutr" -> utr)

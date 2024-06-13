@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package controllers.test
 
-import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
-import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.{ActorMaterializer, Materializer}
+import org.apache.pekko.extension.quartz.QuartzSchedulerExtension
 import helpers.PAYERegSpec
 import jobs.ScheduledJob
 import org.mockito.ArgumentMatchers.any
@@ -29,8 +29,8 @@ import utils.BooleanFeatureSwitch
 
 class FeatureSwitchControllerSpec extends PAYERegSpec {
 
-  implicit val system = ActorSystem("PR")
-  implicit val materializer = Materializer(system)
+  implicit val system: ActorSystem = ActorSystem("PR")
+  implicit val materializer: Materializer = Materializer(system)
   val mockRemoveStaleDocsJob: ScheduledJob = mock[ScheduledJob]
   val mockGraphiteMetrics: ScheduledJob = mock[ScheduledJob]
   val mockQuartz = mock[QuartzSchedulerExtension]

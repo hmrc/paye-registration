@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 
 trait PAYERegSpec extends PlaySpec with MockitoSugar with PAYEMocks with BeforeAndAfterEach with BeforeAndAfterAll {
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     reset(
       mockRegistrationRepository,
       mockSequenceRepository,
@@ -33,6 +33,6 @@ trait PAYERegSpec extends PlaySpec with MockitoSugar with PAYEMocks with BeforeA
     )
   }
 
-  override def beforeAll() = System.clearProperty("feature.system-date")
+  override def beforeAll(): Unit = System.clearProperty("feature.system-date")
 
 }

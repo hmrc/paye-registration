@@ -17,7 +17,7 @@
 package controllers
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.{Employing, PAYEStatus}
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
@@ -36,11 +36,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
-  val mockHost = WiremockHelper.wiremockHost
-  val mockPort = WiremockHelper.wiremockPort
+  val mockHost: String = WiremockHelper.wiremockHost
+  val mockPort: Int = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
 
-  val additionalConfiguration = Map(
+  val additionalConfiguration: Map[String, String] = Map(
     "auditing.consumer.baseUri.host" -> s"$mockHost",
     "auditing.consumer.baseUri.port" -> s"$mockPort",
     "microservice.services.auth.host" -> s"$mockHost",
@@ -50,22 +50,22 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .build
+    .build()
 
-  lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
-  lazy val sConfig = app.injector.instanceOf[Configuration]
-  lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+  lazy val mongoComponent: MongoComponent = app.injector.instanceOf[MongoComponent]
+  lazy val sConfig: Configuration = app.injector.instanceOf[Configuration]
+  lazy val mockcryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   val lastUpdate = "2017-05-09T07:58:35Z"
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    lazy val mockMetricRegistry: MetricRegistry = app.injector.instanceOf[MetricRegistry]
+    lazy val mockDateHelper: DateHelper = app.injector.instanceOf[DateHelper]
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     await(repository.dropCollection)
 
-    def count = await(repository.collection.countDocuments().toFuture())
+    def count: Long = await(repository.collection.countDocuments().toFuture())
   }
 
   "registration-teardown" should {
@@ -127,7 +127,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       count mustBe 2
 
-      val response = client(s"/test-only/registration-teardown").get.futureValue
+      val response = client(s"/test-only/registration-teardown").get().futureValue
       response.status mustBe 200
 
       count mustBe 0
@@ -193,7 +193,7 @@ class TestEndpointControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       count mustBe 2
 
-      val response = client(s"/test-only/delete-registration/$regID1").get.futureValue
+      val response = client(s"/test-only/delete-registration/$regID1").get().futureValue
       response.status mustBe 200
 
       count mustBe 1

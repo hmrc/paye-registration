@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import java.time.Instant
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AuditService @Inject()(registrationRepository: RegistrationMongoRepository, val authConnector: AuthConnector, val auditConnector: AuditConnector) extends AuthorisedFunctions {
+class AuditService @Inject()(registrationRepository: RegistrationMongoRepository, val authConnector: AuthConnector, val auditConnector: AuditConnector)
+                            (implicit ec: ExecutionContext) extends AuthorisedFunctions {
 
   private[services] def now() = Instant.now()
   private[services] def eventId() = UUID.randomUUID().toString

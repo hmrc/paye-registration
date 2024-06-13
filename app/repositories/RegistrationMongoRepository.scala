@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package repositories
 
 import auth.{AuthorisationResource, CryptoSCRS}
 import com.codahale.metrics.Timer
-import com.kenshoo.play.metrics.Metrics
 import common.exceptions.DBExceptions._
+import com.codahale.metrics.MetricRegistry
 import common.exceptions.RegistrationExceptions.AcknowledgementReferenceExistsException
 import enums.PAYEStatus
 import helpers.DateHelper
@@ -44,7 +44,7 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RegistrationMongoRepository @Inject()(metrics: Metrics,
+class RegistrationMongoRepository @Inject()(metricRegistry: MetricRegistry,
                                             dateHelper: DateHelper,
                                             mongo: MongoComponent,
                                             config: Configuration,
@@ -89,7 +89,7 @@ class RegistrationMongoRepository @Inject()(metrics: Metrics,
   )
 ) with AuthorisationResource with Logging {
 
-  val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
+  val mongoResponseTimer: Timer = metricRegistry.timer("mongo-call-timer")
 
   val MAX_STORAGE_DAYS: Int = config.getOptional[Int]("constants.maxStorageDays").getOrElse(90)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,10 @@ import utils.Logging
 import play.api.mvc.Result
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
-import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.{AuthorisationException, AuthorisedFunctions}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait AuthorisationResult
 case object NotLoggedInOrAuthorised extends AuthorisationResult
@@ -38,7 +36,7 @@ trait Authorisation extends AuthorisedFunctions with Logging {
   val internalId: Retrieval[Option[String]] = Retrievals.internalId
 
 
-  def isAuthenticated(f: String => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+  def isAuthenticated(f: String => Future[Result])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Result] = {
     authorised().retrieve(internalId) { id =>
       id.fold {
         logger.warn("[isAuthenticated] No internalId present; FORBIDDEN")
@@ -47,7 +45,7 @@ trait Authorisation extends AuthorisedFunctions with Logging {
     }
   }
 
-  def isAuthorised(regId: String)(f: => AuthorisationResult => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+  def isAuthorised(regId: String)(f: => AuthorisationResult => Future[Result])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Result] = {
     authorised().retrieve(internalId) { id =>
       resourceConn.getInternalId(regId) flatMap { resource =>
         f(mapToAuthResult(id, resource))

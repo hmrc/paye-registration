@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package services
 
-import com.codahale.metrics.{Gauge, Timer}
-import com.kenshoo.play.metrics.{Metrics, MetricsDisabledException}
+import com.codahale.metrics.{Gauge, Timer, MetricRegistry}
 import config.AppConfig
 import jobs._
 import utils.Logging
@@ -31,9 +30,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
                                lockRepository: MongoLockRepository,
                                appConfig: AppConfig,
-                               val metrics: Metrics) extends ScheduledService[Either[Map[String, Int], LockResponse]] with Logging {
+                               val metricRegistry: MetricRegistry) extends ScheduledService[Either[Map[String, Int], LockResponse]] with Logging {
 
-  lazy val mongoResponseTimer: Timer = metrics.defaultRegistry.timer("mongo-call-timer")
+  lazy val mongoResponseTimer: Timer = metricRegistry.timer("mongo-call-timer")
   lazy val lock: LockService = LockService(lockRepository, "remove-stale-documents-job", appConfig.metricsJobLockTimeout.seconds)
 
   def invoke(implicit ec: ExecutionContext): Future[Either[Map[String, Int], LockResponse]] = {
@@ -66,10 +65,10 @@ class MetricsService @Inject()(val regRepo: RegistrationMongoRepository,
       val gauge: Gauge[Int] = new Gauge[Int] {
         val getValue: Int = count
       }
-      metrics.defaultRegistry.remove(metricName)
-      metrics.defaultRegistry.register(metricName, gauge)
+      metricRegistry.remove(metricName)
+      metricRegistry.register(metricName, gauge)
     } catch {
-      case _: MetricsDisabledException => {
+      case _ => {
         logger.warn(s"[recordStatusCountStat] Metrics disabled - $metricName -> $count")
       }
     }

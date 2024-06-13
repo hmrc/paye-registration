@@ -17,11 +17,12 @@
 package repositories
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.MongoBaseSpec
 import models.{EmpRefNotification, PAYERegistration}
+import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.Filters
 import play.api.Configuration
 import play.api.libs.json.JsObject
@@ -33,11 +34,11 @@ import scala.concurrent.Future
 class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
-    lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    lazy val sConfig = app.injector.instanceOf[Configuration]
-    lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    lazy val mockMetricRegistry: MetricRegistry = app.injector.instanceOf[MetricRegistry]
+    lazy val mockDateHelper: DateHelper = app.injector.instanceOf[DateHelper]
+    lazy val sConfig: Configuration = app.injector.instanceOf[Configuration]
+    lazy val mockcryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
     await(repository.dropCollection)
   }
 
@@ -84,11 +85,11 @@ class EMPRefMongoRepositoryISpec extends MongoBaseSpec {
 
       await(setupCollection(repository, validAcknowledgedPAYERegistration))
 
-      val result = await(repository.updateRegistrationEmpRef(ackRef, PAYEStatus.acknowledged, validEmpRefNotification))
+      val result: EmpRefNotification = await(repository.updateRegistrationEmpRef(ackRef, PAYEStatus.acknowledged, validEmpRefNotification))
       result mustBe validEmpRefNotification
 
       // check the value isn't the EMP Ref when fetched direct from the DB
-      val query = Filters.equal("acknowledgementReference", ackRef)
+      val query: Bson = Filters.equal("acknowledgementReference", ackRef)
 
       val stored: JsObject = await(repository.collection.find[JsObject](query).head())
 

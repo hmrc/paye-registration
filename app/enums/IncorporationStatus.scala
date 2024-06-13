@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ object IncorporationStatus extends Enumeration {
   val accepted = Value
   val rejected = Value
 
-  implicit val format = Format(Reads.enumNameReads(IncorporationStatus), writes(APIValidation))
+  implicit val format: Format[IncorporationStatus.Value] = Format(Reads.enumNameReads(IncorporationStatus), writes(APIValidation))
 
   def writes(formatter: BaseJsonFormatting): Writes[IncorporationStatus.Value] = {
     formatter match {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import models.incorporation.IncorpStatusUpdate
 import models.submission._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.{AuthorisationException, BearerTokenExpired, InsufficientConfidenceLevel, NoActiveSession}
@@ -53,8 +53,8 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
   val mockCompanyRegistrationConnector = mock[CompanyRegistrationConnector]
   val mockRegistrationService = mock[RegistrationService]
 
-  implicit val hc = HeaderCarrier(sessionId = Some(SessionId("session-123")))
-  implicit val req = FakeRequest("GET", "/test-path")
+  implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session-123")))
+  implicit val req: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("GET", "/test-path")
   val providerId = "cred-123"
   val credentials: Credentials = Credentials("cred-123", "testProviderType")
 
@@ -72,7 +72,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     )
   }
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     reset(mockRegistrationRepository)
     reset(mockSequenceRepository)
     reset(mockDESConnector)

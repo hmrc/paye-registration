@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package api
+package test.api
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
@@ -47,16 +47,16 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .build
+    .build()
 
   lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockMetricRegistry = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     await(repository.dropCollection)
   }
@@ -100,7 +100,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
         )
       ))
 
-      val response = client(s"/${regID}").get.futureValue
+      val response = client(s"/${regID}").get().futureValue
 
       response.status mustBe 200
       response.json mustBe Json.obj(
@@ -149,7 +149,7 @@ class PayeRegistrationISpec extends IntegrationSpecBase {
         )
       ))
 
-      val response = client(s"/${regID}").get.futureValue
+      val response = client(s"/${regID}").get().futureValue
       response.status mustBe 403
     }
   }

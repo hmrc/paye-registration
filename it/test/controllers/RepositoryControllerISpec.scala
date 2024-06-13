@@ -17,7 +17,7 @@
 package controllers
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.PAYEStatus
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
@@ -58,7 +58,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
   val lastUpdate = "2017-05-09T07:58:35Z"
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockMetrics = app.injector.instanceOf[MetricRegistry]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
      val mockDateHelper = new DateHelper {
       override def getTimestampString: String = timestamp
@@ -68,7 +68,7 @@ class RepositoryControllerISpec extends IntegrationSpecBase with EmploymentInfoF
 
     await(repository.dropCollection)
     await(sequenceRepository.collection.drop().toFuture())
-    await(sequenceRepository.ensureIndexes)
+    await(sequenceRepository.ensureIndexes())
   }
 
   val submission = PAYERegistration(

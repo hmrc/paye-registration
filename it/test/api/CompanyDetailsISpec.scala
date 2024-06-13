@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package api
-
+package test.api
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.validation.{APIValidation, MongoValidation}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
 import repositories.RegistrationMongoRepository
@@ -49,17 +48,17 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .build
+    .build()
 
   lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockMetricRegistry = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
     lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def upsertToDb(paye: PAYERegistration) = await(repository.updateRegistration(paye))
 
@@ -80,7 +79,6 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
     )
 
     val oldFormatCompanyDetails = {
-      implicit val format = CompanyDetails.format(MongoValidation)
       CompanyDetails(
         companyName = "Test Company Name",
         tradingName = Some("Test Trading Name"),
@@ -121,7 +119,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/company-details").get.futureValue
+      val response = client(s"/${regID}/company-details").get().futureValue
       response.status mustBe 200
       response.json mustBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
     }
@@ -157,7 +155,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/company-details").get.futureValue
+      val response = client(s"/${regID}/company-details").get().futureValue
       response.status mustBe 200
       response.json mustBe Json.toJson(oldFormatCompanyDetails)(CompanyDetails.format(MongoValidation))
     }
@@ -201,7 +199,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         businessContactDetails = DigitalContactDetails(Some("test@email.com"), Some("0123459999"), Some("9876549999"))
       )
 
-      val getResponse1 = client(s"/${regID}/company-details").get.futureValue
+      val getResponse1 = client(s"/${regID}/company-details").get().futureValue
       getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
@@ -209,7 +207,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 200
 
-      val getResponse2 = client(s"/${regID}/company-details").get.futureValue
+      val getResponse2 = client(s"/${regID}/company-details").get().futureValue
       getResponse2.status mustBe 200
       getResponse2.json mustBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
 
@@ -247,7 +245,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
       )
 
 
-      val getResponse1 = client(s"/${regID}/company-details").get.futureValue
+      val getResponse1 = client(s"/${regID}/company-details").get().futureValue
       getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/company-details")
@@ -255,7 +253,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 200
 
-      val getResponse2 = client(s"/${regID}/company-details").get.futureValue
+      val getResponse2 = client(s"/${regID}/company-details").get().futureValue
       getResponse2.status mustBe 200
       getResponse2.json mustBe Json.toJson(validCompanyDetails)(CompanyDetails.format(MongoValidation))
     }
@@ -291,7 +289,7 @@ class CompanyDetailsISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/company-details").get.futureValue
+      val response = client(s"/${regID}/company-details").get().futureValue
       response.status mustBe 403
     }
 

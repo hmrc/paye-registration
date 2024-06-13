@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package api
+package test.api
 
 import auth.CryptoSCRS
-import com.kenshoo.play.metrics.Metrics
+import com.codahale.metrics.MetricRegistry
 import enums.PAYEStatus
 import helpers.DateHelper
 import itutil.{IntegrationSpecBase, WiremockHelper}
 import models._
 import models.validation.{APIValidation, MongoValidation}
-import play.api.http.HeaderNames
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import play.api.{Application, Configuration}
 import repositories.RegistrationMongoRepository
-import uk.gov.hmrc.http.SessionKeys
 import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,16 +47,16 @@ class PAYEContactISpec extends IntegrationSpecBase {
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .build
+    .build()
 
   lazy val mongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig = app.injector.instanceOf[Configuration]
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   class Setup {
-    lazy val mockMetrics = app.injector.instanceOf[Metrics]
+    lazy val mockMetricRegistry = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetrics, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
 
     def insertToDb(paye: PAYERegistration) = {
       await(repository.updateRegistration(paye))
@@ -80,7 +78,6 @@ class PAYEContactISpec extends IntegrationSpecBase {
     )
 
     val oldFormatPAYEContact = {
-      implicit val format = PAYEContact.format(MongoValidation)
       PAYEContact(
         contactDetails = PAYEContactDetails(
           name = "Thierry Henry",
@@ -119,7 +116,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
         employmentInfo = None
       ))
 
-      val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
+      val response = client(s"/${regID}/contact-correspond-paye").get().futureValue
       response.status mustBe 200
       response.json mustBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
     }
@@ -155,7 +152,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
+      val response = client(s"/${regID}/contact-correspond-paye").get().futureValue
       response.status mustBe 200
       response.json mustBe Json.toJson(oldFormatPAYEContact)(PAYEContact.format(APIValidation))
     }
@@ -191,7 +188,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
         )
       )
 
-      val getResponse1 = client(s"/${regID}/contact-correspond-paye").get.futureValue
+      val getResponse1 = client(s"/${regID}/contact-correspond-paye").get().futureValue
       getResponse1.status mustBe 404
 
       val patchResponse = client(s"/${regID}/contact-correspond-paye")
@@ -199,7 +196,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
         .futureValue
       patchResponse.status mustBe 200
 
-      val getResponse2 = client(s"/${regID}/contact-correspond-paye").get.futureValue
+      val getResponse2 = client(s"/${regID}/contact-correspond-paye").get().futureValue
       getResponse2.status mustBe 200
       getResponse2.json mustBe Json.toJson(validPAYEContact)(PAYEContact.format(APIValidation))
     }
@@ -235,7 +232,7 @@ class PAYEContactISpec extends IntegrationSpecBase {
         )
       )
 
-      val response = client(s"/${regID}/contact-correspond-paye").get.futureValue
+      val response = client(s"/${regID}/contact-correspond-paye").get().futureValue
       response.status mustBe 403
     }
 

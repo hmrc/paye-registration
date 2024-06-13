@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
@@ -58,8 +58,8 @@ class IncorporationInformationConnectorSpec extends PAYERegSpec {
 
   val testIncorpStatus = testIncorpStatusJson.as[IncorpStatusUpdate](IncorpStatusUpdate.reads(APIValidation))
 
-  implicit val hc = HeaderCarrier()
-  implicit val ec = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   class Setup {
 

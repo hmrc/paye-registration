@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,7 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RegistrationController @Inject()(registrationService: RegistrationService,
@@ -46,7 +45,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
                                        counterService: IICounterService,
                                        val crypto: CryptoSCRS,
                                        val authConnector: AuthConnector,
-                                       controllerComponents: ControllerComponents) extends BackendController(controllerComponents) with Authorisation with Logging {
+                                       controllerComponents: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(controllerComponents) with Authorisation with Logging {
 
   val resourceConn: RegistrationMongoRepository = registrationService.registrationRepository
 
@@ -335,7 +334,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
 
   def updateRegistrationWithEmpRef(ackref: String): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      implicit val fmt = EmpRefNotification.format(APIValidation, crypto)
+      implicit val fmt: Format[EmpRefNotification] = EmpRefNotification.format(APIValidation, crypto)
       withJsonBody[EmpRefNotification] { notification =>
         notificationService.processNotification(ackref, notification) map { updated =>
           Ok(Json.toJson(updated))

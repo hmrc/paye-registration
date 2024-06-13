@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ object IncorporationFailureAuditEventDetail {
   private val INCORP_STATUS = "incorporationStatus"
   private val REJECTED      = "rejected"
 
-  implicit val incorpFailedEventWrites = new Writes[IncorporationFailureAuditEventDetail] {
+  implicit val incorpFailedEventWrites: Writes[IncorporationFailureAuditEventDetail] = new Writes[IncorporationFailureAuditEventDetail] {
     override def writes(detail: IncorporationFailureAuditEventDetail): JsValue = Json.obj(
       JOURNEY_ID      -> detail.regId,
       ACK_REF         -> detail.acknowledgementReference,
