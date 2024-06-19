@@ -25,7 +25,7 @@
     <logger name="com.google.inject" level="OFF"/>
     <logger name="javax.management.mbeanserver" level="OFF"/>
     <logger name="javax.management.misc" level="OFF"/>
-    <logger name="akka.event.EventStream" level="OFF"/>
+    <logger name="pekko.event.EventStream" level="OFF"/>
     <logger name="play.api.libs.concurrent.ActorSystemProvider" level="OFF"/>
     <logger name="org.jboss.netty.channel.socket.nio.SelectorUtil" level="OFF"/>
     <logger name="uk.gov" level="OFF"/>
