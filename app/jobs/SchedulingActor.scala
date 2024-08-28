@@ -22,10 +22,10 @@ import utils.Logging
 import services._
 
 import java.time.ZonedDateTime
-import javax.inject.Inject
-import scala.concurrent.ExecutionContext
 
-class SchedulingActor (implicit ec: ExecutionContext) extends Actor with Logging {
+class SchedulingActor() extends Actor with Logging {
+
+  import context.dispatcher
 
   override def receive: Receive = {
     case message: ScheduledMessage[_] =>
