@@ -14,13 +14,13 @@ In order to run the microservice, you must have SBT installed. You should then b
 Use service manager to run all services required by PAYE Registration:
 
 ```bash
-sm --start PAYE_REG_ALL -f
+sm2 --start PAYE_REG_ALL
 ```
 
-To run the tests for the application, you can run: ```sbt test it:test``` 
+To run the tests for the application, you can run: ```sbt test it/test``` 
 
 
-or ```sbt coverage test it:test coverageReport```
+or ```sbt coverage test it/test coverageReport```
 
 ## API
 
