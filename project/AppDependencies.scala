@@ -9,7 +9,7 @@ object AppDependencies {
   private val scalaTestVersion            =  "3.2.18"
   private val scalaTestPlusPlayVersion    =  "7.0.1"
   private val wireMockVersion             =  "3.0.1"
-  private val hmrcMongoVersion            =  "1.9.0"
+  private val hmrcMongoVersion            =  "2.6.0"
   private val quartzSchedulerVersion      =  "1.2.0-pekko-1.0.x"
   private val flexmarkAllVersion          =  "0.64.8"
   private val taxYearVersion              =  "4.0.0"
