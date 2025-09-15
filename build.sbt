@@ -26,7 +26,6 @@ lazy val microservice = Project(appName, file("."))
     scalacOptions += "-Xlint:-unused",
     libraryDependencies ++= AppDependencies(),
     retrieveManaged := true,
-    resolvers += Resolver.jcenterRepo,
     routesGenerator := InjectedRoutesGenerator
   )
 
