@@ -4,15 +4,15 @@ import sbt._
 object AppDependencies {
 
   private val playVersion                 =  "-play-30"
-  private val bootstrapVersion            =  "8.6.0"
+  private val bootstrapVersion            =  "10.1.0"
   private val domainVersion               =  "8.3.0-play-28"
   private val scalaTestVersion            =  "3.2.18"
   private val scalaTestPlusPlayVersion    =  "7.0.1"
   private val wireMockVersion             =  "3.0.1"
-  private val hmrcMongoVersion            =  "2.6.0"
+  private val hmrcMongoVersion            =  "2.7.0"
   private val quartzSchedulerVersion      =  "1.2.0-pekko-1.0.x"
   private val flexmarkAllVersion          =  "0.64.8"
-  private val taxYearVersion              =  "4.0.0"
+  private val taxYearVersion              =  "6.0.0"
 
   val compile = Seq(
     "uk.gov.hmrc"               %%  "tax-year"                        % taxYearVersion,
