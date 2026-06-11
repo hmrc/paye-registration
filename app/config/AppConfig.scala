@@ -32,6 +32,24 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
   lazy val desStubUrl = servicesConfig.baseUrl("des-stub")
   lazy val desStubURI = servicesConfig.getConfString("des-stub.uri", "")
   lazy val desStubTopUpURI = servicesConfig.getConfString("des-stub.top-up-uri", "")
+  lazy val hipUrl = servicesConfig.getConfString("hip-service.url", "")
+  lazy val hipURI = servicesConfig.getConfString("hip-service.uri", "")
+  lazy val hipTopUpURI = servicesConfig.getConfString("hip-service.top-up-uri", "")
+  lazy val hipUrlHeaderEnvironment: String = servicesConfig.getConfString("hip-service.environment",
+    throw new Exception("could not find config value for hip-service.environment"))
+  lazy val hipUrlHeaderAuthorization: String = s"Bearer ${
+    servicesConfig.getConfString("hip-service.authorization-token",
+      throw new Exception("could not find config value for hip-service.authorization-token"))
+  }"
+
+  //What to do for the hip stub?
+
+
+  //Headers from OAS spec hip needs all 6 Authorization, Environment, correlationid, X-Originating-System, X-Receipt-Date, X-Transmitting-System
+  //These are the new headers hip needs
+  lazy val hipUrlHeaderOriginatingSystem: String = "SCRS"
+  lazy val hipUrlHeaderTransmittingSystem: String = "HIP"
+
   lazy val desUrlHeaderEnvironment: String = servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
   lazy val desUrlHeaderAuthorization: String = s"Bearer ${
     servicesConfig.getConfString("des-service.authorization-token",
