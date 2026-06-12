@@ -32,6 +32,7 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
   lazy val desStubUrl = servicesConfig.baseUrl("des-stub")
   lazy val desStubURI = servicesConfig.getConfString("des-stub.uri", "")
   lazy val desStubTopUpURI = servicesConfig.getConfString("des-stub.top-up-uri", "")
+  lazy val useHip: Boolean = servicesConfig.getBoolean("features.hipServiceFeature")
   lazy val hipUrl = servicesConfig.getConfString("hip-service.url", "")
   lazy val hipURI = servicesConfig.getConfString("hip-service.uri", "")
   lazy val hipTopUpURI = servicesConfig.getConfString("hip-service.top-up-uri", "")
@@ -41,7 +42,6 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
     servicesConfig.getConfString("hip-service.authorization-token",
       throw new Exception("could not find config value for hip-service.authorization-token"))
   }"
-
   //What to do for the hip stub?
 
 

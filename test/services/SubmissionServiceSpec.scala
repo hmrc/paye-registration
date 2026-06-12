@@ -52,6 +52,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
   val mockBusinessRegistrationConnector = mock[BusinessRegistrationConnector]
   val mockCompanyRegistrationConnector = mock[CompanyRegistrationConnector]
   val mockRegistrationService = mock[RegistrationService]
+  val mockRoutingConnector: RoutingConnector = mock[RoutingConnector]
 
   implicit val hc: HeaderCarrier = HeaderCarrier(sessionId = Some(SessionId("session-123")))
   implicit val req: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("GET", "/test-path")
@@ -62,7 +63,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     val service = new SubmissionService(
       mockSequenceRepository,
       mockRegistrationRepository,
-      mockDESConnector,
+      mockRoutingConnector,
       mockIIConnector,
       mockBusinessRegistrationConnector,
       mockCompanyRegistrationConnector,
@@ -499,7 +500,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
-        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
         when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
@@ -536,7 +537,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
         when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
-        when(mockDESConnector.submitToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitTopUpToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
         when(mockAuditService.auditDESSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
@@ -571,7 +572,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitTopUpToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
         when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
@@ -599,7 +600,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-        when(mockDESConnector.submitTopUpToDES(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitTopUpToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
         when(mockAuditService.auditDESTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))

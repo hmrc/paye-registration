@@ -28,17 +28,16 @@ import models._
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESMetaData, _}
 import utils.Logging
-import utils.PAYEFeatureSwitches
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, NoActiveSession, UnsupportedAuthProvider}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, NoActiveSession}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
-import scala.util.{Failure, Success, Try}
+
 
 class RejectedIncorporationException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
@@ -47,8 +46,7 @@ class RejectedIncorporationException(msg: String) extends NoStackTrace {
 @Singleton
 class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoRepository,
                                   registrationMongoRepository: RegistrationMongoRepository,
-                                  desConnector: DESConnector,
-                                  hipConnector: HIPConnector,
+                                  routingConnector: RoutingConnector,
                                   incorporationInformationConnector: IncorporationInformationConnector,
                                   businessRegistrationConnector: BusinessRegistrationConnector,
                                   companyRegistrationConnector: CompanyRegistrationConnector,
@@ -77,12 +75,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       for {
         ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
         submission <- buildADesSubmission(regId, incUpdate, ctutr)
-        //_ <- desConnector.submitToDES(submission, regId, incUpdate)
-        _ <- if (PAYEFeatureSwitches.hipService.enabled) {
-          hipConnector.submitToHIP(submission, regId, incUpdate)
-        } else {
-          desConnector.submitToDES(submission, regId, incUpdate)
-        }
+        _ <- routingConnector.submitToEtmp(submission, regId, incUpdate)
         _ <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
         updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
         _ <- updatePAYERegistrationDocument(regId, updatedStatus)
@@ -94,12 +87,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
       desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
-      //_ <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _ <- if (PAYEFeatureSwitches.hipService.enabled) {
-        hipConnector.submitTopUpToHIP(desSubmission, regId, incorpStatusUpdate.transactionId)
-      } else {
-        desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      }
+      _ <- routingConnector.submitTopUpToEtmp(desSubmission, regId, incorpStatusUpdate.transactionId)
       _ <- auditService.auditDESTopUp(regId, desSubmission)
       _ <- if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
         registrationService.deletePAYERegistration(regId, PAYEStatus.held)
