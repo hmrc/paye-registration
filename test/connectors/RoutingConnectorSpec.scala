@@ -20,12 +20,13 @@ import config.AppConfig
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{DESSubmission, TopUpDESSubmission}
+import org.apache.pekko.util.Timeout
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import play.api.test.Helpers.await
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import org.apache.pekko.util.Timeout
+
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 

@@ -23,10 +23,10 @@ import models.submission.{DESSubmission, TopUpDESSubmission}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
-import play.api.libs.json.Writes
 import play.api.test.Helpers._
 import services.AuditService
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,55 +36,61 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  val mockHttp: HttpClient = mock[HttpClient]
+  val mockHttpClientV2: HttpClientV2 = mock[HttpClientV2]
   val mockAuditService: AuditService = mock[AuditService]
 
+  before {
+    reset(mockHttpClientV2)
+  }
+
   class Setup {
+    val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
+
     object MockAppConfig extends AppConfig(mock[ServicesConfig]) {
       override lazy val hipURI = "RESTAdapter/business-registration/PAYE"
       override lazy val hipTopUpURI = "RESTAdapter/business-incorporation/PAYE"
-      override lazy val hipUrl = "hipURL"
-      override lazy val hipUrlHeaderEnvironment = "env"
-      override lazy val hipUrlHeaderAuthorization = "Bearer auth"
-      override lazy val hipUrlHeaderOriginatingSystem = "SCRS"
-      override lazy val hipUrlHeaderTransmittingSystem = "HIP"
+      override lazy val hipUrl = "http://hipURL"
+      override lazy val hipClientId = "testClientId"
+      override lazy val hipClientSecret = "testClientSecret"
     }
 
-    object Connector extends HIPConnector(mockHttp, MockAppConfig, mockAuditService)
-  }
+    object Connector extends HIPConnector(mockHttpClientV2, MockAppConfig, mockAuditService)
 
-  def mockHttpPOST[I, O](url: String, thenReturn: O) = {
-    when(mockHttp.POST[I, O](ArgumentMatchers.contains(url), ArgumentMatchers.any[I](), ArgumentMatchers.any())
-      (ArgumentMatchers.any[Writes[I]](), ArgumentMatchers.any[HttpReads[O]](), ArgumentMatchers.any[HeaderCarrier](), ArgumentMatchers.any()))
-      .thenReturn(Future.successful(thenReturn))
-  }
+    def mockHttpPost(thenReturn: HttpResponse): Unit = {
+      when(mockHttpClientV2.post(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.setHeader(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.withBody(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.execute[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(thenReturn))
+    }
 
-  def mockHttpFailedPOST[I, O](url: String, exception: Exception) = {
-    when(mockHttp.POST[I, O](ArgumentMatchers.anyString(), ArgumentMatchers.any[I](), ArgumentMatchers.any())
-      (ArgumentMatchers.any[Writes[I]](), ArgumentMatchers.any[HttpReads[O]](), ArgumentMatchers.any[HeaderCarrier](), ArgumentMatchers.any()))
-      .thenReturn(Future.failed(exception))
+    def mockHttpPostFailed(exception: Exception): Unit = {
+      when(mockHttpClientV2.post(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.setHeader(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.withBody(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.execute[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.failed(exception))
+    }
   }
 
   "submitToHIP with a Partial DES Submission Model" should {
     "successfully POST to HIP" in new Setup {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.hipUrl}/${MockAppConfig.hipURI}", HttpResponse(200, ""))
+      mockHttpPost(HttpResponse(200, ""))
       await(Connector.submitToHIP(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
     }
 
     "throw exception if a 400 is encountered" in new Setup {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.hipUrl}/${MockAppConfig.hipURI}", UpstreamErrorResponse("OOPS", 400, 400))
+      mockHttpPostFailed(UpstreamErrorResponse("OOPS", 400, 400))
       intercept[UpstreamErrorResponse](await(Connector.submitToHIP(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
   }
 
   "submitTopUpToHIP with a Top Up DES Submission Model" should {
     "successfully POST to HIP" in new Setup {
-      mockHttpPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.hipUrl}/${MockAppConfig.hipTopUpURI}", HttpResponse(200, ""))
+      mockHttpPost(HttpResponse(200, ""))
       await(Connector.submitTopUpToHIP(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status mustBe 200
     }
 
     "throw exception if a 400 is encountered" in new Setup {
-      mockHttpFailedPOST[TopUpDESSubmission, HttpResponse](s"${MockAppConfig.hipUrl}/${MockAppConfig.hipTopUpURI}", UpstreamErrorResponse("OOPS", 400, 400))
+      mockHttpPostFailed(UpstreamErrorResponse("OOPS", 400, 400))
       intercept[UpstreamErrorResponse](await(Connector.submitTopUpToHIP(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
     }
   }

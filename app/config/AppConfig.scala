@@ -36,17 +36,11 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
   lazy val hipUrl = servicesConfig.getConfString("hip-service.url", "")
   lazy val hipURI = servicesConfig.getConfString("hip-service.uri", "")
   lazy val hipTopUpURI = servicesConfig.getConfString("hip-service.top-up-uri", "")
-  lazy val hipUrlHeaderEnvironment: String = servicesConfig.getConfString("hip-service.environment",
-    throw new Exception("could not find config value for hip-service.environment"))
-  lazy val hipUrlHeaderAuthorization: String = s"Bearer ${
-    servicesConfig.getConfString("hip-service.authorization-token",
-      throw new Exception("could not find config value for hip-service.authorization-token"))
-  }"
-  //What to do for the hip stub?
+  lazy val hipClientId: String = servicesConfig.getConfString("hip-service.client-id",
+    throw new Exception("could not find config value for hip-service.client-id"))
+  lazy val hipClientSecret: String = servicesConfig.getConfString("hip-service.client-secret",
+    throw new Exception("could not find config value for hip-service.client-secret"))
 
-
-  //Headers from OAS spec hip needs all 6 Authorization, Environment, correlationid, X-Originating-System, X-Receipt-Date, X-Transmitting-System
-  //These are the new headers hip needs
   lazy val hipUrlHeaderOriginatingSystem: String = "SCRS"
   lazy val hipUrlHeaderTransmittingSystem: String = "HIP"
 
