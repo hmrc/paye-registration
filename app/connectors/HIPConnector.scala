@@ -28,10 +28,10 @@ import sttp.model.HeaderNames
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.StringContextOps
-import utils.{Logging, SystemDate}
+import utils.{Logging, SystemDate, WorkingHoursGuard}
 
 import java.nio.charset.StandardCharsets
-import java.time.Instant
+import java.time.{Instant, LocalDate, LocalTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Base64
@@ -41,26 +41,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val auditService: AuditService)
-  extends BaseConnector with BaseHttpReads with HttpErrorFunctions with Logging with CorrelationGenerator {
+  extends BaseConnector with BaseHttpReads with HttpErrorFunctions with Logging with CorrelationGenerator with WorkingHoursGuard {
 
-  private[connectors] def customHIPRead(http: String, url: String, response: HttpResponse): HttpResponse = {
-    response.status match {
-      case 409 =>
-        logger.warn("[customHIPRead] Received 409 from HIP - converting to 200")
-        HttpResponse(200, response.body, response.headers)
-      case 429 =>
-        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 429, reportAs = 503, response.headers)
-      case 499 =>
-        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.headers)
-      case status if is4xx(status) =>
-        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.headers)
-      case _ =>
-        handleResponseEither(http, url)(response).fold(e => throw e, identity)
+  val alertWorkingHours: String = appConfig.alertWorkingHours
+
+  def currentDate: LocalDate = SystemDate.getSystemDate.toLocalDate
+  def currentTime: LocalTime = SystemDate.getSystemDate.toLocalTime
+
+  private def logHip400PagerDuty(response: UpstreamErrorResponse, regId: String): Unit = if (response.statusCode == 400) {
+    if (isInWorkingDaysAndHours) {
+      logger.error(s"[logHip400PagerDuty] PAYE_400_HIP_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
+    } else {
+      logger.error(s"[logHip400PagerDuty] NON_PAGER_DUTY_LOG PAYE_400_HIP_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime")
     }
   }
 
   implicit val httpRds: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    def read(http: String, url: String, res: HttpResponse) = customHIPRead(http, url, res)
+    def read(http: String, url: String, res: HttpResponse): HttpResponse = customHIPRead(http, url, res)
   }
 
   def submitToHIP(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
@@ -74,7 +71,8 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
       resp
     } recoverWith {
       case e: UpstreamErrorResponse if UpstreamErrorResponse.Upstream4xxResponse.unapply(e).isDefined =>
-        logger.error(s"[submitToHIP] PAYE_400_HIP_SUBMISSION_FAILURE for regId: $regId")
+        logHip400PagerDuty(e, regId)
+        auditService.sendEvent("payeRegistrationSubmissionFailure", Json.obj("submission" -> submission, JOURNEY_ID -> regId))
         Future.failed(e)
     }
   }
@@ -91,7 +89,7 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
       resp
     } recoverWith {
       case e: UpstreamErrorResponse if UpstreamErrorResponse.Upstream4xxResponse.unapply(e).isDefined =>
-        logger.error(s"[submitTopUpToHIP] PAYE_400_HIP_TOPUP_FAILURE for regId: $regId and txId: $txId")
+        logHip400PagerDuty(e, regId)
         Future.failed(e)
     }
   }
@@ -122,5 +120,21 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
       .setHeader(hipHeaders: _*)
       .withBody(body)
       .execute[HttpResponse]
+  }
+
+  private[connectors] def customHIPRead(http: String, url: String, response: HttpResponse): HttpResponse = {
+    response.status match {
+      case 409 =>
+        logger.warn("[customHIPRead] Received 409 from HIP - converting to 200")
+        HttpResponse(200, response.body, response.headers)
+      case 429 =>
+        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 429, reportAs = 503, response.headers)
+      case 499 =>
+        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, response.status, response.body), 499, reportAs = 502, response.headers)
+      case status if is4xx(status) =>
+        throw UpstreamErrorResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.headers)
+      case _ =>
+        handleResponseEither(http, url)(response).fold(e => throw e, identity)
+    }
   }
 }

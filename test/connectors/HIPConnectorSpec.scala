@@ -52,6 +52,8 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override lazy val hipUrl = "http://hipURL"
       override lazy val hipClientId = "testClientId"
       override lazy val hipClientSecret = "testClientSecret"
+      override lazy val alertWorkingHours = "00:00:00_23:59:59"
+
     }
 
     object Connector extends HIPConnector(mockHttpClientV2, MockAppConfig, mockAuditService)
@@ -71,7 +73,7 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     }
   }
 
-  "submitToHIP with a Partial DES Submission Model" should {
+  "submitToHIP with a Partial Submission Model" should {
     "successfully POST to HIP" in new Setup {
       mockHttpPost(HttpResponse(200, ""))
       await(Connector.submitToHIP(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
@@ -83,7 +85,7 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     }
   }
 
-  "submitTopUpToHIP with a Top Up DES Submission Model" should {
+  "submitTopUpToHIP with a Top Up Submission Model" should {
     "successfully POST to HIP" in new Setup {
       mockHttpPost(HttpResponse(200, ""))
       await(Connector.submitTopUpToHIP(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status mustBe 200
