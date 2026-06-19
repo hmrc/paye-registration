@@ -20,20 +20,20 @@ import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import enums.AddressTypes
 import play.api.libs.json.{JsObject, Json, Writes}
 
-case class DesSubmissionAuditEventDetail(externalId: String,
+case class ApiSubmissionAuditEventDetail(externalId: String,
                                          authProviderId: String,
                                          regId: String,
                                          ctutr: Option[String],
-                                         desSubmissionState: String,
+                                         apiSubmissionState: String,
                                          jsSubmission: JsObject,
                                          auditRefs: Map[AddressTypes.Value, String])
 
-object DesSubmissionAuditEventDetail {
+object ApiSubmissionAuditEventDetail {
 
-  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, DES_SUBMISSION_STATE, EXTERNAL_ID}
+  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, API_SUBMISSION_STATE, EXTERNAL_ID}
 
-  implicit val writes: Writes[DesSubmissionAuditEventDetail] = new Writes[DesSubmissionAuditEventDetail] {
-    def writes(detail: DesSubmissionAuditEventDetail) = {
+  implicit val writes: Writes[ApiSubmissionAuditEventDetail] = new Writes[ApiSubmissionAuditEventDetail] {
+    def writes(detail: ApiSubmissionAuditEventDetail) = {
       val ctutrTuple = detail.ctutr map( utr =>
         Json.obj("ctutr" -> utr)
       )
@@ -42,7 +42,7 @@ object DesSubmissionAuditEventDetail {
         EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
-        DES_SUBMISSION_STATE -> detail.desSubmissionState
+        API_SUBMISSION_STATE -> detail.apiSubmissionState
       ) ++ detail.jsSubmission.deepMerge(auditRefsJson(detail.auditRefs))
 
       if(ctutrTuple.isDefined) event ++ ctutrTuple.get else event

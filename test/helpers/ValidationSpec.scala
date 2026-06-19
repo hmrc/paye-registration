@@ -16,7 +16,7 @@
 
 package helpers
 
-import models.validation.DesValidation
+import models.validation.ApiValidation
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -24,7 +24,7 @@ class ValidationSpec extends PAYERegSpec {
 
   case class TestModel(cName: String, int: Int = 616)
   implicit val testModelWriter: Writes[TestModel] = (
-    (__ \ "cName").write[String](DesValidation.companyNameFormatter) and
+    (__ \ "cName").write[String](ApiValidation.companyNameFormatter) and
     (__ \ "int").write[Int]
   )(unlift(TestModel.unapply))
 

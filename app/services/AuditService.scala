@@ -91,26 +91,26 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
     }
   }
 
-  def auditDESSubmission(regId: String, desSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
+  def auditApiSubmission(regId: String, apiSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
     authorised().retrieve(Retrievals.externalId and Retrievals.credentials) {
       case Some(id) ~ Some(credentials) =>
         for {
           auditRefs <- fetchAddressAuditRefs(regId)
           auditRes <- sendEvent(
             auditType = "payeRegistrationSubmission",
-            detail = DesSubmissionAuditEventDetail(id, credentials.providerId, regId, ctutr, desSubmissionState, jsSubmission, auditRefs)
+            detail = ApiSubmissionAuditEventDetail(id, credentials.providerId, regId, ctutr, apiSubmissionState, jsSubmission, auditRefs)
           )
         } yield auditRes
       case _ => throw new Exception("[Audit DES Submission] failed")
     }
   }
 
-  def auditDESTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
+  def auditApiTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
     topUpDESSubmission.status match {
       case IncorporationStatus.accepted =>
         sendEvent(
           auditType = "payeRegistrationAdditionalData",
-          detail = DesTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject])
+          detail = ApiTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject])
         )
       case IncorporationStatus.rejected =>
         sendEvent(

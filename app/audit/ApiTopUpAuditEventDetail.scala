@@ -18,14 +18,14 @@ package audit
 
 import play.api.libs.json.{JsObject, Json, Writes}
 
-case class DesTopUpAuditEventDetail(regId: String,
+case class ApiTopUpAuditEventDetail(regId: String,
                                     jsSubmission: JsObject)
 
-object DesTopUpAuditEventDetail {
+object ApiTopUpAuditEventDetail {
   import RegistrationAuditEventConstants.JOURNEY_ID
 
-  implicit val writes: Writes[DesTopUpAuditEventDetail] = new Writes[DesTopUpAuditEventDetail] {
-    def writes(detail: DesTopUpAuditEventDetail) = {
+  implicit val writes: Writes[ApiTopUpAuditEventDetail] = new Writes[ApiTopUpAuditEventDetail] {
+    def writes(detail: ApiTopUpAuditEventDetail) = {
       Json.obj(
         JOURNEY_ID -> detail.regId
       ) ++ detail.jsSubmission

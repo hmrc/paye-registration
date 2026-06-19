@@ -550,7 +550,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     "return a BadRequest response when the Submission Service can't make a DES submission" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
-      when(mockSubmissionService.submitToDes(contains(regId))(any[HeaderCarrier](), any()))
+      when(mockSubmissionService.submitToApi(contains(regId))(any[HeaderCarrier](), any()))
         .thenReturn(Future.failed(new EmploymentDetailsNotDefinedException("tst message")))
 
       val response = controller.submitPAYERegistration(regId)(FakeRequest())
@@ -562,7 +562,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
     "return an Ok response with acknowledgement reference for a valid submit" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
-      when(mockSubmissionService.submitToDes(contains(regId))(any[HeaderCarrier](), any()))
+      when(mockSubmissionService.submitToApi(contains(regId))(any[HeaderCarrier](), any()))
         .thenReturn(Future.successful("BRPY00000000001"))
 
       val response = controller.submitPAYERegistration(regId)(FakeRequest())
@@ -728,7 +728,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
-      when(mockSubmissionService.submitTopUpToDES(any(), any())(any[HeaderCarrier]()))
+      when(mockSubmissionService.submitTopUpToApi(any(), any())(any[HeaderCarrier]()))
         .thenReturn(Future.failed(new RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.invalid.toString)))
 
       when(mockCounterService.maxIICounterCount).thenReturn(2)
@@ -744,7 +744,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.invalid))))
 
-      when(mockSubmissionService.submitTopUpToDES(any(), any())(any[HeaderCarrier]()))
+      when(mockSubmissionService.submitTopUpToApi(any(), any())(any[HeaderCarrier]()))
         .thenReturn(Future.failed(new RegistrationInvalidStatus(validRegistration.registrationID, PAYEStatus.invalid.toString)))
 
       when(mockCounterService.maxIICounterCount).thenReturn(2)
@@ -760,7 +760,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
 
-      when(mockSubmissionService.submitTopUpToDES(any(), any())(any[HeaderCarrier]()))
+      when(mockSubmissionService.submitTopUpToApi(any(), any())(any[HeaderCarrier]()))
         .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.acknowledged.toString)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
@@ -771,7 +771,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.rejected))))
 
-      when(mockSubmissionService.submitTopUpToDES(any(), any())(any[HeaderCarrier]()))
+      when(mockSubmissionService.submitTopUpToApi(any(), any())(any[HeaderCarrier]()))
         .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.rejected.toString)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
@@ -782,7 +782,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.cancelled))))
 
-      when(mockSubmissionService.submitTopUpToDES(any(), any())(any[HeaderCarrier]()))
+      when(mockSubmissionService.submitTopUpToApi(any(), any())(any[HeaderCarrier]()))
         .thenReturn(Future.failed(new ErrorRegistrationException(validRegistration.registrationID, PAYEStatus.cancelled.toString)))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))
@@ -802,7 +802,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
       when(mockRegistrationService.fetchPAYERegistrationByTransactionID(any()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.held))))
 
-      when(mockSubmissionService.submitTopUpToDES(any(), any())(any[HeaderCarrier]()))
+      when(mockSubmissionService.submitTopUpToApi(any(), any())(any[HeaderCarrier]()))
         .thenReturn(Future.failed(new UpdateFailed(validRegistration.registrationID, "Registration status")))
 
       val response = controller.processIncorporationData(FakeRequest().withBody(Json.toJson(jsonIncorpStatusUpdate)))

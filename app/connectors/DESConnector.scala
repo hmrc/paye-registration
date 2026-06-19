@@ -20,7 +20,7 @@ import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import config.AppConfig
 import connectors.httpParsers.BaseHttpReads
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{DESSubmission, TopUpDESSubmission}
+import models.submission.{ApiSubmission, TopUpDESSubmission}
 import utils.Logging
 import play.api.libs.json.{Json, Writes}
 import services.AuditService
@@ -68,7 +68,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
   }
 
-  def submitToDES(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+  def submitToDES(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = if (useDESStubFeature) {
       s"${appConfig.desStubUrl}/${appConfig.desStubURI}"
@@ -77,7 +77,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     }
 
     logger.info(s"[submitToDES] Submission to DES for regId: $regId, ackRef ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
-    payePOST[DESSubmission, HttpResponse](url, submission) map { resp =>
+    payePOST[ApiSubmission, HttpResponse](url, submission) map { resp =>
       logger.info(s"[submitToDES] DES responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
     } recoverWith {

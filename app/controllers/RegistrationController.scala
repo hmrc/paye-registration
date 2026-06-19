@@ -270,7 +270,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
     implicit request =>
       isAuthorised(regID) { authResult =>
         authResult.ifAuthorised(regID, "submitPAYERegistration") {
-          submissionService.submitToDes(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
+          submissionService.submitToApi(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
             case e =>
@@ -302,7 +302,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
             logger.error(s"[processIncorporationData] No registration found for transaction id $transactionId")
             throw new MissingRegDocument(transactionId)
           case Some(reg) =>
-            submissionService.submitTopUpToDES(reg.registrationID, statusUpdate) map (_ => Ok(Json.toJson(statusUpdate.crn)))
+            submissionService.submitTopUpToApi(reg.registrationID, statusUpdate) map (_ => Ok(Json.toJson(statusUpdate.crn)))
         } recoverWith {
           case invalid: ErrorRegistrationException =>
             Future.successful(Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}"))

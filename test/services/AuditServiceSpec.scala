@@ -16,7 +16,7 @@
 
 package services
 
-import audit.DesTopUpAuditEventDetail
+import audit.ApiTopUpAuditEventDetail
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.AddressTypes
 import fixtures.RegistrationFixture
@@ -57,7 +57,7 @@ class AuditServiceSpec extends PAYERegSpec with RegistrationFixture {
     when(mockAuditConnector.auditingConfig) thenReturn mockAuditingConfig
     when(mockAuditingConfig.auditSource) thenReturn appName
 
-    val event = DesTopUpAuditEventDetail(regId = "regId", jsSubmission = Json.obj("submissionId" -> "123456"))
+    val event = ApiTopUpAuditEventDetail(regId = "regId", jsSubmission = Json.obj("submissionId" -> "123456"))
 
     val service = new AuditService(mockRegistrationRepository, mockAuthConnector, mockAuditConnector) {
       override private[services] def now() = instantNow

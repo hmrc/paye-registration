@@ -20,7 +20,7 @@ import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import config.AppConfig
 import connectors.httpParsers.BaseHttpReads
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{DESSubmission, TopUpDESSubmission}
+import models.submission.{ApiSubmission, TopUpDESSubmission}
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.AuditService
@@ -60,7 +60,7 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
     def read(http: String, url: String, res: HttpResponse): HttpResponse = customHIPRead(http, url, res)
   }
 
-  def submitToHIP(submission: DESSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
+  def submitToHIP(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
                  (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = s"${appConfig.hipUrl}/${appConfig.hipURI}"

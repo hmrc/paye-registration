@@ -17,24 +17,24 @@
 package models.submission
 
 import enums.IncorporationStatus
-import models.validation.{APIValidation, DesValidation}
-import play.api.libs.functional.syntax.{unlift, _}
+import models.validation.{APIValidation, ApiValidation}
+import play.api.libs.functional.syntax._
 import play.api.libs.json.{Writes, __}
 
 
-case class DESSubmission(acknowledgementReference: String,
-                              metaData: DESMetaData,
-                              limitedCompany: DESLimitedCompany,
-                              employingPeople: DESEmployingPeople)
+case class ApiSubmission(acknowledgementReference: String,
+                         metaData: DESMetaData,
+                         limitedCompany: DESLimitedCompany,
+                         employingPeople: DESEmployingPeople)
 
-object DESSubmission {
-  implicit val writes: Writes[DESSubmission] =
+object ApiSubmission {
+  implicit val writes: Writes[ApiSubmission] =
     (
       (__ \ "acknowledgementReference").write[String] and
       (__ \ "metaData").write[DESMetaData] and
       (__ \ "payAsYouEarn" \ "limitedCompany").write[DESLimitedCompany] and
       (__ \ "payAsYouEarn" \ "employingPeople").write[DESEmployingPeople]
-      )(unlift(DESSubmission.unapply))
+      )(unlift(ApiSubmission.unapply))
 }
 
 case class TopUpDESSubmission(acknowledgementReference: String,
@@ -42,7 +42,7 @@ case class TopUpDESSubmission(acknowledgementReference: String,
                               crn: Option[String])
 
 object TopUpDESSubmission {
-  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(DesValidation))
+  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(ApiValidation))
 
   val auditWrites: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
 

@@ -57,7 +57,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
 
-  def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
+  def submitToApi(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     val futureAckRefIncUpdate = {
       for {
         ackRef <- assertOrGenerateAcknowledgementReference(regId)
@@ -74,9 +74,9 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       val (ackRef, incUpdate) = ackRefAndIncUpdate
       for {
         ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
-        submission <- buildADesSubmission(regId, incUpdate, ctutr)
+        submission <- buildApiSubmission(regId, incUpdate, ctutr)
         _ <- routingConnector.submitToEtmp(submission, regId, incUpdate)
-        _ <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
+        _ <- auditService.auditApiSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[ApiSubmission](submission).as[JsObject], ctutr)
         updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
         _ <- updatePAYERegistrationDocument(regId, updatedStatus)
       } yield ackRef
@@ -84,11 +84,11 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   }
 
 
-  def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
+  def submitTopUpToApi(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
-      desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
-      _ <- routingConnector.submitTopUpToEtmp(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _ <- auditService.auditDESTopUp(regId, desSubmission)
+      apiSubmission <- buildTopUpApiSubmission(regId, incorpStatusUpdate)
+      _ <- routingConnector.submitTopUpToEtmp(apiSubmission, regId, incorpStatusUpdate.transactionId)
+      _ <- auditService.auditApiTopUp(regId, apiSubmission)
       _ <- if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
         registrationService.deletePAYERegistration(regId, PAYEStatus.held)
       } else {
@@ -128,36 +128,36 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
+  private[services] def buildApiSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[ApiSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
-          logger.debug("[buildADesSubmission] building a full DES submission")
+          logger.debug("[buildApiSubmission] building a full DES submission")
           payeReg2DESSubmission(payeReg, statusUpdate.crn, ctutr)
         case None =>
-          logger.debug("[buildADesSubmission] building a partial DES submission")
+          logger.debug("[buildApiSubmission] building a partial DES submission")
           payeReg2DESSubmission(payeReg, None, ctutr)
       }
       case Some(payeReg) =>
-        logger.warn(s"[buildADesSubmission] The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
+        logger.warn(s"[buildApiSubmission] The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case None =>
-        logger.warn(s"[buildADesSubmission] building des top submission failed, there was no registration document present for regId $regId")
+        logger.warn(s"[buildApiSubmission] building Api top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
     }
   }
 
-  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
+  private[services] def buildTopUpApiSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
-        logger.warn(s"[buildTopUpDESSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
+        logger.warn(s"[buildTopUpApiSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case Some(payeReg) =>
-        logger.error(s"[buildTopUpDESSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
+        logger.error(s"[buildTopUpApiSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
         throw new ErrorRegistrationException(regId, payeReg.status.toString)
       case None =>
-        logger.error(s"[buildTopUpDESSubmission] building des top submission failed, there was no registration document present for regId $regId")
+        logger.error(s"[buildTopUpApiSubmission] building Api top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
     }
   }
@@ -175,7 +175,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
+  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[ApiSubmission] = {
     val companyDetails = payeReg.companyDetails.getOrElse {
       throw new CompanyDetailsNotDefinedException("Company Details not defined")
     }
@@ -190,10 +190,10 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
 
     buildDESMetaData(payeReg.registrationID, payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
-      desMetaData => {
-        DESSubmission(
+      apiMetaData => {
+        ApiSubmission(
           acknowledgementReference = ackRef,
-          metaData = desMetaData,
+          metaData = apiMetaData,
           limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, employmentInfo, ctutr),
           employingPeople = buildDESEmployingPeople(
             payeReg.registrationID,

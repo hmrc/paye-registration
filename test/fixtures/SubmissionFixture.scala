@@ -104,7 +104,7 @@ trait SubmissionFixture {
     payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
-  val validPartialDESSubmissionModel = DESSubmission(
+  val validPartialDESSubmissionModel = ApiSubmission(
     acknowledgementReference = "ackRef",
     metaData = validDESMetaData,
     limitedCompany = validDESLimitedCompanyWithoutCRN,

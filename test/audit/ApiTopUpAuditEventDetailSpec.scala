@@ -21,7 +21,7 @@ import helpers.PAYERegSpec
 import models.submission.TopUpDESSubmission
 import play.api.libs.json.{JsObject, Json}
 
-class DesTopUpAuditEventDetailSpec extends PAYERegSpec {
+class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
   "DesTopUpAuditEventDetail" should {
     val regId = "123456789"
     val ackRef = "ackRef"
@@ -42,11 +42,11 @@ class DesTopUpAuditEventDetailSpec extends PAYERegSpec {
              |}
           """.stripMargin)
 
-        val testModel = DesTopUpAuditEventDetail(
+        val testModel = ApiTopUpAuditEventDetail(
           regId,
           Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
-        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) mustBe expected
+        Json.toJson(testModel)(ApiTopUpAuditEventDetail.writes) mustBe expected
       }
 
       "incorporation is rejected" in {
@@ -61,11 +61,11 @@ class DesTopUpAuditEventDetailSpec extends PAYERegSpec {
              |}
           """.stripMargin)
 
-        val testModel = DesTopUpAuditEventDetail(
+        val testModel = ApiTopUpAuditEventDetail(
           regId,
           Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
         )
-        Json.toJson(testModel)(DesTopUpAuditEventDetail.writes) mustBe expected
+        Json.toJson(testModel)(ApiTopUpAuditEventDetail.writes) mustBe expected
       }
     }
   }

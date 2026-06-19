@@ -20,7 +20,7 @@ import config.AppConfig
 import connectors.DESConnector
 import fixtures.SubmissionFixture
 import helpers.PAYERegSpec
-import models.submission.{DESSubmission, TopUpDESSubmission}
+import models.submission.{ApiSubmission, TopUpDESSubmission}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mockito.stubbing.OngoingStubbing
@@ -28,7 +28,7 @@ import org.scalatest.BeforeAndAfter
 import play.api.libs.json.Writes
 import play.api.test.Helpers._
 import services.AuditService
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -79,11 +79,11 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Partial DES Submission Model" should {
     "successfully POST with proxy" in new SetupWithProxy(true) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", HttpResponse(200, ""))
+      mockHttpPOST[ApiSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", HttpResponse(200, ""))
       await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", UpstreamErrorResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[ApiSubmission, HttpResponse](s"${MockAppConfig.desStubUrl}/${MockAppConfig.desStubURI}", UpstreamErrorResponse("OOPS", 400, 400))
 
       intercept[UpstreamErrorResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
@@ -107,12 +107,12 @@ class DesConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
 
   "submitToDES with a Partial DES Submission Model - feature switch disabled (submitToDES)" should {
     "successfully POST" in new SetupWithProxy(false) {
-      mockHttpPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", HttpResponse(200, ""))
+      mockHttpPOST[ApiSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", HttpResponse(200, ""))
 
       await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
     }
     "throw exception if a 400 is encountered" in new SetupWithProxy(true) {
-      mockHttpFailedPOST[DESSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", UpstreamErrorResponse("OOPS", 400, 400))
+      mockHttpFailedPOST[ApiSubmission, HttpResponse](s"${MockAppConfig.desUrl}/${MockAppConfig.desURI}", UpstreamErrorResponse("OOPS", 400, 400))
 
       intercept[UpstreamErrorResponse](await(Connector.submitToDES(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
     }
