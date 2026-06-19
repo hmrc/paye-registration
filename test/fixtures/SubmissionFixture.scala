@@ -111,7 +111,7 @@ trait SubmissionFixture {
     employingPeople = validDESEmployingPeople
   )
 
-  val validTopUpDESSubmissionModel = TopUpDESSubmission(
+  val validTopUpDESSubmissionModel = TopUpApiSubmission(
     acknowledgementReference = "ackRef",
     status = IncorporationStatus.accepted,
     crn = Some("123456")

@@ -20,7 +20,7 @@ import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import config.AppConfig
 import connectors.httpParsers.BaseHttpReads
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{ApiSubmission, TopUpDESSubmission}
+import models.submission.{ApiSubmission, TopUpApiSubmission}
 import utils.Logging
 import play.api.libs.json.{Json, Writes}
 import services.AuditService
@@ -71,7 +71,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
   def submitToDES(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = if (useDESStubFeature) {
-      s"${appConfig.desStubUrl}/${appConfig.desStubURI}"
+      s"${appConfig.apiStubUrl}/${appConfig.apiStubURI}"
     } else {
       s"${appConfig.desUrl}/${appConfig.desURI}"
     }
@@ -88,15 +88,15 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
     }
   }
 
-  def submitTopUpToDES(submission: TopUpDESSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+  def submitTopUpToDES(submission: TopUpApiSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     val url = if (useDESStubFeature) {
-      s"${appConfig.desStubUrl}/${appConfig.desStubTopUpURI}"
+      s"${appConfig.apiStubUrl}/${appConfig.apiStubTopUpURI}"
     } else {
       s"${appConfig.desUrl}/${appConfig.desTopUpURI}"
     }
 
     logger.info(s"[submitTopUpToDES] Top Up to DES for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
-    payePOST[TopUpDESSubmission, HttpResponse](url, submission) map { resp =>
+    payePOST[TopUpApiSubmission, HttpResponse](url, submission) map { resp =>
       logger.info(s"[submitTopUpToDES] DES responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
     } recoverWith {

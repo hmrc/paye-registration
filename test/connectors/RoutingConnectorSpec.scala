@@ -19,7 +19,7 @@ package connectors
 import config.AppConfig
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{ApiSubmission, TopUpDESSubmission}
+import models.submission.{ApiSubmission, TopUpApiSubmission}
 import org.apache.pekko.util.Timeout
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -37,7 +37,7 @@ class RoutingConnectorSpec extends PAYERegSpec {
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   val mockSubmission: ApiSubmission = mock[ApiSubmission]
-  val mockTopUpSubmission: TopUpDESSubmission = mock[TopUpDESSubmission]
+  val mockTopUpSubmission: TopUpApiSubmission = mock[TopUpApiSubmission]
   val mockIncorpUpdate: Option[IncorpStatusUpdate] = None
   val successResponse: HttpResponse = HttpResponse(200, "")
 

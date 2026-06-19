@@ -19,7 +19,7 @@ package services
 import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.{AddressTypes, IncorporationStatus}
-import models.submission.{DESCompletionCapacity, TopUpDESSubmission}
+import models.submission.{DESCompletionCapacity, TopUpApiSubmission}
 import play.api.libs.json.{JsObject, Json, Writes}
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -105,12 +105,12 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
     }
   }
 
-  def auditApiTopUp(regId: String, topUpDESSubmission: TopUpDESSubmission)(implicit hc: HeaderCarrier) = {
+  def auditApiTopUp(regId: String, topUpDESSubmission: TopUpApiSubmission)(implicit hc: HeaderCarrier) = {
     topUpDESSubmission.status match {
       case IncorporationStatus.accepted =>
         sendEvent(
           auditType = "payeRegistrationAdditionalData",
-          detail = ApiTopUpAuditEventDetail(regId, Json.toJson[TopUpDESSubmission](topUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject])
+          detail = ApiTopUpAuditEventDetail(regId, Json.toJson[TopUpApiSubmission](topUpDESSubmission)(TopUpApiSubmission.auditWrites).as[JsObject])
         )
       case IncorporationStatus.rejected =>
         sendEvent(

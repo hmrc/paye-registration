@@ -272,7 +272,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     description = None,
     timestamp = LocalDate.of(2017, 12, 21))
 
-  val validTopUpDESSubmissionModel = TopUpDESSubmission(
+  val validTopUpDESSubmissionModel = TopUpApiSubmission(
     acknowledgementReference = "ackRef",
     status = IncorporationStatus.accepted,
     crn = Some("123456")

@@ -37,18 +37,18 @@ object ApiSubmission {
       )(unlift(ApiSubmission.unapply))
 }
 
-case class TopUpDESSubmission(acknowledgementReference: String,
+case class TopUpApiSubmission(acknowledgementReference: String,
                               status: IncorporationStatus.Value,
                               crn: Option[String])
 
-object TopUpDESSubmission {
-  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(ApiValidation))
+object TopUpApiSubmission {
+  implicit val writes: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(ApiValidation))
 
-  val auditWrites: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
+  val auditWrites: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
 
   private def genericTopDesSubmissionWrites(incorporationStatusWrites: Writes[IncorporationStatus.Value]) = (
     (__ \ "acknowledgementReference").write[String] and
     (__ \ "status").write[IncorporationStatus.Value](incorporationStatusWrites) and
     (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
-  )(unlift(TopUpDESSubmission.unapply))
+  )(unlift(TopUpApiSubmission.unapply))
 }

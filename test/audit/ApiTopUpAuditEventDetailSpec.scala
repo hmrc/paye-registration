@@ -18,7 +18,7 @@ package audit
 
 import enums.IncorporationStatus
 import helpers.PAYERegSpec
-import models.submission.TopUpDESSubmission
+import models.submission.TopUpApiSubmission
 import play.api.libs.json.{JsObject, Json}
 
 class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
@@ -28,7 +28,7 @@ class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
 
     "construct full json as per definition" when {
       "incorporation is accepted" in {
-        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, IncorporationStatus.accepted, Some("AA123456"))
+        val validTopUpDESSubmission = TopUpApiSubmission(ackRef, IncorporationStatus.accepted, Some("AA123456"))
 
         val expected = Json.parse(
           s"""
@@ -44,13 +44,13 @@ class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
 
         val testModel = ApiTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
+          Json.toJson[TopUpApiSubmission](validTopUpDESSubmission)(TopUpApiSubmission.auditWrites).as[JsObject]
         )
         Json.toJson(testModel)(ApiTopUpAuditEventDetail.writes) mustBe expected
       }
 
       "incorporation is rejected" in {
-        val validTopUpDESSubmission = TopUpDESSubmission(ackRef, IncorporationStatus.rejected, None)
+        val validTopUpDESSubmission = TopUpApiSubmission(ackRef, IncorporationStatus.rejected, None)
 
         val expected = Json.parse(
           s"""
@@ -63,7 +63,7 @@ class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
 
         val testModel = ApiTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpDESSubmission](validTopUpDESSubmission)(TopUpDESSubmission.auditWrites).as[JsObject]
+          Json.toJson[TopUpApiSubmission](validTopUpDESSubmission)(TopUpApiSubmission.auditWrites).as[JsObject]
         )
         Json.toJson(testModel)(ApiTopUpAuditEventDetail.writes) mustBe expected
       }
