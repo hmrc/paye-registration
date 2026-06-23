@@ -19,6 +19,7 @@ package controllers
 import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.codahale.metrics.MetricRegistry
+import config.AppConfig
 import enums.PAYEStatus
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
@@ -39,6 +40,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   lazy val mockcryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+  lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   val mockHost = WiremockHelper.wiremockHost
   val mockPort = WiremockHelper.wiremockPort
@@ -54,6 +56,8 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     "microservice.services.des-service.url" -> s"$mockUrl",
     "microservice.services.des-service.uri" -> "business-registration/pay-as-you-earn",
     "microservice.services.des-service.top-up-uri" -> "business-incorporation/pay-as-you-earn",
+    "microservice.services.hip-service.host" -> s"$mockHost",
+    "microservice.services.hip-service.port" -> s"$mockPort",
     "application.router" -> "testOnlyDoNotUseInAppConf.Routes",
     "microservice.services.incorporation-information.host" -> s"$mockHost",
     "microservice.services.incorporation-information.port" -> s"$mockPort",
@@ -249,13 +253,15 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
   val jsonIncorpStatusUpdate = Json.parse(incorpUpdate(accepted))
 
 
-
   "incorporation-data" should {
+
+    val topUpPayeUrl =
+      if (appConfig.useHip) "/RESTAdapter/business-incorporation/PAYE" else "/business-incorporation/pay-as-you-earn"
 
     "return a 200 with a crn" in new Setup {
       setupSimpleAuthMocks()
 
-      stubFor(post(urlMatching("/business-incorporation/pay-as-you-earn"))
+      stubFor(post(urlMatching(topUpPayeUrl))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -269,7 +275,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       response.status mustBe 200
       response.json mustBe Json.toJson(crn)
 
-      verify(postRequestedFor(urlEqualTo("/business-incorporation/pay-as-you-earn"))
+      verify(postRequestedFor(urlEqualTo(topUpPayeUrl))
         .withRequestBody(equalToJson(Json.parse(
           s"""
              |{
@@ -323,7 +329,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
       setupSimpleAuthMocks()
 
-      stubFor(post(urlMatching("/business-incorporation/pay-as-you-earn"))
+      stubFor(post(urlMatching(topUpPayeUrl))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -337,7 +343,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
       response.status mustBe 200
       response.json mustBe Json.toJson(None)
 
-      verify(postRequestedFor(urlEqualTo("/business-incorporation/pay-as-you-earn"))
+      verify(postRequestedFor(urlEqualTo(topUpPayeUrl))
         .withRequestBody(equalToJson(Json.parse(
           s"""
              |{
@@ -479,6 +485,9 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
 
   "submitting a top up registration with DES stubbed out" should {
 
+    val topUpPayeUrl =
+      if (appConfig.useHip) "/RESTAdapter/business-incorporation/PAYE" else "/business-registration/pay-as-you-earn"
+
     "return a 200 with an ack ref" in new Setup {
 
       setupSimpleAuthMocks()
@@ -498,7 +507,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(topUpPayeUrl))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -545,7 +554,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
         )
       )
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(topUpPayeUrl))
         .willReturn(
           aResponse().
             withStatus(200)

@@ -50,8 +50,8 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
       override lazy val hipURI = "RESTAdapter/business-registration/PAYE"
       override lazy val hipTopUpURI = "RESTAdapter/business-incorporation/PAYE"
       override lazy val hipUrl = "http://hipURL"
-      override lazy val hipClientId = "testClientId"
-      override lazy val hipClientSecret = "testClientSecret"
+      override lazy val hipClientId = "testId"
+      override lazy val hipClientSecret = "testSecret"
       override lazy val alertWorkingHours = "00:00:00_23:59:59"
 
     }

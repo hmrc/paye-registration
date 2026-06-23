@@ -71,7 +71,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
   def submitToDES(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = if (useDESStubFeature) {
-      s"${appConfig.apiStubUrl}/${appConfig.apiStubURI}"
+      s"${appConfig.desStubUrl}/${appConfig.desStubURI}"
     } else {
       s"${appConfig.desUrl}/${appConfig.desURI}"
     }
@@ -90,7 +90,7 @@ class DESConnector @Inject()(val http: HttpClient, appConfig: AppConfig, val aud
 
   def submitTopUpToDES(submission: TopUpApiSubmission, regId: String, txId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
     val url = if (useDESStubFeature) {
-      s"${appConfig.apiStubUrl}/${appConfig.apiStubTopUpURI}"
+      s"${appConfig.desStubUrl}/${appConfig.desStubTopUpURI}"
     } else {
       s"${appConfig.desUrl}/${appConfig.desTopUpURI}"
     }
