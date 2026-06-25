@@ -17,7 +17,7 @@
 package models.submission
 
 import enums.IncorporationStatus
-import models.validation.{APIValidation, ApiValidation}
+import models.validation.{APIValidation, EtmpApiValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Writes, __}
 
@@ -42,7 +42,7 @@ case class TopUpApiSubmission(acknowledgementReference: String,
                               crn: Option[String])
 
 object TopUpApiSubmission {
-  implicit val writes: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(ApiValidation))
+  implicit val writes: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(EtmpApiValidation))
 
   val auditWrites: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
 

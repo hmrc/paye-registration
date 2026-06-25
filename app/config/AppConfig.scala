@@ -41,9 +41,6 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
   lazy val hipClientSecret: String = servicesConfig.getConfString("hip-service.client-secret",
     throw new Exception("could not find config value for hip-service.client-secret"))
 
-  lazy val hipUrlHeaderOriginatingSystem: String = "SCRS"
-  lazy val hipUrlHeaderTransmittingSystem: String = "HIP"
-
   lazy val desUrlHeaderEnvironment: String = servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
   lazy val desUrlHeaderAuthorization: String = s"Bearer ${
     servicesConfig.getConfString("des-service.authorization-token",

@@ -17,7 +17,7 @@
 package models
 
 import helpers.PAYERegSpec
-import models.validation.{APIValidation, ApiValidation}
+import models.validation.{APIValidation, EtmpApiValidation}
 import play.api.libs.json.{JsPath, JsSuccess, Json, JsonValidationError}
 
 class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
@@ -472,7 +472,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
       """.stripMargin
       )
 
-      Json.toJson[Address](addr)(Address.writes(ApiValidation)) mustBe json
+      Json.toJson[Address](addr)(Address.writes(EtmpApiValidation)) mustBe json
     }
 
     "include audit ref by default" in {

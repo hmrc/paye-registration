@@ -17,7 +17,7 @@
 package models.submission
 
 import common.exceptions.RegistrationExceptions.CompletionCapacityNotDefinedException
-import models.validation.ApiValidation
+import models.validation.EtmpApiValidation
 import models.{Address, DigitalContactDetails, Director}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -65,14 +65,14 @@ case class DESLimitedCompany(companyUTR: Option[String],
 object DESLimitedCompany {
   implicit val writes: Writes[DESLimitedCompany] = (
     (__ \ "companyUTR").writeNullable[String] and
-    (__ \ "companiesHouseCompanyName").write[String](ApiValidation.companyNameFormatter) and
+    (__ \ "companiesHouseCompanyName").write[String](EtmpApiValidation.companyNameFormatter) and
     (__ \ "nameOfBusiness").writeNullable[String] and
-    (__ \ "businessAddress").write[Address](Address.writes(ApiValidation)) and
+    (__ \ "businessAddress").write[Address](Address.writes(EtmpApiValidation)) and
     (__ \ "businessContactDetails").write[DigitalContactDetails] and
     (__ \ "natureOfBusiness").write[String] and
     (__ \ "crn").writeNullable[String] and
-    (__ \ "directors").write[Seq[Director]](Director.directorSequenceWriter(ApiValidation)) and
-    (__ \ "registeredOfficeAddress").write[Address](Address.writes(ApiValidation)) and
+    (__ \ "directors").write[Seq[Director]](Director.directorSequenceWriter(EtmpApiValidation)) and
+    (__ \ "registeredOfficeAddress").write[Address](Address.writes(EtmpApiValidation)) and
     (__ \ "operatingOccPensionScheme").writeNullable[Boolean]
   )(unlift(DESLimitedCompany.unapply))
 }
@@ -91,7 +91,7 @@ object DESEmployingPeople {
     (__ \ "engageSubcontractors").write[Boolean] and
     (__ \ "correspondenceName").write[String] and
     (__ \ "correspondenceContactDetails").write[DigitalContactDetails] and
-    (__ \ "payeCorrespondenceAddress").write[Address](Address.writes(ApiValidation))
+    (__ \ "payeCorrespondenceAddress").write[Address](Address.writes(EtmpApiValidation))
   )(unlift(DESEmployingPeople.unapply))
 }
 

@@ -22,7 +22,7 @@ import play.api.libs.json.{Format, JsValue, Reads, Writes}
 
 import java.time.LocalDate
 
-object ApiValidation extends BaseJsonFormatting with Logging {
+object EtmpApiValidation extends BaseJsonFormatting with Logging {
 
   override val companyNameFormatter = new Format[String] {
     override def reads(json: JsValue) = Reads.StringReads.reads(json)

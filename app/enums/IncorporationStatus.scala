@@ -16,7 +16,7 @@
 
 package enums
 
-import models.validation.{APIValidation, BaseJsonFormatting, ApiValidation}
+import models.validation.{APIValidation, BaseJsonFormatting, EtmpApiValidation}
 import play.api.libs.json._
 
 object IncorporationStatus extends Enumeration {
@@ -27,7 +27,7 @@ object IncorporationStatus extends Enumeration {
 
   def writes(formatter: BaseJsonFormatting): Writes[IncorporationStatus.Value] = {
     formatter match {
-      case ApiValidation => new Writes[IncorporationStatus.Value] {
+      case EtmpApiValidation => new Writes[IncorporationStatus.Value] {
         override def writes(o: IncorporationStatus.Value) = JsString(o.toString.capitalize)
       }
       case _ => Writes.enumNameWrites

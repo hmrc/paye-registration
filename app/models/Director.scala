@@ -16,7 +16,7 @@
 
 package models
 
-import models.validation.{APIValidation, BaseJsonFormatting, ApiValidation}
+import models.validation.{APIValidation, BaseJsonFormatting, EtmpApiValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -31,7 +31,7 @@ case class Name(forename: Option[String],
 object Name {
   def format(formatter: BaseJsonFormatting) = {
     formatter match {
-      case ApiValidation => (
+      case EtmpApiValidation => (
         (__ \ "firstName").formatNullable[String] and
         (__ \ "middleName").formatNullable[String] and
         (__ \ "lastName").formatNullable[String] and
@@ -50,7 +50,7 @@ object Name {
 object Director {
   def format(formatter: BaseJsonFormatting): Format[Director] = {
     formatter match {
-      case ApiValidation => (
+      case EtmpApiValidation => (
         (__ \ "directorName").format[Name](Name.format(formatter)) and
         (__ \ "directorNINO").formatNullable[String](formatter.directorNinoFormat)
       )(Director.apply, unlift(Director.unapply))
