@@ -19,22 +19,25 @@ package connectors
 import config.AppConfig
 import fixtures.SubmissionFixture
 import helpers.PAYERegSpec
-import models.submission.{ApiSubmission, TopUpApiSubmission}
-import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{Assertion, BeforeAndAfter}
+import play.api.libs.json.Json
 import play.api.test.Helpers._
 import services.AuditService
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
+import sttp.model.HeaderNames
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
 
 class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFixture {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
   val mockHttpClientV2: HttpClientV2 = mock[HttpClientV2]
   val mockAuditService: AuditService = mock[AuditService]
@@ -43,103 +46,137 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     reset(mockHttpClientV2)
   }
 
-  class Setup {
-    val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
+  trait Setup {
 
-    object MockAppConfig extends AppConfig(mock[ServicesConfig]) {
-      override lazy val hipURI = "RESTAdapter/business-registration/PAYE"
-      override lazy val hipTopUpURI = "RESTAdapter/business-incorporation/PAYE"
-      override lazy val hipUrl = "http://hipURL"
+    val serviceUrl = "http://hipURL"
+    val busReqUrl = url"$serviceUrl/RESTAdapter/business-registration/PAYE"
+    val busIncUrl = url"$serviceUrl/RESTAdapter/business-incorporation/PAYE"
+
+    val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
+    val  mockAppConfig = new AppConfig(mock[ServicesConfig]) {
+      override lazy val hipBaseUrl = serviceUrl
       override lazy val hipClientId = "testId"
       override lazy val hipClientSecret = "testSecret"
       override lazy val alertWorkingHours = "00:00:00_23:59:59"
-
     }
 
-    object Connector extends HIPConnector(mockHttpClientV2, MockAppConfig, mockAuditService)
+    val connector = new HIPConnector(mockHttpClientV2, mockAppConfig, mockAuditService)
 
-    def mockHttpPost(thenReturn: HttpResponse): Unit = {
-      when(mockHttpClientV2.post(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
-      when(mockRequestBuilder.setHeader(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
-      when(mockRequestBuilder.withBody(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
-      when(mockRequestBuilder.execute[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.successful(thenReturn))
+    def mockHttpPost[I](url: URL, payload: I, httpResponse: HttpResponse): Unit = {
+      when(mockHttpClientV2.post(eqTo(url))(any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.setHeader(any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.withBody(eqTo(payload))(any(), any(), any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.execute[HttpResponse](any(), any())).thenReturn(Future.successful(httpResponse))
     }
 
-    def mockHttpPostFailed(exception: Exception): Unit = {
-      when(mockHttpClientV2.post(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
-      when(mockRequestBuilder.setHeader(ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
-      when(mockRequestBuilder.withBody(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(mockRequestBuilder)
-      when(mockRequestBuilder.execute[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(Future.failed(exception))
+    def mockHttpPostFailed[I](url: URL, payload: I, httpResponse: UpstreamErrorResponse): Unit = {
+      when(mockHttpClientV2.post(eqTo(url))(any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.setHeader(any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.withBody(eqTo(payload))(any(), any(), any())).thenReturn(mockRequestBuilder)
+      when(mockRequestBuilder.execute[HttpResponse](any(), any())).thenReturn(Future.failed(httpResponse))
     }
+
+    def verifyHipHeaders(): Assertion = {
+      val hipHeadersSet = Set(HeaderNames.Authorization, "X-Originating-System", "correlationid", "X-Receipt-Date", "X-Transmitting-System")
+      val hipHeaderFixed = Set("HIP", "SCRS")
+
+      val captor = ArgumentCaptor.forClass(classOf[Seq[(String, String)]])
+      verify(mockRequestBuilder, times(1)).setHeader(captor.capture(): _*)
+      captor.getValue.map(_._1).toSet mustBe hipHeadersSet
+      captor.getValue.map(_._2).toSet.intersect(hipHeaderFixed) mustBe hipHeaderFixed
+    }
+
+    reset(mockHttpClientV2)
+    reset(mockRequestBuilder)
   }
 
-  "submitToHIP with a Partial Submission Model" should {
-    "successfully POST to HIP" in new Setup {
-      mockHttpPost(HttpResponse(200, ""))
-      await(Connector.submitToHIP(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))).status mustBe 200
+  "HipConnector" when {
+
+
+    //implicit val hc: HeaderCarrier = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+    "performing submitRegistration with a Partial Submission Model" should {
+      val submissionJson = Json.toJson(validPartialDESSubmissionModel)
+
+      "successfully POST to HIP" in new Setup {
+        mockHttpPost(busReqUrl, submissionJson, HttpResponse(200, ""))
+        await(connector.submitRegistration(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate)))
+          .status mustBe 200
+        verifyHipHeaders()
+      }
+
+      "throw exception if a 400 is encountered" in new Setup {
+        mockHttpPostFailed(busReqUrl, submissionJson, UpstreamErrorResponse("OOPS", 400, 400))
+        intercept[UpstreamErrorResponse](
+          await(connector.submitRegistration(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate)))
+        )
+        verifyHipHeaders()
+      }
     }
 
-    "throw exception if a 400 is encountered" in new Setup {
-      mockHttpPostFailed(UpstreamErrorResponse("OOPS", 400, 400))
-      intercept[UpstreamErrorResponse](await(Connector.submitToHIP(validPartialDESSubmissionModel, "testRegId", Some(incorpStatusUpdate))))
-    }
-  }
+    "performing submitIncorporation with a Top Up Submission Model" should {
+      val submissionJson = Json.toJson(validTopUpDESSubmissionModel)
 
-  "submitTopUpToHIP with a Top Up Submission Model" should {
-    "successfully POST to HIP" in new Setup {
-      mockHttpPost(HttpResponse(200, ""))
-      await(Connector.submitTopUpToHIP(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)).status mustBe 200
-    }
+      "successfully POST to HIP" in new Setup {
+        mockHttpPost(busIncUrl, submissionJson, HttpResponse(200, ""))
+        await(connector.submitIncorporation(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId))
+          .status mustBe 200
+        verifyHipHeaders()
+      }
 
-    "throw exception if a 400 is encountered" in new Setup {
-      mockHttpPostFailed(UpstreamErrorResponse("OOPS", 400, 400))
-      intercept[UpstreamErrorResponse](await(Connector.submitTopUpToHIP(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId)))
+      "throw exception if a 400 is encountered" in new Setup {
+        mockHttpPostFailed(busIncUrl, submissionJson, UpstreamErrorResponse("OOPS", 400, 400))
+        intercept[UpstreamErrorResponse](
+          await(connector.submitIncorporation(validTopUpDESSubmissionModel, "testRegId", incorpStatusUpdate.transactionId))
+        )
+        verifyHipHeaders()
+      }
     }
   }
 
   "customHIPRead" should {
     "convert a 409 to a 200" in new Setup {
       val response = HttpResponse(409, "")
-      Connector.customHIPRead("POST", "testUrl", response).status mustBe 200
+      connector.customHIPRead("POST", "testUrl", response).status mustBe 200
     }
 
     "throw UpstreamErrorResponse for 429" in new Setup {
       intercept[UpstreamErrorResponse] {
-        Connector.customHIPRead("POST", "testUrl", HttpResponse(429, ""))
+        connector.customHIPRead("POST", "testUrl", HttpResponse(429, ""))
       }.reportAs mustBe 503
     }
 
     "throw UpstreamErrorResponse for 499" in new Setup {
       intercept[UpstreamErrorResponse] {
-        Connector.customHIPRead("POST", "testUrl", HttpResponse(499, ""))
+        connector.customHIPRead("POST", "testUrl", HttpResponse(499, ""))
       }.reportAs mustBe 502
     }
 
     "throw UpstreamErrorResponse for other 4xx" in new Setup {
       intercept[UpstreamErrorResponse] {
-        Connector.customHIPRead("POST", "testUrl", HttpResponse(400, ""))
+        connector.customHIPRead("POST", "testUrl", HttpResponse(400, ""))
       }.reportAs mustBe 400
     }
 
     "return the response for a 200" in new Setup {
       val response = HttpResponse(200, "")
-      Connector.customHIPRead("POST", "testUrl", response).status mustBe 200
+      connector.customHIPRead("POST", "testUrl", response).status mustBe 200
     }
 
     "return the response for a 202" in new Setup {
       val response = HttpResponse(202, "")
-      Connector.customHIPRead("POST", "testUrl", response).status mustBe 202
+      connector.customHIPRead("POST", "testUrl", response).status mustBe 202
     }
 
     "throw UpstreamErrorResponse for a 500" in new Setup {
       intercept[UpstreamErrorResponse] {
-        Connector.customHIPRead("POST", "testUrl", HttpResponse(500, ""))
+        connector.customHIPRead("POST", "testUrl", HttpResponse(500, ""))
       }
     }
 
     "throw UpstreamErrorResponse for a 503" in new Setup {
       intercept[UpstreamErrorResponse] {
-        Connector.customHIPRead("POST", "testUrl", HttpResponse(503, ""))
+        connector.customHIPRead("POST", "testUrl", HttpResponse(503, ""))
       }
     }
   }

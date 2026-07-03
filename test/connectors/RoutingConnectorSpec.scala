@@ -54,12 +54,12 @@ class RoutingConnectorSpec extends PAYERegSpec {
 
   "submitToEtmp" should {
     "call HIP connector when useHip is true" in new SetupWithHip(true) {
-      when(mockHIPConnector.submitToHIP(any(), any(), any())(any(), any()))
+      when(mockHIPConnector.submitRegistration(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(successResponse))
 
-      await(connector.submitToEtmp(mockSubmission, "testRegId", mockIncorpUpdate))
+      await(connector.submitRegistration(mockSubmission, "testRegId", mockIncorpUpdate))
 
-      verify(mockHIPConnector, times(1)).submitToHIP(any(), any(), any())(any(), any())
+      verify(mockHIPConnector, times(1)).submitRegistration(any(), any(), any())(any(), any())
       verify(mockDESConnector, never()).submitToDES(any(), any(), any())(any(), any())
     }
 
@@ -67,21 +67,21 @@ class RoutingConnectorSpec extends PAYERegSpec {
       when(mockDESConnector.submitToDES(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(successResponse))
 
-      await(connector.submitToEtmp(mockSubmission, "testRegId", mockIncorpUpdate))
+      await(connector.submitRegistration(mockSubmission, "testRegId", mockIncorpUpdate))
 
       verify(mockDESConnector, times(1)).submitToDES(any(), any(), any())(any(), any())
-      verify(mockHIPConnector, never()).submitToHIP(any(), any(), any())(any(), any())
+      verify(mockHIPConnector, never()).submitRegistration(any(), any(), any())(any(), any())
     }
   }
 
   "submitTopUpToEtmp" should {
     "call HIP connector when useHip is true" in new SetupWithHip(true) {
-      when(mockHIPConnector.submitTopUpToHIP(any(), any(), any())(any(), any()))
+      when(mockHIPConnector.submitIncorporation(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(successResponse))
 
-      await(connector.submitTopUpToEtmp(mockTopUpSubmission, "testRegId", "txId"))
+      await(connector.submitIncorporation(mockTopUpSubmission, "testRegId", "txId"))
 
-      verify(mockHIPConnector, times(1)).submitTopUpToHIP(any(), any(), any())(any(), any())
+      verify(mockHIPConnector, times(1)).submitIncorporation(any(), any(), any())(any(), any())
       verify(mockDESConnector, never()).submitTopUpToDES(any(), any(), any())(any(), any())
     }
 
@@ -89,10 +89,10 @@ class RoutingConnectorSpec extends PAYERegSpec {
       when(mockDESConnector.submitTopUpToDES(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(successResponse))
 
-      await(connector.submitTopUpToEtmp(mockTopUpSubmission, "testRegId", "txId"))
+      await(connector.submitIncorporation(mockTopUpSubmission, "testRegId", "txId"))
 
       verify(mockDESConnector, times(1)).submitTopUpToDES(any(), any(), any())(any(), any())
-      verify(mockHIPConnector, never()).submitTopUpToHIP(any(), any(), any())(any(), any())
+      verify(mockHIPConnector, never()).submitIncorporation(any(), any(), any())(any(), any())
     }
   }
 }

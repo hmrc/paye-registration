@@ -547,7 +547,7 @@ class RegistrationControllerSpec extends PAYERegSpec with RegistrationFixture {
   }
 
   "Calling submitPAYERegistration" should {
-    "return a BadRequest response when the Submission Service can't make a DES submission" in new Setup {
+    "return a BadRequest response when the Submission Service can't make a ETMP submission" in new Setup {
       AuthorisationMocks.mockAuthorised(regId, testInternalId)
 
       when(mockSubmissionService.submitToApi(contains(regId))(any[HeaderCarrier](), any()))

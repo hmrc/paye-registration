@@ -28,7 +28,7 @@ class ValidationSpec extends PAYERegSpec {
     (__ \ "int").write[Int]
   )(unlift(TestModel.unapply))
 
-  "companyNameForDES" should {
+  "companyNameForETMP" should {
     "normalise téśtÇõmpâñÿÑàmę in testCompanyName" in {
       val testModel = TestModel("téśtÇõmpâñÿÑàmę")
 

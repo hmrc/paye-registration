@@ -21,21 +21,17 @@ import config.AppConfig
 import connectors.httpParsers.BaseHttpReads
 import models.incorporation.IncorpStatusUpdate
 import models.submission.{ApiSubmission, TopUpApiSubmission}
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.Json
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.AuditService
 import sttp.model.HeaderNames
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.StringContextOps
 import utils.{Logging, SystemDate, WorkingHoursGuard}
 
-import java.nio.charset.StandardCharsets
-import java.time.{Instant, LocalDate, LocalTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.Base64
-import java.util.UUID
+import java.time.{Instant, LocalDate, LocalTime}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -44,30 +40,18 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
   extends BaseConnector with BaseHttpReads with HttpErrorFunctions with Logging with CorrelationGenerator with WorkingHoursGuard {
 
   val alertWorkingHours: String = appConfig.alertWorkingHours
-
   def currentDate: LocalDate = SystemDate.getSystemDate.toLocalDate
   def currentTime: LocalTime = SystemDate.getSystemDate.toLocalTime
 
-  private def logHip400PagerDuty(response: UpstreamErrorResponse, regId: String): Unit = if (response.statusCode == 400) {
-    if (isInWorkingDaysAndHours) {
-      logger.error(s"[logHip400PagerDuty] PAYE_400_HIP_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
-    } else {
-      logger.error(s"[logHip400PagerDuty] NON_PAGER_DUTY_LOG PAYE_400_HIP_SUBMISSION_FAILURE for regId: $regId with date: $currentDate and time: $currentTime")
-    }
-  }
+  implicit val httpRds: HttpReads[HttpResponse] =
+    (http: String, url: String, res: HttpResponse) => customHIPRead(http, url, res)
 
-  implicit val httpRds: HttpReads[HttpResponse] = new HttpReads[HttpResponse] {
-    def read(http: String, url: String, res: HttpResponse): HttpResponse = customHIPRead(http, url, res)
-  }
+  def submitRegistration(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
+                        (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
-  def submitToHIP(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
-                 (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
-
-    val url = s"${appConfig.hipUrl}/${appConfig.hipURI}"
-
-    logger.info(s"[submitToHIP] Submission to HIP for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
+    val url = s"${appConfig.hipBaseUrl}/RESTAdapter/business-registration/PAYE"
     payePOST(url, Json.toJson(submission)) map { resp =>
-      logger.info(s"[submitToHIP] HIP responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
+      logger.info(s"[submitRegistration] HIP responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
       resp
     } recoverWith {
       case e: UpstreamErrorResponse if UpstreamErrorResponse.Upstream4xxResponse.unapply(e).isDefined =>
@@ -77,15 +61,12 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
     }
   }
 
+  def submitIncorporation(submission: TopUpApiSubmission, regId: String, txId: String)
+                         (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
-  def submitTopUpToHIP(submission: TopUpApiSubmission, regId: String, txId: String)
-                      (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
-
-    val url = s"${appConfig.hipUrl}/${appConfig.hipTopUpURI}"
-
-    logger.info(s"[submitTopUpToHIP] Top Up to HIP for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
+    val url = s"${appConfig.hipBaseUrl}/RESTAdapter/business-incorporation/PAYE"
     payePOST(url, Json.toJson(submission)) map { resp =>
-      logger.info(s"[submitTopUpToHIP] HIP responded with ${resp.status} for regId: $regId and txId: $txId")
+      logger.info(s"[submitIncorporation] HIP responded with ${resp.status} for regId: $regId and txId: $txId")
       resp
     } recoverWith {
       case e: UpstreamErrorResponse if UpstreamErrorResponse.Upstream4xxResponse.unapply(e).isDefined =>
@@ -101,22 +82,18 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
       .collectFirst { case ("correlationid", value) => value }
       .getOrElse(generateCorrelationId(hc.requestId))
 
-    val authSecret: String = Base64.getEncoder
-      .encodeToString(
-        s"${appConfig.hipClientId}:${appConfig.hipClientSecret}"
-          .getBytes(StandardCharsets.UTF_8)
-      )
-
     val hipHeaders: Seq[(String, String)] = Seq(
-      HeaderNames.Authorization -> s"Basic $authSecret",
+      HeaderNames.Authorization -> s"Basic ${appConfig.hipAuthToken}",
       "X-Originating-System"    -> "SCRS",
       "correlationid"           -> correlationId,
       "X-Receipt-Date"          -> DateTimeFormatter.ISO_INSTANT.format(Instant.now().truncatedTo(ChronoUnit.SECONDS)),
       "X-Transmitting-System"   -> "HIP"
     )
+    val hcWithoutAuth = hc.copy(authorization = None)
 
+    logger.info(s"[HipConnector] Calling endpoint: $uri with Correlation ID: $correlationId")
     http
-      .post(url"$uri")(hc)
+      .post(url"$uri")(hcWithoutAuth)
       .setHeader(hipHeaders: _*)
       .withBody(body)
       .execute[HttpResponse]
@@ -135,6 +112,17 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
         throw UpstreamErrorResponse(upstreamResponseMessage(http, url, status, response.body), status, reportAs = 400, response.headers)
       case _ =>
         handleResponseEither(http, url)(response).fold(e => throw e, identity)
+    }
+  }
+
+  private def logHip400PagerDuty(response: UpstreamErrorResponse, regId: String): Unit = if (response.statusCode == 400) {
+    val alert400Failure = "PAYE_400_HIP_SUBMISSION_FAILURE"   //DON'T CHANGE - triggers a custom alert in alert-config.
+    val nonAlert        = "NON_PAGER_DUTY_LOG"                //DON'T CHANGE - stops a PagerDuty being triggered.
+
+    if (isInWorkingDaysAndHours) {
+      logger.error(s"[logHip400PagerDuty] $alert400Failure for regId: $regId with date: $currentDate and time: $currentTime") //used in alerting - DO NOT CHANGE ERROR TEXT
+    } else {
+      logger.error(s"[logHip400PagerDuty] $nonAlert $alert400Failure for regId: $regId with date: $currentDate and time: $currentTime")
     }
   }
 }

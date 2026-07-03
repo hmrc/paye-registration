@@ -483,7 +483,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
     }
   }
 
-  "submitting a top up registration with DES stubbed out" should {
+  "submitting a top up registration with ETMP stubbed out" should {
 
     val topUpPayeUrl =
       if (appConfig.useHip) "/RESTAdapter/business-incorporation/PAYE" else "/business-registration/pay-as-you-earn"

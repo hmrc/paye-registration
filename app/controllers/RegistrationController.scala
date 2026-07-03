@@ -274,7 +274,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
             case e =>
-              logger.error(s"[submitPAYERegistration] Error while submitting to DES the registration with regId $regID", e)
+              logger.error(s"[submitPAYERegistration] Error while submitting to ETMP the registration with regId $regID", e)
               throw e
           }
         }

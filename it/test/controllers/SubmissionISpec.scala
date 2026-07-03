@@ -251,7 +251,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   }
 
   "submit-registration" should {
-    "return a 200 with an ack ref when a partial DES submission completes successfully with auditing" in new Setup {
+    "return a 200 with an ack ref when a partial ETMP submission completes successfully with auditing" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       val regime = "paye"
@@ -464,7 +464,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg.get.partialSubmissionTimestamp.nonEmpty mustBe true
     }
 
-    "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
+    "return a 200 with an ack ref when a full ETMP submission completes successfully" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))
@@ -594,7 +594,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
-    "return a 200 with an ack ref when a full DES submission completes successfully with a company containing none standard characters" in new Setup {
+    "return a 200 with an ack ref when a full ETMP submission completes successfully with a company containing none standard characters" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))
@@ -777,7 +777,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
-    "return a 200 status with an ackRef when DES returns a 409" in new Setup {
+    "return a 200 status with an ackRef when ETMP returns a 409" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))
@@ -906,7 +906,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg mustBe None
     }
 
-    "return a 502 status when DES returns a 499" in new Setup {
+    "return a 502 status when ETMP returns a 499" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))
@@ -929,7 +929,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
 
-    "return a 502 status when DES returns a 5xx" in new Setup {
+    "return a 502 status when ETMP returns a 5xx" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))
@@ -951,7 +951,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
-    "return a 503 status when DES returns a 429" in new Setup {
+    "return a 503 status when ETMP returns a 429" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))
@@ -973,7 +973,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
-    "return a 400 status when DES returns a 4xx (apart from 429)" in new Setup {
+    "return a 400 status when ETMP returns a 4xx (apart from 429)" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       stubFor(post(urlMatching(payeUrl))

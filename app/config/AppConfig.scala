@@ -18,6 +18,8 @@ package config
 
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import javax.inject.Inject
 
 class AppConfig @Inject()(servicesConfig: ServicesConfig) {
@@ -32,20 +34,17 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
   lazy val desStubUrl = servicesConfig.baseUrl("des-stub")
   lazy val desStubURI = servicesConfig.getConfString("des-stub.uri", "")
   lazy val desStubTopUpURI = servicesConfig.getConfString("des-stub.top-up-uri", "")
-  lazy val useHip: Boolean = servicesConfig.getBoolean("features.hipServiceFeature")
-  lazy val hipUrl = servicesConfig.baseUrl("hip-service")
-  lazy val hipURI = servicesConfig.getConfString("hip-service.uri", "")
-  lazy val hipTopUpURI = servicesConfig.getConfString("hip-service.top-up-uri", "")
-  lazy val hipClientId: String = servicesConfig.getConfString("hip-service.client-id",
-    throw new Exception("could not find config value for hip-service.client-id"))
-  lazy val hipClientSecret: String = servicesConfig.getConfString("hip-service.client-secret",
-    throw new Exception("could not find config value for hip-service.client-secret"))
-
   lazy val desUrlHeaderEnvironment: String = servicesConfig.getConfString("des-service.environment", throw new Exception("could not find config value for des-service.environment"))
   lazy val desUrlHeaderAuthorization: String = s"Bearer ${
     servicesConfig.getConfString("des-service.authorization-token",
       throw new Exception("could not find config value for des-service.authorization-token"))
   }"
+  lazy val useHip: Boolean = servicesConfig.getBoolean("features.hipServiceFeature")
+  lazy val hipBaseUrl = servicesConfig.baseUrl("hip-service")
+  lazy val hipClientId: String = servicesConfig.getString("hip-service.client-id")
+  lazy val hipClientSecret: String = servicesConfig.getString("hip-service.client-secret")
+  lazy val hipAuthToken: String    = Base64.getEncoder.encodeToString(s"$hipClientId:$hipClientSecret".getBytes(StandardCharsets.UTF_8))
+
   lazy val alertWorkingHours = servicesConfig.getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
 
   lazy val incorporationInformationUri: String = servicesConfig.baseUrl("incorporation-information")

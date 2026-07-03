@@ -304,7 +304,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
 
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, None, None))
+        val result = await(service.payeReg2ETMPSubmission(validRegistration, None, None))
         result mustBe validPartialDESSubmissionModel
       }
 
@@ -316,26 +316,26 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
 
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
 
-        val result = await(service.payeReg2DESSubmission(validRegistration, Some("OC123456"), None))
+        val result = await(service.payeReg2ETMPSubmission(validRegistration, Some("OC123456"), None))
         result mustBe validPartialDESSubmissionModel.copy(limitedCompany = validDESLimitedCompanyWithoutCRN.copy(crn = Some("OC123456")))
       }
     }
 
     "throw a CompanyDetailsNotDefinedException" when {
       "a paye reg doc is passed in that doesn't have a company details block" in new Setup {
-        intercept[CompanyDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(companyDetails = None), None, None))
+        intercept[CompanyDetailsNotDefinedException](service.payeReg2ETMPSubmission(validRegistration.copy(companyDetails = None), None, None))
       }
     }
 
     "throw a AcknowledgementReferenceNotExistsException" when {
       "the paye reg doc is missing an ack ref" in new Setup {
-        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2DESSubmission(validRegistration.copy(acknowledgementReference = None), None, None))
+        intercept[AcknowledgementReferenceNotExistsException](service.payeReg2ETMPSubmission(validRegistration.copy(acknowledgementReference = None), None, None))
       }
     }
 
     "throw a EmploymentDetailsNotDefinedException" when {
       "a paye reg doc is passed in that doesn't have an employment info block" in new Setup {
-        intercept[EmploymentDetailsNotDefinedException](service.payeReg2DESSubmission(validRegistration.copy(employmentInfo = None), None, None))
+        intercept[EmploymentDetailsNotDefinedException](service.payeReg2ETMPSubmission(validRegistration.copy(employmentInfo = None), None, None))
       }
     }
   }
@@ -461,10 +461,10 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
 
   "payeReg2TopUpDESSubmission" should {
     "throw the correct error when acknowledgement reference is not present" in new Setup {
-      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpDESSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
+      intercept[AcknowledgementReferenceNotExistsException](service.payeReg2TopUpETMPSubmission(validRegistration.copy(acknowledgementReference = None), incorpStatusUpdate))
     }
     "build a Top Up" in new Setup {
-      service.payeReg2TopUpDESSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) mustBe validTopUpDESSubmissionModel
+      service.payeReg2TopUpETMPSubmission(validRegistrationAfterPartialSubmission, incorpStatusUpdate) mustBe validTopUpDESSubmissionModel
     }
   }
 
@@ -500,9 +500,9 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistration)))
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
-        when(mockRoutingConnector.submitToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitRegistration(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
-        when(mockAuditService.auditApiSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpApiSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.held))
@@ -537,9 +537,9 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
         when(mockCompanyRegistrationConnector.fetchCtUtr(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(okResponse))
-        when(mockRoutingConnector.submitTopUpToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitIncorporation(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
-        when(mockAuditService.auditApiSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpApiSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.submitted))
@@ -572,10 +572,10 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-        when(mockRoutingConnector.submitTopUpToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitIncorporation(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
-        when(mockAuditService.auditApiTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpApiTopUpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
 
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
@@ -600,10 +600,10 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(Some(validRegistrationAfterPartialSubmission)))
 
-        when(mockRoutingConnector.submitTopUpToEtmp(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockRoutingConnector.submitIncorporation(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
-        when(mockAuditService.auditApiTopUp(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpApiTopUpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
 
         when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))

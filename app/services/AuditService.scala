@@ -91,7 +91,7 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
     }
   }
 
-  def auditApiSubmission(regId: String, apiSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
+  def auditEtmpApiSubmission(regId: String, apiSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
     authorised().retrieve(Retrievals.externalId and Retrievals.credentials) {
       case Some(id) ~ Some(credentials) =>
         for {
@@ -101,21 +101,21 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
             detail = ApiSubmissionAuditEventDetail(id, credentials.providerId, regId, ctutr, apiSubmissionState, jsSubmission, auditRefs)
           )
         } yield auditRes
-      case _ => throw new Exception("[Audit DES Submission] failed")
+      case _ => throw new Exception("[Audit Etmp Api Submission] failed")
     }
   }
 
-  def auditApiTopUp(regId: String, topUpDESSubmission: TopUpApiSubmission)(implicit hc: HeaderCarrier) = {
-    topUpDESSubmission.status match {
+  def auditEtmpApiTopUpSubmission(regId: String, topUpApiSubmission: TopUpApiSubmission)(implicit hc: HeaderCarrier) = {
+    topUpApiSubmission.status match {
       case IncorporationStatus.accepted =>
         sendEvent(
           auditType = "payeRegistrationAdditionalData",
-          detail = ApiTopUpAuditEventDetail(regId, Json.toJson[TopUpApiSubmission](topUpDESSubmission)(TopUpApiSubmission.auditWrites).as[JsObject])
+          detail = ApiTopUpAuditEventDetail(regId, Json.toJson[TopUpApiSubmission](topUpApiSubmission)(TopUpApiSubmission.auditWrites).as[JsObject])
         )
       case IncorporationStatus.rejected =>
         sendEvent(
           "incorporationFailure",
-          IncorporationFailureAuditEventDetail(regId, topUpDESSubmission.acknowledgementReference)
+          IncorporationFailureAuditEventDetail(regId, topUpApiSubmission.acknowledgementReference)
         )
     }
   }

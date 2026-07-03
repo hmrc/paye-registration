@@ -460,7 +460,7 @@ class CompanyDetailsSpec extends PAYERegSpec with JsonFormatValidation {
       auditRef = Some("auditReference")
     )
 
-    "ignore audit ref to DES" in {
+    "ignore audit ref to ETMP" in {
       val json = Json.parse(
       """
         |{

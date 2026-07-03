@@ -31,19 +31,19 @@ class RoutingConnector @Inject()(
                                   hipConnector: HIPConnector
                                 )(implicit ec: ExecutionContext) {
 
-  def submitToEtmp(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
-                  (implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitRegistration(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
+                        (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     if (appConfig.useHip) {
-      hipConnector.submitToHIP(submission, regId, incorpStatusUpdate)
+      hipConnector.submitRegistration(submission, regId, incorpStatusUpdate)
     } else {
       desConnector.submitToDES(submission, regId, incorpStatusUpdate)
     }
   }
 
-  def submitTopUpToEtmp(submission: TopUpApiSubmission, regId: String, txId: String)
-                       (implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def submitIncorporation(submission: TopUpApiSubmission, regId: String, txId: String)
+                         (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     if (appConfig.useHip) {
-      hipConnector.submitTopUpToHIP(submission, regId, txId)
+      hipConnector.submitIncorporation(submission, regId, txId)
     } else {
       desConnector.submitTopUpToDES(submission, regId, txId)
     }
