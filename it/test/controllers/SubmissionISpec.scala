@@ -55,8 +55,8 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     "microservice.services.des-stub.url" -> s"$mockHost",
     "microservice.services.des-service.url" -> s"$mockUrl",
     "microservice.services.des-service.uri" -> "business-registration/pay-as-you-earn",
-    "microservice.services.hip-service.host" -> s"$mockHost",
-    "microservice.services.hip-service.port" -> s"$mockPort",
+    "microservice.services.hip.host" -> s"$mockHost",
+    "microservice.services.hip.port" -> s"$mockPort",
     "application.router" -> "testOnlyDoNotUseInAppConf.Routes",
     "microservice.services.incorporation-information.host" -> s"$mockHost",
     "microservice.services.incorporation-information.port" -> s"$mockPort",
@@ -74,7 +74,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   lazy val mongoComponent: MongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig: Configuration = app.injector.instanceOf[Configuration]
-  lazy val mockcryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+  lazy val mockCryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   private val regime = "paye"
   private val subscriber = "SCRS"
@@ -85,7 +85,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   class Setup {
     lazy val mockMetricRegistry: MetricRegistry = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper: DateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockCryptoSCRS)
     val sequenceRepository = new SequenceMongoRepository(mongoComponent)
     await(repository.dropCollection)
     await(sequenceRepository.collection.drop().toFuture())

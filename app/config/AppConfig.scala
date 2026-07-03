@@ -39,10 +39,10 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
     servicesConfig.getConfString("des-service.authorization-token",
       throw new Exception("could not find config value for des-service.authorization-token"))
   }"
-  lazy val useHip: Boolean = servicesConfig.getBoolean("features.hipServiceFeature")
-  lazy val hipBaseUrl = servicesConfig.baseUrl("hip-service")
-  lazy val hipClientId: String = servicesConfig.getString("hip-service.client-id")
-  lazy val hipClientSecret: String = servicesConfig.getString("hip-service.client-secret")
+  lazy val useHip: Boolean = servicesConfig.getBoolean("features.hip")
+  lazy val hipBaseUrl = servicesConfig.baseUrl("hip")
+  lazy val hipClientId: String = servicesConfig.getString("microservice.services.hip.client-id")
+  lazy val hipClientSecret: String = servicesConfig.getString("microservice.services.hip.client-secret")
   lazy val hipAuthToken: String    = Base64.getEncoder.encodeToString(s"$hipClientId:$hipClientSecret".getBytes(StandardCharsets.UTF_8))
 
   lazy val alertWorkingHours = servicesConfig.getConfString("alert-working-hours", throw new Exception("could not find config value for alert-working-hours"))
