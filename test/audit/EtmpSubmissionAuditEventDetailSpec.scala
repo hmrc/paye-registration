@@ -24,14 +24,14 @@ import play.api.libs.json.{JsObject, Json}
 
 import java.time.LocalDate
 
-class ApiSubmissionAuditEventDetailSpec extends PAYERegSpec {
+class EtmpSubmissionAuditEventDetailSpec extends PAYERegSpec {
 
-  "ApiSubmissionAuditEventDetail" should {
+  "EtmpSubmissionAuditEventDetail" should {
 
     val externalId = "Ext-123456789"
     val authProviderId = "apid001"
     val regId = "123456789"
-    val apiSubmissionState = "partial"
+    val etmpSubmissionState = "partial"
 
     "construct full json as per definition" in {
       val validCompanyDetails = CompanyDetails(
@@ -110,7 +110,7 @@ class ApiSubmissionAuditEventDetailSpec extends PAYERegSpec {
         payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
       )
 
-      val validPartialDESSubmissionModel = ApiSubmission(
+      val validPartialDESSubmissionModel = EtmpSubmission(
         acknowledgementReference = "ackRef",
         metaData = validDESMetaData,
         limitedCompany = validDESLimitedCompanyWithoutCRN,
@@ -123,7 +123,7 @@ class ApiSubmissionAuditEventDetailSpec extends PAYERegSpec {
           |   "externalId": "$externalId",
           |   "authProviderId": "$authProviderId",
           |   "journeyId": "$regId",
-          |   "apiSubmissionState": "$apiSubmissionState",
+          |   "etmpSubmissionState": "$etmpSubmissionState",
           |   "acknowledgementReference": "ackRef",
           |   "metaData": {
           |     "businessType": "Limited company",
@@ -206,16 +206,16 @@ class ApiSubmissionAuditEventDetailSpec extends PAYERegSpec {
           |}
         """.stripMargin)
 
-      val testModel = ApiSubmissionAuditEventDetail(
+      val testModel = EtmpSubmissionAuditEventDetail(
         externalId,
         authProviderId,
         regId,
         None,
-        apiSubmissionState,
-        Json.toJson[ApiSubmission](validPartialDESSubmissionModel).as[JsObject],
+        etmpSubmissionState,
+        Json.toJson[EtmpSubmission](validPartialDESSubmissionModel).as[JsObject],
         Map.empty
       )
-      Json.toJson(testModel)(ApiSubmissionAuditEventDetail.writes) mustBe expected
+      Json.toJson(testModel)(EtmpSubmissionAuditEventDetail.writes) mustBe expected
     }
   }
 }

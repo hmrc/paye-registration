@@ -19,7 +19,7 @@ package services
 import audit._
 import common.exceptions.DBExceptions.MissingRegDocument
 import enums.{AddressTypes, IncorporationStatus}
-import models.submission.{DESCompletionCapacity, TopUpApiSubmission}
+import models.submission.{DESCompletionCapacity, TopUpEtmpSubmission}
 import play.api.libs.json.{JsObject, Json, Writes}
 import repositories.RegistrationMongoRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -91,31 +91,31 @@ class AuditService @Inject()(registrationRepository: RegistrationMongoRepository
     }
   }
 
-  def auditEtmpApiSubmission(regId: String, apiSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
+  def auditEtmpSubmission(regId: String, etmpSubmissionState: String, jsSubmission: JsObject, ctutr: Option[String])(implicit hc: HeaderCarrier): Future[AuditResult] = {
     authorised().retrieve(Retrievals.externalId and Retrievals.credentials) {
       case Some(id) ~ Some(credentials) =>
         for {
           auditRefs <- fetchAddressAuditRefs(regId)
           auditRes <- sendEvent(
             auditType = "payeRegistrationSubmission",
-            detail = ApiSubmissionAuditEventDetail(id, credentials.providerId, regId, ctutr, apiSubmissionState, jsSubmission, auditRefs)
+            detail = EtmpSubmissionAuditEventDetail(id, credentials.providerId, regId, ctutr, etmpSubmissionState, jsSubmission, auditRefs)
           )
         } yield auditRes
       case _ => throw new Exception("[Audit Etmp Api Submission] failed")
     }
   }
 
-  def auditEtmpApiTopUpSubmission(regId: String, topUpApiSubmission: TopUpApiSubmission)(implicit hc: HeaderCarrier) = {
-    topUpApiSubmission.status match {
+  def auditEtmpTopUpSubmission(regId: String, topUpEtmpSubmission: TopUpEtmpSubmission)(implicit hc: HeaderCarrier) = {
+    topUpEtmpSubmission.status match {
       case IncorporationStatus.accepted =>
         sendEvent(
           auditType = "payeRegistrationAdditionalData",
-          detail = ApiTopUpAuditEventDetail(regId, Json.toJson[TopUpApiSubmission](topUpApiSubmission)(TopUpApiSubmission.auditWrites).as[JsObject])
+          detail = EtmpTopUpAuditEventDetail(regId, Json.toJson[TopUpEtmpSubmission](topUpEtmpSubmission)(TopUpEtmpSubmission.auditWrites).as[JsObject])
         )
       case IncorporationStatus.rejected =>
         sendEvent(
           "incorporationFailure",
-          IncorporationFailureAuditEventDetail(regId, topUpApiSubmission.acknowledgementReference)
+          IncorporationFailureAuditEventDetail(regId, topUpEtmpSubmission.acknowledgementReference)
         )
     }
   }

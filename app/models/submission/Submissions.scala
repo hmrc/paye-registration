@@ -22,33 +22,33 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{Writes, __}
 
 
-case class ApiSubmission(acknowledgementReference: String,
-                         metaData: DESMetaData,
-                         limitedCompany: DESLimitedCompany,
-                         employingPeople: DESEmployingPeople)
+case class EtmpSubmission(acknowledgementReference: String,
+                          metaData: DESMetaData,
+                          limitedCompany: DESLimitedCompany,
+                          employingPeople: DESEmployingPeople)
 
-object ApiSubmission {
-  implicit val writes: Writes[ApiSubmission] =
+object EtmpSubmission {
+  implicit val writes: Writes[EtmpSubmission] =
     (
       (__ \ "acknowledgementReference").write[String] and
       (__ \ "metaData").write[DESMetaData] and
       (__ \ "payAsYouEarn" \ "limitedCompany").write[DESLimitedCompany] and
       (__ \ "payAsYouEarn" \ "employingPeople").write[DESEmployingPeople]
-      )(unlift(ApiSubmission.unapply))
+      )(unlift(EtmpSubmission.unapply))
 }
 
-case class TopUpApiSubmission(acknowledgementReference: String,
-                              status: IncorporationStatus.Value,
-                              crn: Option[String])
+case class TopUpEtmpSubmission(acknowledgementReference: String,
+                               status: IncorporationStatus.Value,
+                               crn: Option[String])
 
-object TopUpApiSubmission {
-  implicit val writes: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(EtmpApiValidation))
+object TopUpEtmpSubmission {
+  implicit val writes: Writes[TopUpEtmpSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(EtmpApiValidation))
 
-  val auditWrites: Writes[TopUpApiSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
+  val auditWrites: Writes[TopUpEtmpSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
 
   private def genericTopDesSubmissionWrites(incorporationStatusWrites: Writes[IncorporationStatus.Value]) = (
     (__ \ "acknowledgementReference").write[String] and
     (__ \ "status").write[IncorporationStatus.Value](incorporationStatusWrites) and
     (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
-  )(unlift(TopUpApiSubmission.unapply))
+  )(unlift(TopUpEtmpSubmission.unapply))
 }

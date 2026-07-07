@@ -19,7 +19,7 @@ package connectors
 import config.AppConfig
 import helpers.PAYERegSpec
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{ApiSubmission, TopUpApiSubmission}
+import models.submission.{EtmpSubmission, TopUpEtmpSubmission}
 import org.apache.pekko.util.Timeout
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -36,8 +36,8 @@ class RoutingConnectorSpec extends PAYERegSpec {
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  val mockSubmission: ApiSubmission = mock[ApiSubmission]
-  val mockTopUpSubmission: TopUpApiSubmission = mock[TopUpApiSubmission]
+  val mockSubmission: EtmpSubmission = mock[EtmpSubmission]
+  val mockTopUpSubmission: TopUpEtmpSubmission = mock[TopUpEtmpSubmission]
   val mockIncorpUpdate: Option[IncorpStatusUpdate] = None
   val successResponse: HttpResponse = HttpResponse(200, "")
 

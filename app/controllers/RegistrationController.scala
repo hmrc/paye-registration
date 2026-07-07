@@ -270,7 +270,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
     implicit request =>
       isAuthorised(regID) { authResult =>
         authResult.ifAuthorised(regID, "submitPAYERegistration") {
-          submissionService.submitToApi(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
+          submissionService.submitToEtmp(regID) map (ackRef => Ok(Json.toJson(ackRef))) recover {
             case _: RejectedIncorporationException => NoContent
             case ex: SubmissionMarshallingException => BadRequest(s"Registration was submitted without full data: ${ex.getMessage}")
             case e =>
@@ -302,7 +302,7 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
             logger.error(s"[processIncorporationData] No registration found for transaction id $transactionId")
             throw new MissingRegDocument(transactionId)
           case Some(reg) =>
-            submissionService.submitTopUpToApi(reg.registrationID, statusUpdate) map (_ => Ok(Json.toJson(statusUpdate.crn)))
+            submissionService.submitTopUpToEtmp(reg.registrationID, statusUpdate) map (_ => Ok(Json.toJson(statusUpdate.crn)))
         } recoverWith {
           case invalid: ErrorRegistrationException =>
             Future.successful(Ok(s"Cannot process Incorporation Update for transaction ID '$transactionId' - ${invalid.getMessage}"))
@@ -310,7 +310,8 @@ class RegistrationController @Inject()(registrationService: RegistrationService,
             Future.successful(Ok(s"No registration found for transaction id $transactionId"))
           case error: RegistrationInvalidStatus => registrationInvalidStatusHandler(error, transactionId)
           case mongo@(_: UpdateFailed | _: RetrieveFailed) =>
-            logger.error(s"[processIncorporationData] Failed to process Incorporation Update for transaction ID '$transactionId' - database error. The update may have completed successfully downstream")
+            logger.error(s"[processIncorporationData] Failed to process Incorporation Update for transaction ID '$transactionId'" +
+                            " - database error. The update may have completed successfully downstream")
             Future.successful(InternalServerError)
           case e =>
             logger.error(s"[processIncorporationData] Error while processing Incorporation Data for registration with transactionId $transactionId - error: ${e.getMessage}")

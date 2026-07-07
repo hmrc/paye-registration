@@ -57,7 +57,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
 
-  def submitToApi(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
+  def submitToEtmp(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     val futureAckRefIncUpdate = {
       for {
         ackRef <- assertOrGenerateAcknowledgementReference(regId)
@@ -74,9 +74,9 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       val (ackRef, incUpdate) = ackRefAndIncUpdate
       for {
         ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
-        submission <- buildApiSubmission(regId, incUpdate, ctutr)
+        submission <- buildEtmpSubmission(regId, incUpdate, ctutr)
         _ <- routingConnector.submitRegistration(submission, regId, incUpdate)
-        _ <- auditService.auditEtmpApiSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[ApiSubmission](submission).as[JsObject], ctutr)
+        _ <- auditService.auditEtmpSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[EtmpSubmission](submission).as[JsObject], ctutr)
         updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
         _ <- updatePAYERegistrationDocument(regId, updatedStatus)
       } yield ackRef
@@ -84,11 +84,11 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   }
 
 
-  def submitTopUpToApi(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
+  def submitTopUpToEtmp(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
-      apiSubmission <- buildTopUpApiSubmission(regId, incorpStatusUpdate)
+      apiSubmission <- buildTopUpEtmpSubmission(regId, incorpStatusUpdate)
       _ <- routingConnector.submitIncorporation(apiSubmission, regId, incorpStatusUpdate.transactionId)
-      _ <- auditService.auditEtmpApiTopUpSubmission(regId, apiSubmission)
+      _ <- auditService.auditEtmpTopUpSubmission(regId, apiSubmission)
       _ <- if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
         registrationService.deletePAYERegistration(regId, PAYEStatus.held)
       } else {
@@ -128,36 +128,36 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildApiSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[ApiSubmission] = {
+  private[services] def buildEtmpSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[EtmpSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
-          logger.debug("[buildApiSubmission] building a full ETMP submission")
+          logger.debug("[buildEtmpSubmission] building a full ETMP submission")
           payeReg2ETMPSubmission(payeReg, statusUpdate.crn, ctutr)
         case None =>
-          logger.debug("[buildApiSubmission] building a partial ETMP submission")
+          logger.debug("[buildEtmpSubmission] building a partial ETMP submission")
           payeReg2ETMPSubmission(payeReg, None, ctutr)
       }
       case Some(payeReg) =>
-        logger.warn(s"[buildApiSubmission] The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
+        logger.warn(s"[buildEtmpSubmission] The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case None =>
-        logger.warn(s"[buildApiSubmission] building Api top submission failed, there was no registration document present for regId $regId")
+        logger.warn(s"[buildEtmpSubmission] building ETMP top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
     }
   }
 
-  private[services] def buildTopUpApiSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpApiSubmission] = {
+  private[services] def buildTopUpEtmpSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpEtmpSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) map {
       case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpETMPSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
-        logger.warn(s"[buildTopUpApiSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
+        logger.warn(s"[buildTopUpEtmpSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case Some(payeReg) =>
-        logger.error(s"[buildTopUpApiSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
+        logger.error(s"[buildTopUpEtmpSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
         throw new ErrorRegistrationException(regId, payeReg.status.toString)
       case None =>
-        logger.error(s"[buildTopUpApiSubmission] building Api top submission failed, there was no registration document present for regId $regId")
+        logger.error(s"[buildTopUpEtmpSubmission] building ETMP top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
     }
   }
@@ -175,7 +175,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def payeReg2ETMPSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[ApiSubmission] = {
+  private[services] def payeReg2ETMPSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[EtmpSubmission] = {
     val companyDetails = payeReg.companyDetails.getOrElse {
       throw new CompanyDetailsNotDefinedException("Company Details not defined")
     }
@@ -191,7 +191,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
 
     buildDESMetaData(payeReg.registrationID, payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
       apiMetaData => {
-        ApiSubmission(
+        EtmpSubmission(
           acknowledgementReference = ackRef,
           metaData = apiMetaData,
           limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, employmentInfo, ctutr),
@@ -204,8 +204,8 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def payeReg2TopUpETMPSubmission(payeReg: PAYERegistration, incorpStatusUpdate: IncorpStatusUpdate): TopUpApiSubmission = {
-    TopUpApiSubmission(
+  private[services] def payeReg2TopUpETMPSubmission(payeReg: PAYERegistration, incorpStatusUpdate: IncorpStatusUpdate): TopUpEtmpSubmission = {
+    TopUpEtmpSubmission(
       acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
         logger.warn(s"[payeReg2TopUpETMPSubmission] Unable to convert to Top Up ETMP Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)

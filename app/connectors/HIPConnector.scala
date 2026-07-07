@@ -20,7 +20,7 @@ import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import config.AppConfig
 import connectors.httpParsers.BaseHttpReads
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{ApiSubmission, TopUpApiSubmission}
+import models.submission.{EtmpSubmission, TopUpEtmpSubmission}
 import play.api.libs.json.Json
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.AuditService
@@ -32,12 +32,13 @@ import utils.{Logging, SystemDate, WorkingHoursGuard}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate, LocalTime}
+import java.util.UUID.randomUUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val auditService: AuditService)
-  extends BaseConnector with BaseHttpReads with HttpErrorFunctions with Logging with CorrelationGenerator with WorkingHoursGuard {
+  extends BaseConnector with BaseHttpReads with HttpErrorFunctions with Logging with WorkingHoursGuard {
 
   val alertWorkingHours: String = appConfig.alertWorkingHours
   def currentDate: LocalDate = SystemDate.getSystemDate.toLocalDate
@@ -46,7 +47,7 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
   implicit val httpRds: HttpReads[HttpResponse] =
     (http: String, url: String, res: HttpResponse) => customHIPRead(http, url, res)
 
-  def submitRegistration(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
+  def submitRegistration(submission: EtmpSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
                         (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = s"${appConfig.hipBaseUrl}/RESTAdapter/business-registration/PAYE"
@@ -61,7 +62,7 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
     }
   }
 
-  def submitIncorporation(submission: TopUpApiSubmission, regId: String, txId: String)
+  def submitIncorporation(submission: TopUpEtmpSubmission, regId: String, txId: String)
                          (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
     val url = s"${appConfig.hipBaseUrl}/RESTAdapter/business-incorporation/PAYE"
@@ -77,10 +78,7 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
 
   private def payePOST(uri: String, body: play.api.libs.json.JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
 
-    val correlationId = addCorrelationId(hc).extraHeaders
-      .map { case (key, value) => (key.toLowerCase, value) }
-      .collectFirst { case ("correlationid", value) => value }
-      .getOrElse(generateCorrelationId(hc.requestId))
+    val correlationId = randomUUID.toString
 
     val hipHeaders: Seq[(String, String)] = Seq(
       HeaderNames.Authorization -> s"Basic ${appConfig.hipAuthToken}",

@@ -18,17 +18,17 @@ package audit
 
 import enums.IncorporationStatus
 import helpers.PAYERegSpec
-import models.submission.TopUpApiSubmission
+import models.submission.TopUpEtmpSubmission
 import play.api.libs.json.{JsObject, Json}
 
-class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
+class EtmpTopUpAuditEventDetailSpec extends PAYERegSpec {
   "DesTopUpAuditEventDetail" should {
     val regId = "123456789"
     val ackRef = "ackRef"
 
     "construct full json as per definition" when {
       "incorporation is accepted" in {
-        val validTopUpDESSubmission = TopUpApiSubmission(ackRef, IncorporationStatus.accepted, Some("AA123456"))
+        val validTopUpDESSubmission = TopUpEtmpSubmission(ackRef, IncorporationStatus.accepted, Some("AA123456"))
 
         val expected = Json.parse(
           s"""
@@ -42,15 +42,15 @@ class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
              |}
           """.stripMargin)
 
-        val testModel = ApiTopUpAuditEventDetail(
+        val testModel = EtmpTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpApiSubmission](validTopUpDESSubmission)(TopUpApiSubmission.auditWrites).as[JsObject]
+          Json.toJson[TopUpEtmpSubmission](validTopUpDESSubmission)(TopUpEtmpSubmission.auditWrites).as[JsObject]
         )
-        Json.toJson(testModel)(ApiTopUpAuditEventDetail.writes) mustBe expected
+        Json.toJson(testModel)(EtmpTopUpAuditEventDetail.writes) mustBe expected
       }
 
       "incorporation is rejected" in {
-        val validTopUpDESSubmission = TopUpApiSubmission(ackRef, IncorporationStatus.rejected, None)
+        val validTopUpDESSubmission = TopUpEtmpSubmission(ackRef, IncorporationStatus.rejected, None)
 
         val expected = Json.parse(
           s"""
@@ -61,11 +61,11 @@ class ApiTopUpAuditEventDetailSpec extends PAYERegSpec {
              |}
           """.stripMargin)
 
-        val testModel = ApiTopUpAuditEventDetail(
+        val testModel = EtmpTopUpAuditEventDetail(
           regId,
-          Json.toJson[TopUpApiSubmission](validTopUpDESSubmission)(TopUpApiSubmission.auditWrites).as[JsObject]
+          Json.toJson[TopUpEtmpSubmission](validTopUpDESSubmission)(TopUpEtmpSubmission.auditWrites).as[JsObject]
         )
-        Json.toJson(testModel)(ApiTopUpAuditEventDetail.writes) mustBe expected
+        Json.toJson(testModel)(EtmpTopUpAuditEventDetail.writes) mustBe expected
       }
     }
   }

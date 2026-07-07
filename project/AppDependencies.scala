@@ -4,7 +4,7 @@ import sbt._
 object AppDependencies {
 
   private val playVersion                 =  "-play-30"
-  private val bootstrapVersion            =  "10.3.0"
+  private val bootstrapVersion            =  "10.7.1"
   private val domainVersion               =  "8.3.0-play-28"
   private val scalaTestVersion            =  "3.2.18"
   private val scalaTestPlusPlayVersion    =  "7.0.1"

@@ -369,7 +369,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
             |    "externalId" : "$extId",
             |    "authProviderId" : "$credId",
             |    "journeyId" : "12345",
-            |    "apiSubmissionState" : "partial",
+            |    "etmpSubmissionState" : "partial",
             |    "acknowledgementReference" : "testAckRef",
             |    "metaData" : {
             |      "businessType" : "Limited company",

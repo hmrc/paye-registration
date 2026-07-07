@@ -18,7 +18,7 @@ package connectors
 
 import config.AppConfig
 import models.incorporation.IncorpStatusUpdate
-import models.submission.{ApiSubmission, TopUpApiSubmission}
+import models.submission.{EtmpSubmission, TopUpEtmpSubmission}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import javax.inject.{Inject, Singleton}
@@ -31,7 +31,7 @@ class RoutingConnector @Inject()(
                                   hipConnector: HIPConnector
                                 )(implicit ec: ExecutionContext) {
 
-  def submitRegistration(submission: ApiSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
+  def submitRegistration(submission: EtmpSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
                         (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     if (appConfig.useHip) {
       hipConnector.submitRegistration(submission, regId, incorpStatusUpdate)
@@ -40,7 +40,7 @@ class RoutingConnector @Inject()(
     }
   }
 
-  def submitIncorporation(submission: TopUpApiSubmission, regId: String, txId: String)
+  def submitIncorporation(submission: TopUpEtmpSubmission, regId: String, txId: String)
                          (implicit hc: HeaderCarrier): Future[HttpResponse] = {
     if (appConfig.useHip) {
       hipConnector.submitIncorporation(submission, regId, txId)

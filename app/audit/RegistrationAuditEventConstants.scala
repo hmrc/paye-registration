@@ -22,6 +22,6 @@ object RegistrationAuditEventConstants {
   val EXTERNAL_USER_ID = "externalUserId"
   val AUTH_PROVIDER_ID = "authProviderId"
   val JOURNEY_ID = "journeyId"
-  val API_SUBMISSION_STATE = "apiSubmissionState"
+  val API_SUBMISSION_STATE = "etmpSubmissionState"
   val PATH = "path"
 }

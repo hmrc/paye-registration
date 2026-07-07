@@ -258,7 +258,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
   )
 
-  val validPartialDESSubmissionModel = ApiSubmission(
+  val validPartialDESSubmissionModel = EtmpSubmission(
     acknowledgementReference = "ackRef",
     metaData = validDESMetaData,
     limitedCompany = validDESLimitedCompanyWithoutCRN,
@@ -272,7 +272,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     description = None,
     timestamp = LocalDate.of(2017, 12, 21))
 
-  val validTopUpDESSubmissionModel = TopUpApiSubmission(
+  val validTopUpDESSubmissionModel = TopUpEtmpSubmission(
     acknowledgementReference = "ackRef",
     status = IncorporationStatus.accepted,
     crn = Some("123456")
@@ -295,7 +295,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
   }
 
   "payeReg2DESSubmission" should {
-    "return a ApiSubmission model" when {
+    "return a EtmpSubmission model" when {
       "a valid PAYE reg doc is passed to it" in new Setup {
         val credentials = Credentials("cred-123", "testProviderType")
 
@@ -360,42 +360,42 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     }
   }
 
-  "Calling buildApiSubmission" should {
+  "Calling buildEtmpSubmission" should {
     "throw the correct exception when there is no registration in mongo" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
-      intercept[MissingRegDocument](await(service.buildApiSubmission("regId", Some(incorpStatusUpdate), None)))
+      intercept[MissingRegDocument](await(service.buildEtmpSubmission("regId", Some(incorpStatusUpdate), None)))
     }
 
     "throw the correct exception when PAYE status is in an incorrect state" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.acknowledged))))
 
-      intercept[RegistrationInvalidStatus](await(service.buildApiSubmission("regId", Some(incorpStatusUpdate), None)))
+      intercept[RegistrationInvalidStatus](await(service.buildEtmpSubmission("regId", Some(incorpStatusUpdate), None)))
     }
   }
 
-  "Calling buildTopUpApiSubmission" should {
+  "Calling buildTopUpEtmpSubmission" should {
     "throw the correct exception when there is no registration in mongo" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
 
-      intercept[MissingRegDocument](await(service.buildTopUpApiSubmission("regId", incorpStatusUpdate)))
+      intercept[MissingRegDocument](await(service.buildTopUpEtmpSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is not yet submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.draft))))
 
-      intercept[RegistrationInvalidStatus](await(service.buildTopUpApiSubmission("regId", incorpStatusUpdate)))
+      intercept[RegistrationInvalidStatus](await(service.buildTopUpEtmpSubmission("regId", incorpStatusUpdate)))
     }
 
     "throw the correct exception when the registration is already submitted" in new Setup {
       when(mockRegistrationRepository.retrieveRegistration(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(Some(validRegistration.copy(status = PAYEStatus.submitted))))
 
-      intercept[ErrorRegistrationException](await(service.buildTopUpApiSubmission("regId", incorpStatusUpdate)))
+      intercept[ErrorRegistrationException](await(service.buildTopUpEtmpSubmission("regId", incorpStatusUpdate)))
     }
   }
 
@@ -468,7 +468,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
     }
   }
 
-  "Calling submitToApi" should {
+  "Calling submitToEtmp" should {
     "throw an Exception when the incorporation is rejected" in new Setup {
       when(mockRegistrationRepository.retrieveAcknowledgementReference(ArgumentMatchers.anyString()))
         .thenReturn(Future.successful(None))
@@ -482,7 +482,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         .thenReturn(Future.successful(Some(incorpStatusUpdate.copy(status = IncorporationStatus.rejected))))
       when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
         .thenReturn(Future.successful(true))
-      intercept[RejectedIncorporationException](await(service.submitToApi("regID")))
+      intercept[RejectedIncorporationException](await(service.submitToEtmp("regID")))
       verify(mockRegistrationService, times(1)).deletePAYERegistration(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
     }
     "return an ackref" when {
@@ -502,7 +502,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         AuthorisationMocks.mockAuthoriseTest(Future.successful(Some(credentials)))
         when(mockRoutingConnector.submitRegistration(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
-        when(mockAuditService.auditEtmpApiSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.held))
@@ -515,7 +515,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
           employmentInfo = None
         )))
 
-        await(service.submitToApi("regID")) mustBe "BRPY00000000001"
+        await(service.submitToEtmp("regID")) mustBe "BRPY00000000001"
       }
 
       "the incorporation is accepted" in new Setup {
@@ -539,7 +539,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
           .thenReturn(Future.successful(okResponse))
         when(mockRoutingConnector.submitIncorporation(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
-        when(mockAuditService.auditEtmpApiSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
           .thenReturn(Future.successful(PAYEStatus.submitted))
@@ -552,7 +552,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
           employmentInfo = None
         )))
 
-        await(service.submitToApi("regID")) mustBe "BRPY00000000001"
+        await(service.submitToEtmp("regID")) mustBe "BRPY00000000001"
       }
     }
   }
@@ -575,7 +575,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRoutingConnector.submitIncorporation(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
-        when(mockAuditService.auditEtmpApiTopUpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpTopUpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
 
         when(mockRegistrationRepository.updateRegistrationStatus(ArgumentMatchers.anyString(), ArgumentMatchers.any()))
@@ -584,7 +584,7 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRegistrationRepository.cleardownRegistration(ArgumentMatchers.anyString()))
           .thenReturn(Future.successful(validRegistrationAfterTopUpSubmission))
 
-        await(service.submitTopUpToApi("regID", incorpStatusUpdate)) mustBe PAYEStatus.submitted
+        await(service.submitTopUpToEtmp("regID", incorpStatusUpdate)) mustBe PAYEStatus.submitted
       }
 
       "incorporation is rejected" in new Setup {
@@ -603,13 +603,13 @@ class SubmissionServiceSpec extends PAYERegSpec with LogCapturing {
         when(mockRoutingConnector.submitIncorporation(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(HttpResponse.apply(200, "")))
 
-        when(mockAuditService.auditEtmpApiTopUpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
+        when(mockAuditService.auditEtmpTopUpSubmission(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(Success))
 
         when(mockRegistrationService.deletePAYERegistration(ArgumentMatchers.anyString(), ArgumentMatchers.any())(ArgumentMatchers.any()))
           .thenReturn(Future.successful(true))
 
-        await(service.submitTopUpToApi("regID", incorpStatusUpdate.copy(status = IncorporationStatus.rejected))) mustBe PAYEStatus.cancelled
+        await(service.submitTopUpToEtmp("regID", incorpStatusUpdate.copy(status = IncorporationStatus.rejected))) mustBe PAYEStatus.cancelled
       }
     }
   }
