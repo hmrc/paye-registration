@@ -30,7 +30,7 @@ case class EtmpSubmissionAuditEventDetail(externalId: String,
 
 object EtmpSubmissionAuditEventDetail {
 
-  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, API_SUBMISSION_STATE, EXTERNAL_ID}
+  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, ETMP_SUBMISSION_STATE, EXTERNAL_ID}
 
   implicit val writes: Writes[EtmpSubmissionAuditEventDetail] = new Writes[EtmpSubmissionAuditEventDetail] {
     def writes(detail: EtmpSubmissionAuditEventDetail) = {
@@ -42,7 +42,7 @@ object EtmpSubmissionAuditEventDetail {
         EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
-        API_SUBMISSION_STATE -> detail.etmpSubmissionState
+        ETMP_SUBMISSION_STATE -> detail.etmpSubmissionState
       ) ++ detail.jsSubmission.deepMerge(auditRefsJson(detail.auditRefs))
 
       if(ctutrTuple.isDefined) event ++ ctutrTuple.get else event

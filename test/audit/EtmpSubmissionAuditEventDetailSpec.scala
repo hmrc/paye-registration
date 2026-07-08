@@ -123,7 +123,7 @@ class EtmpSubmissionAuditEventDetailSpec extends PAYERegSpec {
           |   "externalId": "$externalId",
           |   "authProviderId": "$authProviderId",
           |   "journeyId": "$regId",
-          |   "etmpSubmissionState": "$etmpSubmissionState",
+          |   "desSubmissionState": "$etmpSubmissionState",
           |   "acknowledgementReference": "ackRef",
           |   "metaData": {
           |     "businessType": "Limited company",
