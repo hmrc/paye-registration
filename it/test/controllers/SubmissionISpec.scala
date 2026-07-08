@@ -226,7 +226,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
        |}""".stripMargin
 
   val payeUrl =
-    if (appConfig.useHip) "/RESTAdapter/business-registration/PAYE" else "/business-registration/pay-as-you-earn"
+    if (appConfig.useHip) "/etmp/RESTAdapter/business-registration/PAYE" else "/business-registration/pay-as-you-earn"
 
   def verifyPayeSubmission(respBody: String) = {
     if (appConfig.useHip) {

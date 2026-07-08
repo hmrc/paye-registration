@@ -256,7 +256,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
   "incorporation-data" should {
 
     val topUpPayeUrl =
-      if (appConfig.useHip) "/RESTAdapter/business-incorporation/PAYE" else "/business-incorporation/pay-as-you-earn"
+      if (appConfig.useHip) "/etmp/RESTAdapter/business-incorporation/PAYE" else "/business-incorporation/pay-as-you-earn"
 
     "return a 200 with a crn" in new Setup {
       setupSimpleAuthMocks()
@@ -486,7 +486,7 @@ class RegistrationControllerISpec extends IntegrationSpecBase with EmploymentInf
   "submitting a top up registration with ETMP stubbed out" should {
 
     val topUpPayeUrl =
-      if (appConfig.useHip) "/RESTAdapter/business-incorporation/PAYE" else "/business-registration/pay-as-you-earn"
+      if (appConfig.useHip) "/etmp/RESTAdapter/business-incorporation/PAYE" else "/business-registration/pay-as-you-earn"
 
     "return a 200 with an ack ref" in new Setup {
 

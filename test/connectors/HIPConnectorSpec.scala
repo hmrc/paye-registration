@@ -49,8 +49,8 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   trait Setup {
 
     val serviceUrl = "http://hipURL"
-    val busReqUrl = url"$serviceUrl/RESTAdapter/business-registration/PAYE"
-    val busIncUrl = url"$serviceUrl/RESTAdapter/business-incorporation/PAYE"
+    val busReqUrl = url"$serviceUrl/etmp/RESTAdapter/business-registration/PAYE"
+    val busIncUrl = url"$serviceUrl/etmp/RESTAdapter/business-incorporation/PAYE"
 
     val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
     val  mockAppConfig = new AppConfig(mock[ServicesConfig]) {
