@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
     val busIncUrl = url"$serviceUrl/etmp/RESTAdapter/business-incorporation/PAYE"
 
     val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
-    val  mockAppConfig = new AppConfig(mock[ServicesConfig]) {
-      override lazy val hipBaseUrl = serviceUrl
+    val  mockAppConfig: AppConfig = new AppConfig(mock[ServicesConfig]) {
+      override lazy val hipBaseUrl: String = serviceUrl
       override lazy val hipClientId = "testId"
       override lazy val hipClientSecret = "testSecret"
       override lazy val alertWorkingHours = "00:00:00_23:59:59"
@@ -91,9 +91,6 @@ class HIPConnectorSpec extends PAYERegSpec with BeforeAndAfter with SubmissionFi
   }
 
   "HipConnector" when {
-
-
-    //implicit val hc: HeaderCarrier = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
     "performing submitRegistration with a Partial Submission Model" should {
       val submissionJson = Json.toJson(validPartialDESSubmissionModel)
