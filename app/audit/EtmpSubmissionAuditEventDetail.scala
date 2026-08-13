@@ -20,20 +20,20 @@ import audit.RegistrationAuditEventConstants.JOURNEY_ID
 import enums.AddressTypes
 import play.api.libs.json.{JsObject, Json, Writes}
 
-case class DesSubmissionAuditEventDetail(externalId: String,
-                                         authProviderId: String,
-                                         regId: String,
-                                         ctutr: Option[String],
-                                         desSubmissionState: String,
-                                         jsSubmission: JsObject,
-                                         auditRefs: Map[AddressTypes.Value, String])
+case class EtmpSubmissionAuditEventDetail(externalId: String,
+                                          authProviderId: String,
+                                          regId: String,
+                                          ctutr: Option[String],
+                                          etmpSubmissionState: String,
+                                          jsSubmission: JsObject,
+                                          auditRefs: Map[AddressTypes.Value, String])
 
-object DesSubmissionAuditEventDetail {
+object EtmpSubmissionAuditEventDetail {
 
-  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, DES_SUBMISSION_STATE, EXTERNAL_ID}
+  import RegistrationAuditEventConstants.{AUTH_PROVIDER_ID, ETMP_SUBMISSION_STATE, EXTERNAL_ID}
 
-  implicit val writes: Writes[DesSubmissionAuditEventDetail] = new Writes[DesSubmissionAuditEventDetail] {
-    def writes(detail: DesSubmissionAuditEventDetail) = {
+  implicit val writes: Writes[EtmpSubmissionAuditEventDetail] = new Writes[EtmpSubmissionAuditEventDetail] {
+    def writes(detail: EtmpSubmissionAuditEventDetail) = {
       val ctutrTuple = detail.ctutr map( utr =>
         Json.obj("ctutr" -> utr)
       )
@@ -42,7 +42,7 @@ object DesSubmissionAuditEventDetail {
         EXTERNAL_ID -> detail.externalId,
         AUTH_PROVIDER_ID -> detail.authProviderId,
         JOURNEY_ID -> detail.regId,
-        DES_SUBMISSION_STATE -> detail.desSubmissionState
+        ETMP_SUBMISSION_STATE -> detail.etmpSubmissionState
       ) ++ detail.jsSubmission.deepMerge(auditRefsJson(detail.auditRefs))
 
       if(ctutrTuple.isDefined) event ++ ctutrTuple.get else event

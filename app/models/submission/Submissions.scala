@@ -17,38 +17,38 @@
 package models.submission
 
 import enums.IncorporationStatus
-import models.validation.{APIValidation, DesValidation}
-import play.api.libs.functional.syntax.{unlift, _}
+import models.validation.{APIValidation, EtmpApiValidation}
+import play.api.libs.functional.syntax._
 import play.api.libs.json.{Writes, __}
 
 
-case class DESSubmission(acknowledgementReference: String,
-                              metaData: DESMetaData,
-                              limitedCompany: DESLimitedCompany,
-                              employingPeople: DESEmployingPeople)
+case class EtmpSubmission(acknowledgementReference: String,
+                          metaData: DESMetaData,
+                          limitedCompany: DESLimitedCompany,
+                          employingPeople: DESEmployingPeople)
 
-object DESSubmission {
-  implicit val writes: Writes[DESSubmission] =
+object EtmpSubmission {
+  implicit val writes: Writes[EtmpSubmission] =
     (
       (__ \ "acknowledgementReference").write[String] and
       (__ \ "metaData").write[DESMetaData] and
       (__ \ "payAsYouEarn" \ "limitedCompany").write[DESLimitedCompany] and
       (__ \ "payAsYouEarn" \ "employingPeople").write[DESEmployingPeople]
-      )(unlift(DESSubmission.unapply))
+      )(unlift(EtmpSubmission.unapply))
 }
 
-case class TopUpDESSubmission(acknowledgementReference: String,
-                              status: IncorporationStatus.Value,
-                              crn: Option[String])
+case class TopUpEtmpSubmission(acknowledgementReference: String,
+                               status: IncorporationStatus.Value,
+                               crn: Option[String])
 
-object TopUpDESSubmission {
-  implicit val writes: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(DesValidation))
+object TopUpEtmpSubmission {
+  implicit val writes: Writes[TopUpEtmpSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(EtmpApiValidation))
 
-  val auditWrites: Writes[TopUpDESSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
+  val auditWrites: Writes[TopUpEtmpSubmission] = genericTopDesSubmissionWrites(IncorporationStatus.writes(APIValidation))
 
   private def genericTopDesSubmissionWrites(incorporationStatusWrites: Writes[IncorporationStatus.Value]) = (
     (__ \ "acknowledgementReference").write[String] and
     (__ \ "status").write[IncorporationStatus.Value](incorporationStatusWrites) and
     (__ \ "payAsYouEarn" \ "crn").writeNullable[String]
-  )(unlift(TopUpDESSubmission.unapply))
+  )(unlift(TopUpEtmpSubmission.unapply))
 }

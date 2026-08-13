@@ -128,6 +128,7 @@ object PAYEFeatureSwitches extends PAYEFeatureSwitches {
   val removeStaleDocumentsFeature: String = "removeStaleDocumentsFeature"
   val graphiteMetricsFeature: String = "graphiteMetrics"
   val setSystemDate: String = "system-date"
+  val hipServiceFeature: String = "hipServiceFeature"
 }
 
 trait PAYEFeatureSwitches {
@@ -136,6 +137,7 @@ trait PAYEFeatureSwitches {
   val removeStaleDocumentsFeature: String
   val graphiteMetricsFeature: String
   val setSystemDate: String
+  val hipServiceFeature: String
 
   def desService: FeatureSwitch = FeatureSwitch.getProperty(desServiceFeature)
 
@@ -145,11 +147,14 @@ trait PAYEFeatureSwitches {
 
   def systemDate: FeatureSwitch = FeatureSwitch.getProperty(setSystemDate)
 
+  def hipService: FeatureSwitch = FeatureSwitch.getProperty(hipServiceFeature)
+
   def apply(name: String): Option[FeatureSwitch] = name match {
     case `desServiceFeature` => Some(desService)
     case `removeStaleDocumentsFeature` => Some(removeStaleDocuments)
     case `graphiteMetricsFeature` => Some(graphiteMetrics)
     case `setSystemDate` => Some(systemDate)
+    case `hipServiceFeature` => Some(hipService)
     case _ => None
   }
 }

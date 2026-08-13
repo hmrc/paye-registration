@@ -24,14 +24,14 @@ import play.api.libs.json.{JsObject, Json}
 
 import java.time.LocalDate
 
-class DesSubmissionAuditEventDetailSpec extends PAYERegSpec {
+class EtmpSubmissionAuditEventDetailSpec extends PAYERegSpec {
 
-  "DesSubmissionAuditEventDetail" should {
+  "EtmpSubmissionAuditEventDetail" should {
 
     val externalId = "Ext-123456789"
     val authProviderId = "apid001"
     val regId = "123456789"
-    val desSubmissionState = "partial"
+    val etmpSubmissionState = "partial"
 
     "construct full json as per definition" in {
       val validCompanyDetails = CompanyDetails(
@@ -110,7 +110,7 @@ class DesSubmissionAuditEventDetailSpec extends PAYERegSpec {
         payeCorrespondenceAddress = Address("19 St Walk", "Testley CA", Some("Testford"), Some("Testshire"), Some("TE4 1ST"), Some("UK"))
       )
 
-      val validPartialDESSubmissionModel = DESSubmission(
+      val validPartialDESSubmissionModel = EtmpSubmission(
         acknowledgementReference = "ackRef",
         metaData = validDESMetaData,
         limitedCompany = validDESLimitedCompanyWithoutCRN,
@@ -123,7 +123,7 @@ class DesSubmissionAuditEventDetailSpec extends PAYERegSpec {
           |   "externalId": "$externalId",
           |   "authProviderId": "$authProviderId",
           |   "journeyId": "$regId",
-          |   "desSubmissionState": "$desSubmissionState",
+          |   "desSubmissionState": "$etmpSubmissionState",
           |   "acknowledgementReference": "ackRef",
           |   "metaData": {
           |     "businessType": "Limited company",
@@ -206,16 +206,16 @@ class DesSubmissionAuditEventDetailSpec extends PAYERegSpec {
           |}
         """.stripMargin)
 
-      val testModel = DesSubmissionAuditEventDetail(
+      val testModel = EtmpSubmissionAuditEventDetail(
         externalId,
         authProviderId,
         regId,
         None,
-        desSubmissionState,
-        Json.toJson[DESSubmission](validPartialDESSubmissionModel).as[JsObject],
+        etmpSubmissionState,
+        Json.toJson[EtmpSubmission](validPartialDESSubmissionModel).as[JsObject],
         Map.empty
       )
-      Json.toJson(testModel)(DesSubmissionAuditEventDetail.writes) mustBe expected
+      Json.toJson(testModel)(EtmpSubmissionAuditEventDetail.writes) mustBe expected
     }
   }
 }

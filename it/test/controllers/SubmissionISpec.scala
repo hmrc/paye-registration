@@ -21,6 +21,7 @@ import auth.CryptoSCRS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.codahale.metrics.MetricRegistry
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import config.AppConfig
 import enums.{Employing, PAYEStatus}
 import fixtures.EmploymentInfoFixture
 import helpers.DateHelper
@@ -39,6 +40,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
+  lazy val appConfig = app.injector.instanceOf[AppConfig]
+
   val mockHost: String = WiremockHelper.wiremockHost
   val mockPort: Int = WiremockHelper.wiremockPort
   val mockUrl = s"http://$mockHost:$mockPort"
@@ -52,6 +55,8 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
     "microservice.services.des-stub.url" -> s"$mockHost",
     "microservice.services.des-service.url" -> s"$mockUrl",
     "microservice.services.des-service.uri" -> "business-registration/pay-as-you-earn",
+    "microservice.services.hip.host" -> s"$mockHost",
+    "microservice.services.hip.port" -> s"$mockPort",
     "application.router" -> "testOnlyDoNotUseInAppConf.Routes",
     "microservice.services.incorporation-information.host" -> s"$mockHost",
     "microservice.services.incorporation-information.port" -> s"$mockPort",
@@ -69,7 +74,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
   lazy val mongoComponent: MongoComponent = app.injector.instanceOf[MongoComponent]
   lazy val sConfig: Configuration = app.injector.instanceOf[Configuration]
-  lazy val mockcryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
+  lazy val mockCryptoSCRS: CryptoSCRS = app.injector.instanceOf[CryptoSCRS]
 
   private val regime = "paye"
   private val subscriber = "SCRS"
@@ -80,7 +85,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   class Setup {
     lazy val mockMetricRegistry: MetricRegistry = app.injector.instanceOf[MetricRegistry]
     lazy val mockDateHelper: DateHelper = app.injector.instanceOf[DateHelper]
-    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockcryptoSCRS)
+    val repository = new RegistrationMongoRepository(mockMetricRegistry, mockDateHelper, mongoComponent, sConfig, mockCryptoSCRS)
     val sequenceRepository = new SequenceMongoRepository(mongoComponent)
     await(repository.dropCollection)
     await(sequenceRepository.collection.drop().toFuture())
@@ -220,14 +225,39 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
        | }
        |}""".stripMargin
 
+  val payeUrl =
+    if (appConfig.useHip) "/etmp/RESTAdapter/business-registration/PAYE" else "/business-registration/pay-as-you-earn"
+
+  def verifyPayeSubmission(respBody: String) = {
+    if (appConfig.useHip) {
+      val uuidPattern: String =
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+
+      verify(postRequestedFor(urlEqualTo(payeUrl))
+        .withHeader("CorrelationId", matching(uuidPattern))
+        .withHeader("X-Originating-System", equalTo("SCRS"))
+        .withHeader("X-Receipt-Date", matching(".+"))
+        .withHeader("X-Transmitting-System", equalTo("HIP"))
+        .withHeader("Authorization", equalTo("Basic dGVzdElkOnRlc3RTZWNyZXQ="))
+        .withRequestBody(equalToJson(respBody))
+      )
+    } else {
+      verify(postRequestedFor(urlEqualTo(payeUrl))
+        .withHeader("Environment", matching("test-environment"))
+        .withHeader("Authorization", matching("Bearer testAuthToken"))
+        .withRequestBody(equalToJson(respBody))
+      )
+    }
+  }
+
   "submit-registration" should {
-    "return a 200 with an ack ref when a partial DES submission completes successfully with auditing" in new Setup {
+    "return a 200 with an ack ref when a partial ETMP submission completes successfully with auditing" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
       val regime = "paye"
       val subscriber = "SCRS"
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -247,10 +277,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       val response = client(s"/$regId/submit-registration").put("").futureValue
 
-      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-        .withHeader("Environment", matching("test-environment"))
-        .withHeader("Authorization", matching("Bearer testAuthToken"))
-        .withRequestBody(equalToJson(Json.parse(
+      val respBody = Json.parse(
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
@@ -329,9 +356,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
              |        }
              |    }
              |}
-          """.stripMargin).toString())
-        )
-      )
+          """.stripMargin).toString()
+
+      verifyPayeSubmission(respBody)
 
 
       verify(postRequestedFor(urlEqualTo("/write/audit"))
@@ -437,10 +464,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg.get.partialSubmissionTimestamp.nonEmpty mustBe true
     }
 
-    "return a 200 with an ack ref when a full DES submission completes successfully" in new Setup {
+    "return a 200 with an ack ref when a full ETMP submission completes successfully" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -479,10 +506,8 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       val response = await(client(s"/$regId/submit-registration").put(""))
 
-      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-        .withHeader("Environment", matching("test-environment"))
-        .withHeader("Authorization", matching("Bearer testAuthToken"))
-        .withRequestBody(equalToJson(Json.parse(
+
+     val respBody = Json.parse(
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
@@ -555,9 +580,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
              |        }
              |    }
              |}
-          """.stripMargin).toString())
-        )
-      )
+          """.stripMargin).toString()
+
+      verifyPayeSubmission(respBody)
 
       response.status mustBe 200
       response.json mustBe Json.toJson("testAckRef")
@@ -569,10 +594,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
-    "return a 200 with an ack ref when a full DES submission completes successfully with a company containing none standard characters" in new Setup {
+    "return a 200 with an ack ref when a full ETMP submission completes successfully with a company containing none standard characters" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(200)
@@ -665,10 +690,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       val response = await(client(s"/$regId/submit-registration").put(""))
 
-      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-        .withHeader("Environment", matching("test-environment"))
-        .withHeader("Authorization", matching("Bearer testAuthToken"))
-        .withRequestBody(equalToJson(Json.parse(
+      val respBody = Json.parse(
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
@@ -741,9 +763,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
              |        }
              |    }
              |}
-          """.stripMargin).toString())
-        )
-      )
+          """.stripMargin).toString()
+
+      verifyPayeSubmission(respBody)
 
       response.status mustBe 200
       response.json mustBe Json.toJson("testAckRef")
@@ -755,10 +777,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg.get.fullSubmissionTimestamp.nonEmpty mustBe true
     }
 
-    "return a 200 status with an ackRef when DES returns a 409" in new Setup {
+    "return a 200 status with an ackRef when ETMP returns a 409" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse()
             .withStatus(409)
@@ -781,10 +803,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       val response = await(client(s"/$regId/submit-registration").put(""))
 
-      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-        .withHeader("Environment", matching("test-environment"))
-        .withHeader("Authorization", matching("Bearer testAuthToken"))
-        .withRequestBody(equalToJson(Json.parse(
+      val respBody = Json.parse(
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
@@ -855,9 +874,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
              |        }
              |    }
              |}
-          """.stripMargin).toString())
-        )
-      )
+          """.stripMargin).toString()
+
+      verifyPayeSubmission(respBody)
 
       response.status mustBe 200
       response.json mustBe Json.toJson("testAckRef")
@@ -887,10 +906,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       reg mustBe None
     }
 
-    "return a 502 status when DES returns a 499" in new Setup {
+    "return a 502 status when ETMP returns a 499" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(499)
@@ -910,10 +929,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
 
-    "return a 502 status when DES returns a 5xx" in new Setup {
+    "return a 502 status when ETMP returns a 5xx" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(533)
@@ -932,10 +951,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
-    "return a 503 status when DES returns a 429" in new Setup {
+    "return a 503 status when ETMP returns a 429" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(429)
@@ -954,10 +973,10 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       await(repository.retrieveRegistration(regId)) mustBe Some(submission)
     }
-    "return a 400 status when DES returns a 4xx (apart from 429)" in new Setup {
+    "return a 400 status when ETMP returns a 4xx (apart from 429)" in new Setup {
       setupAuthMocksToReturn(authoriseData)
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(433)
@@ -998,7 +1017,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       val regime = "paye"
       val subscriber = "SCRS"
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(400)
@@ -1018,10 +1037,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       val response = client(s"/$regId/submit-registration").put("").futureValue
 
-      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-        .withHeader("Environment", matching("test-environment"))
-        .withHeader("Authorization", matching("Bearer testAuthToken"))
-        .withRequestBody(equalToJson(Json.parse(
+      val respBody = Json.parse(
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
@@ -1100,9 +1116,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
              |        }
              |    }
              |}
-          """.stripMargin).toString())
-        )
-      )
+          """.stripMargin).toString()
+      verifyPayeSubmission(respBody)
+
       response.status mustBe 400
       await(client(s"/test-only/feature-flag/system-date/time-clear").get())
 
@@ -1115,7 +1131,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
       val regime = "paye"
       val subscriber = "SCRS"
 
-      stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+      stubFor(post(urlMatching(payeUrl))
         .willReturn(
           aResponse().
             withStatus(400)
@@ -1136,10 +1152,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
       val response = client(s"/$regId/submit-registration").put("").futureValue
 
-      verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-        .withHeader("Environment", matching("test-environment"))
-        .withHeader("Authorization", matching("Bearer testAuthToken"))
-        .withRequestBody(equalToJson(Json.parse(
+      val respBody = Json.parse(
           s"""
              |{
              | "acknowledgementReference": "testAckRef",
@@ -1218,9 +1231,9 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
              |        }
              |    }
              |}
-          """.stripMargin).toString())
-        )
-      )
+          """.stripMargin).toString()
+      verifyPayeSubmission(respBody)
+
       response.status mustBe 400
       await(client(s"/test-only/feature-flag/system-date/time-clear").get())
     }
@@ -1229,7 +1242,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
   "return a 200 with an ack ref when a full DES submission completes successfully with an EmploymentInfo data block" in new Setup {
     setupAuthMocksToReturn(authoriseData)
 
-    stubFor(post(urlMatching("/business-registration/pay-as-you-earn"))
+    stubFor(post(urlMatching(payeUrl))
       .willReturn(
         aResponse().
           withStatus(200)
@@ -1330,10 +1343,7 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
 
     val response = await(client(s"/$regId/submit-registration").put(""))
 
-    verify(postRequestedFor(urlEqualTo("/business-registration/pay-as-you-earn"))
-      .withHeader("Environment", matching("test-environment"))
-      .withHeader("Authorization", matching("Bearer testAuthToken"))
-      .withRequestBody(equalToJson(Json.parse(
+    val respBody = Json.parse(
         s"""
            |{
            | "acknowledgementReference": "testAckRef",
@@ -1406,9 +1416,8 @@ class SubmissionISpec extends IntegrationSpecBase with EmploymentInfoFixture {
            |        }
            |    }
            |}
-          """.stripMargin).toString())
-      )
-    )
+          """.stripMargin).toString()
+    verifyPayeSubmission(respBody)
 
     response.status mustBe 200
     response.json mustBe Json.toJson("testAckRef")

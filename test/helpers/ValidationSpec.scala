@@ -16,7 +16,7 @@
 
 package helpers
 
-import models.validation.DesValidation
+import models.validation.EtmpApiValidation
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -24,11 +24,11 @@ class ValidationSpec extends PAYERegSpec {
 
   case class TestModel(cName: String, int: Int = 616)
   implicit val testModelWriter: Writes[TestModel] = (
-    (__ \ "cName").write[String](DesValidation.companyNameFormatter) and
+    (__ \ "cName").write[String](EtmpApiValidation.companyNameFormatter) and
     (__ \ "int").write[Int]
   )(unlift(TestModel.unapply))
 
-  "companyNameForDES" should {
+  "companyNameForETMP" should {
     "normalise téśtÇõmpâñÿÑàmę in testCompanyName" in {
       val testModel = TestModel("téśtÇõmpâñÿÑàmę")
 

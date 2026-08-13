@@ -16,7 +16,7 @@
 
 package models
 
-import models.validation.{APIValidation, BaseJsonFormatting, DesValidation}
+import models.validation.{APIValidation, BaseJsonFormatting, EtmpApiValidation}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -41,7 +41,7 @@ object Address {
     val ignore = OWrites[Any](_ => Json.obj())
 
     formatter match {
-      case DesValidation => (
+      case EtmpApiValidation => (
         (__ \ "addressLine1").write[String] and
         (__ \ "addressLine2").write[String] and
         (__ \ "addressLine3").writeNullable[String] and

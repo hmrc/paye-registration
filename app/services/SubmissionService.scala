@@ -32,12 +32,12 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, Request}
 import repositories._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, NoActiveSession, UnsupportedAuthProvider}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, NoActiveSession}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
-import scala.util.{Failure, Success, Try}
+
 
 class RejectedIncorporationException(msg: String) extends NoStackTrace {
   override def getMessage: String = msg
@@ -46,7 +46,7 @@ class RejectedIncorporationException(msg: String) extends NoStackTrace {
 @Singleton
 class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoRepository,
                                   registrationMongoRepository: RegistrationMongoRepository,
-                                  desConnector: DESConnector,
+                                  routingConnector: RoutingConnector,
                                   incorporationInformationConnector: IncorporationInformationConnector,
                                   businessRegistrationConnector: BusinessRegistrationConnector,
                                   companyRegistrationConnector: CompanyRegistrationConnector,
@@ -57,7 +57,7 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   private val REGIME = "paye"
   private val SUBSCRIBER = "SCRS"
 
-  def submitToDes(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
+  def submitToEtmp(regId: String)(implicit hc: HeaderCarrier, req: Request[AnyContent]): Future[String] = {
     val futureAckRefIncUpdate = {
       for {
         ackRef <- assertOrGenerateAcknowledgementReference(regId)
@@ -74,9 +74,9 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       val (ackRef, incUpdate) = ackRefAndIncUpdate
       for {
         ctutr <- incUpdate.fold[Future[Option[String]]](Future.successful(None))(_ => fetchCtUtr(regId, incUpdate))
-        submission <- buildADesSubmission(regId, incUpdate, ctutr)
-        _ <- desConnector.submitToDES(submission, regId, incUpdate)
-        _ <- auditService.auditDESSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[DESSubmission](submission).as[JsObject], ctutr)
+        submission <- buildEtmpSubmission(regId, incUpdate, ctutr)
+        _ <- routingConnector.submitRegistration(submission, regId, incUpdate)
+        _ <- auditService.auditEtmpSubmission(regId, incUpdate.fold("partial")(_ => "full"), Json.toJson[EtmpSubmission](submission).as[JsObject], ctutr)
         updatedStatus = incUpdate.fold(PAYEStatus.held)(_ => PAYEStatus.submitted)
         _ <- updatePAYERegistrationDocument(regId, updatedStatus)
       } yield ackRef
@@ -84,11 +84,11 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
   }
 
 
-  def submitTopUpToDES(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
+  def submitTopUpToEtmp(regId: String, incorpStatusUpdate: IncorpStatusUpdate)(implicit hc: HeaderCarrier): Future[PAYEStatus.Value] = {
     for {
-      desSubmission <- buildTopUpDESSubmission(regId, incorpStatusUpdate)
-      _ <- desConnector.submitTopUpToDES(desSubmission, regId, incorpStatusUpdate.transactionId)
-      _ <- auditService.auditDESTopUp(regId, desSubmission)
+      apiSubmission <- buildTopUpEtmpSubmission(regId, incorpStatusUpdate)
+      _ <- routingConnector.submitIncorporation(apiSubmission, regId, incorpStatusUpdate.transactionId)
+      _ <- auditService.auditEtmpTopUpSubmission(regId, apiSubmission)
       _ <- if (incorpStatusUpdate.status == IncorporationStatus.rejected) {
         registrationService.deletePAYERegistration(regId, PAYEStatus.held)
       } else {
@@ -128,36 +128,36 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
       .map(ref => f"BRPY$ref%011d")
   }
 
-  private[services] def buildADesSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
+  private[services] def buildEtmpSubmission(regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[EtmpSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) flatMap {
       case Some(payeReg) if payeReg.status == PAYEStatus.draft => incorpStatusUpdate match {
         case Some(statusUpdate) =>
-          logger.debug("[buildADesSubmission] building a full DES submission")
-          payeReg2DESSubmission(payeReg, statusUpdate.crn, ctutr)
+          logger.debug("[buildEtmpSubmission] building a full ETMP submission")
+          payeReg2ETMPSubmission(payeReg, statusUpdate.crn, ctutr)
         case None =>
-          logger.debug("[buildADesSubmission] building a partial DES submission")
-          payeReg2DESSubmission(payeReg, None, ctutr)
+          logger.debug("[buildEtmpSubmission] building a partial ETMP submission")
+          payeReg2ETMPSubmission(payeReg, None, ctutr)
       }
       case Some(payeReg) =>
-        logger.warn(s"[buildADesSubmission] The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
+        logger.warn(s"[buildEtmpSubmission] The registration for regId $regId has incorrect status of ${payeReg.status.toString}s")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case None =>
-        logger.warn(s"[buildADesSubmission] building des top submission failed, there was no registration document present for regId $regId")
+        logger.warn(s"[buildEtmpSubmission] building ETMP top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
     }
   }
 
-  private[services] def buildTopUpDESSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpDESSubmission] = {
+  private[services] def buildTopUpEtmpSubmission(regId: String, incorpStatusUpdate: IncorpStatusUpdate): Future[TopUpEtmpSubmission] = {
     registrationMongoRepository.retrieveRegistration(regId) map {
-      case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpDESSubmission(payeReg, incorpStatusUpdate)
+      case Some(payeReg) if payeReg.status == PAYEStatus.held => payeReg2TopUpETMPSubmission(payeReg, incorpStatusUpdate)
       case Some(payeReg) if List(PAYEStatus.draft, PAYEStatus.invalid).contains(payeReg.status) =>
-        logger.warn(s"[buildTopUpDESSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
+        logger.warn(s"[buildTopUpEtmpSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
         throw new RegistrationInvalidStatus(regId, payeReg.status.toString)
       case Some(payeReg) =>
-        logger.error(s"[buildTopUpDESSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
+        logger.error(s"[buildTopUpEtmpSubmission] paye status is currently ${payeReg.status} for registrationId $regId")
         throw new ErrorRegistrationException(regId, payeReg.status.toString)
       case None =>
-        logger.error(s"[buildTopUpDESSubmission] building des top submission failed, there was no registration document present for regId $regId")
+        logger.error(s"[buildTopUpEtmpSubmission] building ETMP top submission failed, there was no registration document present for regId $regId")
         throw new MissingRegDocument(regId)
     }
   }
@@ -175,13 +175,13 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def payeReg2DESSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[DESSubmission] = {
+  private[services] def payeReg2ETMPSubmission(payeReg: PAYERegistration, incorpUpdateCrn: Option[String], ctutr: Option[String])(implicit hc: HeaderCarrier): Future[EtmpSubmission] = {
     val companyDetails = payeReg.companyDetails.getOrElse {
       throw new CompanyDetailsNotDefinedException("Company Details not defined")
     }
 
     val ackRef = payeReg.acknowledgementReference.getOrElse {
-      logger.warn(s"[payeReg2PartialDESSubmission] Unable to convert to Partial DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
+      logger.warn(s"[payeReg2PartialETMPSubmission] Unable to convert to Partial ETMP Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
       throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
     }
 
@@ -190,10 +190,10 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
 
     buildDESMetaData(payeReg.registrationID, payeReg.formCreationTimestamp, payeReg.completionCapacity) map {
-      desMetaData => {
-        DESSubmission(
+      apiMetaData => {
+        EtmpSubmission(
           acknowledgementReference = ackRef,
-          metaData = desMetaData,
+          metaData = apiMetaData,
           limitedCompany = buildDESLimitedCompany(companyDetails, payeReg.sicCodes, incorpUpdateCrn, payeReg.directors, employmentInfo, ctutr),
           employingPeople = buildDESEmployingPeople(
             payeReg.registrationID,
@@ -204,10 +204,10 @@ class SubmissionService @Inject()(sequenceMongoRepository: SequenceMongoReposito
     }
   }
 
-  private[services] def payeReg2TopUpDESSubmission(payeReg: PAYERegistration, incorpStatusUpdate: IncorpStatusUpdate): TopUpDESSubmission = {
-    TopUpDESSubmission(
+  private[services] def payeReg2TopUpETMPSubmission(payeReg: PAYERegistration, incorpStatusUpdate: IncorpStatusUpdate): TopUpEtmpSubmission = {
+    TopUpEtmpSubmission(
       acknowledgementReference = payeReg.acknowledgementReference.getOrElse {
-        logger.warn(s"[payeReg2TopUpDESSubmission] Unable to convert to Top Up DES Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
+        logger.warn(s"[payeReg2TopUpETMPSubmission] Unable to convert to Top Up ETMP Submission model for reg ID ${payeReg.registrationID}, Error: Missing Acknowledgement Ref")
         throw new AcknowledgementReferenceNotExistsException(payeReg.registrationID)
       },
       status = incorpStatusUpdate.status,

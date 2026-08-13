@@ -36,7 +36,7 @@ trait BaseJsonFormatting extends DateHelper {
   private val companyNameRegex = """^[A-Za-z 0-9\-,.()/'&\"!%*_+:@<>?=;]{1,160}$"""
   private val forbiddenPunctuation = Set('[', ']', '{', '}', '#', '«', '»')
   private val illegalCharacters = Map('æ' -> "ae", 'Æ' -> "AE", 'œ' -> "oe", 'Œ' -> "OE", 'ß' -> "ss", 'ø' -> "o", 'Ø' -> "O")
-  private val dateTimeReadApi: Reads[ZonedDateTime] = new Reads[ZonedDateTime] {
+  private val dateTimeReadEtmpApi: Reads[ZonedDateTime] = new Reads[ZonedDateTime] {
     def reads(js: JsValue) =
       try {
         JsSuccess(zonedDateTimeFromString(js.as[String]))
@@ -46,7 +46,7 @@ trait BaseJsonFormatting extends DateHelper {
       }
   }
 
-  private val dateTimeWriteApi: Writes[ZonedDateTime] = new Writes[ZonedDateTime] {
+  private val dateTimeWriteEtmpApi: Writes[ZonedDateTime] = new Writes[ZonedDateTime] {
     def writes(z: ZonedDateTime) = JsString(formatTimestamp(z))
   }
 
@@ -96,7 +96,7 @@ trait BaseJsonFormatting extends DateHelper {
   val directorTitleFormat: Format[String]
   val directorNinoFormat: Format[String]
 
-  val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadApi, dateTimeWriteApi)
+  val dateFormat: Format[ZonedDateTime] = Format(dateTimeReadEtmpApi, dateTimeWriteEtmpApi)
 
   def cryptoFormat(cryptoSCRS: CryptoSCRS): Format[String] = readToFmt(standardRead)
 
