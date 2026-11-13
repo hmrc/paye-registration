@@ -50,6 +50,8 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
   def submitRegistration(submission: EtmpSubmission, regId: String, incorpStatusUpdate: Option[IncorpStatusUpdate])
                         (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
 
+    logger.info(s"[submitToHIP] Submission to HIP for regId: $regId, ackRef ${submission.acknowledgementReference} and txId: ${incorpStatusUpdate.map(_.transactionId)}")
+
     val url = s"${appConfig.hipBaseUrl}/etmp/RESTAdapter/business-registration/PAYE"
     payePOST(url, Json.toJson(submission)) map { resp =>
       logger.info(s"[submitRegistration] HIP responded with ${resp.status} for regId: $regId and txId: ${incorpStatusUpdate.map(_.transactionId)}")
@@ -64,6 +66,8 @@ class HIPConnector @Inject()(val http: HttpClientV2, appConfig: AppConfig, val a
 
   def submitIncorporation(submission: TopUpEtmpSubmission, regId: String, txId: String)
                          (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+
+    logger.info(s"[submitTopUpToHIP] Top Up to HIP for regId: $regId, ackRef: ${submission.acknowledgementReference} and txId: $txId")
 
     val url = s"${appConfig.hipBaseUrl}/etmp/RESTAdapter/business-incorporation/PAYE"
     payePOST(url, Json.toJson(submission)) map { resp =>

@@ -19,8 +19,10 @@ sm2 --start PAYE_REG_ALL
 
 To run the tests for the application, you can run: ```sbt test it/test``` 
 
-
 or ```sbt coverage test it/test coverageReport```
+
+or run the below script 
+```./run-all-tests.sh```
 
 ## API
 
